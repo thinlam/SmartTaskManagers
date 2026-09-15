@@ -1,28 +1,19 @@
 /**
  * 13_Timeline.gs
  * -----------------------------------------------------------------------
- * FRAME 10 — TIMELINE / GANTT
+ * FRAME 10 — TIMELINE / GANTT — PROFESSIONAL V2
  *
- * Premium personal productivity timeline.
+ * Personal Smart Task Manager.
  *
- * IMPORTANT:
- * - Tasks remains the single source of truth.
- * - Timeline is presentation only.
- * - No task business data is duplicated.
- * - Task identity always uses TaskId.
+ * Color meaning:
+ * Indigo = In Progress
+ * Blue   = To Do / Inbox
+ * Amber  = Waiting
+ * Red    = Overdue / Risk
+ * Green  = Completed
  *
- * Features:
- * - 28-day / 4-week timeline
- * - Previous / Current / Next period
- * - Start → Due visualization
- * - Progress visualization
- * - Today column
- * - Weekend shading
- * - Overdue / At Risk highlighting
- * - KPI cards
- * - Planning Health
- * - Unscheduled / At Risk insights
- * - Open Task Details from selected row
+ * Filled bar = completed progress
+ * Soft bar   = remaining duration
  * -----------------------------------------------------------------------
  */
 
@@ -32,140 +23,63 @@
  * ========================================================================== */
 
 const TIMELINE_LAYOUT = {
+  infoCols: 8,
+  days: 28,
 
-  infoCols:
-    8,
+  accentRow: 1,
+  titleRow: 2,
+  subtitleRow: 3,
+  healthRow: 4,
 
-  days:
-    28,
+  kpiStartRow: 6,
+  kpiEndRow: 8,
 
-  accentRow:
-    1,
+  legendRow: 9,
 
-  titleRow:
-    2,
+  weekHeaderRow: 10,
+  dateHeaderRow: 11,
+  weekdayHeaderRow: 12,
 
-  subtitleRow:
-    3,
+  firstTaskRow: 14,
 
-  healthRow:
-    4,
+  minTaskRows: 5,
+  maxTasks: 18,
 
-
-  kpiStartRow:
-    6,
-
-  kpiEndRow:
-    8,
-
-
-  weekHeaderRow:
-    10,
-
-  dateHeaderRow:
-    11,
-
-  weekdayHeaderRow:
-    12,
-
-
-  firstTaskRow:
-    14,
-
-  maxTasks:
-    18,
-
-
-  insightsGap:
-    2
+  insightsGap: 2
 };
 
 
 const TIMELINE_THEME = {
+  background: COLORS.background || '#F8FAFC',
+  surface: COLORS.surface || '#FFFFFF',
+  surfaceAlt: '#FBFCFE',
+  surface2: COLORS.surface2 || '#F1F5F9',
 
-  background:
-    COLORS.background ||
-    '#F8FAFC',
+  primary: COLORS.primary || '#4F46E5',
+  primaryHover: COLORS.primaryHover || '#4338CA',
+  primaryLight: COLORS.primaryLight || '#EEF2FF',
 
-  surface:
-    COLORS.surface ||
-    '#FFFFFF',
+  text: COLORS.text || '#1E293B',
+  text2: COLORS.text2 || '#64748B',
+  muted: COLORS.muted || '#94A3B8',
 
-  surfaceAlt:
-    '#FBFCFE',
+  border: COLORS.border || '#E2E8F0',
+  divider: '#CBD5E1',
 
-  surface2:
-    COLORS.surface2 ||
-    '#F1F5F9',
+  success: COLORS.success || '#16A34A',
+  warning: COLORS.warning || '#F59E0B',
+  danger: COLORS.danger || '#DC2626',
+  info: COLORS.info || '#2563EB',
 
+  successSoft: '#DCFCE7',
+  warningSoft: '#FEF3C7',
+  dangerSoft: '#FEE2E2',
+  infoSoft: '#DBEAFE',
 
-  primary:
-    COLORS.primary ||
-    '#4F46E5',
+  weekend: '#F8FAFC',
+  today: '#EEF2FF',
 
-  primaryHover:
-    COLORS.primaryHover ||
-    '#4338CA',
-
-  primaryLight:
-    COLORS.primaryLight ||
-    '#EEF2FF',
-
-
-  text:
-    COLORS.text ||
-    '#1E293B',
-
-  text2:
-    COLORS.text2 ||
-    '#64748B',
-
-  muted:
-    COLORS.muted ||
-    '#94A3B8',
-
-  border:
-    COLORS.border ||
-    '#E2E8F0',
-
-
-  success:
-    COLORS.success ||
-    '#16A34A',
-
-  warning:
-    COLORS.warning ||
-    '#F59E0B',
-
-  danger:
-    COLORS.danger ||
-    '#DC2626',
-
-  info:
-    COLORS.info ||
-    '#2563EB',
-
-
-  successSoft:
-    '#ECFDF5',
-
-  warningSoft:
-    '#FFF7ED',
-
-  dangerSoft:
-    '#FEF2F2',
-
-  infoSoft:
-    '#EFF6FF',
-
-  weekend:
-    '#F8FAFC',
-
-  today:
-    '#EEF2FF',
-
-  darkHeader:
-    '#172033'
+  darkHeader: '#172033'
 };
 
 
@@ -174,25 +88,17 @@ const TIMELINE_PROPERTY_KEY =
 
 
 /* ==========================================================================
- * NAVIGATION
+ * OPEN
  * ========================================================================== */
 
 function openTimeline_() {
-
   const spreadsheet =
     SpreadsheetApp.getActive();
 
-
   const sheet =
-    getOrCreateSheet_(
-      SHEETS.TIMELINE
-    );
+    getOrCreateSheet_(SHEETS.TIMELINE);
 
-
-  spreadsheet.setActiveSheet(
-    sheet
-  );
-
+  spreadsheet.setActiveSheet(sheet);
 
   renderTimeline_();
 }
@@ -203,143 +109,90 @@ function openTimeline_() {
  * ========================================================================== */
 
 function timelinePreviousPeriod_() {
-
   const current =
     getTimelineAnchorDate_();
-
 
   const previous =
     new Date(
       current.getFullYear(),
       current.getMonth(),
-      current.getDate() -
-      TIMELINE_LAYOUT.days
+      current.getDate() - TIMELINE_LAYOUT.days
     );
 
-
-  setTimelineAnchorDate_(
-    previous
-  );
-
+  setTimelineAnchorDate_(previous);
 
   openTimeline_();
 }
 
 
 function timelineNextPeriod_() {
-
   const current =
     getTimelineAnchorDate_();
-
 
   const next =
     new Date(
       current.getFullYear(),
       current.getMonth(),
-      current.getDate() +
-      TIMELINE_LAYOUT.days
+      current.getDate() + TIMELINE_LAYOUT.days
     );
 
-
-  setTimelineAnchorDate_(
-    next
-  );
-
+  setTimelineAnchorDate_(next);
 
   openTimeline_();
 }
 
 
 function timelineCurrentPeriod_() {
-
   const today =
-    stripTime_(
-      now_()
-    );
-
-
-  const monday =
-    getTimelineWeekStart_(
-      today
-    );
-
+    stripTime_(now_());
 
   setTimelineAnchorDate_(
-    monday
+    getTimelineWeekStart_(today)
   );
-
 
   openTimeline_();
 }
 
 
 /* ==========================================================================
- * ANCHOR DATE
+ * ANCHOR
  * ========================================================================== */
 
 function getTimelineAnchorDate_() {
-
   const properties =
-    PropertiesService
-      .getDocumentProperties();
-
+    PropertiesService.getDocumentProperties();
 
   const saved =
     properties.getProperty(
       TIMELINE_PROPERTY_KEY
     );
 
-
   if (saved) {
-
     const match =
       saved.match(
         /^(\d{4})-(\d{2})-(\d{2})$/
       );
 
-
     if (match) {
-
-      const date =
-        new Date(
-          Number(
-            match[1]
-          ),
-          Number(
-            match[2]
-          ) - 1,
-          Number(
-            match[3]
-          )
-        );
-
-
       return getTimelineWeekStart_(
-        date
+        new Date(
+          Number(match[1]),
+          Number(match[2]) - 1,
+          Number(match[3])
+        )
       );
-
     }
-
   }
 
-
   return getTimelineWeekStart_(
-    stripTime_(
-      now_()
-    )
+    stripTime_(now_())
   );
 }
 
 
-function setTimelineAnchorDate_(
-  date
-) {
-
+function setTimelineAnchorDate_(date) {
   const monday =
-    getTimelineWeekStart_(
-      date
-    );
-
+    getTimelineWeekStart_(date);
 
   const value =
     Utilities.formatDate(
@@ -347,7 +200,6 @@ function setTimelineAnchorDate_(
       Session.getScriptTimeZone(),
       'yyyy-MM-dd'
     );
-
 
   PropertiesService
     .getDocumentProperties()
@@ -359,55 +211,35 @@ function setTimelineAnchorDate_(
 
 
 /* ==========================================================================
- * MAIN RENDER
+ * RENDER
  * ========================================================================== */
 
 function renderTimeline_() {
-
   const sheet =
-    getOrCreateSheet_(
-      SHEETS.TIMELINE
-    );
-
+    getOrCreateSheet_(SHEETS.TIMELINE);
 
   const data =
     computeTimelineData_();
 
+  prepareTimelineCanvas_(sheet);
 
-  prepareTimelineCanvas_(
-    sheet
-  );
+  writeTimelineHeader_(sheet, data);
 
+  writeTimelineKpis_(sheet, data);
 
-  writeTimelineHeader_(
-    sheet,
-    data
-  );
+  writeTimelineLegend_(sheet);
 
+  writeTimelineHeaders_(sheet, data);
 
-  writeTimelineKpis_(
-    sheet,
-    data
-  );
-
-
-  writeTimelineHeaders_(
-    sheet,
-    data
-  );
-
-
-  writeTimelineRows_(
-    sheet,
-    data
-  );
-
+  const lastTaskRow =
+    writeTimelineRows_(
+      sheet,
+      data
+    );
 
   const insightStartRow =
-    TIMELINE_LAYOUT.firstTaskRow +
-    TIMELINE_LAYOUT.maxTasks +
+    lastTaskRow +
     TIMELINE_LAYOUT.insightsGap;
-
 
   const insightEndRow =
     writeTimelineInsights_(
@@ -416,12 +248,10 @@ function renderTimeline_() {
       insightStartRow
     );
 
-
   writeTimelineFooter_(
     sheet,
     insightEndRow + 2
   );
-
 
   SpreadsheetApp.flush();
 }
@@ -432,14 +262,11 @@ function renderTimeline_() {
  * ========================================================================== */
 
 function computeTimelineData_() {
-
   const tasks =
     getAllTasks_();
 
-
   const windowStart =
     getTimelineAnchorDate_();
-
 
   const windowEnd =
     new Date(
@@ -450,245 +277,104 @@ function computeTimelineData_() {
       1
     );
 
-
   const today =
-    stripTime_(
-      now_()
-    );
-
+    stripTime_(now_());
 
   const scheduled = [];
-
-
   const unscheduled = [];
-
-
   const atRisk = [];
 
+  tasks.forEach(function (task) {
+    const status =
+      String(task.Status || '');
 
-  tasks.forEach(
-    function (task) {
+    const dates =
+      getTimelineTaskDates_(task);
 
-      const status =
-        String(
-          task.Status || ''
-        );
-
-
-      const dates =
-        getTimelineTaskDates_(
-          task
-        );
-
-
-      /* ------------------------------------------------------------------
-       * UNSCHEDULED
-       * ---------------------------------------------------------------- */
-
-      if (
-        !dates.start &&
-        !dates.end
-      ) {
-
-        if (
-          status !==
-          'Completed'
-        ) {
-
-          unscheduled.push(
-            task
-          );
-
-        }
-
-
-        return;
+    if (!dates.start && !dates.end) {
+      if (status !== 'Completed') {
+        unscheduled.push(task);
       }
 
-
-      const start =
-        dates.start;
-
-
-      const end =
-        dates.end;
-
-
-      /* ------------------------------------------------------------------
-       * RISK
-       * ---------------------------------------------------------------- */
-
-      const risk =
-        String(
-          task.Risk || ''
-        );
-
-
-      const isOverdue =
-        (
-          status !==
-            'Completed' &&
-          end &&
-          end.getTime() <
-            today.getTime()
-        );
-
-
-      if (
-        status !==
-          'Completed' &&
-        (
-          risk ===
-            'Critical' ||
-          risk ===
-            'High' ||
-          isOverdue
-        )
-      ) {
-
-        atRisk.push(
-          task
-        );
-
-      }
-
-
-      /* ------------------------------------------------------------------
-       * OVERLAPS CURRENT WINDOW
-       * ---------------------------------------------------------------- */
-
-      const overlaps =
-        (
-          start.getTime() <=
-            windowEnd.getTime() &&
-          end.getTime() >=
-            windowStart.getTime()
-        );
-
-
-      if (
-        overlaps
-      ) {
-
-        scheduled.push(
-          task
-        );
-
-      }
-
+      return;
     }
-  );
 
+    const risk =
+      String(task.Risk || '');
 
-  /* ----------------------------------------------------------------------
-   * SORT TIMELINE
-   * -------------------------------------------------------------------- */
+    const overdue =
+      status !== 'Completed' &&
+      dates.end &&
+      dates.end.getTime() <
+      today.getTime();
 
-  scheduled.sort(
-    timelineTaskSort_
-  );
+    if (
+      status !== 'Completed' &&
+      (
+        risk === 'Critical' ||
+        risk === 'High' ||
+        overdue
+      )
+    ) {
+      atRisk.push(task);
+    }
 
+    const overlaps =
+      dates.start.getTime() <=
+      windowEnd.getTime() &&
+      dates.end.getTime() >=
+      windowStart.getTime();
 
-  unscheduled.sort(
-    timelineTaskSort_
-  );
+    if (overlaps) {
+      scheduled.push(task);
+    }
+  });
 
-
-  atRisk.sort(
-    timelineTaskSort_
-  );
-
-
-  /* ----------------------------------------------------------------------
-   * IN PROGRESS
-   * -------------------------------------------------------------------- */
+  scheduled.sort(timelineTaskSort_);
+  unscheduled.sort(timelineTaskSort_);
+  atRisk.sort(timelineTaskSort_);
 
   const inProgress =
-    tasks.filter(
-      function (task) {
-
-        return (
-          String(
-            task.Status || ''
-          ) ===
-          'In Progress'
-        );
-
-      }
-    );
-
-
-  /* ----------------------------------------------------------------------
-   * COMPLETED IN WINDOW
-   * -------------------------------------------------------------------- */
+    tasks.filter(function (task) {
+      return (
+        String(task.Status || '') ===
+        'In Progress'
+      );
+    });
 
   const completedInWindow =
-    tasks.filter(
-      function (task) {
-
-        return (
-          String(
-            task.Status || ''
-          ) ===
-            'Completed' &&
-          timelineDateInRange_(
-            task.CompletedDate,
-            windowStart,
-            windowEnd
-          )
-        );
-
-      }
-    );
-
-
-  /* ----------------------------------------------------------------------
-   * TOP FOCUS
-   * -------------------------------------------------------------------- */
+    tasks.filter(function (task) {
+      return (
+        String(task.Status || '') ===
+          'Completed' &&
+        timelineDateInRange_(
+          task.CompletedDate,
+          windowStart,
+          windowEnd
+        )
+      );
+    });
 
   const focusTask =
     scheduled
-      .filter(
-        function (task) {
-
-          return (
-            String(
-              task.Status || ''
-            ) !==
-            'Completed'
-          );
-
-        }
-      )
+      .filter(function (task) {
+        return (
+          String(task.Status || '') !==
+          'Completed'
+        );
+      })
       .slice()
-      .sort(
-        function (a, b) {
-
-          return (
-            (
-              Number(
-                b.SmartScore
-              ) || 0
-            ) -
-            (
-              Number(
-                a.SmartScore
-              ) || 0
-            )
-          );
-
-        }
-      )[0] ||
-    null;
-
+      .sort(function (a, b) {
+        return (
+          (Number(b.SmartScore) || 0) -
+          (Number(a.SmartScore) || 0)
+        );
+      })[0] || null;
 
   return {
+    tasks: tasks,
 
-    tasks:
-      tasks,
-
-    scheduled:
-      scheduled,
+    scheduled: scheduled,
 
     visibleTasks:
       scheduled.slice(
@@ -696,30 +382,19 @@ function computeTimelineData_() {
         TIMELINE_LAYOUT.maxTasks
       ),
 
-    unscheduled:
-      unscheduled,
-
-    atRisk:
-      atRisk,
-
-    inProgress:
-      inProgress,
+    unscheduled: unscheduled,
+    atRisk: atRisk,
+    inProgress: inProgress,
 
     completedInWindow:
       completedInWindow,
 
-    focusTask:
-      focusTask,
+    focusTask: focusTask,
 
-    today:
-      today,
+    today: today,
 
-    windowStart:
-      windowStart,
-
-    windowEnd:
-      windowEnd
-
+    windowStart: windowStart,
+    windowEnd: windowEnd
   };
 }
 
@@ -728,86 +403,38 @@ function computeTimelineData_() {
  * TASK DATES
  * ========================================================================== */
 
-function getTimelineTaskDates_(
-  task
-) {
-
+function getTimelineTaskDates_(task) {
   let start =
-    stripTime_(
-      task.StartDate
-    );
-
+    stripTime_(task.StartDate);
 
   let end =
-    stripTime_(
-      task.DueDate
-    );
+    stripTime_(task.DueDate);
 
-
-  /*
-   * Due date only:
-   * one-day task.
-   */
-  if (
-    !start &&
-    end
-  ) {
-
+  if (!start && end) {
     start =
-      new Date(
-        end.getTime()
-      );
-
+      new Date(end.getTime());
   }
 
-
-  /*
-   * Start date only:
-   * one-day task.
-   */
-  if (
-    start &&
-    !end
-  ) {
-
+  if (start && !end) {
     end =
-      new Date(
-        start.getTime()
-      );
-
+      new Date(start.getTime());
   }
 
-
-  /*
-   * Protect against invalid range.
-   */
   if (
     start &&
     end &&
     start.getTime() >
-      end.getTime()
+    end.getTime()
   ) {
+    const temp = start;
 
-    const temp =
-      start;
-
-    start =
-      end;
-
-    end =
-      temp;
-
+    start = end;
+    end = temp;
   }
 
-
   return {
-
-    start:
-      start,
-
-    end:
-      end
-
+    start: start,
+    end: end
   };
 }
 
@@ -816,54 +443,44 @@ function getTimelineTaskDates_(
  * CANVAS
  * ========================================================================== */
 
-function prepareTimelineCanvas_(
-  sheet
-) {
-
+function prepareTimelineCanvas_(sheet) {
   const totalColumns =
     TIMELINE_LAYOUT.infoCols +
     TIMELINE_LAYOUT.days;
 
-
-  const requiredRows =
-    55;
-
-
-  /* ----------------------------------------------------------------------
-   * ENSURE SIZE
-   * -------------------------------------------------------------------- */
+  const requiredRows = 60;
 
   if (
     sheet.getMaxRows() <
     requiredRows
   ) {
-
     sheet.insertRowsAfter(
       sheet.getMaxRows(),
       requiredRows -
       sheet.getMaxRows()
     );
-
   }
-
 
   if (
     sheet.getMaxColumns() <
     totalColumns
   ) {
-
     sheet.insertColumnsAfter(
       sheet.getMaxColumns(),
       totalColumns -
       sheet.getMaxColumns()
     );
-
   }
 
 
-  /* ----------------------------------------------------------------------
-   * CLEAN
-   * -------------------------------------------------------------------- */
+  /*
+   * IMPORTANT:
+   * Do not freeze columns because the premium
+   * layout uses merged ranges across H | I.
+   */
+  sheet.setFrozenColumns(0);
+  sheet.setFrozenRows(0);
+
 
   sheet
     .getRange(
@@ -881,9 +498,7 @@ function prepareTimelineCanvas_(
   sheet.clear();
 
 
-  sheet.setHiddenGridlines(
-    true
-  );
+  sheet.setHiddenGridlines(true);
 
 
   sheet.setFrozenRows(
@@ -891,30 +506,17 @@ function prepareTimelineCanvas_(
   );
 
 
-  sheet.setFrozenColumns(
-    TIMELINE_LAYOUT.infoCols
-  );
-
-
   try {
-
     sheet.setTabColor(
       TIMELINE_THEME.primary
     );
-
   } catch (error) {
-
     console.warn(
       'Timeline tab color skipped:',
       error.message
     );
-
   }
 
-
-  /* ----------------------------------------------------------------------
-   * GLOBAL BACKGROUND
-   * -------------------------------------------------------------------- */
 
   sheet
     .getRange(
@@ -929,76 +531,42 @@ function prepareTimelineCanvas_(
     .setFontColor(
       TIMELINE_THEME.text
     )
-    .setFontFamily(
-      'Arial'
-    )
+    .setFontFamily('Arial')
     .setVerticalAlignment(
       'middle'
     );
 
 
   /* ----------------------------------------------------------------------
-   * INFO COLUMN WIDTHS
+   * INFORMATION AREA
    * -------------------------------------------------------------------- */
 
-  sheet.setColumnWidth(
-    1,
-    95
-  );
+  sheet.setColumnWidth(1, 115);
+  sheet.setColumnWidth(2, 115);
+  sheet.setColumnWidth(3, 115);
 
-  sheet.setColumnWidth(
-    2,
-    95
-  );
+  sheet.setColumnWidth(4, 100);
+  sheet.setColumnWidth(5, 90);
 
-  sheet.setColumnWidth(
-    3,
-    95
-  );
-
-  sheet.setColumnWidth(
-    4,
-    92
-  );
-
-  sheet.setColumnWidth(
-    5,
-    82
-  );
-
-  sheet.setColumnWidth(
-    6,
-    76
-  );
-
-  sheet.setColumnWidth(
-    7,
-    76
-  );
-
-  sheet.setColumnWidth(
-    8,
-    72
-  );
+  sheet.setColumnWidth(6, 82);
+  sheet.setColumnWidth(7, 82);
+  sheet.setColumnWidth(8, 80);
 
 
   /* ----------------------------------------------------------------------
-   * DAY WIDTH
+   * DAY COLUMNS
    * -------------------------------------------------------------------- */
 
   for (
     let column =
       TIMELINE_LAYOUT.infoCols + 1;
-    column <=
-      totalColumns;
+    column <= totalColumns;
     column++
   ) {
-
     sheet.setColumnWidth(
       column,
-      34
+      42
     );
-
   }
 
 
@@ -1011,58 +579,54 @@ function prepareTimelineCanvas_(
     5
   );
 
-
   sheet.setRowHeight(
     TIMELINE_LAYOUT.titleRow,
-    45
+    48
   );
-
 
   sheet.setRowHeight(
     TIMELINE_LAYOUT.subtitleRow,
-    26
-  );
-
-
-  sheet.setRowHeight(
-    TIMELINE_LAYOUT.healthRow,
     28
   );
 
+  sheet.setRowHeight(
+    TIMELINE_LAYOUT.healthRow,
+    30
+  );
 
   sheet.setRowHeight(
     TIMELINE_LAYOUT.kpiStartRow,
     24
   );
 
-
   sheet.setRowHeight(
     TIMELINE_LAYOUT.kpiStartRow + 1,
-    34
+    36
   );
-
 
   sheet.setRowHeight(
     TIMELINE_LAYOUT.kpiEndRow,
     24
   );
 
+  sheet.setRowHeight(
+    TIMELINE_LAYOUT.legendRow,
+    29
+  );
 
   sheet.setRowHeight(
     TIMELINE_LAYOUT.weekHeaderRow,
-    27
+    29
   );
-
 
   sheet.setRowHeight(
     TIMELINE_LAYOUT.dateHeaderRow,
-    26
+    28
   );
-
 
   sheet.setRowHeight(
     TIMELINE_LAYOUT.weekdayHeaderRow,
-    24
+    25
   );
 }
 
@@ -1075,15 +639,10 @@ function writeTimelineHeader_(
   sheet,
   data
 ) {
-
   const totalColumns =
     TIMELINE_LAYOUT.infoCols +
     TIMELINE_LAYOUT.days;
 
-
-  /* ----------------------------------------------------------------------
-   * ACCENT
-   * -------------------------------------------------------------------- */
 
   sheet
     .getRange(
@@ -1097,10 +656,6 @@ function writeTimelineHeader_(
     );
 
 
-  /* ----------------------------------------------------------------------
-   * TITLE
-   * -------------------------------------------------------------------- */
-
   sheet
     .getRange(
       TIMELINE_LAYOUT.titleRow,
@@ -1112,20 +667,12 @@ function writeTimelineHeader_(
     .setValue(
       'Timeline'
     )
-    .setFontSize(
-      27
-    )
-    .setFontWeight(
-      'bold'
-    )
+    .setFontSize(28)
+    .setFontWeight('bold')
     .setFontColor(
       TIMELINE_THEME.text
     );
 
-
-  /* ----------------------------------------------------------------------
-   * PERIOD
-   * -------------------------------------------------------------------- */
 
   const period =
     Utilities.formatDate(
@@ -1152,12 +699,8 @@ function writeTimelineHeader_(
     .setValue(
       period.toUpperCase()
     )
-    .setFontSize(
-      13
-    )
-    .setFontWeight(
-      'bold'
-    )
+    .setFontSize(13)
+    .setFontWeight('bold')
     .setFontColor(
       TIMELINE_THEME.primary
     )
@@ -1166,24 +709,18 @@ function writeTimelineHeader_(
     );
 
 
-  /* ----------------------------------------------------------------------
-   * SUBTITLE
-   * -------------------------------------------------------------------- */
-
   sheet
     .getRange(
       TIMELINE_LAYOUT.subtitleRow,
       1,
       1,
-      22
+      21
     )
     .merge()
     .setValue(
-      'See when work starts, when it is due and how much progress you are making.'
+      'Plan visually • Filled bar = progress • Soft bar = remaining duration'
     )
-    .setFontSize(
-      10
-    )
+    .setFontSize(10)
     .setFontColor(
       TIMELINE_THEME.text2
     );
@@ -1192,20 +729,16 @@ function writeTimelineHeader_(
   sheet
     .getRange(
       TIMELINE_LAYOUT.subtitleRow,
-      23,
+      22,
       1,
-      totalColumns - 22
+      totalColumns - 21
     )
     .merge()
     .setValue(
-      '← Previous 4 Weeks   •   Current   •   Next 4 Weeks →'
+      '← Previous   •   Current   •   Next →'
     )
-    .setFontSize(
-      9
-    )
-    .setFontWeight(
-      'bold'
-    )
+    .setFontSize(9)
+    .setFontWeight('bold')
     .setFontColor(
       TIMELINE_THEME.muted
     )
@@ -1218,80 +751,56 @@ function writeTimelineHeader_(
    * PLANNING HEALTH
    * -------------------------------------------------------------------- */
 
-  const riskCount =
-    data.atRisk.length;
+  let tone =
+    getTimelineTone_('success');
 
 
-  const unscheduledCount =
-    data.unscheduled.length;
-
-
-  let healthTone =
-    getTimelineTone_(
-      'success'
-    );
-
-
-  let healthText =
+  let text =
     'PLANNING HEALTH  •  Your active plan looks healthy';
 
 
   if (
-    riskCount > 0
+    data.atRisk.length > 0
   ) {
+    tone =
+      getTimelineTone_('danger');
 
-    healthTone =
-      getTimelineTone_(
-        'danger'
-      );
-
-
-    healthText =
+    text =
       'PLANNING HEALTH  •  ' +
-      riskCount +
+      data.atRisk.length +
       ' task' +
       (
-        riskCount === 1
+        data.atRisk.length === 1
           ? ''
           : 's'
       ) +
       ' need attention';
-
   } else if (
-    unscheduledCount > 0
+    data.unscheduled.length > 0
   ) {
+    tone =
+      getTimelineTone_('warning');
 
-    healthTone =
-      getTimelineTone_(
-        'warning'
-      );
-
-
-    healthText =
+    text =
       'PLANNING HEALTH  •  ' +
-      unscheduledCount +
-      ' open task' +
+      data.unscheduled.length +
+      ' task' +
       (
-        unscheduledCount === 1
+        data.unscheduled.length === 1
           ? ''
           : 's'
       ) +
       ' still need scheduling';
-
   }
 
 
-  if (
-    data.focusTask
-  ) {
-
-    healthText +=
+  if (data.focusTask) {
+    text +=
       '  •  TOP FOCUS: ' +
       (
         data.focusTask.TaskName ||
         'Untitled task'
       );
-
   }
 
 
@@ -1303,21 +812,11 @@ function writeTimelineHeader_(
       totalColumns
     )
     .merge()
-    .setValue(
-      healthText
-    )
-    .setBackground(
-      healthTone.soft
-    )
-    .setFontColor(
-      healthTone.text
-    )
-    .setFontSize(
-      9
-    )
-    .setFontWeight(
-      'bold'
-    )
+    .setValue(text)
+    .setBackground(tone.soft)
+    .setFontColor(tone.text)
+    .setFontSize(9)
+    .setFontWeight('bold')
     .setBorder(
       true,
       true,
@@ -1341,81 +840,51 @@ function writeTimelineKpis_(
   sheet,
   data
 ) {
-
   const totalColumns =
     TIMELINE_LAYOUT.infoCols +
     TIMELINE_LAYOUT.days;
 
 
   const cards = [
-
     {
-      label:
-        'SCHEDULED',
-
-      value:
-        data.scheduled.length,
-
-      sub:
-        'Tasks in this 4-week view',
-
-      tone:
-        'primary'
+      label: 'SCHEDULED',
+      value: data.scheduled.length,
+      sub: 'Tasks in this 4-week view',
+      tone: 'primary'
     },
 
-
     {
-      label:
-        'IN PROGRESS',
-
-      value:
-        data.inProgress.length,
-
-      sub:
-        'Currently active',
-
+      label: 'IN PROGRESS',
+      value: data.inProgress.length,
+      sub: 'Currently active',
       tone:
         data.inProgress.length > 3
           ? 'warning'
           : 'primary'
     },
 
-
     {
-      label:
-        'AT RISK',
-
-      value:
-        data.atRisk.length,
-
+      label: 'AT RISK',
+      value: data.atRisk.length,
       sub:
         data.atRisk.length > 0
           ? 'Needs attention'
           : 'No current risks',
-
       tone:
         data.atRisk.length > 0
           ? 'danger'
           : 'success'
     },
 
-
     {
-      label:
-        'UNSCHEDULED',
-
-      value:
-        data.unscheduled.length,
-
-      sub:
-        'Open tasks without dates',
-
+      label: 'UNSCHEDULED',
+      value: data.unscheduled.length,
+      sub: 'Open tasks without dates',
       tone:
         data.unscheduled.length > 0
           ? 'warning'
           : 'success'
     }
-
   ];
 
 
@@ -1432,28 +901,19 @@ function writeTimelineKpis_(
       card,
       index
     ) {
-
       const block =
-        blocks[
-          index
-        ];
-
+        blocks[index];
 
       const width =
         block.end -
         block.start +
         1;
 
-
       const tone =
         getTimelineTone_(
           card.tone
         );
 
-
-      /* ------------------------------------------------------------------
-       * CARD BODY
-       * ---------------------------------------------------------------- */
 
       sheet
         .getRange(
@@ -1479,10 +939,6 @@ function writeTimelineKpis_(
         );
 
 
-      /* ------------------------------------------------------------------
-       * LABEL
-       * ---------------------------------------------------------------- */
-
       sheet
         .getRange(
           TIMELINE_LAYOUT.kpiStartRow,
@@ -1491,26 +947,12 @@ function writeTimelineKpis_(
           width
         )
         .merge()
-        .setValue(
-          card.label
-        )
-        .setBackground(
-          tone.soft
-        )
-        .setFontColor(
-          tone.text
-        )
-        .setFontSize(
-          8
-        )
-        .setFontWeight(
-          'bold'
-        );
+        .setValue(card.label)
+        .setBackground(tone.soft)
+        .setFontColor(tone.text)
+        .setFontSize(8)
+        .setFontWeight('bold');
 
-
-      /* ------------------------------------------------------------------
-       * VALUE
-       * ---------------------------------------------------------------- */
 
       sheet
         .getRange(
@@ -1520,23 +962,11 @@ function writeTimelineKpis_(
           width
         )
         .merge()
-        .setValue(
-          card.value
-        )
-        .setFontSize(
-          21
-        )
-        .setFontWeight(
-          'bold'
-        )
-        .setFontColor(
-          tone.text
-        );
+        .setValue(card.value)
+        .setFontSize(22)
+        .setFontWeight('bold')
+        .setFontColor(tone.text);
 
-
-      /* ------------------------------------------------------------------
-       * SUBTEXT
-       * ---------------------------------------------------------------- */
 
       sheet
         .getRange(
@@ -1546,40 +976,27 @@ function writeTimelineKpis_(
           width
         )
         .merge()
-        .setValue(
-          card.sub
-        )
-        .setFontSize(
-          8
-        )
+        .setValue(card.sub)
+        .setFontSize(8)
         .setFontColor(
           TIMELINE_THEME.text2
         );
-
     }
   );
 }
 
-
-/* ==========================================================================
- * KPI BLOCKS
- * ========================================================================== */
 
 function buildTimelineMetricBlocks_(
   totalColumns,
   count,
   gap
 ) {
-
   const usable =
     totalColumns -
     (
-      (
-        count - 1
-      ) *
+      (count - 1) *
       gap
     );
-
 
   const base =
     Math.floor(
@@ -1587,15 +1004,11 @@ function buildTimelineMetricBlocks_(
       count
     );
 
-
   let remaining =
     usable %
     count;
 
-
-  let current =
-    1;
-
+  let current = 1;
 
   const result = [];
 
@@ -1605,7 +1018,6 @@ function buildTimelineMetricBlocks_(
     index < count;
     index++
   ) {
-
     const width =
       base +
       (
@@ -1614,33 +1026,22 @@ function buildTimelineMetricBlocks_(
           : 0
       );
 
-
-    if (
-      remaining > 0
-    ) {
-
+    if (remaining > 0) {
       remaining--;
-
     }
 
-
     result.push({
-
-      start:
-        current,
+      start: current,
 
       end:
         current +
         width -
         1
-
     });
-
 
     current +=
       width +
       gap;
-
   }
 
 
@@ -1649,24 +1050,134 @@ function buildTimelineMetricBlocks_(
 
 
 /* ==========================================================================
- * TIMELINE HEADERS
+ * LEGEND
+ * ========================================================================== */
+
+function writeTimelineLegend_(sheet) {
+  writeTimelineLegendBlock_(
+    sheet,
+    1,
+    8,
+    'HOW TO READ  •  solid = progress',
+    '#172033',
+    '#FFFFFF'
+  );
+
+
+  writeTimelineLegendBlock_(
+    sheet,
+    9,
+    5,
+    'TODAY',
+    TIMELINE_THEME.primaryLight,
+    TIMELINE_THEME.primary
+  );
+
+
+  writeTimelineLegendBlock_(
+    sheet,
+    14,
+    5,
+    'IN PROGRESS',
+    '#E0E7FF',
+    TIMELINE_THEME.primary
+  );
+
+
+  writeTimelineLegendBlock_(
+    sheet,
+    19,
+    5,
+    'TO DO',
+    TIMELINE_THEME.infoSoft,
+    TIMELINE_THEME.info
+  );
+
+
+  writeTimelineLegendBlock_(
+    sheet,
+    24,
+    5,
+    'WAITING',
+    TIMELINE_THEME.warningSoft,
+    '#B45309'
+  );
+
+
+  writeTimelineLegendBlock_(
+    sheet,
+    29,
+    5,
+    'OVERDUE',
+    TIMELINE_THEME.dangerSoft,
+    TIMELINE_THEME.danger
+  );
+
+
+  writeTimelineLegendBlock_(
+    sheet,
+    34,
+    3,
+    'DONE ✓',
+    TIMELINE_THEME.successSoft,
+    TIMELINE_THEME.success
+  );
+}
+
+
+function writeTimelineLegendBlock_(
+  sheet,
+  column,
+  width,
+  text,
+  background,
+  color
+) {
+  sheet
+    .getRange(
+      TIMELINE_LAYOUT.legendRow,
+      column,
+      1,
+      width
+    )
+    .merge()
+    .setValue(text)
+    .setBackground(background)
+    .setFontColor(color)
+    .setFontSize(8)
+    .setFontWeight('bold')
+    .setHorizontalAlignment(
+      'center'
+    )
+    .setBorder(
+      true,
+      true,
+      true,
+      true,
+      false,
+      false,
+      TIMELINE_THEME.border,
+      SpreadsheetApp
+        .BorderStyle
+        .SOLID
+    );
+}
+
+
+/* ==========================================================================
+ * HEADERS
  * ========================================================================== */
 
 function writeTimelineHeaders_(
   sheet,
   data
 ) {
-
-  writeTimelineInfoHeaders_(
-    sheet
-  );
-
+  writeTimelineInfoHeaders_(sheet);
 
   writeTimelineWeekHeaders_(
     sheet,
     data
   );
-
 
   writeTimelineDayHeaders_(
     sheet,
@@ -1675,93 +1186,48 @@ function writeTimelineHeaders_(
 }
 
 
-/* ==========================================================================
- * INFO HEADERS
- * ========================================================================== */
-
-function writeTimelineInfoHeaders_(
-  sheet
-) {
-
+function writeTimelineInfoHeaders_(sheet) {
   const headers = [
-
     {
-      start:
-        1,
-
-      width:
-        3,
-
-      text:
-        'TASK'
+      start: 1,
+      width: 3,
+      text: 'TASK'
     },
 
-
     {
-      start:
-        4,
-
-      width:
-        1,
-
-      text:
-        'STATUS'
+      start: 4,
+      width: 1,
+      text: 'STATUS'
     },
 
-
     {
-      start:
-        5,
-
-      width:
-        1,
-
-      text:
-        'PRIORITY'
+      start: 5,
+      width: 1,
+      text: 'PRIORITY'
     },
 
-
     {
-      start:
-        6,
-
-      width:
-        1,
-
-      text:
-        'START'
+      start: 6,
+      width: 1,
+      text: 'START'
     },
 
-
     {
-      start:
-        7,
-
-      width:
-        1,
-
-      text:
-        'DUE'
+      start: 7,
+      width: 1,
+      text: 'DUE'
     },
 
-
     {
-      start:
-        8,
-
-      width:
-        1,
-
-      text:
-        'PROGRESS'
+      start: 8,
+      width: 1,
+      text: 'PROGRESS'
     }
-
   ];
 
 
   headers.forEach(
     function (header) {
-
       sheet
         .getRange(
           TIMELINE_LAYOUT.weekHeaderRow,
@@ -1770,21 +1236,13 @@ function writeTimelineInfoHeaders_(
           header.width
         )
         .merge()
-        .setValue(
-          header.text
-        )
+        .setValue(header.text)
         .setBackground(
           TIMELINE_THEME.darkHeader
         )
-        .setFontColor(
-          '#F8FAFC'
-        )
-        .setFontSize(
-          8
-        )
-        .setFontWeight(
-          'bold'
-        )
+        .setFontColor('#F8FAFC')
+        .setFontSize(8)
+        .setFontWeight('bold')
         .setHorizontalAlignment(
           'center'
         )
@@ -1800,22 +1258,16 @@ function writeTimelineInfoHeaders_(
             .BorderStyle
             .SOLID
         );
-
     }
   );
 }
 
 
-/* ==========================================================================
- * WEEK HEADERS
- * ========================================================================== */
-
 function writeTimelineWeekHeaders_(
   sheet,
   data
 ) {
-
-  const timelineStartColumn =
+  const startColumn =
     TIMELINE_LAYOUT.infoCols +
     1;
 
@@ -1825,16 +1277,12 @@ function writeTimelineWeekHeaders_(
     week < 4;
     week++
   ) {
-
     const weekStart =
       new Date(
         data.windowStart.getFullYear(),
         data.windowStart.getMonth(),
         data.windowStart.getDate() +
-        (
-          week *
-          7
-        )
+        week * 7
       );
 
 
@@ -1842,8 +1290,7 @@ function writeTimelineWeekHeaders_(
       new Date(
         weekStart.getFullYear(),
         weekStart.getMonth(),
-        weekStart.getDate() +
-        6
+        weekStart.getDate() + 6
       );
 
 
@@ -1864,11 +1311,8 @@ function writeTimelineWeekHeaders_(
     sheet
       .getRange(
         TIMELINE_LAYOUT.weekHeaderRow,
-        timelineStartColumn +
-        (
-          week *
-          7
-        ),
+        startColumn +
+        week * 7,
         1,
         7
       )
@@ -1876,8 +1320,7 @@ function writeTimelineWeekHeaders_(
       .setValue(
         'WEEK ' +
         (
-          week +
-          1
+          week + 1
         ) +
         '  •  ' +
         label
@@ -1892,12 +1335,8 @@ function writeTimelineWeekHeaders_(
           ? TIMELINE_THEME.primary
           : TIMELINE_THEME.text2
       )
-      .setFontSize(
-        8
-      )
-      .setFontWeight(
-        'bold'
-      )
+      .setFontSize(8)
+      .setFontWeight('bold')
       .setHorizontalAlignment(
         'center'
       )
@@ -1913,20 +1352,14 @@ function writeTimelineWeekHeaders_(
           .BorderStyle
           .SOLID
       );
-
   }
 }
 
-
-/* ==========================================================================
- * DAY HEADERS
- * ========================================================================== */
 
 function writeTimelineDayHeaders_(
   sheet,
   data
 ) {
-
   const startColumn =
     TIMELINE_LAYOUT.infoCols +
     1;
@@ -1934,10 +1367,10 @@ function writeTimelineDayHeaders_(
 
   for (
     let index = 0;
-    index < TIMELINE_LAYOUT.days;
+    index <
+      TIMELINE_LAYOUT.days;
     index++
   ) {
-
     const date =
       new Date(
         data.windowStart.getFullYear(),
@@ -1960,48 +1393,30 @@ function writeTimelineDayHeaders_(
 
 
     const isWeekend =
-      (
-        date.getDay() ===
-          0 ||
-        date.getDay() ===
-          6
-      );
+      date.getDay() === 0 ||
+      date.getDay() === 6;
 
 
     let background =
       TIMELINE_THEME.surface;
 
-
-    let fontColor =
+    let color =
       TIMELINE_THEME.text2;
 
 
-    if (
-      isWeekend
-    ) {
-
+    if (isWeekend) {
       background =
         TIMELINE_THEME.weekend;
-
     }
 
 
-    if (
-      isToday
-    ) {
-
+    if (isToday) {
       background =
         TIMELINE_THEME.primary;
 
-      fontColor =
-        '#FFFFFF';
-
+      color = '#FFFFFF';
     }
 
-
-    /* ------------------------------------------------------------------
-     * DATE
-     * ---------------------------------------------------------------- */
 
     sheet
       .getRange(
@@ -2011,26 +1426,14 @@ function writeTimelineDayHeaders_(
       .setValue(
         date.getDate()
       )
-      .setBackground(
-        background
-      )
-      .setFontColor(
-        fontColor
-      )
-      .setFontSize(
-        9
-      )
-      .setFontWeight(
-        'bold'
-      )
+      .setBackground(background)
+      .setFontColor(color)
+      .setFontSize(9)
+      .setFontWeight('bold')
       .setHorizontalAlignment(
         'center'
       );
 
-
-    /* ------------------------------------------------------------------
-     * WEEKDAY
-     * ---------------------------------------------------------------- */
 
     sheet
       .getRange(
@@ -2038,29 +1441,26 @@ function writeTimelineDayHeaders_(
         column
       )
       .setValue(
-        Utilities.formatDate(
-          date,
-          Session.getScriptTimeZone(),
-          'EEE'
-        )
-          .substring(
-            0,
-            1
-          )
-          .toUpperCase()
+        isToday
+          ? 'TODAY'
+          : Utilities.formatDate(
+              date,
+              Session.getScriptTimeZone(),
+              'EEE'
+            )
       )
       .setBackground(
-        background
+        isToday
+          ? TIMELINE_THEME.primaryHover
+          : background
       )
-      .setFontColor(
-        fontColor
-      )
+      .setFontColor(color)
       .setFontSize(
-        8
+        isToday
+          ? 6
+          : 7
       )
-      .setFontWeight(
-        'bold'
-      )
+      .setFontWeight('bold')
       .setHorizontalAlignment(
         'center'
       );
@@ -2091,7 +1491,6 @@ function writeTimelineDayHeaders_(
               .BorderStyle
               .SOLID
       );
-
   }
 }
 
@@ -2104,94 +1503,86 @@ function writeTimelineRows_(
   sheet,
   data
 ) {
-
-  const visibleTasks =
+  const tasks =
     data.visibleTasks;
 
 
-  if (
-    visibleTasks.length ===
-    0
-  ) {
-
-    writeTimelineEmptyState_(
+  if (tasks.length === 0) {
+    return writeTimelineEmptyState_(
       sheet,
       data
     );
-
-
-    return;
   }
 
 
-  visibleTasks.forEach(
+  tasks.forEach(
     function (
       task,
       index
     ) {
-
-      const row =
-        TIMELINE_LAYOUT.firstTaskRow +
-        index;
-
-
       writeTimelineTaskRow_(
         sheet,
         task,
-        row,
+        TIMELINE_LAYOUT.firstTaskRow +
+        index,
         index,
         data
       );
-
     }
   );
 
 
-  /* ----------------------------------------------------------------------
-   * REMAINING ROWS
-   * -------------------------------------------------------------------- */
+  const fillerCount =
+    Math.max(
+      0,
+      TIMELINE_LAYOUT.minTaskRows -
+      tasks.length
+    );
+
 
   for (
-    let index =
-      visibleTasks.length;
-    index <
-      TIMELINE_LAYOUT.maxTasks;
+    let index = 0;
+    index < fillerCount;
     index++
   ) {
-
     const row =
       TIMELINE_LAYOUT.firstTaskRow +
+      tasks.length +
       index;
 
 
     writeTimelineBlankRow_(
       sheet,
       row,
+      tasks.length +
       index,
       data
     );
-
   }
 
 
-  /* ----------------------------------------------------------------------
-   * MORE TASKS
-   * -------------------------------------------------------------------- */
+  let lastRow =
+    TIMELINE_LAYOUT.firstTaskRow +
+    tasks.length +
+    fillerCount -
+    1;
+
 
   if (
     data.scheduled.length >
-    visibleTasks.length
+    tasks.length
   ) {
-
     const count =
       data.scheduled.length -
-      visibleTasks.length;
+      tasks.length;
+
+
+    lastRow++;
 
 
     sheet
       .getRange(
-        TIMELINE_LAYOUT.firstTaskRow +
-        TIMELINE_LAYOUT.maxTasks,
+        lastRow,
         1,
         1,
         TIMELINE_LAYOUT.infoCols +
@@ -2201,13 +1592,13 @@ function writeTimelineRows_(
       .setValue(
         '+' +
         count +
-        ' additional scheduled task' +
+        ' additional task' +
         (
           count === 1
             ? ''
             : 's'
         ) +
-        ' not shown  •  Highest-priority tasks are displayed first'
+        ' not shown'
       )
       .setBackground(
         TIMELINE_THEME.primaryLight
@@ -2215,22 +1606,25 @@ function writeTimelineRows_(
       .setFontColor(
         TIMELINE_THEME.primary
       )
-      .setFontSize(
-        8
-      )
-      .setFontWeight(
-        'bold'
-      )
+      .setFontSize(8)
+      .setFontWeight('bold')
       .setHorizontalAlignment(
         'center'
       );
 
+    sheet.setRowHeight(
+      lastRow,
+      27
+    );
   }
+
+
+  return lastRow;
 }
 
 
 /* ==========================================================================
- * SINGLE TASK ROW
+ * TASK ROW
  * ========================================================================== */
 
 function writeTimelineTaskRow_(
@@ -2240,18 +1634,14 @@ function writeTimelineTaskRow_(
   index,
   data
 ) {
-
-  const baseBackground =
+  const background =
     index % 2 === 0
       ? TIMELINE_THEME.surface
       : TIMELINE_THEME.surfaceAlt;
 
 
   const taskId =
-    String(
-      task.TaskId ||
-      ''
-    );
+    String(task.TaskId || '');
 
 
   const note =
@@ -2260,21 +1650,33 @@ function writeTimelineTaskRow_(
 
 
   const dates =
-    getTimelineTaskDates_(
-      task
-    );
+    getTimelineTaskDates_(task);
 
 
+  const isCompleted =
+    String(task.Status || '') ===
+    'Completed';
+
+
+  /*
+   * A Completed task must visually appear as 100%.
+   *
+   * This fixes old/test rows where:
+   * Status = Completed
+   * Progress = 10
+   */
   const progress =
-    Math.max(
-      0,
-      Math.min(
-        100,
-        Number(
-          task.Progress
-        ) || 0
-      )
-    );
+    isCompleted
+      ? 100
+      : Math.max(
+          0,
+          Math.min(
+            100,
+            Number(
+              task.Progress
+            ) || 0
+          )
+        );
 
 
   const statusTone =
@@ -2295,10 +1697,6 @@ function writeTimelineTaskRow_(
     );
 
 
-  /* ----------------------------------------------------------------------
-   * BASE ROW
-   * -------------------------------------------------------------------- */
-
   sheet
     .getRange(
       row,
@@ -2307,9 +1705,7 @@ function writeTimelineTaskRow_(
       TIMELINE_LAYOUT.infoCols +
       TIMELINE_LAYOUT.days
     )
-    .setBackground(
-      baseBackground
-    )
+    .setBackground(background)
     .setBorder(
       false,
       true,
@@ -2324,9 +1720,7 @@ function writeTimelineTaskRow_(
     );
 
 
-  /* ----------------------------------------------------------------------
-   * TASK NAME
-   * -------------------------------------------------------------------- */
+  /* TASK */
 
   sheet
     .getRange(
@@ -2337,39 +1731,33 @@ function writeTimelineTaskRow_(
     )
     .merge()
     .setValue(
-      task.TaskName ||
-      'Untitled task'
+      isCompleted
+        ? (
+            '✓  ' +
+            (
+              task.TaskName ||
+              'Untitled task'
+            )
+          )
+        : (
+            task.TaskName ||
+            'Untitled task'
+          )
     )
-    .setFontSize(
-      9
-    )
-    .setFontWeight(
-      'bold'
-    )
+    .setFontSize(9)
+    .setFontWeight('bold')
     .setFontColor(
-      String(
-        task.Status || ''
-      ) === 'Completed'
-        ? TIMELINE_THEME.muted
+      isCompleted
+        ? TIMELINE_THEME.success
         : TIMELINE_THEME.text
     )
-    .setWrap(
-      false
-    )
-    .setNote(
-      note
-    );
+    .setNote(note);
 
 
-  /* ----------------------------------------------------------------------
-   * STATUS
-   * -------------------------------------------------------------------- */
+  /* STATUS */
 
   sheet
-    .getRange(
-      row,
-      4
-    )
+    .getRange(row, 4)
     .setValue(
       task.Status ||
       'Inbox'
@@ -2380,26 +1768,18 @@ function writeTimelineTaskRow_(
     .setFontColor(
       statusTone.text
     )
-    .setFontSize(
-      8
-    )
-    .setFontWeight(
-      'bold'
-    )
+    .setFontSize(8)
+    .setFontWeight('bold')
     .setHorizontalAlignment(
       'center'
-    );
+    )
+    .setNote(note);
 
 
-  /* ----------------------------------------------------------------------
-   * PRIORITY
-   * -------------------------------------------------------------------- */
+  /* PRIORITY */
 
   sheet
-    .getRange(
-      row,
-      5
-    )
+    .getRange(row, 5)
     .setValue(
       task.Priority ||
       'Medium'
@@ -2410,26 +1790,18 @@ function writeTimelineTaskRow_(
     .setFontColor(
       priorityTone.text
     )
-    .setFontSize(
-      8
-    )
-    .setFontWeight(
-      'bold'
-    )
+    .setFontSize(8)
+    .setFontWeight('bold')
     .setHorizontalAlignment(
       'center'
-    );
+    )
+    .setNote(note);
 
 
-  /* ----------------------------------------------------------------------
-   * START / DUE
-   * -------------------------------------------------------------------- */
+  /* START */
 
   sheet
-    .getRange(
-      row,
-      6
-    )
+    .getRange(row, 6)
     .setValue(
       timelineShortDate_(
         dates.start
@@ -2438,60 +1810,52 @@ function writeTimelineTaskRow_(
     .setFontColor(
       TIMELINE_THEME.text2
     )
-    .setFontSize(
-      8
-    )
+    .setFontSize(8)
     .setHorizontalAlignment(
       'center'
+    )
+    .setNote(note);
+
+
+  /* DUE */
+
+  const overdue =
+    isTimelineTaskOverdue_(
+      task,
+      data.today
     );
 
 
   sheet
-    .getRange(
-      row,
-      7
-    )
+    .getRange(row, 7)
     .setValue(
       timelineShortDate_(
         dates.end
       )
     )
     .setFontColor(
-      isTimelineTaskOverdue_(
-        task,
-        data.today
-      )
+      overdue
         ? TIMELINE_THEME.danger
         : TIMELINE_THEME.text2
     )
     .setFontWeight(
-      isTimelineTaskOverdue_(
-        task,
-        data.today
-      )
+      overdue
         ? 'bold'
         : 'normal'
     )
-    .setFontSize(
-      8
-    )
+    .setFontSize(8)
     .setHorizontalAlignment(
       'center'
-    );
+    )
+    .setNote(note);
 
 
-  /* ----------------------------------------------------------------------
-   * PROGRESS
-   * -------------------------------------------------------------------- */
+  /* PROGRESS */
 
   sheet
-    .getRange(
-      row,
-      8
-    )
+    .getRange(row, 8)
     .setValue(
-      progress +
-      '%'
+      progress + '%'
     )
     .setBackground(
       progressTone.soft
@@ -2499,20 +1863,33 @@ function writeTimelineTaskRow_(
     .setFontColor(
       progressTone.text
     )
-    .setFontSize(
-      8
-    )
-    .setFontWeight(
-      'bold'
-    )
+    .setFontSize(8)
+    .setFontWeight('bold')
     .setHorizontalAlignment(
       'center'
+    )
+    .setNote(note);
+
+
+  /*
+   * Strong vertical divider between task
+   * information and timeline.
+   */
+  sheet
+    .getRange(row, 8)
+    .setBorder(
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      TIMELINE_THEME.divider,
+      SpreadsheetApp
+        .BorderStyle
+        .SOLID_MEDIUM
     );
 
-
-  /* ----------------------------------------------------------------------
-   * GANTT
-   * -------------------------------------------------------------------- */
 
   writeTimelineBar_(
     sheet,
@@ -2520,13 +1897,14 @@ function writeTimelineTaskRow_(
     row,
     data,
     dates,
-    progress
+    progress,
+    note
   );
 
 
   sheet.setRowHeight(
     row,
-    33
+    36
   );
 }
 
@@ -2541,33 +1919,37 @@ function writeTimelineBar_(
   row,
   data,
   dates,
-  progress
+  progress,
+  note
 ) {
+  if (
+    !dates.start ||
+    !dates.end
+  ) {
+    return;
+  }
 
-  const startColumn =
+
+  const firstDayColumn =
     TIMELINE_LAYOUT.infoCols +
     1;
 
 
   const backgrounds = [];
 
+  const values = [];
 
   const fontColors = [];
 
+  const fontWeights = [];
 
-  const values = [];
-
-
-  /* ----------------------------------------------------------------------
-   * BASE BACKGROUND
-   * -------------------------------------------------------------------- */
 
   for (
     let index = 0;
-    index < TIMELINE_LAYOUT.days;
+    index <
+      TIMELINE_LAYOUT.days;
     index++
   ) {
-
     const date =
       new Date(
         data.windowStart.getFullYear(),
@@ -2577,6 +1959,11 @@ function writeTimelineBar_(
       );
 
 
+    const isWeekend =
+      date.getDay() === 0 ||
+      date.getDay() === 6;
+
+
     const isToday =
       timelineSameDay_(
         date,
@@ -2584,68 +1971,35 @@ function writeTimelineBar_(
       );
 
 
-    const isWeekend =
-      (
-        date.getDay() === 0 ||
-        date.getDay() === 6
-      );
-
-
-    let background =
-      TIMELINE_THEME.surface;
-
-
-    if (
-      isWeekend
-    ) {
-
-      background =
-        TIMELINE_THEME.weekend;
-
-    }
-
-
-    if (
-      isToday
-    ) {
-
-      background =
-        TIMELINE_THEME.today;
-
-    }
-
-
     backgrounds.push(
-      background
+      isToday
+        ? TIMELINE_THEME.today
+        : (
+            isWeekend
+              ? TIMELINE_THEME.weekend
+              : TIMELINE_THEME.surface
+          )
     );
 
 
+    values.push('');
     fontColors.push(
-      TIMELINE_THEME.muted
+      TIMELINE_THEME.text2
     );
-
-
-    values.push(
-      ''
-    );
-
+    fontWeights.push('normal');
   }
 
 
-  /* ----------------------------------------------------------------------
-   * CLIP TASK RANGE TO WINDOW
-   * -------------------------------------------------------------------- */
-
   const clippedStart =
     dates.start.getTime() <
-      data.windowStart.getTime()
+    data.windowStart.getTime()
       ? data.windowStart
       : dates.start;
 
 
   const clippedEnd =
     dates.end.getTime() >
-      data.windowEnd.getTime()
+    data.windowEnd.getTime()
       ? data.windowEnd
       : dates.end;
 
@@ -2673,17 +2027,29 @@ function writeTimelineBar_(
     );
 
 
+  const isCompleted =
+    String(task.Status || '') ===
+    'Completed';
+
+
   const completedCells =
-    progress > 0
-      ? Math.max(
-          1,
-          Math.round(
-            duration *
-            progress /
-            100
-          )
-        )
-      : 0;
+    isCompleted
+      ? duration
+      : (
+          progress > 0
+            ? Math.min(
+                duration,
+                Math.max(
+                  1,
+                  Math.round(
+                    duration *
+                    progress /
+                    100
+                  )
+                )
+              )
+            : 0
+        );
 
 
   const tone =
@@ -2700,46 +2066,48 @@ function writeTimelineBar_(
       endIndex;
     index++
   ) {
-
     const relative =
       index -
       startIndex;
 
 
-    backgrounds[
-      index
-    ] =
+    const completed =
       relative <
-        completedCells
+      completedCells;
+
+
+    backgrounds[index] =
+      completed
         ? tone.fill
         : tone.soft;
 
 
-    fontColors[
-      index
-    ] =
-      relative <
-        completedCells
+    fontColors[index] =
+      completed
         ? '#FFFFFF'
         : tone.text;
 
 
-    /*
-     * Small bar marker.
-     */
-    values[
-      index
-    ] =
-      '';
-
-
+    fontWeights[index] =
+      'bold';
   }
+
+
+  /*
+   * Explicit marker solves the confusing
+   * "single colored cell" problem.
+   */
+  values[startIndex] =
+    getTimelineBarMarker_(
+      task,
+      data.today
+    );
 
 
   const range =
     sheet.getRange(
       row,
-      startColumn,
+      firstDayColumn,
       1,
       TIMELINE_LAYOUT.days
     );
@@ -2747,20 +2115,25 @@ function writeTimelineBar_(
 
   range
     .setBackgrounds(
-      [
-        backgrounds
-      ]
+      [backgrounds]
+    )
+    .setValues(
+      [values]
     )
     .setFontColors(
-      [
-        fontColors
-      ]
-    );
+      [fontColors]
+    )
+    .setFontWeights(
+      [fontWeights]
+    )
+    .setFontSize(8)
+    .setHorizontalAlignment(
+      'center'
+    )
+    .setNote(note);
 
 
-  /* ----------------------------------------------------------------------
-   * TODAY BORDER
-   * -------------------------------------------------------------------- */
+  /* TODAY VERTICAL MARKER */
 
   const todayIndex =
     timelineDaysDiff_(
@@ -2774,11 +2147,10 @@ function writeTimelineBar_(
     todayIndex <
       TIMELINE_LAYOUT.days
   ) {
-
     sheet
       .getRange(
         row,
-        startColumn +
+        firstDayColumn +
         todayIndex
       )
       .setBorder(
@@ -2793,8 +2165,44 @@ function writeTimelineBar_(
           .BorderStyle
           .SOLID_MEDIUM
       );
-
   }
+}
+
+
+function getTimelineBarMarker_(
+  task,
+  today
+) {
+  const status =
+    String(task.Status || '');
+
+
+  if (status === 'Completed') {
+    return '✓';
+  }
+
+
+  if (
+    isTimelineTaskOverdue_(
+      task,
+      today
+    )
+  ) {
+    return '!';
+  }
+
+
+  if (status === 'In Progress') {
+    return '▶';
+  }
+
+
+  if (status === 'Waiting') {
+    return '…';
+  }
+
+
+  return '•';
 }
 
 
@@ -2808,7 +2216,6 @@ function writeTimelineBlankRow_(
   index,
   data
 ) {
-
   const background =
     index % 2 === 0
       ? TIMELINE_THEME.surface
@@ -2822,9 +2229,7 @@ function writeTimelineBlankRow_(
       1,
       TIMELINE_LAYOUT.infoCols
     )
-    .setBackground(
-      background
-    )
+    .setBackground(background)
     .setBorder(
       false,
       true,
@@ -2839,9 +2244,7 @@ function writeTimelineBlankRow_(
     );
 
 
-  const dayStartColumn =
-    TIMELINE_LAYOUT.infoCols +
-    1;
+  const backgrounds = [];
 
 
   for (
@@ -2850,7 +2253,6 @@ function writeTimelineBlankRow_(
       TIMELINE_LAYOUT.days;
     indexDay++
   ) {
-
     const date =
       new Date(
         data.windowStart.getFullYear(),
@@ -2861,10 +2263,8 @@ function writeTimelineBlankRow_(
 
 
     const isWeekend =
-      (
-        date.getDay() === 0 ||
-        date.getDay() === 6
-      );
+      date.getDay() === 0 ||
+      date.getDay() === 6;
 
 
     const isToday =
@@ -2874,23 +2274,28 @@ function writeTimelineBlankRow_(
       );
 
 
-    sheet
-      .getRange(
-        row,
-        dayStartColumn +
-        indexDay
-      )
-      .setBackground(
-        isToday
-          ? TIMELINE_THEME.today
-          : (
-              isWeekend
-                ? TIMELINE_THEME.weekend
-                : background
-            )
-      );
-
+    backgrounds.push(
+      isToday
+        ? TIMELINE_THEME.today
+        : (
+            isWeekend
+              ? TIMELINE_THEME.weekend
+              : background
+          )
+    );
   }
+
+
+  sheet
+    .getRange(
+      row,
+      TIMELINE_LAYOUT.infoCols + 1,
+      1,
+      TIMELINE_LAYOUT.days
+    )
+    .setBackgrounds(
+      [backgrounds]
+    );
 
 
   sheet.setRowHeight(
@@ -2908,19 +2313,26 @@ function writeTimelineEmptyState_(
   sheet,
   data
 ) {
+  const totalColumns =
+    TIMELINE_LAYOUT.infoCols +
+    TIMELINE_LAYOUT.days;
+
+
+  const startRow =
+    TIMELINE_LAYOUT.firstTaskRow;
+
 
   sheet
     .getRange(
-      TIMELINE_LAYOUT.firstTaskRow,
+      startRow,
       1,
       4,
-      TIMELINE_LAYOUT.infoCols +
-      TIMELINE_LAYOUT.days
+      totalColumns
     )
     .merge()
     .setValue(
-      'No scheduled tasks overlap this 4-week period.\n' +
-      'Add a Start Date or Due Date, or move to another period.'
+      'NO SCHEDULED TASKS\n' +
+      'Add a Start Date or Due Date to place a task on your timeline.'
     )
     .setBackground(
       TIMELINE_THEME.surface
@@ -2928,15 +2340,9 @@ function writeTimelineEmptyState_(
     .setFontColor(
       TIMELINE_THEME.muted
     )
-    .setFontSize(
-      10
-    )
-    .setFontWeight(
-      'bold'
-    )
-    .setWrap(
-      true
-    )
+    .setFontSize(10)
+    .setFontWeight('bold')
+    .setWrap(true)
     .setHorizontalAlignment(
       'center'
     )
@@ -2955,11 +2361,14 @@ function writeTimelineEmptyState_(
         .BorderStyle
         .SOLID
     );
+
+
+  return startRow + 3;
 }
 
 
 /* ==========================================================================
- * PLANNING INSIGHTS
+ * INSIGHTS
  * ========================================================================== */
 
 function writeTimelineInsights_(
@@ -2967,15 +2376,10 @@ function writeTimelineInsights_(
   data,
   startRow
 ) {
-
   const totalColumns =
     TIMELINE_LAYOUT.infoCols +
     TIMELINE_LAYOUT.days;
 
-
-  /* ----------------------------------------------------------------------
-   * TITLE
-   * -------------------------------------------------------------------- */
 
   sheet
     .getRange(
@@ -2988,12 +2392,8 @@ function writeTimelineInsights_(
     .setValue(
       'Planning Insights'
     )
-    .setFontSize(
-      15
-    )
-    .setFontWeight(
-      'bold'
-    )
+    .setFontSize(15)
+    .setFontWeight('bold')
     .setFontColor(
       TIMELINE_THEME.text
     );
@@ -3008,11 +2408,9 @@ function writeTimelineInsights_(
     )
     .merge()
     .setValue(
-      'Keep the plan realistic and actionable'
+      'Keep your workload realistic'
     )
-    .setFontSize(
-      8
-    )
+    .setFontSize(8)
     .setFontColor(
       TIMELINE_THEME.muted
     )
@@ -3022,23 +2420,18 @@ function writeTimelineInsights_(
 
 
   const cardRow =
-    startRow +
-    1;
+    startRow + 1;
 
 
   const leftWidth =
     Math.floor(
-      (
-        totalColumns -
-        1
-      ) /
+      (totalColumns - 1) /
       2
     );
 
 
   const rightStart =
-    leftWidth +
-    2;
+    leftWidth + 2;
 
 
   const rightWidth =
@@ -3047,46 +2440,21 @@ function writeTimelineInsights_(
     1;
 
 
-  /* ----------------------------------------------------------------------
-   * UNSCHEDULED
-   * -------------------------------------------------------------------- */
-
-  const unscheduledLines =
-    data.unscheduled
-      .slice(
-        0,
-        5
-      )
-      .map(
-        function (task) {
-
-          return (
-            '• ' +
-            (
-              task.TaskName ||
-              'Untitled task'
-            )
-          );
-
-        }
-      );
-
-
-  if (
-    data.unscheduled.length >
-    5
-  ) {
-
-    unscheduledLines.push(
-      '+' +
-      (
-        data.unscheduled.length -
-        5
-      ) +
-      ' more'
-    );
-
-  }
+  const unscheduledText =
+    data.unscheduled.length
+      ? data.unscheduled
+          .slice(0, 5)
+          .map(function (task) {
+            return (
+              '• ' +
+              (
+                task.TaskName ||
+                'Untitled task'
+              )
+            );
+          })
+          .join('\n')
+      : '✓ All open tasks have a schedule.';
 
 
   writeTimelineInsightCard_(
@@ -3096,57 +2464,28 @@ function writeTimelineInsights_(
     leftWidth,
     'UNSCHEDULED',
     data.unscheduled.length,
-    unscheduledLines.length > 0
-      ? unscheduledLines.join(
-          '\n'
-        )
-      : 'All open tasks have a date.',
-    data.unscheduled.length > 0
+    unscheduledText,
+    data.unscheduled.length
       ? 'warning'
       : 'success'
   );
 
 
-  /* ----------------------------------------------------------------------
-   * AT RISK
-   * -------------------------------------------------------------------- */
-
-  const riskLines =
-    data.atRisk
-      .slice(
-        0,
-        5
-      )
-      .map(
-        function (task) {
-
-          return (
-            '• ' +
-            (
-              task.TaskName ||
-              'Untitled task'
-            )
-          );
-
-        }
-      );
-
-
-  if (
-    data.atRisk.length >
-    5
-  ) {
-
-    riskLines.push(
-      '+' +
-      (
-        data.atRisk.length -
-        5
-      ) +
-      ' more'
-    );
-
-  }
+  const riskText =
+    data.atRisk.length
+      ? data.atRisk
+          .slice(0, 5)
+          .map(function (task) {
+            return (
+              '• ' +
+              (
+                task.TaskName ||
+                'Untitled task'
+              )
+            );
+          })
+          .join('\n')
+      : '✓ No overdue or high-risk tasks.';
 
 
   writeTimelineInsightCard_(
@@ -3156,27 +2495,16 @@ function writeTimelineInsights_(
     rightWidth,
     'AT RISK',
     data.atRisk.length,
-    riskLines.length > 0
-      ? riskLines.join(
-          '\n'
-        )
-      : 'No high-risk or overdue tasks.',
-    data.atRisk.length > 0
+    riskText,
+    data.atRisk.length
       ? 'danger'
       : 'success'
   );
 
 
-  return (
-    cardRow +
-    5
-  );
+  return cardRow + 5;
 }
 
-
-/* ==========================================================================
- * INSIGHT CARD
- * ========================================================================== */
 
 function writeTimelineInsightCard_(
   sheet,
@@ -3188,7 +2516,6 @@ function writeTimelineInsightCard_(
   content,
   toneName
 ) {
-
   const tone =
     getTimelineTone_(
       toneName
@@ -3232,18 +2559,10 @@ function writeTimelineInsightCard_(
       '   ' +
       count
     )
-    .setBackground(
-      tone.soft
-    )
-    .setFontColor(
-      tone.text
-    )
-    .setFontSize(
-      9
-    )
-    .setFontWeight(
-      'bold'
-    );
+    .setBackground(tone.soft)
+    .setFontColor(tone.text)
+    .setFontSize(9)
+    .setFontWeight('bold');
 
 
   sheet
@@ -3254,18 +2573,12 @@ function writeTimelineInsightCard_(
       width
     )
     .merge()
-    .setValue(
-      content
-    )
+    .setValue(content)
     .setFontColor(
       TIMELINE_THEME.text2
     )
-    .setFontSize(
-      9
-    )
-    .setWrap(
-      true
-    )
+    .setFontSize(9)
+    .setWrap(true)
     .setVerticalAlignment(
       'top'
     );
@@ -3273,7 +2586,7 @@ function writeTimelineInsightCard_(
 
   sheet.setRowHeight(
     row,
-    26
+    27
   );
 
 
@@ -3282,23 +2595,19 @@ function writeTimelineInsightCard_(
     offset <= 4;
     offset++
   ) {
-
     sheet.setRowHeight(
-      row +
-      offset,
+      row + offset,
       24
     );
-
   }
 }
 
 
 /* ==========================================================================
- * OPEN SELECTED TIMELINE TASK
+ * OPEN SELECTED TASK
  * ========================================================================== */
 
 function openSelectedTimelineTask_() {
-
   const ui =
     SpreadsheetApp.getUi();
 
@@ -3314,13 +2623,11 @@ function openSelectedTimelineTask_() {
     sheet.getName() !==
       SHEETS.TIMELINE
   ) {
-
     ui.alert(
       'Open Task',
       'Open Timeline and select a task row first.',
       ui.ButtonSet.OK
     );
-
 
     return;
   }
@@ -3337,35 +2644,29 @@ function openSelectedTimelineTask_() {
 
   let note =
     String(
-      range.getNote() ||
-      ''
+      range.getNote() || ''
     ).trim();
 
 
   if (!note) {
-
     note =
       findTimelineTaskNoteNearSelection_(
         sheet,
         range.getRow()
       );
-
   }
 
 
   if (
     note.indexOf(
       'TASK_ID:'
-    ) !==
-    0
+    ) !== 0
   ) {
-
     ui.alert(
       'Open Task',
       'Select a task row inside Timeline first.',
       ui.ButtonSet.OK
     );
-
 
     return;
   }
@@ -3379,26 +2680,29 @@ function openSelectedTimelineTask_() {
       .trim();
 
 
-  if (!taskId) {
+  const task =
+    getTaskById_(taskId);
+
+
+  if (!task) {
+    ui.alert(
+      'Task Not Found',
+      'The selected task could not be found.',
+      ui.ButtonSet.OK
+    );
+
     return;
   }
 
 
-  showTaskDetails_(
-    taskId
-  );
+  showTaskDetails_(taskId);
 }
 
-
-/* ==========================================================================
- * FIND ROW TASK NOTE
- * ========================================================================== */
 
 function findTimelineTaskNoteNearSelection_(
   sheet,
   row
 ) {
-
   if (
     row <
       TIMELINE_LAYOUT.firstTaskRow ||
@@ -3406,21 +2710,13 @@ function findTimelineTaskNoteNearSelection_(
       TIMELINE_LAYOUT.firstTaskRow +
       TIMELINE_LAYOUT.maxTasks
   ) {
-
     return '';
-
   }
 
 
-  /*
-   * TaskId note is stored in merged A:C task title.
-   */
   return String(
     sheet
-      .getRange(
-        row,
-        1
-      )
+      .getRange(row, 1)
       .getNote() ||
     ''
   ).trim();
@@ -3428,38 +2724,23 @@ function findTimelineTaskNoteNearSelection_(
 
 
 /* ==========================================================================
- * BAR TONE
+ * BAR COLORS
  * ========================================================================== */
 
 function getTimelineBarTone_(
   task,
   today
 ) {
-
   const status =
-    String(
-      task.Status || ''
-    );
+    String(task.Status || '');
 
 
-  if (
-    status ===
-    'Completed'
-  ) {
-
+  if (status === 'Completed') {
     return {
-
-      fill:
-        TIMELINE_THEME.success,
-
-      soft:
-        TIMELINE_THEME.successSoft,
-
-      text:
-        TIMELINE_THEME.success
-
+      fill: '#16A34A',
+      soft: '#DCFCE7',
+      text: '#15803D'
     };
-
   }
 
 
@@ -3469,356 +2750,233 @@ function getTimelineBarTone_(
       today
     )
   ) {
-
     return {
-
-      fill:
-        TIMELINE_THEME.danger,
-
-      soft:
-        TIMELINE_THEME.dangerSoft,
-
-      text:
-        TIMELINE_THEME.danger
-
+      fill: '#DC2626',
+      soft: '#FEE2E2',
+      text: '#B91C1C'
     };
-
   }
 
 
-  if (
-    status ===
-    'Waiting'
-  ) {
-
+  if (status === 'Waiting') {
     return {
-
-      fill:
-        TIMELINE_THEME.warning,
-
-      soft:
-        TIMELINE_THEME.warningSoft,
-
-      text:
-        TIMELINE_THEME.warning
-
+      fill: '#D97706',
+      soft: '#FEF3C7',
+      text: '#B45309'
     };
-
   }
 
 
-  if (
-    status ===
-    'In Progress'
-  ) {
-
+  if (status === 'In Progress') {
     return {
-
-      fill:
-        TIMELINE_THEME.primary,
-
-      soft:
-        TIMELINE_THEME.primaryLight,
-
-      text:
-        TIMELINE_THEME.primary
-
+      fill: '#4F46E5',
+      soft: '#E0E7FF',
+      text: '#4338CA'
     };
-
   }
 
 
   return {
-
-    fill:
-      TIMELINE_THEME.info,
-
-    soft:
-      TIMELINE_THEME.infoSoft,
-
-    text:
-      TIMELINE_THEME.info
-
+    fill: '#2563EB',
+    soft: '#DBEAFE',
+    text: '#1D4ED8'
   };
 }
 
 
 /* ==========================================================================
- * GENERAL TONES
+ * GENERAL COLORS
  * ========================================================================== */
 
-function getTimelineTone_(
-  tone
-) {
-
+function getTimelineTone_(tone) {
   switch (
-    String(
-      tone || ''
-    )
+    String(tone || '')
   ) {
-
     case 'danger':
-
       return {
-
         text:
           TIMELINE_THEME.danger,
 
         soft:
           TIMELINE_THEME.dangerSoft
-
       };
 
-
     case 'warning':
-
       return {
-
         text:
-          TIMELINE_THEME.warning,
+          '#B45309',
 
         soft:
           TIMELINE_THEME.warningSoft
-
       };
 
-
     case 'success':
-
       return {
-
         text:
           TIMELINE_THEME.success,
 
         soft:
           TIMELINE_THEME.successSoft
-
       };
 
-
     case 'info':
-
       return {
-
         text:
           TIMELINE_THEME.info,
 
         soft:
           TIMELINE_THEME.infoSoft
-
       };
 
-
     default:
-
       return {
-
         text:
           TIMELINE_THEME.primary,
 
         soft:
           TIMELINE_THEME.primaryLight
-
       };
-
   }
 }
 
 
-/* ==========================================================================
- * STATUS TONE
- * ========================================================================== */
-
 function getTimelineStatusTone_(
   status
 ) {
-
   switch (
-    String(
-      status || ''
-    )
+    String(status || '')
   ) {
-
     case 'Completed':
-
       return getTimelineTone_(
         'success'
       );
 
-
     case 'Waiting':
-
       return getTimelineTone_(
         'warning'
       );
 
-
     case 'In Progress':
-
       return getTimelineTone_(
         'primary'
       );
-
 
     case 'To Do':
-
-      return getTimelineTone_(
-        'primary'
-      );
-
-
-    case 'Inbox':
-
       return getTimelineTone_(
         'info'
       );
 
-
-    default:
-
+    case 'Inbox':
       return {
-
         text:
           TIMELINE_THEME.text2,
 
         soft:
           TIMELINE_THEME.surface2
-
       };
 
+    default:
+      return {
+        text:
+          TIMELINE_THEME.text2,
+
+        soft:
+          TIMELINE_THEME.surface2
+      };
   }
 }
 
-
-/* ==========================================================================
- * PRIORITY
- * ========================================================================== */
 
 function getTimelinePriorityTone_(
   priority
 ) {
-
   switch (
-    String(
-      priority || ''
-    )
+    String(priority || '')
   ) {
-
     case 'Critical':
     case 'Urgent':
-
       return getTimelineTone_(
         'danger'
       );
 
-
     case 'High':
-
       return getTimelineTone_(
         'warning'
       );
 
-
     case 'Low':
-
       return getTimelineTone_(
         'success'
       );
 
-
     default:
+      return {
+        text:
+          TIMELINE_THEME.text2,
 
-      return getTimelineTone_(
-        'primary'
-      );
-
+        soft:
+          TIMELINE_THEME.surface2
+      };
   }
 }
 
 
-/* ==========================================================================
- * PROGRESS
- * ========================================================================== */
-
 function getTimelineProgressTone_(
   progress
 ) {
-
   progress =
-    Number(
-      progress
-    ) || 0;
+    Number(progress) || 0;
 
 
-  if (
-    progress >= 100
-  ) {
-
+  if (progress >= 100) {
     return getTimelineTone_(
       'success'
     );
-
   }
 
 
-  if (
-    progress >= 60
-  ) {
-
+  if (progress >= 60) {
     return getTimelineTone_(
       'primary'
     );
-
   }
 
 
-  if (
-    progress > 0
-  ) {
-
+  if (progress > 0) {
     return getTimelineTone_(
       'warning'
     );
-
   }
 
 
   return {
-
     text:
       TIMELINE_THEME.text2,
 
     soft:
       TIMELINE_THEME.surface2
-
   };
 }
 
 
 /* ==========================================================================
- * RISK
+ * OVERDUE
  * ========================================================================== */
 
 function isTimelineTaskOverdue_(
   task,
   today
 ) {
-
   if (
-    String(
-      task.Status || ''
-    ) ===
+    String(task.Status || '') ===
     'Completed'
   ) {
-
     return false;
   }
 
 
   const dates =
-    getTimelineTaskDates_(
-      task
-    );
+    getTimelineTaskDates_(task);
 
 
   return Boolean(
@@ -3833,113 +2991,84 @@ function isTimelineTaskOverdue_(
  * SORT
  * ========================================================================== */
 
-function timelineTaskSort_(
-  a,
-  b
-) {
-
-  /*
-   * Open before completed.
-   */
+function timelineTaskSort_(a, b) {
   const aCompleted =
-    String(
-      a.Status || ''
-    ) ===
+    String(a.Status || '') ===
     'Completed';
-
 
   const bCompleted =
-    String(
-      b.Status || ''
-    ) ===
+    String(b.Status || '') ===
     'Completed';
 
 
-  if (
-    aCompleted !==
-    bCompleted
-  ) {
-
+  if (aCompleted !== bCompleted) {
     return aCompleted
       ? 1
       : -1;
-
   }
 
 
-  /*
-   * In Progress near top.
-   */
   const aActive =
-    String(
-      a.Status || ''
-    ) ===
+    String(a.Status || '') ===
     'In Progress';
-
 
   const bActive =
-    String(
-      b.Status || ''
-    ) ===
+    String(b.Status || '') ===
     'In Progress';
 
 
-  if (
-    aActive !==
-    bActive
-  ) {
-
+  if (aActive !== bActive) {
     return aActive
       ? -1
       : 1;
-
   }
 
 
-  /*
-   * SmartScore.
-   */
   const scoreDifference =
     (
-      Number(
-        b.SmartScore
-      ) || 0
+      Number(b.SmartScore) || 0
     ) -
     (
-      Number(
-        a.SmartScore
-      ) || 0
+      Number(a.SmartScore) || 0
     );
 
 
-  if (
-    scoreDifference !==
-    0
-  ) {
-
+  if (scoreDifference !== 0) {
     return scoreDifference;
-
   }
 
 
-  /*
-   * Start date.
-   */
   const aDates =
-    getTimelineTaskDates_(
-      a
-    );
-
+    getTimelineTaskDates_(a);
 
   const bDates =
-    getTimelineTaskDates_(
-      b
-    );
+    getTimelineTaskDates_(b);
 
 
-  return (
-    aDates.start.getTime() -
-    bDates.start.getTime()
+  const aStart =
+    aDates.start
+      ? aDates.start.getTime()
+      : Number.MAX_SAFE_INTEGER;
+
+
+  const bStart =
+    bDates.start
+      ? bDates.start.getTime()
+      : Number.MAX_SAFE_INTEGER;
+
+
+  if (aStart !== bStart) {
+    return aStart -
+      bStart;
+  }
+
+
+  return String(
+    a.TaskName || ''
+  ).localeCompare(
+    String(
+      b.TaskName || ''
+    )
   );
 }
 
@@ -3948,14 +3077,9 @@ function timelineTaskSort_(
  * DATE HELPERS
  * ========================================================================== */
 
-function getTimelineWeekStart_(
-  date
-) {
-
+function getTimelineWeekStart_(date) {
   const result =
-    stripTime_(
-      date
-    );
+    stripTime_(date);
 
 
   const day =
@@ -3982,17 +3106,11 @@ function timelineSameDay_(
   first,
   second
 ) {
-
   const a =
-    stripTime_(
-      first
-    );
-
+    stripTime_(first);
 
   const b =
-    stripTime_(
-      second
-    );
+    stripTime_(second);
 
 
   return Boolean(
@@ -4009,11 +3127,8 @@ function timelineDateInRange_(
   start,
   end
 ) {
-
   const date =
-    stripTime_(
-      value
-    );
+    stripTime_(value);
 
 
   if (!date) {
@@ -4034,17 +3149,16 @@ function timelineDaysDiff_(
   start,
   end
 ) {
-
   const first =
-    stripTime_(
-      start
-    );
-
+    stripTime_(start);
 
   const second =
-    stripTime_(
-      end
-    );
+    stripTime_(end);
+
+
+  if (!first || !second) {
+    return 0;
+  }
 
 
   return Math.round(
@@ -4057,10 +3171,7 @@ function timelineDaysDiff_(
 }
 
 
-function timelineShortDate_(
-  date
-) {
-
+function timelineShortDate_(date) {
   if (!date) {
     return '—';
   }
@@ -4082,7 +3193,6 @@ function writeTimelineFooter_(
   sheet,
   row
 ) {
-
   const totalColumns =
     TIMELINE_LAYOUT.infoCols +
     TIMELINE_LAYOUT.days;
@@ -4105,13 +3215,11 @@ function writeTimelineFooter_(
     )
     .merge()
     .setValue(
-      'Select a task row → ⚡ Smart Task → Task Actions → Open Selected Task' +
+      'Select a task → ⚡ Smart Task → Task Actions → Open Selected Task' +
       '   •   Refreshed ' +
       refreshTime
     )
-    .setFontSize(
-      8
-    )
+    .setFontSize(8)
     .setFontColor(
       TIMELINE_THEME.muted
     )
