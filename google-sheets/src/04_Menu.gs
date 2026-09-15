@@ -11,7 +11,8 @@
  * │   ├── Today
  * │   ├── Tasks
  * │   ├── Kanban
- * │   └── Calendar
+ * │   ├── Calendar
+ * │   └── Timeline
  * │
  * ├── Task Actions
  * │   ├── Quick Add Task
@@ -23,19 +24,25 @@
  * │   ├── Next Month
  * │   └── Refresh Calendar
  * │
+ * ├── Timeline View
+ * │   ├── Previous 4 Weeks
+ * │   ├── Current 4 Weeks
+ * │   ├── Next 4 Weeks
+ * │   └── Refresh Timeline
+ * │
  * ├── Refresh
  * │   ├── Refresh Everything
  * │   ├── Refresh Dashboard
  * │   ├── Refresh Today
  * │   ├── Refresh Tasks
  * │   ├── Refresh Kanban
- * │   └── Refresh Calendar
+ * │   ├── Refresh Calendar
+ * │   └── Refresh Timeline
  * │
  * └── Workspace
  *     └── Set Up / Repair Workspace
  *
  * Future:
- * - Timeline / Gantt
  * - Projects
  * - Reports
  * - Notifications
@@ -49,6 +56,7 @@
  * ========================================================================== */
 
 function onOpen() {
+
   const ui =
     SpreadsheetApp.getUi();
 
@@ -88,6 +96,11 @@ function onOpen() {
       .addItem(
         'Calendar',
         'openCalendar_'
+      )
+
+      .addItem(
+        'Timeline',
+        'openTimelineFromMenu_'
       );
 
 
@@ -146,6 +159,39 @@ function onOpen() {
 
 
   /* ----------------------------------------------------------------------
+   * TIMELINE VIEW
+   * -------------------------------------------------------------------- */
+
+  const timelineMenu =
+    ui
+      .createMenu(
+        'Timeline View'
+      )
+
+      .addItem(
+        '←  Previous 4 Weeks',
+        'timelinePreviousPeriod_'
+      )
+
+      .addItem(
+        'Current 4 Weeks',
+        'timelineCurrentPeriod_'
+      )
+
+      .addItem(
+        'Next 4 Weeks  →',
+        'timelineNextPeriod_'
+      )
+
+      .addSeparator()
+
+      .addItem(
+        'Refresh Timeline',
+        'renderTimeline_'
+      );
+
+
+  /* ----------------------------------------------------------------------
    * REFRESH
    * -------------------------------------------------------------------- */
 
@@ -185,6 +231,11 @@ function onOpen() {
       .addItem(
         'Refresh Calendar',
         'renderCalendar_'
+      )
+
+      .addItem(
+        'Refresh Timeline',
+        'renderTimeline_'
       );
 
 
@@ -221,8 +272,14 @@ function onOpen() {
       taskActionsMenu
     )
 
+    .addSeparator()
+
     .addSubMenu(
       calendarMenu
+    )
+
+    .addSubMenu(
+      timelineMenu
     )
 
     .addSeparator()
@@ -249,13 +306,16 @@ function onOpen() {
  * Open Dashboard.
  */
 function openDashboard_() {
+
   const spreadsheet =
     SpreadsheetApp.getActive();
+
 
   const sheet =
     getOrCreateSheet_(
       SHEETS.DASHBOARD
     );
+
 
   spreadsheet.setActiveSheet(
     sheet
@@ -268,7 +328,9 @@ function openDashboard_() {
       typeof renderDashboard_ ===
       'function'
     ) {
+
       renderDashboard_();
+
     }
 
   } catch (error) {
@@ -288,13 +350,16 @@ function openDashboard_() {
  * Open Today.
  */
 function openToday_() {
+
   const spreadsheet =
     SpreadsheetApp.getActive();
+
 
   const sheet =
     getOrCreateSheet_(
       SHEETS.TODAY
     );
+
 
   spreadsheet.setActiveSheet(
     sheet
@@ -307,7 +372,9 @@ function openToday_() {
       typeof renderToday_ ===
       'function'
     ) {
+
       renderToday_();
+
     }
 
   } catch (error) {
@@ -327,13 +394,16 @@ function openToday_() {
  * Open Tasks.
  */
 function openTasks_() {
+
   const spreadsheet =
     SpreadsheetApp.getActive();
+
 
   const sheet =
     getOrCreateSheet_(
       SHEETS.TASKS
     );
+
 
   spreadsheet.setActiveSheet(
     sheet
@@ -341,7 +411,7 @@ function openTasks_() {
 
 
   /* ----------------------------------------------------------------------
-   * STYLE / SUMMARY
+   * TASK SUMMARY / STYLE
    * -------------------------------------------------------------------- */
 
   try {
@@ -350,7 +420,9 @@ function openTasks_() {
       typeof renderTaskSummary_ ===
       'function'
     ) {
+
       renderTaskSummary_();
+
     }
 
   } catch (error) {
@@ -375,7 +447,9 @@ function openTasks_() {
       typeof setupTasksFilter_ ===
       'function'
     ) {
+
       setupTasksFilter_();
+
     }
 
   } catch (error) {
@@ -398,13 +472,16 @@ function openTasks_() {
  * 11_Kanban.gs
  */
 function openKanban_() {
+
   const spreadsheet =
     SpreadsheetApp.getActive();
+
 
   const sheet =
     getOrCreateSheet_(
       SHEETS.KANBAN
     );
+
 
   spreadsheet.setActiveSheet(
     sheet
@@ -455,13 +532,16 @@ function openKanban_() {
  * 12_Calendar.gs
  */
 function openCalendar_() {
+
   const spreadsheet =
     SpreadsheetApp.getActive();
+
 
   const sheet =
     getOrCreateSheet_(
       SHEETS.CALENDAR
     );
+
 
   spreadsheet.setActiveSheet(
     sheet
@@ -500,6 +580,69 @@ function openCalendar_() {
         error
       )
     );
+
+  }
+}
+
+
+/**
+ * Open Timeline through the Timeline module.
+ *
+ * Module:
+ * 13_Timeline.gs
+ *
+ * IMPORTANT:
+ * openTimeline_() is implemented in 13_Timeline.gs.
+ * This wrapper prevents a duplicate global function.
+ */
+function openTimelineFromMenu_() {
+
+  if (
+    typeof openTimeline_ !==
+    'function'
+  ) {
+
+    SpreadsheetApp
+      .getUi()
+      .alert(
+        'Timeline',
+        'Timeline module is not available. Make sure 13_Timeline.gs has been added and pushed.',
+        SpreadsheetApp
+          .getUi()
+          .ButtonSet
+          .OK
+      );
+
+    return;
+  }
+
+
+  try {
+
+    openTimeline_();
+
+  } catch (error) {
+
+    console.warn(
+      'Timeline refresh failed:',
+      getMenuErrorMessage_(
+        error
+      )
+    );
+
+
+    SpreadsheetApp
+      .getUi()
+      .alert(
+        'Timeline Error',
+        getMenuErrorMessage_(
+          error
+        ),
+        SpreadsheetApp
+          .getUi()
+          .ButtonSet
+          .OK
+      );
 
   }
 }
@@ -546,14 +689,16 @@ function quickAddTaskPrompt_() {
  * ========================================================================== */
 
 /**
- * Smart context action.
+ * Smart contextual task opener.
  *
  * Supported:
  * - Tasks
  * - Kanban
  * - Calendar
+ * - Timeline
  */
 function openSelectedTaskContext_() {
+
   const ui =
     SpreadsheetApp.getUi();
 
@@ -650,12 +795,35 @@ function openSelectedTaskContext_() {
 
 
   /* ----------------------------------------------------------------------
-   * UNSUPPORTED
+   * TIMELINE
+   * -------------------------------------------------------------------- */
+
+  if (
+    sheetName ===
+    SHEETS.TIMELINE
+  ) {
+
+    if (
+      typeof openSelectedTimelineTask_ ===
+      'function'
+    ) {
+
+      openSelectedTimelineTask_();
+
+      return;
+
+    }
+
+  }
+
+
+  /* ----------------------------------------------------------------------
+   * UNSUPPORTED WORKSPACE
    * -------------------------------------------------------------------- */
 
   ui.alert(
     'Open Task',
-    'Open Tasks, Kanban or Calendar and select a task first.',
+    'Open Tasks, Kanban, Calendar or Timeline and select a task first.',
     ui.ButtonSet.OK
   );
 }
@@ -666,12 +834,15 @@ function openSelectedTaskContext_() {
  * ========================================================================== */
 
 /**
- * Refresh task-powered views after:
+ * Refresh all task-powered views after:
  *
  * - Create task
  * - Update task
  * - Complete task
  * - Delete task
+ *
+ * Each renderer is isolated so one module error
+ * does not prevent the others from refreshing.
  */
 function refreshViewsAfterTaskChange_() {
 
@@ -808,6 +979,33 @@ function refreshViewsAfterTaskChange_() {
     );
 
   }
+
+
+  /* ----------------------------------------------------------------------
+   * TIMELINE
+   * -------------------------------------------------------------------- */
+
+  try {
+
+    if (
+      typeof renderTimeline_ ===
+      'function'
+    ) {
+
+      renderTimeline_();
+
+    }
+
+  } catch (error) {
+
+    console.warn(
+      'Timeline refresh skipped:',
+      getMenuErrorMessage_(
+        error
+      )
+    );
+
+  }
 }
 
 
@@ -818,9 +1016,9 @@ function refreshViewsAfterTaskChange_() {
 /**
  * Full workspace refresh.
  *
- * NOTE:
- * If refreshAll_() already exists in another file,
- * keep only ONE version.
+ * IMPORTANT:
+ * If refreshAll_() exists in another file,
+ * keep only ONE global refreshAll_() implementation.
  */
 function refreshAll_() {
 
@@ -883,9 +1081,29 @@ function refreshAll_() {
         'function'
           ? renderCalendar_
           : null
+    },
+
+
+    {
+      name:
+        'Timeline',
+
+      fn:
+        typeof renderTimeline_ ===
+        'function'
+          ? renderTimeline_
+          : null
     }
 
   ];
+
+
+  let refreshedCount =
+    0;
+
+
+  let failedCount =
+    0;
 
 
   jobs.forEach(
@@ -900,7 +1118,13 @@ function refreshAll_() {
 
         job.fn();
 
+
+        refreshedCount++;
+
       } catch (error) {
+
+        failedCount++;
+
 
         console.warn(
           job.name +
@@ -916,10 +1140,54 @@ function refreshAll_() {
   );
 
 
-  toast_(
-    'Dashboard, Today, Tasks, Kanban and Calendar refreshed.',
-    'Smart Task'
-  );
+  /* ----------------------------------------------------------------------
+   * USER FEEDBACK
+   * -------------------------------------------------------------------- */
+
+  let message =
+    refreshedCount +
+    ' workspace view' +
+    (
+      refreshedCount === 1
+        ? ''
+        : 's'
+    ) +
+    ' refreshed';
+
+
+  if (
+    failedCount > 0
+  ) {
+
+    message +=
+      ' • ' +
+      failedCount +
+      ' failed';
+
+  }
+
+
+  if (
+    typeof toast_ ===
+    'function'
+  ) {
+
+    toast_(
+      message,
+      'Smart Task'
+    );
+
+  } else {
+
+    SpreadsheetApp
+      .getActive()
+      .toast(
+        message,
+        'Smart Task',
+        4
+      );
+
+  }
 }
 
 
