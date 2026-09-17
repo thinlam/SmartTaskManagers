@@ -163,12 +163,12 @@ function recalculateAllSmartFields_() {
   toast_('Recalculated Smart Score for ' + values.length + ' task(s).', 'Smart Task');
 }
 
-function refreshAll_() {
-  recalculateAllSmartFields_();
-  renderDashboard_();
-  renderToday_();
-  renderTaskSummary_();
-}
+// refreshAll_() now lives in 04_Menu.gs - it grew into a full job-runner
+// that refreshes all 6 views (Dashboard/Today/Tasks/Kanban/Calendar/
+// Timeline) with per-view error handling, not just the original 3. Keeping
+// one definition only, since Apps Script concatenates all files into a
+// single global scope and a second definition here would silently win or
+// lose depending on file load order.
 
 function ensureDailyRecalcTrigger_() {
   const triggers = ScriptApp.getProjectTriggers();

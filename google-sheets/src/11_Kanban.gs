@@ -183,7 +183,40 @@ function openKanban_() {
   );
 
 
-  renderKanban_();
+  try {
+
+    if (
+      typeof renderKanban_ ===
+      'function'
+    ) {
+
+      renderKanban_();
+
+    } else {
+
+      SpreadsheetApp
+        .getUi()
+        .alert(
+          'Kanban',
+          'Kanban module is not available. Make sure 11_Kanban.gs has been added and pushed.',
+          SpreadsheetApp
+            .getUi()
+            .ButtonSet
+            .OK
+        );
+
+    }
+
+  } catch (error) {
+
+    console.warn(
+      'Kanban open failed:',
+      getMenuErrorMessage_(
+        error
+      )
+    );
+
+  }
 }
 
 

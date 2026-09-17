@@ -465,64 +465,6 @@ function openTasks_() {
 }
 
 
-/**
- * Open Kanban.
- *
- * Module:
- * 11_Kanban.gs
- */
-function openKanban_() {
-
-  const spreadsheet =
-    SpreadsheetApp.getActive();
-
-
-  const sheet =
-    getOrCreateSheet_(
-      SHEETS.KANBAN
-    );
-
-
-  spreadsheet.setActiveSheet(
-    sheet
-  );
-
-
-  try {
-
-    if (
-      typeof renderKanban_ ===
-      'function'
-    ) {
-
-      renderKanban_();
-
-    } else {
-
-      SpreadsheetApp
-        .getUi()
-        .alert(
-          'Kanban',
-          'Kanban module is not available. Make sure 11_Kanban.gs has been added and pushed.',
-          SpreadsheetApp
-            .getUi()
-            .ButtonSet
-            .OK
-        );
-
-    }
-
-  } catch (error) {
-
-    console.warn(
-      'Kanban refresh failed:',
-      getMenuErrorMessage_(
-        error
-      )
-    );
-
-  }
-}
 
 
 /**
@@ -1021,6 +963,16 @@ function refreshViewsAfterTaskChange_() {
  * keep only ONE global refreshAll_() implementation.
  */
 function refreshAll_() {
+
+  // Recompute SmartScore/Risk/RecommendedAction first - every view below
+  // reads from Tasks, so they must see fresh values, not stale ones from
+  // the last edit or the last daily trigger run.
+  if (
+    typeof recalculateAllSmartFields_ ===
+    'function'
+  ) {
+    recalculateAllSmartFields_();
+  }
 
   const jobs = [
 
