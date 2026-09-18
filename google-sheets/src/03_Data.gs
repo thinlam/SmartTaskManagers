@@ -13,7 +13,6 @@
  * -----------------------------------------------------------------------
  */
 
-
 /* ==========================================================================
  * TASKS
  * ========================================================================== */
@@ -25,93 +24,71 @@
  * @return {string} TaskId
  */
 function createTask_(fields) {
-  if (!fields || !String(fields.TaskName || '').trim()) {
-    throw new Error('TaskName is required to create a task.');
+  if (!fields || !String(fields.TaskName || "").trim()) {
+    throw new Error("TaskName is required to create a task.");
   }
 
   const taskId = generateNextId_(
     SHEETS.TASKS,
-    'TaskId',
+    "TaskId",
     TASK_HEADERS,
-    ID_PREFIX.TASK
+    ID_PREFIX.TASK,
   );
 
   const timestamp = now_();
 
   const task = Object.assign(
     {
-      Area: '',
-      Project: '',
-      Category: '',
-      Tags: '',
+      Area: "",
+      Project: "",
+      Category: "",
+      Tags: "",
 
-      Priority: getSetting_(
-        'DefaultPriority',
-        'Medium'
-      ),
+      Priority: getSetting_("DefaultPriority", "Medium"),
 
-      Status: getSetting_(
-        'DefaultStatus',
-        'Inbox'
-      ),
+      Status: getSetting_("DefaultStatus", "Inbox"),
 
-      StartDate: '',
-      DueDate: '',
-      DueTime: '',
-      CompletedDate: '',
+      StartDate: "",
+      DueDate: "",
+      DueTime: "",
+      CompletedDate: "",
 
       Progress: 0,
 
-      EstimateMinutes: getSetting_(
-        'DefaultEstimateMinutes',
-        30
-      ),
+      EstimateMinutes: getSetting_("DefaultEstimateMinutes", 30),
 
-      Energy: 'Any',
-      Context: 'Anywhere',
+      Energy: "Any",
+      Context: "Anywhere",
 
-      GoalId: '',
+      GoalId: "",
 
-      RecurringType: 'None',
-      DependencyTaskId: '',
+      RecurringType: "None",
+      DependencyTaskId: "",
 
-      SmartScore: '',
-      Risk: '',
-      RecommendedAction: '',
+      SmartScore: "",
+      Risk: "",
+      RecommendedAction: "",
 
-      Notes: ''
+      Notes: "",
     },
     fields,
     {
       TaskId: taskId,
       CreatedAt: timestamp,
       UpdatedAt: timestamp,
-      LastStatusChangedAt: timestamp
-    }
+      LastStatusChangedAt: timestamp,
+    },
   );
 
   // Calculate smart fields before persisting.
-  Object.assign(
-    task,
-    computeSmartFields_(task)
-  );
+  Object.assign(task, computeSmartFields_(task));
 
-  appendRow_(
-    SHEETS.TASKS,
-    objectToRow_(task, TASK_HEADERS)
-  );
+  appendRow_(SHEETS.TASKS, objectToRow_(task, TASK_HEADERS));
 
-  logActivity_(
-    'Task',
-    taskId,
-    'Created',
-    '',
-    task.TaskName
-  );
+  logActivity_("Task", taskId, "Created", "", task.TaskName);
 
   return taskId;
 }
-
 
 /**
  * Update an existing task.
@@ -123,85 +100,57 @@ function createTask_(fields) {
  * @param {Object} patch
  */
 function updateTask_(taskId, patch) {
-  taskId = String(taskId || '').trim();
+  taskId = String(taskId || "").trim();
 
   if (!taskId) {
-    throw new Error('TaskId is required.');
+    throw new Error("TaskId is required.");
   }
 
-  if (!patch || typeof patch !== 'object') {
-    throw new Error('Task update patch is required.');
+  if (!patch || typeof patch !== "object") {
+    throw new Error("Task update patch is required.");
   }
 
-  const row = findRowByEntityId_(
-    SHEETS.TASKS,
-    TASK_HEADERS,
-    'TaskId',
-    taskId
-  );
+  const row = findRowByEntityId_(SHEETS.TASKS, TASK_HEADERS, "TaskId", taskId);
 
   if (row === -1) {
-    throw new Error(
-      'Task not found: ' + taskId
-    );
+    throw new Error("Task not found: " + taskId);
   }
 
-  const sheet = getOrCreateSheet_(
-    SHEETS.TASKS
-  );
+  const sheet = getOrCreateSheet_(SHEETS.TASKS);
 
-  const current = sheet
-    .getRange(
-      row,
-      1,
-      1,
-      TASK_HEADERS.length
-    )
-    .getValues()[0];
+  const current = sheet.getRange(row, 1, 1, TASK_HEADERS.length).getValues()[0];
 
   const currentObj = {};
 
-  TASK_HEADERS.forEach(
-    function (header, index) {
-      currentObj[header] = current[index];
-    }
-  );
+  TASK_HEADERS.forEach(function (header, index) {
+    currentObj[header] = current[index];
+  });
 
   const statusChanged =
     patch.Status !== undefined &&
-    String(patch.Status) !==
-      String(currentObj.Status);
+    String(patch.Status) !== String(currentObj.Status);
 
   const timestamp = now_();
 
-  const updated = Object.assign(
-    {},
-    currentObj,
-    patch,
-    {
-      UpdatedAt: timestamp
-    }
-  );
-
+  const updated = Object.assign({}, currentObj, patch, {
+    UpdatedAt: timestamp,
+  });
 
   /* ----------------------------------------------------------------------
    * STATUS TRANSITIONS
    * -------------------------------------------------------------------- */
 
   if (statusChanged) {
-    updated.LastStatusChangedAt =
-      timestamp;
+    updated.LastStatusChangedAt = timestamp;
 
     /*
      * Moving INTO Completed.
      */
-    if (String(updated.Status) === 'Completed') {
+    if (String(updated.Status) === "Completed") {
       updated.Progress = 100;
 
       if (!patch.CompletedDate) {
-        updated.CompletedDate =
-          currentObj.CompletedDate ||
-          timestamp;
+        updated.CompletedDate = currentObj.CompletedDate || timestamp;
       }
     }
 
@@ -212,63 +161,38 @@ function updateTask_(taskId, patch) {
      * so CompletedDate must not remain populated.
      */
     if (
-      String(currentObj.Status) === 'Completed' &&
-      String(updated.Status) !== 'Completed'
+      String(currentObj.Status) === "Completed" &&
+      String(updated.Status) !== "Completed"
     ) {
-      updated.CompletedDate = '';
+      updated.CompletedDate = "";
     }
   }
-
 
   /* ----------------------------------------------------------------------
    * PROGRESS SAFETY
    * -------------------------------------------------------------------- */
 
-  if (updated.Progress !== '') {
-    const progress = Number(
-      updated.Progress
-    );
+  if (updated.Progress !== "") {
+    const progress = Number(updated.Progress);
 
     if (Number.isFinite(progress)) {
-      updated.Progress = Math.max(
-        0,
-        Math.min(
-          100,
-          Math.round(progress)
-        )
-      );
+      updated.Progress = Math.max(0, Math.min(100, Math.round(progress)));
     }
   }
-
 
   /* ----------------------------------------------------------------------
    * SMART ENGINE
    * -------------------------------------------------------------------- */
 
-  Object.assign(
-    updated,
-    computeSmartFields_(updated)
-  );
-
+  Object.assign(updated, computeSmartFields_(updated));
 
   /* ----------------------------------------------------------------------
    * SAVE
    * -------------------------------------------------------------------- */
 
   sheet
-    .getRange(
-      row,
-      1,
-      1,
-      TASK_HEADERS.length
-    )
-    .setValues([
-      objectToRow_(
-        updated,
-        TASK_HEADERS
-      )
-    ]);
-
+    .getRange(row, 1, 1, TASK_HEADERS.length)
+    .setValues([objectToRow_(updated, TASK_HEADERS)]);
 
   /* ----------------------------------------------------------------------
    * ACTIVITY LOG
@@ -276,23 +200,16 @@ function updateTask_(taskId, patch) {
 
   if (statusChanged) {
     logActivity_(
-      'Task',
+      "Task",
       taskId,
-      'StatusChanged',
+      "StatusChanged",
       currentObj.Status,
-      updated.Status
+      updated.Status,
     );
   } else {
-    logActivity_(
-      'Task',
-      taskId,
-      'Updated',
-      '',
-      ''
-    );
+    logActivity_("Task", taskId, "Updated", "", "");
   }
 }
-
 
 /**
  * Mark task as completed.
@@ -300,39 +217,31 @@ function updateTask_(taskId, patch) {
  * @param {string} taskId
  */
 function completeTask_(taskId) {
-  taskId = String(taskId || '').trim();
+  taskId = String(taskId || "").trim();
 
   if (!taskId) {
-    throw new Error('TaskId is required.');
+    throw new Error("TaskId is required.");
   }
 
   const task = getTaskById_(taskId);
 
   if (!task) {
-    throw new Error(
-      'Task not found: ' + taskId
-    );
+    throw new Error("Task not found: " + taskId);
   }
 
   /*
    * Keep original completion time
    * when already completed.
    */
-  if (
-    String(task.Status) === 'Completed'
-  ) {
+  if (String(task.Status) === "Completed") {
     return;
   }
 
-  updateTask_(
-    taskId,
-    {
-      Status: 'Completed',
-      Progress: 100
-    }
-  );
+  updateTask_(taskId, {
+    Status: "Completed",
+    Progress: 100,
+  });
 }
-
 
 /**
  * Delete a task permanently.
@@ -344,12 +253,10 @@ function completeTask_(taskId) {
  * @return {boolean}
  */
 function deleteTask_(taskId) {
-  taskId = String(taskId || '').trim();
+  taskId = String(taskId || "").trim();
 
   if (!taskId) {
-    throw new Error(
-      'TaskId is required.'
-    );
+    throw new Error("TaskId is required.");
   }
 
   /*
@@ -359,50 +266,30 @@ function deleteTask_(taskId) {
   const task = getTaskById_(taskId);
 
   if (!task) {
-    throw new Error(
-      'Task not found: ' + taskId
-    );
+    throw new Error("Task not found: " + taskId);
   }
 
-  const row = findRowByEntityId_(
-    SHEETS.TASKS,
-    TASK_HEADERS,
-    'TaskId',
-    taskId
-  );
+  const row = findRowByEntityId_(SHEETS.TASKS, TASK_HEADERS, "TaskId", taskId);
 
   if (row === -1) {
-    throw new Error(
-      'Task row not found: ' + taskId
-    );
+    throw new Error("Task row not found: " + taskId);
   }
 
-  const sheet = getOrCreateSheet_(
-    SHEETS.TASKS
-  );
+  const sheet = getOrCreateSheet_(SHEETS.TASKS);
 
   /*
    * Never delete header.
    */
   if (row <= 1) {
-    throw new Error(
-      'Cannot delete Tasks header row.'
-    );
+    throw new Error("Cannot delete Tasks header row.");
   }
 
   sheet.deleteRow(row);
 
-  logActivity_(
-    'Task',
-    taskId,
-    'Deleted',
-    String(task.TaskName || ''),
-    ''
-  );
+  logActivity_("Task", taskId, "Deleted", String(task.TaskName || ""), "");
 
   return true;
 }
-
 
 /**
  * Find task by TaskId.
@@ -411,47 +298,30 @@ function deleteTask_(taskId) {
  * @return {Object|null}
  */
 function getTaskById_(taskId) {
-  taskId = String(taskId || '').trim();
+  taskId = String(taskId || "").trim();
 
   if (!taskId) {
     return null;
   }
 
-  const row = findRowByEntityId_(
-    SHEETS.TASKS,
-    TASK_HEADERS,
-    'TaskId',
-    taskId
-  );
+  const row = findRowByEntityId_(SHEETS.TASKS, TASK_HEADERS, "TaskId", taskId);
 
   if (row === -1) {
     return null;
   }
 
-  const sheet = getOrCreateSheet_(
-    SHEETS.TASKS
-  );
+  const sheet = getOrCreateSheet_(SHEETS.TASKS);
 
-  const values = sheet
-    .getRange(
-      row,
-      1,
-      1,
-      TASK_HEADERS.length
-    )
-    .getValues()[0];
+  const values = sheet.getRange(row, 1, 1, TASK_HEADERS.length).getValues()[0];
 
   const obj = {};
 
-  TASK_HEADERS.forEach(
-    function (header, index) {
-      obj[header] = values[index];
-    }
-  );
+  TASK_HEADERS.forEach(function (header, index) {
+    obj[header] = values[index];
+  });
 
   return obj;
 }
-
 
 /**
  * Return all tasks.
@@ -459,213 +329,186 @@ function getTaskById_(taskId) {
  * @return {Object[]}
  */
 function getAllTasks_() {
-  return readTable_(
-    SHEETS.TASKS,
-    TASK_HEADERS
-  );
+  return readTable_(SHEETS.TASKS, TASK_HEADERS);
 }
-
 
 /* ==========================================================================
  * PROJECTS
  * ========================================================================== */
 
 function createProject_(fields) {
-  if (
-    !fields ||
-    !String(
-      fields.ProjectName || ''
-    ).trim()
-  ) {
-    throw new Error(
-      'ProjectName is required to create a project.'
-    );
+  if (!fields || !String(fields.ProjectName || "").trim()) {
+    throw new Error("ProjectName is required to create a project.");
   }
 
   const projectId = generateNextId_(
     SHEETS.PROJECTS,
-    'ProjectId',
+    "ProjectId",
     PROJECT_HEADERS,
-    ID_PREFIX.PROJECT
+    ID_PREFIX.PROJECT,
   );
 
   const timestamp = now_();
 
   const project = Object.assign(
     {
-      Area: '',
-      Health: 'Healthy',
-      TargetDate: '',
-      Description: ''
+      Area: "",
+      Health: "Healthy",
+      TargetDate: "",
+      Description: "",
     },
     fields,
     {
       ProjectId: projectId,
       CreatedAt: timestamp,
-      UpdatedAt: timestamp
-    }
+      UpdatedAt: timestamp,
+    },
   );
 
-  appendRow_(
-    SHEETS.PROJECTS,
-    objectToRow_(
-      project,
-      PROJECT_HEADERS
-    )
-  );
+  appendRow_(SHEETS.PROJECTS, objectToRow_(project, PROJECT_HEADERS));
 
-  logActivity_(
-    'Project',
-    projectId,
-    'Created',
-    '',
-    project.ProjectName
-  );
+  logActivity_("Project", projectId, "Created", "", project.ProjectName);
 
   return projectId;
 }
 
-
 function getAllProjects_() {
-  return readTable_(
-    SHEETS.PROJECTS,
-    PROJECT_HEADERS
-  );
+  return readTable_(SHEETS.PROJECTS, PROJECT_HEADERS);
 }
 
+function getProjectById_(projectId) {
+  const row = findRowByEntityId_(
+    SHEETS.PROJECTS,
+    PROJECT_HEADERS,
+    "ProjectId",
+    projectId,
+  );
+  if (row === -1) return null;
+  const sheet = getOrCreateSheet_(SHEETS.PROJECTS);
+  const values = sheet
+    .getRange(row, 1, 1, PROJECT_HEADERS.length)
+    .getValues()[0];
+  const obj = {};
+  PROJECT_HEADERS.forEach(function (h, i) {
+    obj[h] = values[i];
+  });
+  return obj;
+}
+
+function updateProject_(projectId, patch) {
+  const row = findRowByEntityId_(
+    SHEETS.PROJECTS,
+    PROJECT_HEADERS,
+    "ProjectId",
+    projectId,
+  );
+  if (row === -1) throw new Error("Project not found: " + projectId);
+
+  const sheet = getOrCreateSheet_(SHEETS.PROJECTS);
+  const current = sheet
+    .getRange(row, 1, 1, PROJECT_HEADERS.length)
+    .getValues()[0];
+  const currentObj = {};
+  PROJECT_HEADERS.forEach(function (h, i) {
+    currentObj[h] = current[i];
+  });
+
+  const updated = Object.assign({}, currentObj, patch, { UpdatedAt: now_() });
+  sheet
+    .getRange(row, 1, 1, PROJECT_HEADERS.length)
+    .setValues([objectToRow_(updated, PROJECT_HEADERS)]);
+  logActivity_("Project", projectId, "Updated", "", "");
+}
+
+/* ==========================================================================
+ * GOALS
+ * ========================================================================== */
 
 /* ==========================================================================
  * GOALS
  * ========================================================================== */
 
 function createGoal_(fields) {
-  if (
-    !fields ||
-    !String(
-      fields.GoalName || ''
-    ).trim()
-  ) {
-    throw new Error(
-      'GoalName is required to create a goal.'
-    );
+  if (!fields || !String(fields.GoalName || "").trim()) {
+    throw new Error("GoalName is required to create a goal.");
   }
 
   const goalId = generateNextId_(
     SHEETS.GOALS,
-    'GoalId',
+    "GoalId",
     GOAL_HEADERS,
-    ID_PREFIX.GOAL
+    ID_PREFIX.GOAL,
   );
 
   const timestamp = now_();
 
   const goal = Object.assign(
     {
-      Area: '',
-      TargetDate: '',
+      Area: "",
+      TargetDate: "",
       Progress: 0,
-      Status: 'On Track'
+      Status: "On Track",
     },
     fields,
     {
       GoalId: goalId,
       CreatedAt: timestamp,
-      UpdatedAt: timestamp
-    }
+      UpdatedAt: timestamp,
+    },
   );
 
-  appendRow_(
-    SHEETS.GOALS,
-    objectToRow_(
-      goal,
-      GOAL_HEADERS
-    )
-  );
+  appendRow_(SHEETS.GOALS, objectToRow_(goal, GOAL_HEADERS));
 
-  logActivity_(
-    'Goal',
-    goalId,
-    'Created',
-    '',
-    goal.GoalName
-  );
+  logActivity_("Goal", goalId, "Created", "", goal.GoalName);
 
   return goalId;
 }
 
-
 function getAllGoals_() {
-  return readTable_(
-    SHEETS.GOALS,
-    GOAL_HEADERS
-  );
+  return readTable_(SHEETS.GOALS, GOAL_HEADERS);
 }
-
 
 /* ==========================================================================
  * HABITS
  * ========================================================================== */
 
 function createHabit_(fields) {
-  if (
-    !fields ||
-    !String(
-      fields.HabitName || ''
-    ).trim()
-  ) {
-    throw new Error(
-      'HabitName is required to create a habit.'
-    );
+  if (!fields || !String(fields.HabitName || "").trim()) {
+    throw new Error("HabitName is required to create a habit.");
   }
 
   const habitId = generateNextId_(
     SHEETS.HABITS,
-    'HabitId',
+    "HabitId",
     HABIT_HEADERS,
-    ID_PREFIX.HABIT
+    ID_PREFIX.HABIT,
   );
 
   const timestamp = now_();
 
   const habit = Object.assign(
     {
-      Frequency: 'Daily',
+      Frequency: "Daily",
       Streak: 0,
       TargetCount: 0,
       CompletedCount: 0,
-      LastCompletedDate: ''
+      LastCompletedDate: "",
     },
     fields,
     {
       HabitId: habitId,
       CreatedAt: timestamp,
-      UpdatedAt: timestamp
-    }
+      UpdatedAt: timestamp,
+    },
   );
 
-  appendRow_(
-    SHEETS.HABITS,
-    objectToRow_(
-      habit,
-      HABIT_HEADERS
-    )
-  );
+  appendRow_(SHEETS.HABITS, objectToRow_(habit, HABIT_HEADERS));
 
-  logActivity_(
-    'Habit',
-    habitId,
-    'Created',
-    '',
-    habit.HabitName
-  );
+  logActivity_("Habit", habitId, "Created", "", habit.HabitName);
 
   return habitId;
 }
 
-
 function getAllHabits_() {
-  return readTable_(
-    SHEETS.HABITS,
-    HABIT_HEADERS
-  );
+  return readTable_(SHEETS.HABITS, HABIT_HEADERS);
 }
