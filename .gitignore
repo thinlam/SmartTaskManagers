@@ -1,0 +1,44 @@
+# ── Node / JS (apps/desktop, apps/web, packages/*) ──────────────────────────
+node_modules/
+dist/
+dist-ssr/
+build/
+.vite/
+*.local
+
+# ── Tauri (apps/desktop/src-tauri) ───────────────────────────────────────────
+apps/desktop/src-tauri/target/
+apps/desktop/src-tauri/Cargo.lock
+
+# ── .NET (backend/) ──────────────────────────────────────────────────────────
+bin/
+obj/
+*.user
+.vs/
+
+# ── Env / secrets ─────────────────────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+appsettings.*.local.json
+secrets.json
+
+# ── Editor / OS ───────────────────────────────────────────────────────────────
+.vscode/*
+!.vscode/extensions.json
+.idea/
+.DS_Store
+Thumbs.db
+
+# ── Logs ───────────────────────────────────────────────────────────────────────
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ── clasp (Google Sheets) ────────────────────────────────────────────────────
+# .clasp.json IS committed on purpose (contains scriptId, no secret).
+# Never commit clasp credentials:
+.clasprc.json

@@ -1,0 +1,130 @@
+# Architecture
+
+## Nguyên tắc
+
+- Windows Desktop và Web đều là **client**, không phải nguồn dữ liệu chính.
+- Google Sheets tiếp tục là client chính thức, sẽ đồng bộ hai chiều với backend ở Phase 28.
+- Personal Mode: không Team/Member/Owner/Department/Approval Workflow, trừ khi được yêu cầu lại
+  (đã xác nhận với người dùng — xem `docs/audit/PHASE_00_AUDIT_REPORT.md`, mục G).
+- UI Desktop/Web bám theo Canva Design System (`docs/design-system/design-tokens.md`) làm nguồn
+  visual chính thức — không tự sáng tác style khác vì thư viện có default khác.
+- Không maintain UI 3 lần: Desktop/Web dùng chung `packages/ui`, `packages/types`,
+  `packages/api-client`, `packages/shared`, `packages/hooks`.
+
+## Kiến trúc tổng thể
+
+```
+                         USER
+                           │
+        ┌──────────────────┼──────────────────┐
+        │                  │                  │
+        ▼                  ▼                  ▼
+   Windows App           Web App         Google Sheets
+   React/Tauri            React           Apps Script
+        │                  │                  │
+        └──────────────────┼──────────────────┘
+                           │
+                           ▼
+                  ASP.NET Core API
+                           │
+          ┌────────────────┼────────────────┐
+          │                │                │
+          ▼                ▼                ▼
+     Authentication    Smart Engine    Notifications
+          │                │                │
+          └────────────────┼────────────────┘
+                           │
+                           ▼
+                    SQL Server Database
+```
+
+Sau này: `Android/iOS → cùng API` (Capacitor, research-only ở Phase 34).
+
+## Monorepo
+
+```
+SmartTaskManagers/
+├── apps/
+│   ├── google-sheets/   Production — không đụng
+│   ├── excel/            Frozen — không code
+│   ├── desktop/           React + Tauri (Windows), bắt đầu Phase 05
+│   └── web/               React, bắt đầu Phase 33, dùng chung packages/*
+├── packages/
+│   ├── ui/               Design tokens + component library
+│   ├── types/             Task/Project/Goal/Habit/User/Notification/CalendarEvent
+│   ├── api-client/         taskApi/projectApi/goalApi/habitApi/authApi
+│   ├── shared/              utils, date logic, Smart Score (port từ 05_SmartEngine.gs)
+│   ├── hooks/                useTasks/useProjects/...
+│   └── config/                eslint/tsconfig/tailwind dùng chung
+├── backend/                ASP.NET Core, Clean Architecture, bắt đầu Phase 20
+│   ├── SmartTask.Api/
+│   ├── SmartTask.Application/
+│   ├── SmartTask.Domain/
+│   ├── SmartTask.Infrastructure/
+│   └── SmartTask.Persistence/
+└── docs/
+    ├── audit/ · architecture/ · design-system/ · roadmap/
+```
+
+## Windows Desktop
+
+```
+React Application
+       │
+       ▼
+Tauri Desktop Shell
+       │
+       ▼
+Windows
+```
+
+Tauri: native window, system integration, notification, auto-update (sau), installer
+(`.exe`/`.msi`). UI vẫn 100% React, dùng chung `packages/ui`.
+
+## Backend
+
+ASP.NET Core, Clean Architecture 4 lớp:
+
+- `Domain` — entity thuần, không phụ thuộc framework.
+- `Application` — use case, DTO, validation.
+- `Infrastructure` — EF Core, service ngoài (email, sync).
+- `Api` — controller/minimal API, auth, composition root.
+
+Trách nhiệm: Authentication/Authorization/Users, Tasks/Projects/Goals/Habits/Calendar CRUD,
+Settings, Sync, Notifications; sau này: Smart Engine (port từ `05_SmartEngine.gs`), AI Integration.
+
+## Database — quyết định: SQL Server
+
+Đã hỏi và người dùng chọn **SQL Server** thay vì đề xuất mặc định PostgreSQL. Lý do cân nhắc:
+
+| Tiêu chí | SQL Server (đã chọn) |
+|---|---|
+| Môi trường dev | Người dùng phát triển trên Windows — SQL Server tích hợp tự nhiên (SSMS, Visual Studio, LocalDB cho dev). |
+| Hệ sinh thái | ASP.NET Core + EF Core + SQL Server là tổ hợp phổ biến, tài liệu/tooling Microsoft đầy đủ. |
+| Triển khai | Azure SQL sẵn có nếu sau này deploy lên Azure; Docker image `mssql-server` vẫn chạy được trên Linux nếu cần cross-platform sau này. |
+| Cân nhắc | Chi phí license khi scale ngoài Express/Developer edition; kém linh hoạt hơn PostgreSQL nếu sau này deploy đa nền tảng/đa cloud — ghi nhận làm rủi ro theo dõi, không chặn quyết định hiện tại. |
+
+EF Core (`Microsoft.EntityFrameworkCore.SqlServer`) làm ORM chính. Schema khởi tạo từ
+`TASK_HEADERS`/`PROJECT_HEADERS`/`GOAL_HEADERS`/`HABIT_HEADERS` trong
+`apps/google-sheets/src/00_Constants.gs` (Phase 21), cộng thêm cột đồng bộ (`Id` UUID,
+`SyncStatus`, `LastSyncedAt`, `Version`) chuẩn bị cho Phase 28.
+
+## Smart Engine
+
+Chưa làm ngay (SmartScore/RiskLevel/RecommendedAction để Phase 29), nhưng data model backend
+phải có sẵn các cột này ngay từ Phase 21 để không phải migration phá vỡ sau. Thuật toán tham chiếu
+1:1 từ `apps/google-sheets/src/05_SmartEngine.gs` (`SMART_WEIGHTS`, rule-based, có tên, giải
+thích được) — không đổi logic khi port sang C#, trừ khi được yêu cầu.
+
+## Sync (Phase 28, chưa làm ngay)
+
+```
+Google Sheets ↔ Apps Script ↔ ASP.NET Core API ↔ SQL Server ↔ Windows
+```
+
+Cột chuẩn bị trước trong Apps Script data model (không thêm ngay, chỉ ghi nhận): `Id` (UUID),
+`SyncStatus`, `LastSyncedAt`, `Version`.
+
+## Auth
+
+Sau này: Email + Google + Microsoft. Không làm Auth trước khi có UI cần đến (Phase 22).
