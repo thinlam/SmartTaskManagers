@@ -1,0 +1,11 @@
+# Normalize line endings to LF everywhere, regardless of the committer's
+# local core.autocrlf setting — this repo is worked on from both Linux
+# (cloud sessions) and Windows (local dev) machines, and without this,
+# every tool that rewrites files (Prettier, editors, etc.) produces
+# spurious CRLF<->LF diffs across unrelated files.
+* text=auto eol=lf
+
+# Apps Script push (clasp) doesn't care about EOL, but keep it consistent
+# with everything else rather than special-casing it.
+*.gs text eol=lf
+*.html text eol=lf

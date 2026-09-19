@@ -5,7 +5,7 @@ PHASE 00  Audit repository                                              ✅ DONE
 PHASE 01  Kiến trúc mới + Monorepo strategy                             ✅ DONE (tài liệu này)
 PHASE 02  Frontend foundation (workspaces, tsconfig/eslint dùng chung)          ✅ DONE
 PHASE 03  Canva Design Analysis                                         ✅ DONE (docs/design-system)
-PHASE 04  Design System (packages/ui)
+PHASE 04  Design System (packages/ui)                                          ✅ DONE (partial)
 PHASE 05  React + TypeScript + Vite setup (apps/desktop)
 PHASE 06  Tauri Desktop setup
 PHASE 07  Application Shell
@@ -52,6 +52,16 @@ và `apps/excel` — không bao giờ để tooling Node đụng vào Apps Scrip
 `src/index.ts` placeholder để `tsc -b`/`eslint`/`prettier --check` chạy sạch ngay từ đầu — đã
 verify thật bằng `npm install && npm run typecheck && npm run lint && npm run format`, cả 3 đều
 pass. `apps/desktop` sẽ được thêm vào mảng `workspaces` khi tạo ở Phase 05.
+
+Phase 04 đã thực hiện (một phần — component library còn tiếp tục theo từng Phase sau, không làm
+hết một lần): `packages/ui/src/tokens/{colors,spacing,typography,radius,shadows}.ts` trích xuất
+từ `docs/design-system/design-tokens.md`; `lib/cn.ts` (clsx + tailwind-merge); component đầu tiên
+`components/Button` (variant primary/secondary/ghost, size sm/md/lg, dùng tên class Tailwind ngữ
+nghĩa thay vì hex cứng). **Chưa verify được bằng mắt** — chưa có Tailwind/Vite nào chạy trong repo
+để render; chỉ verify bằng `npm run typecheck` + `npm run lint`, cả hai pass. Việc nối dây Tailwind
+thật (chọn version, cấu hình theme) và xác nhận UI khớp Canva bằng mắt dời sang Phase 05/09.
+Còn lại: `Card`/`Badge`/`Progress`/`Modal`/`Dropdown`/`Tooltip`/`EmptyState`/... sẽ bổ sung dần khi
+các màn hình cụ thể cần đến (không dựng hết component trước khi có màn hình dùng).
 
 Mỗi Phase kế tiếp sẽ được trình bày riêng theo format: Mục tiêu → File tạo/sửa → Full code →
 Command → Cách chạy → Cách test → Expected Result → Checklist → Git commit đề xuất.
