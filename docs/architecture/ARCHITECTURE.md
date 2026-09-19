@@ -97,12 +97,12 @@ Settings, Sync, Notifications; sau này: Smart Engine (port từ `05_SmartEngine
 
 Đã hỏi và người dùng chọn **SQL Server** thay vì đề xuất mặc định PostgreSQL. Lý do cân nhắc:
 
-| Tiêu chí | SQL Server (đã chọn) |
-|---|---|
-| Môi trường dev | Người dùng phát triển trên Windows — SQL Server tích hợp tự nhiên (SSMS, Visual Studio, LocalDB cho dev). |
-| Hệ sinh thái | ASP.NET Core + EF Core + SQL Server là tổ hợp phổ biến, tài liệu/tooling Microsoft đầy đủ. |
-| Triển khai | Azure SQL sẵn có nếu sau này deploy lên Azure; Docker image `mssql-server` vẫn chạy được trên Linux nếu cần cross-platform sau này. |
-| Cân nhắc | Chi phí license khi scale ngoài Express/Developer edition; kém linh hoạt hơn PostgreSQL nếu sau này deploy đa nền tảng/đa cloud — ghi nhận làm rủi ro theo dõi, không chặn quyết định hiện tại. |
+| Tiêu chí       | SQL Server (đã chọn)                                                                                                                                                                            |
+| -------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Môi trường dev | Người dùng phát triển trên Windows — SQL Server tích hợp tự nhiên (SSMS, Visual Studio, LocalDB cho dev).                                                                                       |
+| Hệ sinh thái   | ASP.NET Core + EF Core + SQL Server là tổ hợp phổ biến, tài liệu/tooling Microsoft đầy đủ.                                                                                                      |
+| Triển khai     | Azure SQL sẵn có nếu sau này deploy lên Azure; Docker image `mssql-server` vẫn chạy được trên Linux nếu cần cross-platform sau này.                                                             |
+| Cân nhắc       | Chi phí license khi scale ngoài Express/Developer edition; kém linh hoạt hơn PostgreSQL nếu sau này deploy đa nền tảng/đa cloud — ghi nhận làm rủi ro theo dõi, không chặn quyết định hiện tại. |
 
 EF Core (`Microsoft.EntityFrameworkCore.SqlServer`) làm ORM chính. Schema khởi tạo từ
 `TASK_HEADERS`/`PROJECT_HEADERS`/`GOAL_HEADERS`/`HABIT_HEADERS` trong

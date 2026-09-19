@@ -1,0 +1,6 @@
+{
+  "name": "@stm/config",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Shared tsconfig/eslint/prettier base for all Smart Task Manager packages and apps."
+}

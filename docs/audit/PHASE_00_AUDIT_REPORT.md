@@ -62,11 +62,11 @@ Giữ `apps/excel/` làm chỗ trống + README, không code cho đến khi Desk
 
 ## G. Rủi ro & quyết định đã xử lý ở Phase 01
 
-| Rủi ro | Xử lý |
-|---|---|
+| Rủi ro                                                     | Xử lý                                                                                                                                                                                                                                                                                                                 |
+| ---------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `git mv google-sheets → apps/google-sheets` làm hỏng clasp | `.clasp.json` dùng `rootDir` tương đối, không phụ thuộc vị trí trong repo — đã move nguyên khối, cấu hình không đổi. **Chưa verify được `clasp push` thật** trong sandbox này (không có `clasp` cài + không có clasp credentials) — cần bạn tự chạy `clasp push` sau khi pull branch này để xác nhận trước khi merge. |
-| Canva Frame 13 (Members/team) xung đột Personal Mode | **Quyết định (đã hỏi người dùng): bỏ qua hoàn toàn** Frame 13 khỏi roadmap Desktop/Web hiện tại. Giữ lại làm tham khảo nếu sau này mở multi-user. |
-| Chọn Database | **Quyết định (đã hỏi người dùng): SQL Server** (không dùng PostgreSQL dù đó là đề xuất mặc định ban đầu — xem lý do trong `docs/architecture/ARCHITECTURE.md`). |
+| Canva Frame 13 (Members/team) xung đột Personal Mode       | **Quyết định (đã hỏi người dùng): bỏ qua hoàn toàn** Frame 13 khỏi roadmap Desktop/Web hiện tại. Giữ lại làm tham khảo nếu sau này mở multi-user.                                                                                                                                                                     |
+| Chọn Database                                              | **Quyết định (đã hỏi người dùng): SQL Server** (không dùng PostgreSQL dù đó là đề xuất mặc định ban đầu — xem lý do trong `docs/architecture/ARCHITECTURE.md`).                                                                                                                                                       |
 
 ## H. Đề xuất kiến trúc & roadmap
 

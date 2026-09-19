@@ -1,0 +1,6 @@
+# Apps Script is a separate ecosystem (clasp + .gs) — never reformatted by
+# this repo's Node tooling, to avoid unrelated diffs in production code.
+apps/google-sheets/
+apps/excel/
+node_modules/
+dist/

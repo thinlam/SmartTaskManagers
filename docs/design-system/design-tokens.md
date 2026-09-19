@@ -11,28 +11,28 @@ Canva) cho `packages/ui/tokens/colors.ts` ở Phase 04.
 
 ## Color tokens
 
-| Token | Hex | Dùng cho |
-|---|---|---|
-| `primary` | `#4F46E5` | Nút chính, active state, link |
-| `primary-hover` | `#4338CA` | Hover |
-| `primary-light` | `#EEF2FF` | Nền nhấn nhẹ, active sidebar item |
-| `success` | `#16A34A` | Completed, Healthy, Low risk |
-| `success-soft` | `#ECFDF5` | Nền badge success |
-| `warning` | `#D97706` (Canva: `#F59E0B`) | On Hold, Attention, High priority |
-| `warning-soft` | `#FFF7ED` | Nền badge warning |
-| `danger` | `#DC2626` | Blocked, Critical, Overdue |
-| `danger-soft` | `#FEF2F2` | Nền badge danger |
-| `info` | `#2563EB` | In Progress |
-| `info-soft` | `#EFF6FF` | Nền badge info |
-| `background` | `#F8FAFC` | App background |
-| `surface` | `#FFFFFF` | Card/panel nền |
-| `surface-secondary` | `#F1F5F9` | Nền phụ, table header |
-| `text-primary` | `#0F172A` | Chữ chính (Canva gốc: `#1E293B`) |
-| `text-secondary` | `#475569` | Chữ phụ (Canva gốc: `#64748B`) |
-| `text-muted` | `#94A3B8` | Timestamp, caption |
-| `border` | `#E2E8F0` | Viền card/input |
-| `border-strong` | `#CBD5E1` | Viền nhấn |
-| `dark-header` | `#172033` | Header tối (nếu dùng) |
+| Token               | Hex                          | Dùng cho                          |
+| ------------------- | ---------------------------- | --------------------------------- |
+| `primary`           | `#4F46E5`                    | Nút chính, active state, link     |
+| `primary-hover`     | `#4338CA`                    | Hover                             |
+| `primary-light`     | `#EEF2FF`                    | Nền nhấn nhẹ, active sidebar item |
+| `success`           | `#16A34A`                    | Completed, Healthy, Low risk      |
+| `success-soft`      | `#ECFDF5`                    | Nền badge success                 |
+| `warning`           | `#D97706` (Canva: `#F59E0B`) | On Hold, Attention, High priority |
+| `warning-soft`      | `#FFF7ED`                    | Nền badge warning                 |
+| `danger`            | `#DC2626`                    | Blocked, Critical, Overdue        |
+| `danger-soft`       | `#FEF2F2`                    | Nền badge danger                  |
+| `info`              | `#2563EB`                    | In Progress                       |
+| `info-soft`         | `#EFF6FF`                    | Nền badge info                    |
+| `background`        | `#F8FAFC`                    | App background                    |
+| `surface`           | `#FFFFFF`                    | Card/panel nền                    |
+| `surface-secondary` | `#F1F5F9`                    | Nền phụ, table header             |
+| `text-primary`      | `#0F172A`                    | Chữ chính (Canva gốc: `#1E293B`)  |
+| `text-secondary`    | `#475569`                    | Chữ phụ (Canva gốc: `#64748B`)    |
+| `text-muted`        | `#94A3B8`                    | Timestamp, caption                |
+| `border`            | `#E2E8F0`                    | Viền card/input                   |
+| `border-strong`     | `#CBD5E1`                    | Viền nhấn                         |
+| `dark-header`       | `#172033`                    | Header tối (nếu dùng)             |
 
 ## Semantic — Status (8)
 
@@ -51,16 +51,16 @@ Low / Healthy (`#16A34A`) · Medium / Attention (`#F59E0B`) · High / At Risk (`
 
 ## Typography (Inter)
 
-| Level | Size / Weight |
-|---|---|
-| Page Title | 28px Bold |
-| Section Title | 18px SemiBold |
-| Card Value (KPI) | 32px Bold |
-| Card Label | 12px Medium, UPPERCASE |
-| Body | 14px Regular |
-| Small / Caption | 12px Regular, muted |
-| Table Header | 12px SemiBold, UPPERCASE |
-| Badge Text | 11px SemiBold, UPPERCASE |
+| Level            | Size / Weight            |
+| ---------------- | ------------------------ |
+| Page Title       | 28px Bold                |
+| Section Title    | 18px SemiBold            |
+| Card Value (KPI) | 32px Bold                |
+| Card Label       | 12px Medium, UPPERCASE   |
+| Body             | 14px Regular             |
+| Small / Caption  | 12px Regular, muted      |
+| Table Header     | 12px SemiBold, UPPERCASE |
+| Badge Text       | 11px SemiBold, UPPERCASE |
 
 ## Spacing scale
 

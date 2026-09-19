@@ -1,0 +1,22 @@
+{
+  "name": "smart-task-manager",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "typecheck": "tsc -b",
+    "typecheck:clean": "tsc -b --clean",
+    "lint": "eslint .",
+    "format": "prettier --check .",
+    "format:write": "prettier --write ."
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.15.0",
+    "eslint": "^9.15.0",
+    "eslint-config-prettier": "^9.1.0",
+    "prettier": "^3.3.3",
+    "typescript": "^5.7.2",
+    "typescript-eslint": "^8.15.0"
+  }
+}

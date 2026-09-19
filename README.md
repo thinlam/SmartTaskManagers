@@ -6,14 +6,14 @@ và (dần dần) một backend/data layer duy nhất.
 
 ## Nền tảng
 
-| Platform | Trạng thái | Ghi chú |
-|---|---|---|
-| **Google Sheets + Apps Script** | ✅ Production | `apps/google-sheets` — client chính thức hiện tại, không đụng |
-| **Windows Desktop** (React + Tauri) | 🟢 Ưu tiên hiện tại | `apps/desktop` — build ra `.exe` / `.msi` |
-| **Backend** (ASP.NET Core) | 🟡 Sắp tới (Phase 20+) | `backend/` |
-| **Web** (React) | 🟡 Sắp tới (Phase 33) | `apps/web` — dùng chung `packages/*` với Desktop |
-| **Android / iOS** | 🔜 Research only | Capacitor, chưa code |
-| **Excel** | ⏸ Frozen | `apps/excel` — chưa bắt đầu, giữ chỗ |
+| Platform                            | Trạng thái             | Ghi chú                                                       |
+| ----------------------------------- | ---------------------- | ------------------------------------------------------------- |
+| **Google Sheets + Apps Script**     | ✅ Production          | `apps/google-sheets` — client chính thức hiện tại, không đụng |
+| **Windows Desktop** (React + Tauri) | 🟢 Ưu tiên hiện tại    | `apps/desktop` — build ra `.exe` / `.msi`                     |
+| **Backend** (ASP.NET Core)          | 🟡 Sắp tới (Phase 20+) | `backend/`                                                    |
+| **Web** (React)                     | 🟡 Sắp tới (Phase 33)  | `apps/web` — dùng chung `packages/*` với Desktop              |
+| **Android / iOS**                   | 🔜 Research only       | Capacitor, chưa code                                          |
+| **Excel**                           | ⏸ Frozen               | `apps/excel` — chưa bắt đầu, giữ chỗ                          |
 
 ## Kiến trúc mục tiêu
 
@@ -90,3 +90,15 @@ Xem đầy đủ tại [`docs/roadmap/ROADMAP.md`](docs/roadmap/ROADMAP.md) (Pha
 - **Google Sheets**: xem [`apps/google-sheets/README.md`](apps/google-sheets/README.md).
 - **Desktop / Web / Backend**: chưa có code, sẽ được bổ sung theo từng Phase — mỗi Phase có
   command, cách chạy và cách test riêng khi được thực hiện.
+
+### Dev tooling (packages/\*)
+
+```bash
+npm install          # cài dependency cho toàn bộ npm workspaces (packages/*)
+npm run typecheck     # tsc -b — build theo project references
+npm run lint            # eslint . (không lint apps/google-sheets, apps/excel)
+npm run format            # prettier --check .
+npm run format:write       # prettier --write .
+```
+
+Yêu cầu: Node.js (khuyến nghị bản LTS mới nhất) và npm — chưa cần Rust/.NET cho đến Phase 06/20.

@@ -1,0 +1,10 @@
+{
+  "files": [],
+  "references": [
+    { "path": "packages/types" },
+    { "path": "packages/shared" },
+    { "path": "packages/api-client" },
+    { "path": "packages/hooks" },
+    { "path": "packages/ui" }
+  ]
+}
