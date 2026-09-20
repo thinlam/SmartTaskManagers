@@ -7,7 +7,7 @@ PHASE 02  Frontend foundation (workspaces, tsconfig/eslint dùng chung)         
 PHASE 03  Canva Design Analysis                                         ✅ DONE (docs/design-system)
 PHASE 04  Design System (packages/ui)                                          ✅ DONE (partial)
 PHASE 05  React + TypeScript + Vite setup (apps/desktop)                       ✅ DONE
-PHASE 06  Tauri Desktop setup
+PHASE 06  Tauri Desktop setup                                                  ✅ DONE
 PHASE 07  Application Shell
 PHASE 08  Sidebar + Topbar + Navigation (Personal Mode — không có Members)
 PHASE 09  Dashboard
@@ -85,6 +85,29 @@ Button hoạt động đúng đường dây. `npm run dev:desktop` (`localhost:5
 
 Còn lại của Phase 04 (`Card`/`Badge`/`Progress`/`Modal`/...) tiếp tục bổ sung dần khi các màn hình
 Phase 09+ cần đến, không dựng hết component trước.
+
+Phase 06 đã thực hiện: kiểm tra máy trước khi cài (theo đúng nguyên tắc không giả định) — phát
+hiện MSVC Build Tools (VS 2022 Community, `D:\Program Files\...`), Windows SDK 10.0.26100.0 (trên
+ổ D) và WebView2 Runtime đã có sẵn; chỉ thiếu Rust, cài qua
+`winget install --id Rustlang.Rustup --source winget --accept-source-agreements --accept-package-agreements --silent`
+(ra Rust 1.98.1). Cài `@tauri-apps/cli` + `@tauri-apps/api` vào `apps/desktop`, chạy
+`tauri init --ci` sinh `apps/desktop/src-tauri/` (Tauri 2.11), chỉnh `identifier` thành
+`com.smarttaskmanager.desktop` (giá trị mặc định `com.tauri.dev` không nên dùng thật), dọn
+`Cargo.toml` (bỏ placeholder `authors`, sửa `description`).
+
+Quyết định: `Cargo.lock` trong `src-tauri/` **được commit** (khác với dự định ban đầu ở Phase 01
+`.gitignore` là loại trừ nó) — vì đây là ứng dụng, không phải thư viện, cần lockfile reproducible;
+đã sửa `.gitignore` cho đúng.
+
+Verify thật, không chỉ typecheck: `cargo check` (3 phút, biên dịch toàn bộ crate Tauri +
+webview2-com) pass; `cargo build` cho ra `apps/desktop/src-tauri/target/debug/app.exe` (~12MB)
+thật; `npm run dev:tauri` chạy thật, mở cửa sổ Windows native (`app.exe` xuất hiện trong
+`tasklist`, Vite dev server đúng cổng 5173 theo `devUrl` trong `tauri.conf.json`) — log sạch,
+không lỗi. Gặp và xử lý một lỗi thật giữa chừng: chạy `tauri dev` trong khi dev server Phase 05 cũ
+(`npm run dev:desktop`) vẫn còn sống ở cổng 5173 khiến Vite mới bật lên cổng 5174 thay vì 5173,
+lệch với `devUrl` cấu hình cứng — phải dừng hẳn server cũ rồi chạy lại một lần sạch. **Vẫn chưa
+xác nhận bằng mắt** cửa sổ hiển thị đúng UI (không có công cụ chụp màn hình trong session) — người
+dùng có thể tự nhìn thấy cửa sổ thật đang mở trên máy khi chạy.
 
 Mỗi Phase kế tiếp sẽ được trình bày riêng theo format: Mục tiêu → File tạo/sửa → Full code →
 Command → Cách chạy → Cách test → Expected Result → Checklist → Git commit đề xuất.

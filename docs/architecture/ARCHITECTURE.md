@@ -81,6 +81,13 @@ Windows
 Tauri: native window, system integration, notification, auto-update (sau), installer
 (`.exe`/`.msi`). UI vẫn 100% React, dùng chung `packages/ui`.
 
+Đã cài đặt thật (Phase 06): Tauri 2.11, `identifier: com.smarttaskmanager.desktop`,
+`src-tauri/tauri.conf.json` trỏ `devUrl` → Vite dev server, `frontendDist` → `apps/desktop/dist`.
+`Cargo.lock` trong `src-tauri/` **được commit** (ứng dụng, không phải thư viện — cần reproducible
+build, khác với `package-lock.json` cũng được commit nhưng vì lý do tương tự). Yêu cầu hệ thống
+(Rust toolchain, MSVC Build Tools + Windows SDK, WebView2 Runtime) liệt kê tại
+`apps/desktop/README.md`.
+
 ## Frontend stack (đã cài đặt thật, Phase 05)
 
 |                 | Đã chọn                                                | Ghi chú                                                                                                                                                                                                             |

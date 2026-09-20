@@ -6,14 +6,14 @@ và (dần dần) một backend/data layer duy nhất.
 
 ## Nền tảng
 
-| Platform                            | Trạng thái             | Ghi chú                                                       |
-| ----------------------------------- | ---------------------- | ------------------------------------------------------------- |
-| **Google Sheets + Apps Script**     | ✅ Production          | `apps/google-sheets` — client chính thức hiện tại, không đụng |
-| **Windows Desktop** (React + Tauri) | 🟢 Ưu tiên hiện tại    | `apps/desktop` — build ra `.exe` / `.msi`                     |
-| **Backend** (ASP.NET Core)          | 🟡 Sắp tới (Phase 20+) | `backend/`                                                    |
-| **Web** (React)                     | 🟡 Sắp tới (Phase 33)  | `apps/web` — dùng chung `packages/*` với Desktop              |
-| **Android / iOS**                   | 🔜 Research only       | Capacitor, chưa code                                          |
-| **Excel**                           | ⏸ Frozen               | `apps/excel` — chưa bắt đầu, giữ chỗ                          |
+| Platform                            | Trạng thái             | Ghi chú                                                          |
+| ----------------------------------- | ---------------------- | ---------------------------------------------------------------- |
+| **Google Sheets + Apps Script**     | ✅ Production          | `apps/google-sheets` — client chính thức hiện tại, không đụng    |
+| **Windows Desktop** (React + Tauri) | 🟢 Đang phát triển     | `apps/desktop` — `tauri dev` chạy được; `.exe`/`.msi` ở Phase 32 |
+| **Backend** (ASP.NET Core)          | 🟡 Sắp tới (Phase 20+) | `backend/`                                                       |
+| **Web** (React)                     | 🟡 Sắp tới (Phase 33)  | `apps/web` — dùng chung `packages/*` với Desktop                 |
+| **Android / iOS**                   | 🔜 Research only       | Capacitor, chưa code                                             |
+| **Excel**                           | ⏸ Frozen               | `apps/excel` — chưa bắt đầu, giữ chỗ                             |
 
 ## Kiến trúc mục tiêu
 
@@ -52,7 +52,7 @@ SmartTaskManagers/
 ├── apps/
 │   ├── google-sheets/   Production — Apps Script + clasp (xem README riêng trong thư mục)
 │   ├── excel/            Frozen — chưa code, chỉ giữ chỗ
-│   ├── desktop/           React + Tauri (Windows) — bắt đầu từ Phase 05
+│   ├── desktop/           React + Tauri (Windows) — Phase 05 (Vite/React) + 06 (Tauri) done
 │   └── web/               React (Web) — bắt đầu từ Phase 33
 ├── packages/              Code dùng chung giữa desktop/web
 │   ├── ui/                Design tokens + component library (nguồn: Canva)
@@ -100,8 +100,14 @@ npm run lint                 # eslint . (không lint apps/google-sheets, apps/ex
 npm run format                 # prettier --check .
 npm run format:write            # prettier --write .
 
-npm run dev:desktop        # chạy apps/desktop tại http://localhost:5173
+npm run dev:desktop        # chạy apps/desktop tại http://localhost:5173 (web thường)
 npm run build:desktop        # production build vào apps/desktop/dist
+
+npm run dev:tauri          # mở apps/desktop như cửa sổ Windows native (Tauri)
+npm run build:tauri          # build release + bundle .exe/.msi
 ```
 
-Yêu cầu: Node.js (khuyến nghị bản LTS mới nhất) và npm — chưa cần Rust/.NET cho đến Phase 06/20.
+Yêu cầu: Node.js + npm luôn cần. Rust + MSVC Build Tools + Windows SDK + WebView2 Runtime chỉ
+cần cho `dev:tauri`/`build:tauri` — xem chi tiết tại
+[`apps/desktop/README.md`](apps/desktop/README.md#yêu-cầu-hệ-thống-windows). Chưa cần .NET đến
+Phase 20.

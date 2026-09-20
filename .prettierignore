@@ -4,3 +4,4 @@ apps/google-sheets/
 apps/excel/
 node_modules/
 dist/
+**/src-tauri/target/

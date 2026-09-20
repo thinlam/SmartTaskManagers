@@ -9,7 +9,9 @@ build/
 
 # ── Tauri (apps/desktop/src-tauri) ───────────────────────────────────────────
 apps/desktop/src-tauri/target/
-apps/desktop/src-tauri/Cargo.lock
+apps/desktop/src-tauri/gen/schemas/
+# Cargo.lock IS committed on purpose — src-tauri builds a binary application,
+# not a library, so the lockfile should be reproducible across machines.
 
 # ── .NET (backend/) ──────────────────────────────────────────────────────────
 bin/
