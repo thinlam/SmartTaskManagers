@@ -6,7 +6,7 @@ PHASE 01  Kiến trúc mới + Monorepo strategy                             ✅
 PHASE 02  Frontend foundation (workspaces, tsconfig/eslint dùng chung)          ✅ DONE
 PHASE 03  Canva Design Analysis                                         ✅ DONE (docs/design-system)
 PHASE 04  Design System (packages/ui)                                          ✅ DONE (partial)
-PHASE 05  React + TypeScript + Vite setup (apps/desktop)
+PHASE 05  React + TypeScript + Vite setup (apps/desktop)                       ✅ DONE
 PHASE 06  Tauri Desktop setup
 PHASE 07  Application Shell
 PHASE 08  Sidebar + Topbar + Navigation (Personal Mode — không có Members)
@@ -62,6 +62,29 @@ nghĩa thay vì hex cứng). **Chưa verify được bằng mắt** — chưa c�
 thật (chọn version, cấu hình theme) và xác nhận UI khớp Canva bằng mắt dời sang Phase 05/09.
 Còn lại: `Card`/`Badge`/`Progress`/`Modal`/`Dropdown`/`Tooltip`/`EmptyState`/... sẽ bổ sung dần khi
 các màn hình cụ thể cần đến (không dựng hết component trước khi có màn hình dùng).
+
+Phase 05 đã thực hiện: `apps/desktop` (Vite + React 19 + TypeScript), Tailwind v4 qua
+`@tailwindcss/vite` (CSS-first, không có `tailwind.config.js`) — theme canonical đặt tại
+`packages/ui/src/styles/theme.css` (map các token trong `packages/ui/src/tokens/*.ts` sang CSS
+custom properties `--color-*`/`--radius-*`/`--shadow-*`/`--font-sans`), `apps/desktop/src/index.css`
+import lại qua `@stm/ui/theme.css` + khai báo `@source '../../../packages/ui/src'` (bắt buộc —
+Tailwind v4 mặc định bỏ qua `node_modules` khi quét class, mà `@stm/ui` được resolve qua workspace
+symlink). `src/App.tsx` là trang smoke-test tạm (render các variant `Button`), sẽ bị thay bởi
+Application Shell thật ở Phase 07.
+
+Quyết định kỹ thuật đáng chú ý: `apps/desktop` là leaf project (`composite: false, noEmit: true`)
+— không nằm trong `references` của `tsconfig.json` gốc (khác với `packages/*`, vốn đều
+`composite: true` để có thể được project khác reference); nó tự typecheck qua script riêng
+(`npm run typecheck --workspace=apps/desktop`), được gộp vào script `typecheck` gốc.
+
+Verify thật (không giả định): `npm run typecheck`, `npm run lint`, `npm run format` pass sạch;
+`npm run build:desktop` build production thành công, và đã kiểm tra trực tiếp nội dung CSS sinh ra
+chứa đúng `--color-primary:#4f46e5` và utility `.bg-primary` — xác nhận token Canva → Tailwind →
+Button hoạt động đúng đường dây. `npm run dev:desktop` (`localhost:5173`) đã chạy được, nhưng
+**chưa xác nhận bằng mắt trong trình duyệt thật** (không có công cụ trình duyệt trong session này).
+
+Còn lại của Phase 04 (`Card`/`Badge`/`Progress`/`Modal`/...) tiếp tục bổ sung dần khi các màn hình
+Phase 09+ cần đến, không dựng hết component trước.
 
 Mỗi Phase kế tiếp sẽ được trình bày riêng theo format: Mục tiêu → File tạo/sửa → Full code →
 Command → Cách chạy → Cách test → Expected Result → Checklist → Git commit đề xuất.

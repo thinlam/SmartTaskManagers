@@ -91,14 +91,17 @@ Xem đầy đủ tại [`docs/roadmap/ROADMAP.md`](docs/roadmap/ROADMAP.md) (Pha
 - **Desktop / Web / Backend**: chưa có code, sẽ được bổ sung theo từng Phase — mỗi Phase có
   command, cách chạy và cách test riêng khi được thực hiện.
 
-### Dev tooling (packages/\*)
+### Dev tooling
 
 ```bash
-npm install          # cài dependency cho toàn bộ npm workspaces (packages/*)
-npm run typecheck     # tsc -b — build theo project references
-npm run lint            # eslint . (không lint apps/google-sheets, apps/excel)
-npm run format            # prettier --check .
-npm run format:write       # prettier --write .
+npm install               # ở repo root — cài cho toàn bộ npm workspaces (apps/desktop, packages/*)
+npm run typecheck          # tsc -b (packages/*) + typecheck riêng của apps/desktop
+npm run lint                 # eslint . (không lint apps/google-sheets, apps/excel)
+npm run format                 # prettier --check .
+npm run format:write            # prettier --write .
+
+npm run dev:desktop        # chạy apps/desktop tại http://localhost:5173
+npm run build:desktop        # production build vào apps/desktop/dist
 ```
 
 Yêu cầu: Node.js (khuyến nghị bản LTS mới nhất) và npm — chưa cần Rust/.NET cho đến Phase 06/20.

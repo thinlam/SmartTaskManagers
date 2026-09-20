@@ -81,6 +81,25 @@ Windows
 Tauri: native window, system integration, notification, auto-update (sau), installer
 (`.exe`/`.msi`). UI vẫn 100% React, dùng chung `packages/ui`.
 
+## Frontend stack (đã cài đặt thật, Phase 05)
+
+|                 | Đã chọn                                                | Ghi chú                                                                                                                                                                                                             |
+| --------------- | ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Framework       | React 19                                               |                                                                                                                                                                                                                     |
+| Build tool      | Vite 6                                                 | `apps/desktop`                                                                                                                                                                                                      |
+| Styling         | Tailwind CSS v4 (`@tailwindcss/vite`)                  | CSS-first — không có `tailwind.config.js`; theme khai báo bằng CSS custom properties trong `packages/ui/src/styles/theme.css` (`@theme { --color-primary: ...; }`), tự sinh utility (`bg-primary`, `rounded-md`...) |
+| Variant styling | `class-variance-authority` + `clsx` + `tailwind-merge` | trong `packages/ui`                                                                                                                                                                                                 |
+
+`packages/ui/src/styles/theme.css` là bản CSS canonical song song với `packages/ui/src/tokens/*.ts`
+(bản TS canonical cho consumer không phải Tailwind) — Tailwind v4 không đọc được object JS, nên
+hai file này phải giữ đồng bộ thủ công mỗi khi đổi token. Mọi app dùng `@stm/ui` phải:
+
+```css
+@import 'tailwindcss';
+@import '@stm/ui/theme.css';
+@source '../../../packages/ui/src'; /* bắt buộc — xem apps/desktop/README.md */
+```
+
 ## Backend
 
 ASP.NET Core, Clean Architecture 4 lớp:

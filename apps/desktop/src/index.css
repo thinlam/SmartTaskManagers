@@ -1,0 +1,17 @@
+@import 'tailwindcss';
+@import '@stm/ui/theme.css';
+
+/*
+ * Tailwind v4 auto-detects source files but deliberately skips
+ * node_modules — and @stm/ui is resolved as a workspace symlink there, so
+ * without this, classes used only inside packages/ui components (like
+ * Button's bg-primary) never make it into the generated CSS. Every app
+ * that consumes @stm/ui needs this same line.
+ */
+@source '../../../packages/ui/src';
+
+body {
+  background-color: var(--color-background);
+  color: var(--color-ink-primary);
+  font-family: var(--font-sans);
+}
