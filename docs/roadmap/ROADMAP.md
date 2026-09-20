@@ -9,7 +9,7 @@ PHASE 04  Design System (packages/ui)                                          �
 PHASE 05  React + TypeScript + Vite setup (apps/desktop)                       ✅ DONE
 PHASE 06  Tauri Desktop setup                                                  ✅ DONE
 PHASE 07  Application Shell                                                    ✅ DONE
-PHASE 08  Sidebar + Topbar + Navigation (Personal Mode — không có Members)
+PHASE 08  Sidebar + Topbar + Navigation (Personal Mode — không có Members)      ✅ DONE
 PHASE 09  Dashboard
 PHASE 10  Today
 PHASE 11  Inbox
@@ -128,6 +128,30 @@ phải `any`/ép kiểu tuỳ tiện). Sau khi sửa: `npm run typecheck`/`lint`
 file JS build ra để xác nhận, không đoán); `npm run dev:tauri` mở cửa sổ Windows thật
 (`app.exe` sống ổn định, không crash sau khi chạy vài giây), log sạch. Vẫn chưa xác nhận bằng mắt
 việc click điều hướng giữa các trang hiển thị đúng nội dung — không có công cụ chụp màn hình.
+
+Phase 08 đã thực hiện: `packages/ui/src/components/Sidebar` và `.../Topbar` — component thật, bám
+Canva (group header uppercase, icon Lucide, active/hover state, collapse). Cả hai **router-agnostic**
+(không import `react-router-dom`): `Sidebar` chỉ nhận `href`/`active` đã tính sẵn từ consumer, để
+tái dùng được ở `apps/web` (Phase 33) dù router/scheme URL có khác. `apps/desktop/src/app/routes.ts`
+thêm field `icon` (component Lucide, verify tên thật bằng cách grep type declaration đã cài — vài
+tên đã đổi giữa các bản, ví dụ `BarChart3` cũ nay là `ChartColumn`). `AppShell.tsx` giờ dùng
+`Sidebar`/`Topbar` thật thay `<nav>` tạm của Phase 07, tự tính `active` từ `useLocation()`.
+Nút "+ New Task" trong `Topbar` hiện chỉ `console.info` — Quick Add thật chưa tồn tại, đó là Phase 12.
+
+Sự cố kỹ thuật thật gặp phải và cách sửa: `@types/react`/`@types/react-dom` từng được khai báo
+riêng ở cả `packages/ui` lẫn `apps/desktop`, khiến npm cài **2 bản không hoist về root** — hậu quả:
+TypeScript báo lỗi `LucideProps` (type của `lucide-react`, vốn kế thừa `SVGProps` từ `react`)
+"thiếu" `className`, vì việc resolve `'react'` từ bên trong `lucide-react` không tìm ra bản types
+hoisted duy nhất. Sửa bằng cách gom `@types/react*` về đúng 1 chỗ — root `package.json`
+devDependencies — áp dụng nguyên tắc đã rút ra từ lỗi trùng bản `react` thật ở Phase 05.
+
+Verify thật: sau khi sửa, `npm run typecheck`/`lint`/`format` pass sạch; `npm run build:desktop`
+build production thành công (1924 module do lucide-react có icon riêng từng module — bundle
+358KB/gzip 113KB, chưa tối ưu tree-shaking sâu, không phải trọng tâm Phase 08); đã grep trực tiếp
+CSS/JS build ra xác nhận `bg-primary-light`, `bg-danger`, text "Smart Task"/"Overview"/"Planning"/
+"Insights"/"Search tasks..." đều có mặt. `npm run dev:tauri` mở cửa sổ Windows thật, ổn định không
+crash. Vẫn chưa xác nhận bằng mắt Sidebar/Topbar hiển thị đúng theo Canva — không có công cụ chụp
+màn hình trong session; bạn có thể tự xem trực tiếp trên máy.
 
 Mỗi Phase kế tiếp sẽ được trình bày riêng theo format: Mục tiêu → File tạo/sửa → Full code →
 Command → Cách chạy → Cách test → Expected Result → Checklist → Git commit đề xuất.

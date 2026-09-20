@@ -1,44 +1,52 @@
-import { cn } from '@stm/ui';
-import { NavLink, Outlet, type NavLinkRenderProps } from 'react-router-dom';
-import { APP_ROUTES } from './routes';
+import { useState } from 'react';
+import { Outlet, useLocation } from 'react-router-dom';
+import { Sidebar, Topbar, type SidebarGroup } from '@stm/ui';
+import { APP_ROUTES, NAV_GROUP_ORDER } from './routes';
 
 /**
- * Phase 07 structural shell only. The <nav> below is a temporary stand-in
- * for the real Sidebar — Phase 08 replaces it with a proper component
- * (grouped headers, icons, collapse, active/hover states per Canva) built
- * from this exact same APP_ROUTES data, so nothing here is throwaway
- * beyond the markup itself.
+ * Real Sidebar + Topbar (Phase 08), replacing Phase 07's temporary <nav>.
+ * Both components are presentational and router-agnostic (live in
+ * packages/ui so apps/web can reuse them later) — this file is the only
+ * place that knows about react-router: it computes `active` from the
+ * current location and builds hrefs from APP_ROUTES.
  */
 export function AppShell() {
+  const location = useLocation();
+  const [collapsed, setCollapsed] = useState(false);
+
+  const groups: SidebarGroup[] = NAV_GROUP_ORDER.map((groupLabel) => ({
+    label: groupLabel,
+    items: APP_ROUTES.filter((route) => route.group === groupLabel).map((route) => {
+      const Icon = route.icon;
+      const isRoot = route.path === '/';
+      return {
+        key: route.path,
+        label: route.label,
+        href: `#${route.path}`,
+        icon: <Icon className="h-4 w-4" aria-hidden="true" />,
+        active: isRoot ? location.pathname === '/' : location.pathname.startsWith(route.path),
+      };
+    }),
+  }));
+
   return (
-    <div className="flex min-h-screen bg-background">
-      <aside className="w-56 shrink-0 border-r border-border bg-surface p-4">
-        <p className="mb-4 text-xs font-semibold uppercase tracking-wide text-ink-muted">
-          ⚡ Smart Task
-        </p>
-        <nav className="flex flex-col gap-1">
-          {APP_ROUTES.map((route) => (
-            <NavLink
-              key={route.path}
-              to={route.path}
-              end={route.path === '/'}
-              className={({ isActive }: NavLinkRenderProps) =>
-                cn(
-                  'rounded-md px-3 py-2 text-sm transition-colors',
-                  isActive
-                    ? 'bg-primary-light text-primary'
-                    : 'text-ink-secondary hover:bg-surface-secondary',
-                )
-              }
-            >
-              {route.label}
-            </NavLink>
-          ))}
-        </nav>
-      </aside>
-      <main className="flex flex-1 flex-col">
-        <Outlet />
-      </main>
+    <div className="flex h-screen bg-background">
+      <Sidebar
+        groups={groups}
+        collapsed={collapsed}
+        onToggleCollapse={() => setCollapsed((c) => !c)}
+      />
+      <div className="flex flex-1 flex-col overflow-hidden">
+        <Topbar
+          onNewTask={() => {
+            // Quick Add doesn't exist yet — real dialog lands with Phase 12 (Tasks).
+            console.info('Quick Add chưa được xây — sẽ làm ở Phase 12 (Tasks).');
+          }}
+        />
+        <main className="flex-1 overflow-y-auto">
+          <Outlet />
+        </main>
+      </div>
     </div>
   );
 }

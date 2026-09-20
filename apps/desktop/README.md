@@ -50,10 +50,9 @@ server (đã gặp lỗi này thật khi verify Phase 06 — xem ghi chú trong 
 ## Application Shell (Phase 07)
 
 ```
-src/app/routes.ts     APP_ROUTES — nguồn duy nhất cho 12 route (path/label/group/phase),
-                       tái dùng ở cả AppShell (Phase 07) lẫn Sidebar thật (Phase 08)
+src/app/routes.ts     APP_ROUTES — nguồn duy nhất cho 12 route (path/label/group/phase/icon)
 src/app/router.tsx     createHashRouter (KHÔNG dùng createBrowserRouter — xem lý do dưới)
-src/app/AppShell.tsx   layout tạm: <nav> trái (thay bằng Sidebar thật ở Phase 08) + <Outlet/>
+src/app/AppShell.tsx   layout thật: Sidebar + Topbar (packages/ui) + <Outlet/>
 src/pages/PlaceholderPage.tsx   1 component dùng chung cho mọi route chưa có trang thật
 ```
 
@@ -63,7 +62,17 @@ có server để trả `index.html` cho mọi path (SPA fallback) — deep-link 
 kể serve thế nào, cả lúc dev lẫn sau khi đóng gói.
 
 Mỗi route hiện render `PlaceholderPage` — Phase 09+ thay `element` trong `router.tsx` bằng trang
-thật, path/label/group trong `routes.ts` giữ nguyên.
+thật, path/label/group/icon trong `routes.ts` giữ nguyên.
+
+## Sidebar + Topbar (Phase 08)
+
+`AppShell.tsx` dùng `Sidebar`/`Topbar` thật từ `@stm/ui` (xem `packages/ui/README.md` để biết vì
+sao 2 component này không phụ thuộc `react-router-dom`). File này là nơi **duy nhất** tính
+`active` (từ `useLocation()`) và ghép `href` dạng hash (`#/tasks`) — `routes.ts` chỉ giữ path thật
+(`/tasks`), không tự thêm `#`.
+
+Nút "+ New Task" trên Topbar hiện chỉ `console.info` — Quick Add thật (dialog/sidebar tạo task
+nhanh, theo mẫu `10_QuickAdd.gs` bên Google Sheets) chưa tồn tại, sẽ xây ở **Phase 12**.
 
 ## Lưu ý quan trọng khi thêm package mới dùng Tailwind class
 
