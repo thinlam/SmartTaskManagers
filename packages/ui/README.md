@@ -57,6 +57,11 @@ Nguồn thiết kế: Canva Design System (xem
   `00_Constants.gs`, Frequency mới quyết định đơn vị nào, card không tự đoán), thanh progress chỉ
   hiện khi có `targetCount > 0`, và nút "Check in today" (disable khi đã check-in hôm nay) — toàn
   bộ tính toán (checkedInToday, label ngày) do caller làm, card chỉ hiển thị.
+- ✅ `components/Switch` (Phase 19) — đã hứa từ Phase 04 (`Checkbox`/`Switch` trong component
+  inventory, Frame 02), giờ mới có nhu cầu thật (4 toggle Smart Engine trong Settings). `<button
+role="switch" aria-checked>` thuần, không phải `<input type="checkbox">` ẩn + label giả — đơn
+  giản hơn để đồng bộ với `checked` từ ngoài, vì Settings không có bước submit form nào (mỗi toggle
+  cập nhật state ngay khi click). `aria-label` **bắt buộc**, cùng lý do `IconButton`.
 - ⏳ `Card`/`Modal`/`Dropdown`/`Tooltip`/... — chưa làm, theo sau khi các màn hình cần đến.
 
 ## Sidebar/Topbar — router-agnostic theo thiết kế

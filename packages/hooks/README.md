@@ -27,6 +27,9 @@ React hooks dùng chung: `useTasks`, `useProjects`, `useGoals`, `useHabits`, `us
   hoàn thành habit nào ở đó): +1 streak, +1 completedCount, set `lastCompletedDate` = hôm nay,
   no-op nếu hôm nay đã check-in rồi (tránh đếm 2 lần cùng ngày). Cố ý **không** có logic reset
   streak khi bỏ lỡ ngày — không có tham chiếu thật nào để verify công thức đó, nên không bịa ra.
+- ✅ `useSettings` (Phase 19): đơn giản hơn các hook trên — Settings là **1 object**, không phải
+  danh sách, nên chỉ có `settings` + `updateSettings(patch)`, không add/delete. Cùng tradeoff: chỉ
+  đổi React state, không persist.
 - ⏳ `useAuth` — chưa làm, thêm khi Phase tương ứng cần.
 
 ## Test

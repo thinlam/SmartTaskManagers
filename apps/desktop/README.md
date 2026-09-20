@@ -403,3 +403,41 @@ build production thành công — grep trực tiếp bundle xác nhận text "An
 (đã thử lại). Nên tự thử trên máy trước khi coi Phase 18 là xong hẳn: xác nhận các con số (Completion
 Rate/Overdue Rate/phân bố Priority/Area) khớp đúng với dữ liệu task thật đang có trong app, và
 Weekly Trend đếm đúng theo `completedDate`.
+
+## Settings (Phase 19)
+
+```
+src/mock/settings.ts             MOCK_SETTINGS — copy 1:1 DEFAULT_SETTINGS (00_Constants.gs)
+src/state/SettingsContext.tsx     SettingsProvider + useSettingsContext() — 1 object, không có drawer/editingX
+src/pages/Settings/SettingsPage.tsx   form 4 nhóm (General/Task Defaults/Focus & Schedule/Smart Engine)
+```
+
+**Không có Create/Edit/Delete** như các entity khác — Settings là **1 object duy nhất**, nên
+`SettingsPage` là 1 form sửa tại chỗ: mỗi field gọi `updateSettings(patch)` ngay khi đổi, không có
+nút Save riêng — giống cách màn Settings của app native thường hoạt động, không phải thiết kế tuỳ
+tiện.
+
+`packages/ui` thêm `Switch` (đã hứa từ Phase 04, giờ mới có nhu cầu thật — 4 toggle nhóm "Smart
+Engine": Smart Score Enabled/Goal Alignment Enabled/Schedule Overload Warning/Explain
+Recommendations). Có ghi chú rõ trong UI: các toggle này **chưa đổi hành vi gì trong app** — Smart
+Engine thật là Phase 29.
+
+**Cố ý không nối Settings vào nơi tiêu thụ nào** — dù Sheets thật có đọc `defaultStatus`/
+`defaultPriority`/`defaultEstimateMinutes` khi tạo task (`createTask_()`/Quick Add) và `dueSoonDays`/
+`dailyFocusLimitHours` ở Dashboard/Today, việc nối `TaskDetailDrawer`/`useTasks` đọc
+`SettingsContext` bị hoãn sang Phase sau — cùng mức độ kiềm chế đã áp dụng cho KPI Streak của
+Dashboard ở Phase 15 (không lùi lại sửa các trang đã xong ở Phase trước, chỉ làm trang mới đúng
+100% thật ở scope của Phase đó).
+
+**Sự cố thật gặp phải khi viết code:** JSDoc comment cho `Settings` type (trong `@stm/types`) chứa
+chuỗi `FocusDays*/` — 2 ký tự `*/` bên trong đoạn văn vô tình đóng khối comment sớm, gây hàng loạt
+lỗi cú pháp dây chuyền ở `tsc`. Sửa bằng cách viết lại câu để không có `*/` liền nhau trong nội dung
+comment.
+
+Verify thật: `npm run typecheck`/`lint`/`format` pass sạch (sau khi sửa lỗi comment trên). `npm run
+build:desktop` build production thành công — grep trực tiếp bundle xác nhận text "Settings"/
+"Workspace Name"/"Smart Engine"/"Focus & Schedule" thật có mặt. `npm run dev:tauri` mở `app.exe`
+thật, ổn định, `Responding: True`. **Chưa click-test tương tác thật** — `claude-in-chrome` vẫn
+không kết nối được (đã thử lại). Nên tự thử trên máy trước khi coi Phase 19 là xong hẳn: đổi từng
+loại field (text/select/number/time/switch) và xác nhận giá trị cập nhật đúng ngay lập tức, không
+cần bấm Save.

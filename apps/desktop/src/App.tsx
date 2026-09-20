@@ -4,6 +4,7 @@ import { TasksProvider } from './state/TasksContext';
 import { ProjectsProvider } from './state/ProjectsContext';
 import { GoalsProvider } from './state/GoalsContext';
 import { HabitsProvider } from './state/HabitsContext';
+import { SettingsProvider } from './state/SettingsContext';
 
 export default function App() {
   return (
@@ -11,7 +12,9 @@ export default function App() {
       <ProjectsProvider>
         <GoalsProvider>
           <HabitsProvider>
-            <RouterProvider router={router} />
+            <SettingsProvider>
+              <RouterProvider router={router} />
+            </SettingsProvider>
           </HabitsProvider>
         </GoalsProvider>
       </ProjectsProvider>

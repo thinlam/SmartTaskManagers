@@ -20,7 +20,7 @@ PHASE 15  Habits                                                               �
 PHASE 16  Calendar                                                             ✅ DONE (chưa click-test — xem ghi chú)
 PHASE 17  Kanban                                                               ✅ DONE (chưa click-test — xem ghi chú)
 PHASE 18  Analytics (Reports)                                                 ✅ DONE (chưa click-test — xem ghi chú)
-PHASE 19  Settings
+PHASE 19  Settings                                                             ✅ DONE (chưa click-test — xem ghi chú)
 PHASE 20  Backend architecture (ASP.NET Core, Clean Architecture skeleton)
 PHASE 21  Database (EF Core + SQL Server, migrations, schema từ Tasks/Projects/Goals/Habits)
 PHASE 22  Authentication (JWT; sau này + Google/Microsoft)
@@ -467,6 +467,34 @@ build production thành công — grep trực tiếp bundle xác nhận text Ana
 dev:tauri` mở `app.exe` thật, ổn định. **Chưa click-test tương tác thật** — `claude-in-chrome` vẫn
 không kết nối được dù đã thử lại. Nên tự thử trên máy trước khi coi Phase 18 là xong hẳn: xác nhận
 các con số khớp đúng dữ liệu task thật đang có, Weekly Trend đếm đúng theo `completedDate`.
+
+Phase 19 đã thực hiện: đọc thật `DEFAULT_SETTINGS`/`getSetting_()` trong `00_Constants.gs`/
+`01_Utils.gs` trước khi code, và grep toàn bộ `apps/google-sheets/src` để biết chính xác key nào
+**thật sự được đọc** ở đâu đó — chỉ 5/18 key (`DefaultStatus`/`DefaultPriority`/
+`DefaultEstimateMinutes` dùng bởi `createTask_()`/Quick Add, `DueSoonDays`/`DailyFocusLimitHours`
+dùng bởi Dashboard/Today) có consumer thật; 13 key còn lại được định nghĩa nhưng chưa hàm nào đọc.
+Sheets cũng không có hàm ghi settings nào (`getSetting_()` chỉ đọc) — Settings được sửa bằng tay
+trực tiếp trên sheet.
+
+`packages/types` thêm `Settings` — 1 object duy nhất khớp 1:1 18 key/4 category của
+`DEFAULT_SETTINGS`, không phải entity list (khác Task/Project/Goal/Habit). `packages/hooks` thêm
+`useSettings` — đơn giản hơn các hook trước, chỉ `settings` + `updateSettings(patch)`, không
+add/delete. `packages/ui` thêm `Switch` (đã hứa từ Phase 04, giờ mới có nhu cầu thật cho 4 toggle
+Smart Engine).
+
+`apps/desktop` thêm `SettingsProvider` + trang Settings — form sửa tại chỗ (không Drawer, không nút
+Save riêng, mỗi field cập nhật ngay khi đổi, giống settings screen app native). **Cố ý không nối**
+Settings vào nơi tiêu thụ thật nào (default khi tạo Task, dữ liệu thật Dashboard/Today) — cùng mức
+kiềm chế đã áp dụng cho KPI Streak của Dashboard ở Phase 15, để dành Phase sau.
+
+**Sự cố thật gặp khi viết code:** JSDoc comment chứa chuỗi `FocusDays*/` — `*/` xuất hiện tình cờ
+trong văn bản đóng khối comment sớm, gây lỗi cú pháp dây chuyền ở `tsc`. Sửa bằng viết lại câu.
+
+Verify thật: `npm run typecheck`/`lint`/`format` pass sạch (sau khi sửa lỗi trên). `npm run
+build:desktop` build production thành công — grep trực tiếp bundle xác nhận text Settings thật có
+mặt. `npm run dev:tauri` mở `app.exe` thật, ổn định. **Chưa click-test tương tác thật** —
+`claude-in-chrome` vẫn không kết nối được dù đã thử lại. Nên tự thử trên máy trước khi coi Phase 19
+là xong hẳn: đổi từng loại field và xác nhận cập nhật đúng ngay lập tức.
 
 Mỗi Phase kế tiếp sẽ được trình bày riêng theo format: Mục tiêu → File tạo/sửa → Full code →
 Command → Cách chạy → Cách test → Expected Result → Checklist → Git commit đề xuất.

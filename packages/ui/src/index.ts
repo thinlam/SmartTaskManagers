@@ -34,3 +34,4 @@ export { SmartInsightCard, type SmartInsightCardProps } from './components/Smart
 export { EmptyState, type EmptyStateProps } from './components/EmptyState';
 export { IconButton, type IconButtonProps } from './components/IconButton';
 export { Drawer, type DrawerProps } from './components/Drawer';
+export { Switch, type SwitchProps } from './components/Switch';

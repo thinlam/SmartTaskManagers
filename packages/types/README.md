@@ -35,6 +35,15 @@ Một nguồn duy nhất — không định nghĩa lại Task interface khác nh
   cũng không có hàm hoàn thành habit nào để port (`createHabit_()` chỉ set mặc định
   `0`/`0`/`''`) — hành vi "check in hôm nay" ở `useHabits` (`@stm/hooks`) là thiết kế hợp lý tối
   thiểu cho app, không phải port.
+- ✅ `Settings` (Phase 19): khớp 1:1 `DEFAULT_SETTINGS` (`00_Constants.gs`, 18 key/4 category). Là
+  **1 object duy nhất**, không phải entity list — Sheets lưu dạng hàng Key/Value/Category vì
+  spreadsheet không có khái niệm "1 dòng settings" tự nhiên, ở đây dùng object có kiểu thay vì port
+  đúng hình dạng hàng đó. Trong 18 key chỉ có 5 key thật sự được đọc ở đâu đó phía Sheets
+  (`defaultStatus`/`defaultPriority`/`defaultEstimateMinutes` dùng bởi `createTask_()`/Quick Add,
+  `dueSoonDays`/`dailyFocusLimitHours` dùng bởi Dashboard/Today — cả hai vẫn còn là mock tĩnh Phase
+  09/10) — 13 key còn lại được định nghĩa nhưng chưa hàm nào đọc tới. Phase này làm cả 18 key thật
+  và sửa được; nối các nơi tiêu thụ (default khi tạo Task, dữ liệu thật cho Dashboard/Today) cố ý để
+  dành Phase sau, cùng mức độ kiềm chế đã áp dụng cho KPI Streak của Dashboard ở Phase 15.
 - ⏳ `User`, `Notification`, `CalendarEvent` — chưa làm, sẽ thêm khi Phase tương ứng cần đến, không
   model trước khi chưa có yêu cầu cụ thể.
 

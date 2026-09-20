@@ -143,3 +143,44 @@ export interface Habit {
   createdAt: string;
   updatedAt: string;
 }
+
+/**
+ * Settings (Phase 19) — matches DEFAULT_SETTINGS in
+ * apps/google-sheets/src/00_Constants.gs 1:1 (18 keys across 4
+ * categories: General, Task Defaults, Focus & Schedule, Smart Engine). A
+ * single object, not an entity list — Sheets stores it as Key/Value/
+ * Category rows (`getSetting_(key, fallback)` in `01_Utils.gs`) because
+ * a spreadsheet has no native "one settings row" concept; a typed object
+ * is the natural shape here instead of porting that row format.
+ *
+ * Of these 18, only `defaultStatus`/`defaultPriority`/
+ * `defaultEstimateMinutes` (used by `createTask_()`/Quick Add) and
+ * `dueSoonDays`/`dailyFocusLimitHours` (used by Dashboard/Today's still-
+ * mock KPIs) are actually read anywhere in the real Sheets app — the
+ * rest (Language, DateFormat, WeekStart, Weekend, the FocusDays/
+ * FocusWindow pair, the 4 Smart Engine toggles) are defined and stored but
+ * never consumed by any function that exists. This screen makes all 18
+ * real and editable; wiring consumers (Task creation defaults, Dashboard/
+ * Today's real data) is deliberately left for later phases, the same
+ * restraint applied to Dashboard's Streak KPI in Phase 15.
+ */
+export interface Settings {
+  workspaceName: string;
+  language: string;
+  weekStart: string;
+  dateFormat: string;
+  defaultStatus: TaskStatus;
+  defaultPriority: Priority;
+  defaultEstimateMinutes: number;
+  dueSoonDays: number;
+  focusDaysStart: string;
+  focusDaysEnd: string;
+  focusWindowStart: string;
+  focusWindowEnd: string;
+  dailyFocusLimitHours: number;
+  weekend: string;
+  smartScoreEnabled: boolean;
+  goalAlignmentEnabled: boolean;
+  scheduleOverloadWarning: boolean;
+  explainRecommendations: boolean;
+}
