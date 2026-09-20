@@ -8,7 +8,7 @@ PHASE 03  Canva Design Analysis                                         ✅ DONE
 PHASE 04  Design System (packages/ui)                                          ✅ DONE (partial)
 PHASE 05  React + TypeScript + Vite setup (apps/desktop)                       ✅ DONE
 PHASE 06  Tauri Desktop setup                                                  ✅ DONE
-PHASE 07  Application Shell
+PHASE 07  Application Shell                                                    ✅ DONE
 PHASE 08  Sidebar + Topbar + Navigation (Personal Mode — không có Members)
 PHASE 09  Dashboard
 PHASE 10  Today
@@ -108,6 +108,26 @@ không lỗi. Gặp và xử lý một lỗi thật giữa chừng: chạy `taur
 lệch với `devUrl` cấu hình cứng — phải dừng hẳn server cũ rồi chạy lại một lần sạch. **Vẫn chưa
 xác nhận bằng mắt** cửa sổ hiển thị đúng UI (không có công cụ chụp màn hình trong session) — người
 dùng có thể tự nhìn thấy cửa sổ thật đang mở trên máy khi chạy.
+
+Phase 07 đã thực hiện: `apps/desktop/src/app/routes.ts` — mảng `APP_ROUTES` là nguồn duy nhất cho
+toàn bộ 12 route theo đúng taxonomy Personal Mode đã chốt ở Phase 04 (Overview: Dashboard/Today/
+Inbox · Planning: Tasks/Projects/Calendar/Kanban · Personal: Goals/Habits · Insights: Analytics/
+Smart Assistant · System: Settings), mỗi route có `phase` ghi rõ khi nào được xây thật. `router.tsx`
+dùng `createHashRouter` (không phải `createBrowserRouter`) — ứng dụng Tauri đóng gói không có
+server để SPA fallback khi deep-link/refresh vào path bất kỳ, hash route (`#/tasks`) luôn resolve
+đúng bất kể cách serve. `AppShell.tsx` là layout tạm (nav trái + `<Outlet/>`) dùng chính
+`APP_ROUTES` — Phase 08 thay `<nav>` này bằng Sidebar thật (group header, icon, collapse) nhưng
+tái dùng nguyên data, không viết lại danh sách route. `PlaceholderPage.tsx` là 1 component dùng
+chung cho cả 12 route thay vì 12 file gần giống nhau. `App.tsx` (Phase 05 smoke-test Button) được
+thay hoàn toàn bằng `<RouterProvider router={router} />`.
+
+Verify thật: gặp lỗi TypeScript thật (`NavLink`'s `className` render-prop có tham số `isActive`
+bị suy luận `any` — sửa bằng type `NavLinkRenderProps` export sẵn từ `react-router-dom`, không
+phải `any`/ép kiểu tuỳ tiện). Sau khi sửa: `npm run typecheck`/`lint`/`format` pass sạch;
+`npm run build:desktop` build production ra bundle chứa đủ text cả 12 route (đã grep trực tiếp
+file JS build ra để xác nhận, không đoán); `npm run dev:tauri` mở cửa sổ Windows thật
+(`app.exe` sống ổn định, không crash sau khi chạy vài giây), log sạch. Vẫn chưa xác nhận bằng mắt
+việc click điều hướng giữa các trang hiển thị đúng nội dung — không có công cụ chụp màn hình.
 
 Mỗi Phase kế tiếp sẽ được trình bày riêng theo format: Mục tiêu → File tạo/sửa → Full code →
 Command → Cách chạy → Cách test → Expected Result → Checklist → Git commit đề xuất.

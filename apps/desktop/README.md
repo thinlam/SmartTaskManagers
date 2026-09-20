@@ -47,9 +47,23 @@ npm run build:tauri     # build release + bundle (.exe/.msi) — xem apps/deskto
 `npm run dev:desktop` song song**, việc đó sẽ chiếm cổng 5173 và khiến Tauri kết nối nhầm dev
 server (đã gặp lỗi này thật khi verify Phase 06 — xem ghi chú trong `docs/roadmap/ROADMAP.md`).
 
-`src/App.tsx` hiện là **trang smoke-test tạm thời** (render các variant của `Button` từ
-`@stm/ui`) để verify Vite + Tailwind + `packages/ui` nối đúng dây — sẽ bị thay thế hoàn toàn bởi
-Application Shell thật ở **Phase 07**.
+## Application Shell (Phase 07)
+
+```
+src/app/routes.ts     APP_ROUTES — nguồn duy nhất cho 12 route (path/label/group/phase),
+                       tái dùng ở cả AppShell (Phase 07) lẫn Sidebar thật (Phase 08)
+src/app/router.tsx     createHashRouter (KHÔNG dùng createBrowserRouter — xem lý do dưới)
+src/app/AppShell.tsx   layout tạm: <nav> trái (thay bằng Sidebar thật ở Phase 08) + <Outlet/>
+src/pages/PlaceholderPage.tsx   1 component dùng chung cho mọi route chưa có trang thật
+```
+
+**Vì sao `createHashRouter` chứ không phải `createBrowserRouter`:** ứng dụng Tauri đóng gói không
+có server để trả `index.html` cho mọi path (SPA fallback) — deep-link hoặc refresh vào ví dụ
+`/tasks` với history-API routing sẽ lỗi. Route dạng hash (`#/tasks`) luôn load đúng document bất
+kể serve thế nào, cả lúc dev lẫn sau khi đóng gói.
+
+Mỗi route hiện render `PlaceholderPage` — Phase 09+ thay `element` trong `router.tsx` bằng trang
+thật, path/label/group trong `routes.ts` giữ nguyên.
 
 ## Lưu ý quan trọng khi thêm package mới dùng Tailwind class
 
