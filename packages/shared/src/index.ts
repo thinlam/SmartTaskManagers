@@ -18,3 +18,18 @@ export {
   type CalendarMonthData,
   type CalendarTaskTone,
 } from './calendarMetrics';
+export {
+  computeKanbanBoardData,
+  getKanbanLaneSubtitle,
+  getKanbanEmptyText,
+  getKanbanProgressTone,
+  getKanbanScoreTone,
+  getKanbanDueTone,
+  getKanbanDueLabel,
+  KANBAN_LANES,
+  KANBAN_MAX_CARDS_PER_LANE,
+  KANBAN_IN_PROGRESS_WIP_LIMIT,
+  type KanbanLaneData,
+  type KanbanBoardData,
+  type KanbanTone,
+} from './kanbanMetrics';

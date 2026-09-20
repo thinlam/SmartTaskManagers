@@ -334,3 +334,37 @@ thật** — `claude-in-chrome` vẫn không kết nối được trong phiên n
 thử trên máy trước khi coi Phase 16 là xong hẳn: chuyển tháng (prev/next/Today), click 1 task trong
 ô ngày và trong Agenda để xác nhận Edit Drawer mở đúng task, kiểm tra "+N more" khi 1 ngày có >4
 task.
+
+## Kanban (Phase 17)
+
+```
+packages/shared/src/kanbanMetrics.ts   port từ 11_Kanban.gs — 5 lane, sort/tone per lane, 4 KPI, Top Focus
+src/pages/Kanban/KanbanPage.tsx        KPI row + Top Focus banner + 5 lane cuộn ngang
+src/pages/Kanban/KanbanLane.tsx        header lane (count, cảnh báo WIP) + tối đa 7 card + "+N more"/empty text
+src/pages/Kanban/KanbanCard.tsx        1 thẻ task: title, PriorityBadge + meta, action/description, 3 chip Due/Progress/Score
+```
+
+**Cùng nguyên tắc với Calendar (Phase 16):** không context/store mới — chỉ đọc `useTasksContext()`
+(tasks + click-to-edit) và **thêm** `useProjectsContext()` để tra `projectId` ra tên Project cho
+dòng meta của card (`task.Project` bên Sheets vốn chỉ là chuỗi tên, còn ở đây `Project` là entity
+thật nên phải tra bằng id — giống cách `ProjectsPage`/`ProjectRow` đã đọc song song 2 context ở
+Phase 13). Click vào 1 card mở `TaskDetailDrawer` (Edit) có sẵn, giống `openSelectedKanbanTask_()`
+phía Sheets. Không component `packages/ui` mới — lane/card là bố cục đặc thù Kanban, chỉ dùng ở 1
+màn hình, nên ở lại `apps/desktop` (đúng quyết định đã áp dụng cho Calendar); `KanbanCard` tái dùng
+`PriorityBadge` có sẵn cho priority thay vì port riêng 1 dải màu priority như bản Sheets.
+
+5 lane khớp đúng thứ tự `TaskStatus` (Inbox/To Do/In Progress/Waiting/Completed) — không có lane
+"không xác định" nào cần fallback về Inbox như bản Sheets, vì kiểu `TaskStatus` của app đã đảm bảo
+task luôn có 1 trong 5 giá trị hợp lệ. Lane "In Progress" hiện cảnh báo (badge + subtitle màu danger)
+khi vượt WIP limit khuyến nghị (>3), đúng `getKanbanLaneTone_()`. Banner "Top Focus" (task có
+SmartScore cao nhất còn mở) đặt dưới header, đúng vị trí/nội dung `TOP FOCUS • {tên} • Score {N}`
+của bản gốc.
+
+Verify thật: `npm run typecheck`/`lint`/`format` pass sạch (1 lỗi type thật gặp phải: mảng
+`parts = [task.area]` bị TypeScript suy luận kiểu `Area[]` nên `push()` chuỗi Project name báo lỗi
+— sửa bằng khai kiểu tường minh `const parts: string[] = [...]`). `npm run build:desktop` build
+production thành công — grep trực tiếp bundle xác nhận text "Kanban"/"Open Tasks"/"TOP FOCUS"/
+"recommended WIP" thật có mặt. `npm run dev:tauri` mở `app.exe` thật, ổn định, `Responding: True`.
+**Chưa click-test tương tác thật** — `claude-in-chrome` vẫn không kết nối được (đã thử lại). Nên tự
+thử trên máy trước khi coi Phase 17 là xong hẳn: click card trong từng lane mở đúng Edit Drawer,
+kiểm tra "+N more" khi 1 lane có >7 task, kiểm tra cảnh báo WIP khi In Progress có >3 task.

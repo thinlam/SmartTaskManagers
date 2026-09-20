@@ -33,6 +33,16 @@ Utils, formatters, date logic dùng chung.
   có chủ đích: `getCalendarTaskTone` trả về tên tone chung (`success`/`danger`/`warning`/`neutral`)
   thay vì hex `CALENDAR_THEME` — cùng cách thay thế `ProjectCard`/`GoalCard` đã làm; `days` (mảng 42
   ô) thay cho `tasksByDate` (map) vì đó là thứ lưới React thực sự cần render.
+- ✅ `computeKanbanBoardData`/`getKanbanLaneSubtitle`/`getKanbanEmptyText`/`getKanbanProgressTone`/
+  `getKanbanScoreTone`/`getKanbanDueTone`/`getKanbanDueLabel` (Phase 17): port trực tiếp từ
+  `computeKanbanData_()`/`getKanbanLaneSubtitle_()`/`getKanbanEmptyText_()`/
+  `getKanbanProgressTone_()`/`getKanbanScoreTone_()`/`getKanbanDueTone_()`/`kanbanDueLabel_()`
+  trong `apps/google-sheets/src/11_Kanban.gs` — cùng 5 lane theo đúng thứ tự `TaskStatus`, cùng sort
+  mỗi lane (Completed: `completedDate` mới nhất trước; lane khác: SmartScore giảm dần rồi due date
+  tăng dần, không hạn sinks xuống cuối — khớp `kanbanDueSortValue_`), cùng ngưỡng tone Progress/
+  Score/Due, cùng câu chữ subtitle/empty-text từng lane, cùng WIP limit cảnh báo (In Progress > 3 →
+  tone danger). Khác biệt có chủ đích: `getKanbanEmptyText` bỏ ký tự xuống dòng `\n` literal (chỉ
+  để vừa ô Sheets hẹp) thành 1 câu liền — desktop có đủ chỗ.
 - ⏳ Smart Score / Risk / RecommendedAction (`apps/google-sheets/src/05_SmartEngine.gs`) —
   **chưa port** — đó là Phase 29 (Smart Engine), không làm sớm.
 

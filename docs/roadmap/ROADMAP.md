@@ -18,7 +18,7 @@ PHASE 13  Projects                                                             �
 PHASE 14  Goals                                                                ✅ DONE (click-tested thật)
 PHASE 15  Habits                                                               ✅ DONE (chưa click-test — xem ghi chú)
 PHASE 16  Calendar                                                             ✅ DONE (chưa click-test — xem ghi chú)
-PHASE 17  Kanban
+PHASE 17  Kanban                                                               ✅ DONE (chưa click-test — xem ghi chú)
 PHASE 18  Analytics (Reports)
 PHASE 19  Settings
 PHASE 20  Backend architecture (ASP.NET Core, Clean Architecture skeleton)
@@ -414,6 +414,35 @@ mặt, không phải code chết. `npm run dev:tauri` mở `app.exe` thật, ổ
 tác thật** — `claude-in-chrome` vẫn không kết nối được dù đã thử lại nhiều lần trong phiên này (môi
 trường build native đã xác nhận đầy đủ ở Phase 15). Nên tự thử trên máy trước khi coi Phase 16 là
 xong hẳn: chuyển tháng, click task mở đúng Edit Drawer, kiểm tra "+N more" khi 1 ngày quá 4 task.
+
+Phase 17 đã thực hiện: đọc thật `computeKanbanData_()`/`getKanbanLaneSubtitle_()`/
+`getKanbanEmptyText_()`/`getKanbanProgressTone_()`/`getKanbanScoreTone_()`/`getKanbanDueTone_()`/
+`getKanbanLaneTone_()` trong `apps/google-sheets/src/11_Kanban.gs` (3192 dòng) trước khi code —
+port công thức 5 lane/sort/tone/WIP-limit, không port cách vẽ ô Sheets.
+
+`packages/shared` thêm `kanbanMetrics.ts`: `computeKanbanBoardData` (5 lane đúng thứ tự
+`TaskStatus`, mỗi lane sort riêng — Completed theo `completedDate` mới nhất trước, lane khác theo
+SmartScore giảm dần rồi due date tăng dần — cùng 4 KPI Open/Due Today/Overdue/Completed và
+`focusTask`), cộng các hàm tone/label cho Due/Progress/Score/lane subtitle/empty-text, tất cả giữ
+đúng ngưỡng và câu chữ gốc. Khác biệt có chủ đích duy nhất: bỏ ký tự `\n` literal trong empty-text
+(chỉ để vừa ô Sheets hẹp) thành câu liền.
+
+`apps/desktop` thêm trang Kanban (`KanbanPage`/`KanbanLane`/`KanbanCard`) — **không context/store
+mới, không component `packages/ui` mới** (cùng nguyên tắc Calendar): đọc `useTasksContext()` (click
+card mở Edit Drawer, giống `openSelectedKanbanTask_()`) và thêm `useProjectsContext()` để tra
+`projectId` ra tên Project cho dòng meta của card. `KanbanCard` tái dùng `PriorityBadge` có sẵn thay
+vì port riêng dải màu priority. Lane "In Progress" cảnh báo tone danger khi vượt WIP limit (>3),
+banner "Top Focus" hiển thị task SmartScore cao nhất còn mở — đúng vị trí/nội dung bản gốc.
+
+**Sự cố thật gặp khi build:** mảng `const parts = [task.area]` bị TypeScript suy luận kiểu `Area[]`
+khiến `push()` tên Project (chuỗi) báo lỗi — sửa bằng khai kiểu tường minh `string[]`.
+
+Verify thật: `npm run typecheck`/`lint`/`format` pass sạch (sau khi sửa lỗi trên). `npm run
+build:desktop` build production thành công — grep trực tiếp bundle xác nhận text Kanban thật có
+mặt. `npm run dev:tauri` mở `app.exe` thật, ổn định. **Chưa click-test tương tác thật** —
+`claude-in-chrome` vẫn không kết nối được dù đã thử lại (môi trường build native đã xác nhận đầy đủ
+từ Phase 15). Nên tự thử trên máy trước khi coi Phase 17 là xong hẳn: click card mở đúng Edit
+Drawer, kiểm tra "+N more" khi lane quá 7 task, kiểm tra cảnh báo WIP khi In Progress quá 3 task.
 
 Mỗi Phase kế tiếp sẽ được trình bày riêng theo format: Mục tiêu → File tạo/sửa → Full code →
 Command → Cách chạy → Cách test → Expected Result → Checklist → Git commit đề xuất.
