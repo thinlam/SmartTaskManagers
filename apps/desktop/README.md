@@ -293,3 +293,44 @@ build và chạy `app.exe` thật, cửa sổ Windows native mở ổn định, 
 giây — xác nhận app chạy đúng cả ở tầng native, không chỉ web. Nên tự click-test trên máy trước khi
 coi Phase này là xong hẳn — đặc biệt luồng "Check in today" (streak/completedCount tăng đúng, nút
 disable đúng khi đã check-in hôm nay, không tăng 2 lần cùng ngày).
+
+## Calendar (Phase 16)
+
+```
+packages/shared/src/calendarMetrics.ts   port từ 12_Calendar.gs — grid 6 tuần, 4 KPI, agenda, sort/tone task
+src/pages/Calendar/CalendarPage.tsx      state anchor (tháng đang xem, local) + KPI row + nav + grid + agenda
+src/pages/Calendar/CalendarGrid.tsx      header thứ (Mon→Sun) + 42 ô CalendarDayCell
+src/pages/Calendar/CalendarDayCell.tsx   1 ô ngày: header + tối đa 4 task chip (icon+tone) + footer "N tasks/+N more"
+src/pages/Calendar/CalendarAgenda.tsx    danh sách quá hạn + sắp tới, tái dùng TaskCard
+```
+
+**Không có Context/store riêng nào mới** — khác Projects/Goals/Habits, Calendar chỉ **đọc**
+`useTasksContext()` (không CRUD task nào riêng cho Calendar) và tái dùng `TaskDetailDrawer` đã có
+sẵn: click vào 1 task (trong ô ngày hoặc dòng Agenda) gọi `openEditDrawer(task)` y hệt cách Tasks
+list mở form Edit — đúng tinh thần `openSelectedCalendarTask_()` phía Sheets (click cell mở Task
+Details). Tháng đang xem (`anchor`) là `useState` cục bộ trong `CalendarPage`, không phải context
+dùng chung — đúng theo cách Sheets lưu nó (script Property riêng cho sheet Calendar, không màn hình
+nào khác đọc).
+
+**Không thêm component mới vào `packages/ui`** — khác các Phase trước (ProjectCard/GoalCard/
+HabitCard), lưới tháng và ô ngày là bố cục đặc thù riêng cho 1 màn hình (không tái dùng ở đâu khác),
+nên ở lại `apps/desktop/src/pages/Calendar/` — đúng nguyên tắc đã áp dụng cho `TaskFilters`/
+`ProjectRow`/`GoalRow`/`HabitRow`. Agenda list tái dùng thẳng `TaskCard` (không viết row thứ 4).
+
+Prefix ký hiệu ✓/!/◆/• của Sheets (để vừa 1 ô hẹp) được thay bằng icon Lucide thật
+(`Check`/`TriangleAlert`/`Diamond`/`Circle`) trong `CalendarDayCell` — desktop có đủ chỗ hiển thị
+icon SVG, giống cách `formatDueLabel` (Phase 12) đã khác `todayDueLabel_()` vì lý do tương tự.
+
+**Sự cố thật gặp phải khi build:** `tsconfig` bật `noUncheckedIndexedAccess`, khiến
+`tasksByDate[key].sort(...)` sau vòng lặp `Object.keys()` báo lỗi "Object is possibly undefined" dù
+logic đảm bảo key luôn tồn tại — sửa bằng `Object.values(tasksByDate).forEach(...)` thay vì index
+lại bằng key, để TypeScript tự suy luận đúng không cần ép kiểu.
+
+Verify thật: `npm run typecheck`/`lint`/`format` pass sạch (sau khi sửa lỗi `noUncheckedIndexedAccess`
+ở trên). `npm run build:desktop` build production thành công — đã grep trực tiếp bundle xác nhận
+text "Scheduled"/"Due Today"/"Agenda"/subtitle Calendar thật có trong file JS build ra, không phải
+code chết. `npm run dev:tauri` mở `app.exe` thật, ổn định, không crash. **Chưa click-test tương tác
+thật** — `claude-in-chrome` vẫn không kết nối được trong phiên này (đã thử lại nhiều lần). Nên tự
+thử trên máy trước khi coi Phase 16 là xong hẳn: chuyển tháng (prev/next/Today), click 1 task trong
+ô ngày và trong Agenda để xác nhận Edit Drawer mở đúng task, kiểm tra "+N more" khi 1 ngày có >4
+task.

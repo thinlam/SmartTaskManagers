@@ -17,7 +17,7 @@ PHASE 12  Tasks                                                                �
 PHASE 13  Projects                                                             ✅ DONE (click-tested thật)
 PHASE 14  Goals                                                                ✅ DONE (click-tested thật)
 PHASE 15  Habits                                                               ✅ DONE (chưa click-test — xem ghi chú)
-PHASE 16  Calendar
+PHASE 16  Calendar                                                             ✅ DONE (chưa click-test — xem ghi chú)
 PHASE 17  Kanban
 PHASE 18  Analytics (Reports)
 PHASE 19  Settings
@@ -383,6 +383,37 @@ native mở, process ổn định (`Get-Process app` → `Responding: True` sau 
 Xác nhận app chạy đúng ở tầng native, không chỉ qua `npm run dev:desktop`/trình duyệt. Đã thử lại
 `claude-in-chrome` sau khi cài xong — vẫn không kết nối được, nên click-test tương tác thật cho
 Phase 15 vẫn còn treo, không phải do thiếu môi trường build.
+
+Phase 16 đã thực hiện: đọc thật `computeCalendarData_()`/`writeCalendarKpis_()`/
+`calendarTaskSort_()`/`getCalendarTaskTone_()`/`getCalendarGridStart_()` trong
+`apps/google-sheets/src/12_Calendar.gs` (file lớn nhất từ trước đến giờ, ~3660 dòng, vì render
+trực tiếp lên lưới ô spreadsheet) trước khi code — port công thức, không port cách vẽ ô Sheets.
+
+`packages/shared` thêm `calendarMetrics.ts`: `computeCalendarMonthData` (cùng 4 bộ lọc KPI —
+Scheduled/Due Today/Overdue/Completed — cùng lưới 6 tuần bắt đầu Thứ Hai, cùng agenda quá hạn+sắp
+tới), `sortCalendarTasks` (open trước completed, rồi priority, rồi SmartScore — y hệt
+`calendarTaskSort_`), `getCalendarTaskTone` (Completed > quá hạn > Critical/Urgent > High > mặc
+định — y hệt `getCalendarTaskTone_`, chỉ đổi hex thành tên tone chung). `days` (mảng 42 ô) thay cho
+`tasksByDate` (map) trong bản gốc, vì đó là thứ lưới React cần render trực tiếp.
+
+`apps/desktop` thêm trang Calendar (`CalendarPage`/`CalendarGrid`/`CalendarDayCell`/
+`CalendarAgenda`) — **không context/store mới, không component `packages/ui` mới**: Calendar chỉ
+đọc `useTasksContext()` và tái dùng `TaskDetailDrawer` sẵn có (click 1 task trong ô ngày hoặc dòng
+Agenda mở đúng Edit Drawer, giống `openSelectedCalendarTask_()` phía Sheets); lưới tháng là bố cục
+đặc thù 1 màn hình nên ở lại `apps/desktop`, Agenda tái dùng thẳng `TaskCard`. Prefix ký hiệu
+✓/!/◆/• (để vừa ô hẹp Sheets) thay bằng icon Lucide thật (`Check`/`TriangleAlert`/`Diamond`/
+`Circle`) — desktop có đủ chỗ hiển thị icon SVG.
+
+**Sự cố thật gặp khi build:** `noUncheckedIndexedAccess` khiến `tasksByDate[key].sort(...)` sau
+`Object.keys()` báo lỗi possibly-undefined dù logic đảm bảo key luôn tồn tại — sửa bằng
+`Object.values(tasksByDate).forEach(...)`.
+
+Verify thật: `npm run typecheck`/`lint`/`format` pass sạch (sau khi sửa lỗi trên). `npm run
+build:desktop` build production thành công — grep trực tiếp bundle xác nhận text Calendar thật có
+mặt, không phải code chết. `npm run dev:tauri` mở `app.exe` thật, ổn định. **Chưa click-test tương
+tác thật** — `claude-in-chrome` vẫn không kết nối được dù đã thử lại nhiều lần trong phiên này (môi
+trường build native đã xác nhận đầy đủ ở Phase 15). Nên tự thử trên máy trước khi coi Phase 16 là
+xong hẳn: chuyển tháng, click task mở đúng Edit Drawer, kiểm tra "+N more" khi 1 ngày quá 4 task.
 
 Mỗi Phase kế tiếp sẽ được trình bày riêng theo format: Mục tiêu → File tạo/sửa → Full code →
 Command → Cách chạy → Cách test → Expected Result → Checklist → Git commit đề xuất.
