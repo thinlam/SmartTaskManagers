@@ -17,8 +17,16 @@ Nguồn thiết kế: Canva Design System (xem
   dữ liệu thật để gắn số) (Phase 08).
 - ✅ `components/Topbar` — search box, nút notification, nút "+ New Task" (dùng `Button`), avatar
   (Phase 08).
-- ⏳ `Card`/`Badge`/`Progress`/`Modal`/`Dropdown`/`Tooltip`/`EmptyState`/... — chưa làm, theo sau
-  khi các màn hình cần đến.
+- ✅ `components/Badge` — `Badge` (tone chung) + `PriorityBadge` (dùng token `priority-*` riêng,
+  không phải tone chung — xem comment trong file) (Phase 09).
+- ✅ `components/Progress` — thanh progress ngang, `value` 0–100, `tone` (Phase 09).
+- ✅ `components/StatCard` — KPI card (label/value/sub/tone), dùng cho Dashboard/Analytics (Phase 09).
+- ✅ `components/TaskCard` — dạng row-card "Focus Now"/"Focus Today" (title, meta, due, priority,
+  smartScore?, recommendedAction?) — dùng chung cho Dashboard (Phase 09) và Today (Phase 10 dự
+  kiến) (Phase 09).
+- ✅ `components/SmartInsightCard` — dòng insight có icon Sparkles + màu theo tone (Phase 09).
+- ⏳ `Card`/`Modal`/`Dropdown`/`Tooltip`/`EmptyState`/... — chưa làm, theo sau khi các màn hình cần
+  đến.
 
 ## Sidebar/Topbar — router-agnostic theo thiết kế
 
@@ -79,3 +87,10 @@ npm run lint
 
 Xem trực quan thật (không chỉ build): `npm run dev:tauri` ở `apps/desktop` (hoặc `npm run
 dev:desktop` rồi mở trình duyệt).
+
+## Phụ thuộc `@stm/types`
+
+Từ Phase 09, `packages/ui` phụ thuộc `@stm/types` (ví dụ `PriorityBadge` cần type `Priority`).
+Đây là phụ thuộc chỉ-type (không runtime), hợp lý cho một component library cần biết hình dạng dữ
+liệu domain để render đúng — không tạo vòng phụ thuộc vì `@stm/types` không phụ thuộc lại
+`@stm/ui`.

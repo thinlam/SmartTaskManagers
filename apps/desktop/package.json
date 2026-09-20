@@ -11,6 +11,7 @@
     "tauri": "tauri"
   },
   "dependencies": {
+    "@stm/types": "*",
     "@stm/ui": "*",
     "@tauri-apps/api": "^2.11.1",
     "lucide-react": "^1.47.0",

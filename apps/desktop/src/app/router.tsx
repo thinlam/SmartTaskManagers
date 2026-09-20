@@ -1,6 +1,7 @@
 import { createHashRouter } from 'react-router-dom';
 import { AppShell } from './AppShell';
 import { PlaceholderPage } from '../pages/PlaceholderPage';
+import { DashboardPage } from '../pages/Dashboard/DashboardPage';
 import { APP_ROUTES } from './routes';
 
 /**
@@ -15,7 +16,15 @@ export const router = createHashRouter([
     element: <AppShell />,
     children: APP_ROUTES.map((route) => ({
       path: route.path,
-      element: <PlaceholderPage title={route.label} phase={route.phase} />,
+      // Each route gets a real page as its Phase lands; until then it
+      // falls back to PlaceholderPage. routes.ts's path/label/group/icon
+      // never change when a route graduates from placeholder to real.
+      element:
+        route.path === '/' ? (
+          <DashboardPage />
+        ) : (
+          <PlaceholderPage title={route.label} phase={route.phase} />
+        ),
     })),
   },
 ]);

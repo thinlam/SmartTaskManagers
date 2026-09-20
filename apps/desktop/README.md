@@ -62,7 +62,9 @@ có server để trả `index.html` cho mọi path (SPA fallback) — deep-link 
 kể serve thế nào, cả lúc dev lẫn sau khi đóng gói.
 
 Mỗi route hiện render `PlaceholderPage` — Phase 09+ thay `element` trong `router.tsx` bằng trang
-thật, path/label/group/icon trong `routes.ts` giữ nguyên.
+thật, path/label/group/icon trong `routes.ts` giữ nguyên. Dashboard (`/`) là route đầu tiên đã
+thay (Phase 09), theo cách so khớp `route.path === '/'` — pattern này lặp lại y hệt khi Today,
+Inbox... lần lượt có trang thật.
 
 ## Sidebar + Topbar (Phase 08)
 
@@ -88,3 +90,17 @@ Thiếu dòng này, class Tailwind dùng bên trong component của `packages/ui
 trong `Button`) sẽ bị Tailwind bỏ qua, sinh CSS thiếu — không có lỗi build, chỉ là style không
 xuất hiện. Đã verify: build ra `apps/desktop/dist/assets/*.css` có chứa `--color-primary:#4f46e5`
 và `.bg-primary`.
+
+## Dashboard (Phase 09)
+
+```
+src/mock/dashboard.ts             MOCK_DASHBOARD_DATA — dữ liệu tĩnh, thay bằng API thật ở Phase 27
+src/pages/Dashboard/DashboardPage.tsx   KPI row · Focus Now · My Areas · Smart Insights
+```
+
+Cấu trúc bám theo `computeDashboardData_()` trong
+`apps/google-sheets/src/06_Dashboard.gs` (bản Personal Mode đã có, không vẽ lại từ Canva gốc vốn
+có Owner/Team Capacity) — 5 KPI giống hệt (Due Today/Overdue/Focus Time/Weekly Progress/Streak),
+"My Areas" thay cho "Project Health"+"Team Capacity" của bản team. `smartScore`/`recommendedAction`
+trong mock data là **giá trị tĩnh, không phải tính toán thật** — Smart Engine (thuật toán tính các
+giá trị này) là Phase 29, chưa làm.

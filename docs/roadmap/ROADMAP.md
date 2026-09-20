@@ -10,7 +10,7 @@ PHASE 05  React + TypeScript + Vite setup (apps/desktop)                       �
 PHASE 06  Tauri Desktop setup                                                  ✅ DONE
 PHASE 07  Application Shell                                                    ✅ DONE
 PHASE 08  Sidebar + Topbar + Navigation (Personal Mode — không có Members)      ✅ DONE
-PHASE 09  Dashboard
+PHASE 09  Dashboard                                                            ✅ DONE (mock data)
 PHASE 10  Today
 PHASE 11  Inbox
 PHASE 12  Tasks
@@ -152,6 +152,28 @@ CSS/JS build ra xác nhận `bg-primary-light`, `bg-danger`, text "Smart Task"/"
 "Insights"/"Search tasks..." đều có mặt. `npm run dev:tauri` mở cửa sổ Windows thật, ổn định không
 crash. Vẫn chưa xác nhận bằng mắt Sidebar/Topbar hiển thị đúng theo Canva — không có công cụ chụp
 màn hình trong session; bạn có thể tự xem trực tiếp trên máy.
+
+Phase 09 đã thực hiện: trước khi code, đọc thật `computeDashboardData_()` trong
+`apps/google-sheets/src/06_Dashboard.gs` (bản Personal Mode đã tồn tại và được vetted) thay vì vẽ
+lại từ Canva Frame 03 gốc (bản team, có Owner/Team Capacity) — giữ đúng 5 KPI (Due Today/Overdue/
+Focus Time/Weekly Progress/Streak), Focus Now, và đổi "Project Health"+"Team Capacity" (team)
+thành "My Areas" (theo `getAreaProgress_()`, nhóm theo Area thay vì theo người).
+
+`packages/types/src/index.ts` có nội dung thật đầu tiên: `Area`/`Priority`/`TaskStatus`/`Risk`,
+khớp `LOOKUP_LISTS` trong `00_Constants.gs`. `packages/ui` thêm 5 component mới:
+`Badge`/`PriorityBadge` (dùng token `priority-*` riêng, không phải tone chung — 2 bộ giá trị hex
+khác nhau), `Progress`, `StatCard`, `TaskCard` (dùng chung dự kiến cho cả Today, Phase 10),
+`SmartInsightCard`. `packages/ui` giờ phụ thuộc `@stm/types` (chỉ phụ thuộc kiểu, không runtime).
+`apps/desktop/src/mock/dashboard.ts` là dữ liệu tĩnh — `smartScore`/`recommendedAction` **không
+phải tính toán thật**, chỉ là placeholder chờ Smart Engine (Phase 29); ghi rõ trong comment để
+không ai nhầm là số thật.
+
+Verify thật: `npm run typecheck`/`lint`/`format` pass sạch ngay từ lần đầu (không phát sinh lỗi
+mới); `npm run build:desktop` build production thành công, CSS tăng từ 12.4KB → 16.72KB, đã grep
+trực tiếp xác nhận `priority-critical`/`priority-high`/`priority-medium` và toàn bộ text Dashboard
+("Focus Now", "My Areas", "Smart Insights", "Finish portfolio case study"...) có trong bundle.
+`npm run dev:tauri` mở cửa sổ Windows thật, ổn định. Vẫn chưa xác nhận bằng mắt layout/màu hiển thị
+đúng theo Canva — không có công cụ chụp màn hình trong session.
 
 Mỗi Phase kế tiếp sẽ được trình bày riêng theo format: Mục tiêu → File tạo/sửa → Full code →
 Command → Cách chạy → Cách test → Expected Result → Checklist → Git commit đề xuất.
