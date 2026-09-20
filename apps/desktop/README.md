@@ -368,3 +368,38 @@ production thành công — grep trực tiếp bundle xác nhận text "Kanban"/
 **Chưa click-test tương tác thật** — `claude-in-chrome` vẫn không kết nối được (đã thử lại). Nên tự
 thử trên máy trước khi coi Phase 17 là xong hẳn: click card trong từng lane mở đúng Edit Drawer,
 kiểm tra "+N more" khi 1 lane có >7 task, kiểm tra cảnh báo WIP khi In Progress có >3 task.
+
+## Analytics (Phase 18)
+
+```
+packages/shared/src/analyticsMetrics.ts   không port gì thật — 15_Reports.gs chưa từng được build
+src/pages/Analytics/AnalyticsPage.tsx      KPI row + Priority/Area distribution + Weekly trend + Project progress + Insights
+src/pages/Analytics/WeeklyTrendChart.tsx   bar chart CSS thuần, không thêm thư viện chart
+```
+
+**Không có gì để port lần này** — kiểm tra kỹ trước khi code (đúng nguyên tắc audit-trước) và xác
+nhận `apps/google-sheets/docs/claude/MODULE_PROMPTS.md` §10 chỉ là **đặc tả** cho `15_Reports.gs`,
+chưa từng được viết thật (liệt kê toàn bộ file `.gs` production xác nhận không tồn tại). Yêu cầu
+duy nhất còn giá trị từ đặc tả đó là nguyên tắc, không phải code: "Chỉ sử dụng dữ liệu thực. Không
+bịa analytics. Không thêm team metrics." — Analytics chỉ đọc `useTasksContext()`/
+`useProjectsContext()`, mọi con số đều tổng hợp trực tiếp từ field thật, không có điểm số/suy luận
+nào như Smart Engine (Phase 29).
+
+Ngoại lệ đáng chú ý: `getAreaProgress` **có port thật** từ `getAreaProgress_()` trong
+`06_Dashboard.gs` — hàm có thật dù Dashboard chưa gọi nó (Dashboard vẫn là mock tĩnh từ Phase 09,
+nối dây thật là Phase 27, ngoài phạm vi ở đây); bố cục hiển thị (Progress bar + completed/open/total)
+cố ý giống hệt "My Areas" của Dashboard cho nhất quán. `getProjectProgressList` tái dùng thẳng
+`computeProjectMetrics` (Phase 13), không tính lại công thức. Không thêm thư viện chart nào —
+`WeeklyTrendChart` là bar chart CSS thuần (div với `height` theo %), đúng tinh thần "professional,
+minimal, không biến thành dashboard quá nhiều chart" của đặc tả gốc.
+
+**Không có Empty State rỗng vô nghĩa** khi chưa có task nào (đúng nguyên tắc UI_UX_MASTER_PROMPT.md
+§15) — trang hiện `EmptyState` thay vì KPI toàn số 0.
+
+Verify thật: `npm run typecheck`/`lint`/`format` pass sạch ngay từ lần đầu. `npm run build:desktop`
+build production thành công — grep trực tiếp bundle xác nhận text "Analytics"/"Completion Rate"/
+"Priority Distribution"/"Weekly Trend" thật có mặt. `npm run dev:tauri` mở `app.exe` thật, ổn định,
+`Responding: True`. **Chưa click-test tương tác thật** — `claude-in-chrome` vẫn không kết nối được
+(đã thử lại). Nên tự thử trên máy trước khi coi Phase 18 là xong hẳn: xác nhận các con số (Completion
+Rate/Overdue Rate/phân bố Priority/Area) khớp đúng với dữ liệu task thật đang có trong app, và
+Weekly Trend đếm đúng theo `completedDate`.

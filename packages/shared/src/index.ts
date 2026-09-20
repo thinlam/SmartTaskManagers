@@ -33,3 +33,17 @@ export {
   type KanbanBoardData,
   type KanbanTone,
 } from './kanbanMetrics';
+export {
+  computeAnalyticsSummary,
+  getPriorityDistribution,
+  getAreaProgress,
+  getProjectProgressList,
+  getWeeklyCompletionTrend,
+  getAnalyticsInsights,
+  type AnalyticsSummary,
+  type PriorityDistributionItem,
+  type AreaProgress,
+  type ProjectProgressItem,
+  type WeeklyTrendDay,
+  type AnalyticsInsight,
+} from './analyticsMetrics';

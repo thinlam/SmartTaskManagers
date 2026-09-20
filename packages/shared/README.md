@@ -43,6 +43,18 @@ Utils, formatters, date logic dùng chung.
   Score/Due, cùng câu chữ subtitle/empty-text từng lane, cùng WIP limit cảnh báo (In Progress > 3 →
   tone danger). Khác biệt có chủ đích: `getKanbanEmptyText` bỏ ký tự xuống dòng `\n` literal (chỉ
   để vừa ô Sheets hẹp) thành 1 câu liền — desktop có đủ chỗ.
+- ✅ `computeAnalyticsSummary`/`getPriorityDistribution`/`getAreaProgress`/`getProjectProgressList`/
+  `getWeeklyCompletionTrend`/`getAnalyticsInsights` (Phase 18): **không có gì để port** —
+  `apps/google-sheets/docs/claude/MODULE_PROMPTS.md` §10 đặc tả `15_Reports.gs` nhưng file đó
+  **chưa từng được build thật** trong app Sheets production (xác nhận bằng cách liệt kê toàn bộ
+  file `.gs` thật có). Yêu cầu duy nhất còn giá trị từ spec đó vẫn được tuân thủ: chỉ dùng dữ liệu
+  thực, không bịa analytics, không thêm team metrics. Ngoại lệ: `getAreaProgress` **có port thật**
+  — từ `getAreaProgress_()` trong `apps/google-sheets/src/06_Dashboard.gs`, hàm có thật dù Dashboard
+  chưa gọi nó (còn là mock tĩnh Phase 09, nối dây thật là Phase 27, ngoài phạm vi ở đây).
+  `getProjectProgressList` tái dùng thẳng `computeProjectMetrics` (Phase 13), không tính lại công
+  thức progress. Các hàm còn lại (summary/priority distribution/weekly trend/insights) là thiết kế
+  mới tối thiểu, chỉ đếm/tổng hợp trực tiếp trên field thật — không có điểm số hay suy luận nào như
+  Smart Engine.
 - ⏳ Smart Score / Risk / RecommendedAction (`apps/google-sheets/src/05_SmartEngine.gs`) —
   **chưa port** — đó là Phase 29 (Smart Engine), không làm sớm.
 

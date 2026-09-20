@@ -11,6 +11,7 @@ import { GoalsPage } from '../pages/Goals/GoalsPage';
 import { HabitsPage } from '../pages/Habits/HabitsPage';
 import { CalendarPage } from '../pages/Calendar/CalendarPage';
 import { KanbanPage } from '../pages/Kanban/KanbanPage';
+import { AnalyticsPage } from '../pages/Analytics/AnalyticsPage';
 import { APP_ROUTES } from './routes';
 
 /**
@@ -29,6 +30,7 @@ const PAGE_BY_PATH: Record<string, ReactNode> = {
   '/habits': <HabitsPage />,
   '/calendar': <CalendarPage />,
   '/kanban': <KanbanPage />,
+  '/analytics': <AnalyticsPage />,
 };
 
 /**

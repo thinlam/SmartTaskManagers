@@ -19,7 +19,7 @@ PHASE 14  Goals                                                                �
 PHASE 15  Habits                                                               ✅ DONE (chưa click-test — xem ghi chú)
 PHASE 16  Calendar                                                             ✅ DONE (chưa click-test — xem ghi chú)
 PHASE 17  Kanban                                                               ✅ DONE (chưa click-test — xem ghi chú)
-PHASE 18  Analytics (Reports)
+PHASE 18  Analytics (Reports)                                                 ✅ DONE (chưa click-test — xem ghi chú)
 PHASE 19  Settings
 PHASE 20  Backend architecture (ASP.NET Core, Clean Architecture skeleton)
 PHASE 21  Database (EF Core + SQL Server, migrations, schema từ Tasks/Projects/Goals/Habits)
@@ -443,6 +443,30 @@ mặt. `npm run dev:tauri` mở `app.exe` thật, ổn định. **Chưa click-te
 `claude-in-chrome` vẫn không kết nối được dù đã thử lại (môi trường build native đã xác nhận đầy đủ
 từ Phase 15). Nên tự thử trên máy trước khi coi Phase 17 là xong hẳn: click card mở đúng Edit
 Drawer, kiểm tra "+N more" khi lane quá 7 task, kiểm tra cảnh báo WIP khi In Progress quá 3 task.
+
+Phase 18 đã thực hiện: kiểm tra kỹ trước khi code (đúng nguyên tắc audit-trước-code) và xác nhận
+`apps/google-sheets/docs/claude/MODULE_PROMPTS.md` §10 chỉ **đặc tả** `15_Reports.gs` — file đó
+**chưa từng được build thật** (liệt kê toàn bộ 15 file `.gs` production xác nhận không tồn tại).
+Yêu cầu duy nhất còn giá trị từ đặc tả là nguyên tắc, không phải code có sẵn để port: "Chỉ sử dụng
+dữ liệu thực. Không bịa analytics. Không thêm team metrics."
+
+`packages/shared` thêm `analyticsMetrics.ts` — phần lớn là thiết kế mới tối thiểu (summary/priority
+distribution/weekly trend/insights), chỉ đếm/tổng hợp trực tiếp trên field Task/Project thật, không
+điểm số hay suy luận nào như Smart Engine. Ngoại lệ: `getAreaProgress` **có port thật** từ
+`getAreaProgress_()` trong `06_Dashboard.gs` (hàm có thật dù Dashboard chưa gọi nó — vẫn là mock
+tĩnh Phase 09, nối dây thật là Phase 27, ngoài phạm vi ở đây); `getProjectProgressList` tái dùng
+thẳng `computeProjectMetrics` (Phase 13).
+
+`apps/desktop` thêm trang Analytics (`AnalyticsPage`/`WeeklyTrendChart`) — không thêm thư viện
+chart nào, `WeeklyTrendChart` là bar chart CSS thuần, đúng tinh thần "professional, minimal, không
+biến thành dashboard quá nhiều chart" của đặc tả gốc. Có `EmptyState` khi chưa có task nào, không để
+KPI toàn số 0 vô nghĩa (đúng UI_UX_MASTER_PROMPT.md §15).
+
+Verify thật: `npm run typecheck`/`lint`/`format` pass sạch ngay từ lần đầu. `npm run build:desktop`
+build production thành công — grep trực tiếp bundle xác nhận text Analytics thật có mặt. `npm run
+dev:tauri` mở `app.exe` thật, ổn định. **Chưa click-test tương tác thật** — `claude-in-chrome` vẫn
+không kết nối được dù đã thử lại. Nên tự thử trên máy trước khi coi Phase 18 là xong hẳn: xác nhận
+các con số khớp đúng dữ liệu task thật đang có, Weekly Trend đếm đúng theo `completedDate`.
 
 Mỗi Phase kế tiếp sẽ được trình bày riêng theo format: Mục tiêu → File tạo/sửa → Full code →
 Command → Cách chạy → Cách test → Expected Result → Checklist → Git commit đề xuất.
