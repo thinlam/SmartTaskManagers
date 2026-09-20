@@ -1,22 +1,10 @@
-import type { Area, Priority } from '@stm/types';
+import type { Area, TaskSummary } from '@stm/types';
 
 export interface DashboardKpi {
   label: string;
   value: string;
   sub: string;
   tone: 'primary' | 'success' | 'warning' | 'danger' | 'info';
-}
-
-export interface FocusTask {
-  id: string;
-  title: string;
-  area: Area;
-  priority: Priority;
-  dueLabel: string;
-  /** Smart Engine output (Phase 29) — static placeholder, never computed here. */
-  smartScore: number;
-  /** Smart Engine output (Phase 29) — static placeholder, never computed here. */
-  recommendedAction: string;
 }
 
 export interface AreaProgress {
@@ -36,7 +24,7 @@ export interface DashboardData {
   greeting: string;
   summary: string;
   kpis: DashboardKpi[];
-  focusNow: FocusTask[];
+  focusNow: TaskSummary[];
   areas: AreaProgress[];
   insights: SmartInsight[];
 }

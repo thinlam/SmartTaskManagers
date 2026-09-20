@@ -1,8 +1,21 @@
+import type { ReactNode } from 'react';
 import { createHashRouter } from 'react-router-dom';
 import { AppShell } from './AppShell';
 import { PlaceholderPage } from '../pages/PlaceholderPage';
 import { DashboardPage } from '../pages/Dashboard/DashboardPage';
+import { TodayPage } from '../pages/Today/TodayPage';
 import { APP_ROUTES } from './routes';
+
+/**
+ * Each route gets a real page as its Phase lands; until then it falls
+ * back to PlaceholderPage. routes.ts's path/label/group/icon never
+ * change when a route graduates from placeholder to real — only this
+ * map does.
+ */
+const PAGE_BY_PATH: Record<string, ReactNode> = {
+  '/': <DashboardPage />,
+  '/today': <TodayPage />,
+};
 
 /**
  * HashRouter, not BrowserRouter: the packaged Tauri app has no server to
@@ -16,15 +29,9 @@ export const router = createHashRouter([
     element: <AppShell />,
     children: APP_ROUTES.map((route) => ({
       path: route.path,
-      // Each route gets a real page as its Phase lands; until then it
-      // falls back to PlaceholderPage. routes.ts's path/label/group/icon
-      // never change when a route graduates from placeholder to real.
-      element:
-        route.path === '/' ? (
-          <DashboardPage />
-        ) : (
-          <PlaceholderPage title={route.label} phase={route.phase} />
-        ),
+      element: PAGE_BY_PATH[route.path] ?? (
+        <PlaceholderPage title={route.label} phase={route.phase} />
+      ),
     })),
   },
 ]);

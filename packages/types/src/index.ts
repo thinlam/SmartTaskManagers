@@ -10,3 +10,22 @@ export type Area = 'Career' | 'Learning' | 'Health' | 'Personal' | 'Personal Adm
 export type Priority = 'Critical' | 'Urgent' | 'High' | 'Medium' | 'Low';
 export type TaskStatus = 'Inbox' | 'To Do' | 'In Progress' | 'Waiting' | 'Completed';
 export type Risk = 'Low' | 'Medium' | 'High' | 'Critical';
+
+/**
+ * The reduced shape a `TaskCard` (packages/ui) needs to render one task —
+ * not the full Task entity (that lands with Phase 12). Shared here because
+ * Dashboard's Focus Now (Phase 09) and Today's Do Now/Scheduled/Quick Wins
+ * (Phase 10) both produce lists of exactly this shape; defining it twice
+ * in each page's mock data would drift the moment one changes.
+ */
+export interface TaskSummary {
+  id: string;
+  title: string;
+  area: Area;
+  priority: Priority;
+  dueLabel: string;
+  /** Smart Engine output (Phase 29) — omit rather than fabricate until real. */
+  smartScore?: number;
+  /** Smart Engine output (Phase 29) — omit rather than fabricate until real. */
+  recommendedAction?: string;
+}

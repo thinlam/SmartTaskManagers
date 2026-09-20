@@ -11,7 +11,7 @@ PHASE 06  Tauri Desktop setup                                                  �
 PHASE 07  Application Shell                                                    ✅ DONE
 PHASE 08  Sidebar + Topbar + Navigation (Personal Mode — không có Members)      ✅ DONE
 PHASE 09  Dashboard                                                            ✅ DONE (mock data)
-PHASE 10  Today
+PHASE 10  Today                                                                ✅ DONE (mock data)
 PHASE 11  Inbox
 PHASE 12  Tasks
 PHASE 13  Projects
@@ -174,6 +174,26 @@ trực tiếp xác nhận `priority-critical`/`priority-high`/`priority-medium` 
 ("Focus Now", "My Areas", "Smart Insights", "Finish portfolio case study"...) có trong bundle.
 `npm run dev:tauri` mở cửa sổ Windows thật, ổn định. Vẫn chưa xác nhận bằng mắt layout/màu hiển thị
 đúng theo Canva — không có công cụ chụp màn hình trong session.
+
+Phase 10 đã thực hiện: cùng cách làm với Phase 09 — đọc thật `computeTodayData_()` trong
+`apps/google-sheets/src/07_Today.gs` trước khi code, giữ đúng 5 KPI (Due Today/Overdue/Focus
+Load/Completed/Quick Wins), Best Next Action, 3 nhóm task (Do Now/Scheduled/Quick Wins,
+mỗi nhóm accent màu khác nhau qua `writeTodaySection_()`), End-of-Day Review.
+
+Đúc kết đáng chú ý: đây là lần thứ 2 cần "shape 1 task hiển thị trên card" (Dashboard's Focus Now,
+giờ thêm Today's 3 nhóm) — thay vì định nghĩa `TodayTask` riêng trong `apps/desktop/src/mock/
+today.ts`, chuyển thẳng thành `TaskSummary` dùng chung trong `packages/types` (kèm sửa lại
+`apps/desktop/src/mock/dashboard.ts` để dùng chung type này thay vì `FocusTask` cũ). `EmptyState`
+(đã hứa từ Phase 04 nhưng chưa cần) được xây thật ở Phase này — Do Now/Scheduled/Quick Wins đều có
+thể rỗng và cần trạng thái rỗng rõ ràng theo đúng nguyên tắc UI_UX_MASTER_PROMPT.md §15.
+
+`router.tsx` refactor nhỏ: chuyển từ ternary đơn thành map `PAGE_BY_PATH` để mở rộng route thật
+không phình to chuỗi if/else.
+
+Verify thật: `npm run typecheck`/`lint`/`format` pass sạch; `npm run build:desktop` build production
+thành công (CSS 16.72KB → 17.6KB), grep xác nhận "Best Next Action"/"Do Now"/"Scheduled"/"Quick
+Wins"/"End-of-Day Review" có trong bundle. `npm run dev:tauri` mở cửa sổ Windows thật, ổn định.
+Vẫn chưa xác nhận bằng mắt — không có công cụ chụp màn hình trong session.
 
 Mỗi Phase kế tiếp sẽ được trình bày riêng theo format: Mục tiêu → File tạo/sửa → Full code →
 Command → Cách chạy → Cách test → Expected Result → Checklist → Git commit đề xuất.

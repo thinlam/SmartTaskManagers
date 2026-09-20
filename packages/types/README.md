@@ -8,6 +8,9 @@ Một nguồn duy nhất — không định nghĩa lại Task interface khác nh
 - ✅ Enum domain (Phase 09): `Area`, `Priority`, `TaskStatus`, `Risk` — khớp 1:1 với
   `LOOKUP_LISTS` trong `apps/google-sheets/src/00_Constants.gs` (nguồn dữ liệu thật duy nhất cho
   các tập giá trị này). Dùng bởi `packages/ui` (`PriorityBadge`) và mock data của `apps/desktop`.
+- ✅ `TaskSummary` (Phase 09, dùng lại ở Phase 10): shape rút gọn mà `TaskCard` cần để render 1
+  task — không phải `Task` đầy đủ (đó là Phase 12). Dashboard's Focus Now và Today's Do
+  Now/Scheduled/Quick Wins đều dùng chung interface này thay vì mỗi mock data tự định nghĩa lại.
 - ⏳ Full entity (`Task`, `Project`, `Goal`, `Habit`, `User`, `Notification`, `CalendarEvent`) —
   chưa làm, sẽ thêm khi Phase tương ứng cần đến (Tasks: Phase 12, Projects: Phase 13, ...), không
   model trước khi chưa có yêu cầu cụ thể.

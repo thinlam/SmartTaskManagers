@@ -62,9 +62,9 @@ có server để trả `index.html` cho mọi path (SPA fallback) — deep-link 
 kể serve thế nào, cả lúc dev lẫn sau khi đóng gói.
 
 Mỗi route hiện render `PlaceholderPage` — Phase 09+ thay `element` trong `router.tsx` bằng trang
-thật, path/label/group/icon trong `routes.ts` giữ nguyên. Dashboard (`/`) là route đầu tiên đã
-thay (Phase 09), theo cách so khớp `route.path === '/'` — pattern này lặp lại y hệt khi Today,
-Inbox... lần lượt có trang thật.
+thật, path/label/group/icon trong `routes.ts` giữ nguyên. `router.tsx` giữ một map `PAGE_BY_PATH`
+(path → element); Dashboard (`/`, Phase 09) và Today (`/today`, Phase 10) đã có trong map này —
+Inbox và các route còn lại chỉ cần thêm một dòng vào map khi tới lượt, không sửa gì khác.
 
 ## Sidebar + Topbar (Phase 08)
 
@@ -104,3 +104,20 @@ có Owner/Team Capacity) — 5 KPI giống hệt (Due Today/Overdue/Focus Time/W
 "My Areas" thay cho "Project Health"+"Team Capacity" của bản team. `smartScore`/`recommendedAction`
 trong mock data là **giá trị tĩnh, không phải tính toán thật** — Smart Engine (thuật toán tính các
 giá trị này) là Phase 29, chưa làm.
+
+## Today (Phase 10)
+
+```
+src/mock/today.ts                       MOCK_TODAY_DATA — dữ liệu tĩnh, thay bằng API thật ở Phase 27
+src/pages/Today/TodayPage.tsx            lắp ráp toàn bộ trang
+src/pages/Today/BestNextActionCard.tsx   1 khuyến nghị nổi bật, hoặc trạng thái "đã xong hết"
+src/pages/Today/TaskListSection.tsx      Do Now / Scheduled / Quick Wins — cùng 1 component, khác tone
+src/pages/Today/EndOfDayReview.tsx       tóm tắt tiến độ cuối ngày
+```
+
+Bám theo `computeTodayData_()` trong `apps/google-sheets/src/07_Today.gs` — 5 KPI giống hệt (Due
+Today/Overdue/Focus Load/Completed/Quick Wins), Best Next Action, 3 nhóm task, End-of-Day Review.
+`TaskListSection` và `BestNextActionCard` đều dùng lại `TaskCard`/`EmptyState` từ `@stm/ui` —
+**không** viết lại UI task row lần thứ hai. `TaskSummary` (kiểu dữ liệu cho 1 task trong các danh
+sách này) chuyển sang `packages/types` ở Phase này vì Dashboard và Today giờ cùng cần đúng shape
+đó — tránh định nghĩa lại 2 lần rồi lệch nhau.

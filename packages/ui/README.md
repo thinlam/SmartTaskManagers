@@ -22,11 +22,12 @@ Nguồn thiết kế: Canva Design System (xem
 - ✅ `components/Progress` — thanh progress ngang, `value` 0–100, `tone` (Phase 09).
 - ✅ `components/StatCard` — KPI card (label/value/sub/tone), dùng cho Dashboard/Analytics (Phase 09).
 - ✅ `components/TaskCard` — dạng row-card "Focus Now"/"Focus Today" (title, meta, due, priority,
-  smartScore?, recommendedAction?) — dùng chung cho Dashboard (Phase 09) và Today (Phase 10 dự
-  kiến) (Phase 09).
+  smartScore?, recommendedAction?) — dùng chung thật cho Dashboard (Phase 09) **và** Today
+  (Phase 10, không sửa gì thêm khi tái dùng) (Phase 09).
 - ✅ `components/SmartInsightCard` — dòng insight có icon Sparkles + màu theo tone (Phase 09).
-- ⏳ `Card`/`Modal`/`Dropdown`/`Tooltip`/`EmptyState`/... — chưa làm, theo sau khi các màn hình cần
-  đến.
+- ✅ `components/EmptyState` — dùng ở Today cho các section Do Now/Scheduled/Quick Wins khi rỗng
+  (Phase 10).
+- ⏳ `Card`/`Modal`/`Dropdown`/`Tooltip`/... — chưa làm, theo sau khi các màn hình cần đến.
 
 ## Sidebar/Topbar — router-agnostic theo thiết kế
 
