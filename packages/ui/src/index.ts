@@ -29,6 +29,7 @@ export {
   type ProjectCardMetricChip,
 } from './components/ProjectCard';
 export { GoalCard, type GoalCardProps } from './components/GoalCard';
+export { HabitCard, type HabitCardProps } from './components/HabitCard';
 export { SmartInsightCard, type SmartInsightCardProps } from './components/SmartInsightCard';
 export { EmptyState, type EmptyStateProps } from './components/EmptyState';
 export { IconButton, type IconButtonProps } from './components/IconButton';

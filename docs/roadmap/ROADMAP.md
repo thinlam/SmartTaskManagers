@@ -16,7 +16,7 @@ PHASE 11  Inbox                                                                �
 PHASE 12  Tasks                                                                ✅ DONE (click-tested thật)
 PHASE 13  Projects                                                             ✅ DONE (click-tested thật)
 PHASE 14  Goals                                                                ✅ DONE (click-tested thật)
-PHASE 15  Habits
+PHASE 15  Habits                                                               ✅ DONE (chưa click-test — xem ghi chú)
 PHASE 16  Calendar
 PHASE 17  Kanban
 PHASE 18  Analytics (Reports)
@@ -340,6 +340,35 @@ Risk qua Edit Drawer → card và KPI cập nhật ngay; tạo task mới gán G
 → quay lại Goals, card "Run a 5K" đổi từ "No tasks linked yet" sang "1 task linked" theo thời gian
 thực (xác nhận liên kết Task→Goal qua 2 context riêng biệt hoạt động đúng); tạo/xoá goal qua
 quick-add, KPI cập nhật đúng mỗi lần. **Không phát hiện lỗi nào** trong toàn bộ luồng.
+
+Phase 15 đã thực hiện: trước khi code, grep toàn bộ `apps/google-sheets/src` để xác nhận Habits
+**đứng riêng hoàn toàn** — không có `HabitId` nào trên `TASK_HEADERS` (khác `projectId`/`goalId`),
+và cũng không có hàm hoàn thành habit nào để port (`createHabit_()`/`getAllHabits_()` là toàn bộ
+những gì tồn tại phía Sheets). Vì vậy Phase này **không sửa `TaskDetailDrawer`** — không có field
+Habit nào để thêm.
+
+`packages/types` thêm `Habit` + `HabitFrequency`, khớp `HABIT_HEADERS`. `packages/shared` **không
+thêm hàm nào** (giống Phase 14) — nhãn "last done" của Habit không có khái niệm hạn/quá hạn để
+đáng tách hàm dùng chung, viết thẳng trong `HabitRow.tsx`. `packages/ui` thêm `HabitCard` (tên,
+`Badge` tần suất, icon `Flame` + số streak không kèm đơn vị — đúng comment "consecutive days/weeks"
+của cột `Streak`, Frequency quyết định đơn vị nào chứ card không đoán — thanh progress chỉ hiện
+khi có target, nút "Check in today"). `packages/hooks` thêm `useHabits`, thêm hàm `checkInHabit`
+— thiết kế hợp lý tối thiểu (không phải port): +1 streak, +1 completedCount, set
+`lastCompletedDate` = hôm nay, no-op nếu hôm nay đã check-in rồi; cố ý không có logic reset streak
+khi bỏ lỡ ngày vì không có tham chiếu Sheets nào để verify công thức đó.
+
+`apps/desktop` thêm `HabitsProvider` + `HabitDetailDrawer` (chỉ Name/Frequency/Target count — không
+sửa tay Streak/CompletedCount/LastCompletedDate) + trang Habits (`HabitsPage`/`HabitRow`, KPI Total/
+Checked In Today/Best Streak/Total Check-ins — "Best Streak" mô phỏng đúng `getBestHabitStreak_()`
+trong `apps/google-sheets/src/06_Dashboard.gs`, tham chiếu Sheets thật duy nhất cho Habits dù đó là
+KPI của Dashboard). Dashboard's KPI "Streak" tĩnh (Phase 09) **chưa được nối** sang dữ liệu Habit
+thật — để dành Phase sau, ngoài phạm vi Phase này.
+
+Verify thật: `npm run typecheck`/`lint`/`format` pass sạch ngay từ đầu. `npm run build:desktop`
+build production thành công. **Chưa click-test tương tác thật** — công cụ `claude-in-chrome` không
+kết nối được trong phiên làm việc này (môi trường `E:\SmartTaskManager`, khác phiên trước dùng
+`D:\SmartTaskManagers`). Nên tự thử trên máy trước khi coi Phase 15 là xong hẳn, đặc biệt luồng
+"Check in today".
 
 Mỗi Phase kế tiếp sẽ được trình bày riêng theo format: Mục tiêu → File tạo/sửa → Full code →
 Command → Cách chạy → Cách test → Expected Result → Checklist → Git commit đề xuất.

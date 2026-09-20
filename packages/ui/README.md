@@ -50,6 +50,13 @@ Nguồn thiết kế: Canva Design System (xem
   engine tương đương `14_Projects.gs` ở phía Sheets, nên không có health score/top focus/next
   action để hiển thị — chỉ tên, `GoalStatusBadge`, area/target + progress%, thanh progress, và số
   task liên kết (đếm thẳng từ `Task.goalId`, không phải metrics engine) (Phase 14).
+- ✅ `components/HabitCard` (Phase 15) — không có Frame/Sheets view nào để bám (chỉ có
+  `createHabit_()`/`getAllHabits_()`, không view engine nào) — thiết kế hợp lý tối thiểu: tên,
+  `Badge` tone trung tính cho Frequency, icon `Flame` (Lucide) + số streak **không kèm đơn vị**
+  ("in a row" — đúng comment gốc "consecutive days/weeks" của cột `Streak` trong
+  `00_Constants.gs`, Frequency mới quyết định đơn vị nào, card không tự đoán), thanh progress chỉ
+  hiện khi có `targetCount > 0`, và nút "Check in today" (disable khi đã check-in hôm nay) — toàn
+  bộ tính toán (checkedInToday, label ngày) do caller làm, card chỉ hiển thị.
 - ⏳ `Card`/`Modal`/`Dropdown`/`Tooltip`/... — chưa làm, theo sau khi các màn hình cần đến.
 
 ## Sidebar/Topbar — router-agnostic theo thiết kế

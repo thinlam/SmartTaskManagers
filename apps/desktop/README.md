@@ -250,3 +250,39 @@ cập nhật ngay; mở "+ New Task", chọn Goal = "Run a 5K", Add task → qua
 quick-add (mặc định Personal/On Track/0%/không target date đúng, KPI cập nhật đúng); xoá goal đó
 (quay lại số liệu cũ đúng). **Không phát hiện lỗi nào** — `npm run typecheck`/`lint`/`format` cũng
 pass sạch ngay từ lần đầu.
+
+## Habits (Phase 15)
+
+```
+src/mock/habits.ts                   MOCK_HABITS — đứng riêng, không task nào tham chiếu (xem @stm/types's Habit)
+src/state/HabitsContext.tsx           HabitsProvider + useHabitsContext() — cùng pattern các context trước
+src/components/HabitDetailDrawer.tsx  form Create/Edit Habit — CHỈ Name/Frequency/Target count
+src/pages/Habits/HabitsPage.tsx       KPI row + quick add + grid HabitCard
+src/pages/Habits/HabitRow.tsx         tính lastDoneLabel/checkedInToday + ghép HabitCard + Edit/Delete
+```
+
+**Khác biệt với Goals/Projects:** Habits **đứng riêng hoàn toàn** — không có `Task.habitId` nào để
+link 2 chiều (grep toàn bộ `apps/google-sheets/src` xác nhận `HabitId` chỉ là khoá chính của Habit,
+không xuất hiện trên `TASK_HEADERS`), nên `TaskDetailDrawer` **không** có field Habit — khác Project
+(Phase 13) và Goal (Phase 14). Sheets cũng không có hàm hoàn thành habit nào để port
+(`createHabit_()`/`getAllHabits_()` là toàn bộ những gì tồn tại) — `HabitDetailDrawer` vì vậy chỉ
+có Name/Frequency/Target count; `streak`/`completedCount`/`lastCompletedDate` đổi qua action riêng
+"Check in today" trên `HabitCard` (`useHabits().checkInHabit`), không sửa tay trong form.
+
+`checkInHabit` là thiết kế hợp lý tối thiểu, không phải port: +1 streak, +1 completedCount, set
+`lastCompletedDate` = hôm nay, no-op nếu hôm nay đã check-in — cố ý không có logic "reset streak
+khi bỏ lỡ ngày" vì không có tham chiếu Sheets nào để verify công thức đó đúng.
+
+KPI row của `HabitsPage` (Total/Checked In Today/Best Streak/Total Check-ins) là rollup trực tiếp
+từ field đã lưu — "Best Streak" mô phỏng đúng `getBestHabitStreak_()` trong
+`apps/google-sheets/src/06_Dashboard.gs` (max `Streak` trong tất cả habit), tình cờ là tham chiếu
+Sheets thật duy nhất tồn tại cho Habits, dù nó là KPI của Dashboard chứ không phải trang Habits.
+**Chưa nối** Dashboard's KPI "Streak" (hiện vẫn là giá trị tĩnh từ Phase 09) sang dữ liệu Habit
+thật — để dành cho Phase sau, ngoài phạm vi Phase này.
+
+**Chưa verify bằng tương tác thật lần này** — công cụ `claude-in-chrome` không kết nối được trong
+phiên làm việc này (môi trường mới, `E:\SmartTaskManager`, khác phiên trước dùng `D:\...`). Đã verify
+bằng `npm run typecheck`/`lint`/`format` (pass sạch ngay từ lần đầu) và `npm run build:desktop`
+(build production thành công). Nên tự click-test trên máy trước khi coi Phase này là xong hẳn —
+đặc biệt luồng "Check in today" (streak/completedCount tăng đúng, nút disable đúng khi đã check-in
+hôm nay, không tăng 2 lần cùng ngày).

@@ -22,7 +22,12 @@ React hooks dùng chung: `useTasks`, `useProjects`, `useGoals`, `useHabits`, `us
 - ✅ `useGoals` (Phase 14): cùng pattern với `useProjects` — `goals` +
   `addGoal`/`updateGoal`/`deleteGoal`, cục bộ, không persist. Cùng giới hạn đã ghi nhận:
   `deleteGoal` không dọn `goalId` của các task đang tham chiếu goal đó.
-- ⏳ `useHabits`/`useAuth` — chưa làm, thêm khi Phase tương ứng cần (Habits: Phase 15, ...).
+- ✅ `useHabits` (Phase 15): `habits` + `addHabit`/`updateHabit`/`deleteHabit`, cục bộ, cùng pattern
+  các hook trước. Thêm `checkInHabit(id)` — hành vi không có gì để port từ Sheets (không có hàm
+  hoàn thành habit nào ở đó): +1 streak, +1 completedCount, set `lastCompletedDate` = hôm nay,
+  no-op nếu hôm nay đã check-in rồi (tránh đếm 2 lần cùng ngày). Cố ý **không** có logic reset
+  streak khi bỏ lỡ ngày — không có tham chiếu thật nào để verify công thức đó, nên không bịa ra.
+- ⏳ `useAuth` — chưa làm, thêm khi Phase tương ứng cần.
 
 ## Test
 

@@ -116,3 +116,30 @@ export interface Goal {
   createdAt: string;
   updatedAt: string;
 }
+
+export type HabitFrequency = 'Daily' | 'Weekly' | 'Custom';
+
+/**
+ * The Habit entity (Phase 15) — matches HABIT_HEADERS in
+ * apps/google-sheets/src/00_Constants.gs. Standalone, unlike Goal/Project:
+ * grepping the whole Sheets source found no `HabitId` column anywhere on
+ * `TASK_HEADERS`, so unlike `projectId`/`goalId` there is no Task→Habit
+ * link to model. `streak`/`completedCount`/`lastCompletedDate` are plain
+ * fields (`createHabit_()` in `apps/google-sheets/src/03_Data.gs` defaults
+ * them to `0`/`0`/`''`) — Sheets has no habit-completion function to port
+ * either, so the desktop app's own "check in today" action
+ * (`packages/hooks`'s `useHabits`) is a reasonable minimal design, not a
+ * port.
+ */
+export interface Habit {
+  id: string;
+  name: string;
+  frequency: HabitFrequency;
+  streak: number;
+  /** 0 = no target set (matches createHabit_()'s default). */
+  targetCount: number;
+  completedCount: number;
+  lastCompletedDate: string | null;
+  createdAt: string;
+  updatedAt: string;
+}

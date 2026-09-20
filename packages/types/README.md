@@ -28,8 +28,15 @@ Một nguồn duy nhất — không định nghĩa lại Task interface khác nh
   `03_Data.gs` mặc định `Progress: 0, Status: "On Track"` rồi để nguyên, không có hàm
   `computeGoalHealth_()` nào cả). `Task.goalId` (Phase 14) là link 1 chiều từ Task sang Goal, khớp
   `GoalId` trong `TASK_HEADERS` — giống hệt cơ chế `projectId`.
-- ⏳ `Habit`, `User`, `Notification`, `CalendarEvent` — chưa làm, sẽ thêm khi Phase tương ứng cần
-  đến (Habits: Phase 15, ...), không model trước khi chưa có yêu cầu cụ thể.
+- ✅ `Habit` + `HabitFrequency` (Phase 15): entity khớp `HABIT_HEADERS` (`00_Constants.gs`).
+  **Đứng riêng** — không có `Task.habitId` nào cả (grep toàn bộ `apps/google-sheets/src` xác nhận
+  `HabitId` chỉ xuất hiện làm khoá chính của chính `Habit`, không phải cột nào trên `TASK_HEADERS`
+  — khác hẳn `projectId`/`goalId`). `streak`/`completedCount`/`lastCompletedDate` là field, Sheets
+  cũng không có hàm hoàn thành habit nào để port (`createHabit_()` chỉ set mặc định
+  `0`/`0`/`''`) — hành vi "check in hôm nay" ở `useHabits` (`@stm/hooks`) là thiết kế hợp lý tối
+  thiểu cho app, không phải port.
+- ⏳ `User`, `Notification`, `CalendarEvent` — chưa làm, sẽ thêm khi Phase tương ứng cần đến, không
+  model trước khi chưa có yêu cầu cụ thể.
 
 ## Test
 

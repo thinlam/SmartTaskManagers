@@ -6,6 +6,7 @@ import { useTasksContext } from '../state/TasksContext';
 import { TaskDetailDrawer } from '../components/TaskDetailDrawer';
 import { ProjectDetailDrawer } from '../components/ProjectDetailDrawer';
 import { GoalDetailDrawer } from '../components/GoalDetailDrawer';
+import { HabitDetailDrawer } from '../components/HabitDetailDrawer';
 
 /**
  * Real Sidebar + Topbar (Phase 08), replacing Phase 07's temporary <nav>.
@@ -54,6 +55,7 @@ export function AppShell() {
       <TaskDetailDrawer />
       <ProjectDetailDrawer />
       <GoalDetailDrawer />
+      <HabitDetailDrawer />
     </div>
   );
 }
