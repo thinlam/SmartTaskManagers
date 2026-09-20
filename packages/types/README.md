@@ -17,8 +17,13 @@ Một nguồn duy nhất — không định nghĩa lại Task interface khác nh
   `RecurringType`, `DependencyTaskId`, `LastStatusChangedAt`, `Notes`. Ngày tháng là chuỗi ISO
   8601 (`string | null`), không phải `Date` — để shape này không đổi khi vượt qua ranh giới API ở
   Phase 27.
-- ⏳ `Project`, `Goal`, `Habit`, `User`, `Notification`, `CalendarEvent` — chưa làm, sẽ thêm khi
-  Phase tương ứng cần đến (Projects: Phase 13, ...), không model trước khi chưa có yêu cầu cụ thể.
+- ✅ `Project` + `ProjectHealth` (Phase 13): entity khớp `PROJECT_HEADERS` (`00_Constants.gs`) trừ
+  `Health` — Health **luôn tính trực tiếp** từ task liên kết qua `computeProjectHealth()`
+  (`@stm/shared`), không lưu trên entity để tránh dữ liệu cũ/lệch. `ProjectHealth` là type riêng,
+  không dùng chung `Risk` — dù 2 thang màu giống nhau (Frame 01 §5), tách để type-system không lẫn
+  risk của Task với health của Project.
+- ⏳ `Goal`, `Habit`, `User`, `Notification`, `CalendarEvent` — chưa làm, sẽ thêm khi Phase tương
+  ứng cần đến (Goals: Phase 14, ...), không model trước khi chưa có yêu cầu cụ thể.
 
 ## Test
 

@@ -4,6 +4,9 @@ import type { Task } from '@stm/types';
  * Seed data for the Tasks list's local demo state (Phase 12) — same
  * pattern as Inbox (Phase 11): loaded into useTasks() as initial state,
  * mutated only in memory. No persistence until Phase 27.
+ *
+ * Some `projectId`s (Phase 13) reference apps/desktop/src/mock/projects.ts
+ * — keep both files' ids in sync if either seed set changes.
  */
 export const MOCK_TASKS: Task[] = [
   {
@@ -11,7 +14,7 @@ export const MOCK_TASKS: Task[] = [
     title: 'Finish portfolio case study',
     description: 'Write up the Smart Task Manager build as a case study for the portfolio site.',
     area: 'Career',
-    projectId: null,
+    projectId: 'PRJ-0001',
     tags: ['writing'],
     priority: 'Critical',
     status: 'In Progress',
@@ -31,7 +34,7 @@ export const MOCK_TASKS: Task[] = [
     title: 'Review English vocabulary set',
     description: '',
     area: 'Learning',
-    projectId: null,
+    projectId: 'PRJ-0002',
     tags: [],
     priority: 'High',
     status: 'To Do',
@@ -68,7 +71,7 @@ export const MOCK_TASKS: Task[] = [
     title: 'Pay electricity bill',
     description: '',
     area: 'Personal Admin',
-    projectId: null,
+    projectId: 'PRJ-0003',
     tags: ['bills'],
     priority: 'High',
     status: 'To Do',
@@ -105,7 +108,7 @@ export const MOCK_TASKS: Task[] = [
     title: 'Approve UI copy for the landing page',
     description: '',
     area: 'Career',
-    projectId: null,
+    projectId: 'PRJ-0001',
     tags: [],
     priority: 'Medium',
     status: 'Completed',

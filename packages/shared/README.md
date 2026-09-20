@@ -9,6 +9,12 @@ Utils, formatters, date logic dùng chung.
   data Dashboard/Today/Inbox và bảng Tasks ở Canva Frame 05 (có số ngày). **Không** port 1:1
   `todayDueLabel_()` trong `apps/google-sheets/src/07_Today.gs` — hàm đó bỏ số ngày ("Overdue",
   "Tomorrow") để vừa 1 ô spreadsheet hẹp; desktop có đủ chỗ hiển thị số ngày.
+- ✅ `computeProjectMetrics`/`computeProjectHealth`/`getProjectTopFocusText`/`getProjectNextAction`/
+  `formatTargetLabel` (Phase 13): port trực tiếp từ `computeProjectMetrics_()`,
+  `computeProjectHealth_()`, `getProjectTopFocusText_()`, `getProjectNextAction_()`,
+  `getProjectTargetLabel_()` trong `apps/google-sheets/src/14_Projects.gs` — cùng công thức, cùng
+  trọng số (`PROJECT_HEALTH_WEIGHTS`), cùng ngưỡng bucket, cùng câu chữ khuyến nghị. Health luôn
+  tính lại từ task liên kết mỗi lần gọi, không cache.
 - ⏳ Smart Score / Risk / RecommendedAction (`apps/google-sheets/src/05_SmartEngine.gs`) —
   **chưa port** — đó là Phase 29 (Smart Engine), không làm sớm.
 

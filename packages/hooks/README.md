@@ -14,8 +14,12 @@ React hooks dùng chung: `useTasks`, `useProjects`, `useGoals`, `useHabits`, `us
   `useTasks()` **không tự quyết định được gọi ở đâu** — Phase 12 bước 2 phát hiện gọi nó cục bộ
   trong từng page (như `TasksPage` ban đầu) khiến state không dùng chung được giữa các trang; xem
   `apps/desktop/src/state/TasksContext.tsx` cho cách bọc 1 instance duy nhất dùng chung toàn app.
-- ⏳ `useProjects`/`useGoals`/`useHabits`/`useAuth` — chưa làm, thêm khi Phase tương ứng cần
-  (Projects: Phase 13, ...).
+- ✅ `useProjects` (Phase 13): cùng pattern với `useTasks` — `projects` +
+  `addProject`/`updateProject`/`deleteProject`, cục bộ, không persist. **Giới hạn đã ghi nhận:**
+  `deleteProject` không dọn `projectId` của các task đang tham chiếu project đó — chấp nhận được
+  cho store demo cục bộ, nhưng backend thật (Phase 27) cần xử lý ràng buộc tham chiếu đúng cách
+  (cascade clear, hoặc chặn xoá khi còn task liên kết).
+- ⏳ `useGoals`/`useHabits`/`useAuth` — chưa làm, thêm khi Phase tương ứng cần (Goals: Phase 14, ...).
 
 ## Test
 

@@ -5,6 +5,8 @@ export interface NewTaskInput {
   title: string;
   area: Area;
   description?: string;
+  /** References a Project's id (Phase 13) — omit or pass null for no project. */
+  projectId?: string | null;
   priority?: Priority;
   /** Defaults to 'Inbox' — matches Quick Add's real default status. */
   status?: TaskStatus;
@@ -40,7 +42,7 @@ export function useTasks(initialTasks: Task[]): UseTasksResult {
       title: input.title,
       description: input.description ?? '',
       area: input.area,
-      projectId: null,
+      projectId: input.projectId ?? null,
       tags: input.tags ?? [],
       priority: input.priority ?? 'Medium',
       status: input.status ?? 'Inbox',

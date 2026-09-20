@@ -2,6 +2,7 @@ import { useEffect, useState, type FormEvent } from 'react';
 import type { Area, Priority, Task, TaskStatus } from '@stm/types';
 import { Button, Drawer } from '@stm/ui';
 import { useTasksContext } from '../state/TasksContext';
+import { useProjectsContext } from '../state/ProjectsContext';
 
 const AREAS: Area[] = ['Career', 'Learning', 'Health', 'Personal', 'Personal Admin'];
 const PRIORITIES: Priority[] = ['Critical', 'Urgent', 'High', 'Medium', 'Low'];
@@ -15,6 +16,8 @@ interface FormState {
   title: string;
   description: string;
   area: Area;
+  /** '' = no project — matches the "No project" option's value. */
+  projectId: string;
   priority: Priority;
   status: TaskStatus;
   startDate: string;
@@ -28,6 +31,7 @@ function emptyForm(): FormState {
     title: '',
     description: '',
     area: 'Personal',
+    projectId: '',
     priority: 'Medium',
     status: 'Inbox',
     startDate: '',
@@ -42,6 +46,7 @@ function formFromTask(task: Task): FormState {
     title: task.title,
     description: task.description,
     area: task.area,
+    projectId: task.projectId ?? '',
     priority: task.priority,
     status: task.status,
     startDate: task.startDate ?? '',
@@ -57,12 +62,15 @@ function formFromTask(task: Task): FormState {
  * editingTask (null = create). Rendered once in AppShell so it's
  * available from every route, not nested inside TasksPage.
  *
- * No Project field yet — Projects don't exist until Phase 13, so there
- * is nothing real to pick from; projectId stays null through this form.
+ * Project field (Phase 13) reads ProjectsContext directly — Projects and
+ * Tasks are separate providers, both mounted in App.tsx, so this drawer
+ * can read from both without either context needing to know about the
+ * other.
  */
 export function TaskDetailDrawer() {
   const { isDrawerOpen, editingTask, closeDrawer, addTask, updateTask, deleteTask } =
     useTasksContext();
+  const { projects } = useProjectsContext();
   const [form, setForm] = useState<FormState>(emptyForm());
 
   useEffect(() => {
@@ -84,6 +92,7 @@ export function TaskDetailDrawer() {
       title,
       description: form.description,
       area: form.area,
+      projectId: form.projectId || null,
       priority: form.priority,
       status: form.status,
       startDate: form.startDate || null,
@@ -178,6 +187,27 @@ export function TaskDetailDrawer() {
             </select>
           </div>
           <div className="flex flex-col gap-1">
+            <label htmlFor="task-project" className={labelClasses}>
+              Project
+            </label>
+            <select
+              id="task-project"
+              value={form.projectId}
+              onChange={(event) => setForm((f) => ({ ...f, projectId: event.target.value }))}
+              className={fieldClasses}
+            >
+              <option value="">No project</option>
+              {projects.map((project) => (
+                <option key={project.id} value={project.id}>
+                  {project.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <div className="flex flex-col gap-1">
             <label htmlFor="task-priority" className={labelClasses}>
               Priority
             </label>
@@ -196,9 +226,6 @@ export function TaskDetailDrawer() {
               ))}
             </select>
           </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-3">
           <div className="flex flex-col gap-1">
             <label htmlFor="task-status" className={labelClasses}>
               Status
@@ -218,21 +245,22 @@ export function TaskDetailDrawer() {
               ))}
             </select>
           </div>
-          <div className="flex flex-col gap-1">
-            <label htmlFor="task-progress" className={labelClasses}>
-              Progress ({form.progress}%)
-            </label>
-            <input
-              id="task-progress"
-              type="range"
-              min={0}
-              max={100}
-              step={5}
-              value={form.progress}
-              onChange={(event) => setForm((f) => ({ ...f, progress: Number(event.target.value) }))}
-              className="mt-2.5 w-full"
-            />
-          </div>
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <label htmlFor="task-progress" className={labelClasses}>
+            Progress ({form.progress}%)
+          </label>
+          <input
+            id="task-progress"
+            type="range"
+            min={0}
+            max={100}
+            step={5}
+            value={form.progress}
+            onChange={(event) => setForm((f) => ({ ...f, progress: Number(event.target.value) }))}
+            className="w-full"
+          />
         </div>
 
         <div className="grid grid-cols-2 gap-3">

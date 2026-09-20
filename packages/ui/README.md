@@ -36,6 +36,12 @@ Nguồn thiết kế: Canva Design System (xem
 - ✅ `components/Drawer` — panel phải + backdrop, đóng bằng Escape/click backdrop, dùng cho Task
   Detail (Phase 12). **Chưa có focus trap đầy đủ** bên trong panel — ghi nhận rõ trong code, không
   phải bỏ sót âm thầm; đủ dùng cho scope hiện tại.
+- ✅ `components/ProjectHealthBadge` — dùng token `risk-*` trực tiếp (không phải bộ token riêng),
+  vì Frame 01 §5 nói rõ Risk và Project Health dùng chung 1 thang màu (Phase 13).
+- ✅ `components/ProjectCard` — port layout từ `writeProjectCard_()` trong
+  `apps/google-sheets/src/14_Projects.gs`: dải màu health bên trái, tên + health badge, area/target
+  - progress%, thanh progress, 4 chip metric (Open/Done/Overdue/Waiting), dòng Top Focus + Next.
+    Chỉ hiển thị — mọi text/số đều do caller tính qua `@stm/shared` (Phase 13).
 - ⏳ `Card`/`Modal`/`Dropdown`/`Tooltip`/... — chưa làm, theo sau khi các màn hình cần đến.
 
 ## Sidebar/Topbar — router-agnostic theo thiết kế

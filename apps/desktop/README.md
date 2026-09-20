@@ -172,8 +172,6 @@ render một lần trong `AppShell` (không lồng trong `TasksPage`) — `editi
 click backdrop. **Giới hạn a11y đã ghi nhận, không giấu:** chưa có focus trap đầy đủ bên trong
 panel — đủ dùng cho Phase này, không phải bỏ sót âm thầm.
 
-Chưa có Project field trong form — Projects chưa tồn tại tới Phase 13, không có gì thật để chọn.
-
 `formatDueLabel` (`@stm/shared`) tính nhãn hạn từ `dueDate` ISO thật — khác các Phase trước dùng
 chuỗi `dueLabel` viết tay trong mock.
 
@@ -191,3 +189,31 @@ hiện đúng ở cả Tasks lẫn Inbox — xác nhận `TasksContext` dùng ch
 khỏi Inbox), Delete (biến mất khỏi Tasks, `EmptyState` hiện đúng), search "gym" (lọc đúng 1 kết
 quả), KPI summary cập nhật đúng sau mỗi thao tác. **Không phát hiện lỗi nào** — toàn bộ hoạt động
 đúng như thiết kế ngay từ lần thử đầu tiên.
+
+## Projects (Phase 13)
+
+```
+src/mock/projects.ts                  MOCK_PROJECTS — 1 số task trong mock/tasks.ts tham chiếu id ở đây
+src/state/ProjectsContext.tsx          ProjectsProvider + useProjectsContext() — cùng pattern TasksContext
+src/components/ProjectDetailDrawer.tsx form Create/Edit Project (không có field Health — luôn tính, không nhập tay)
+src/pages/Projects/ProjectsPage.tsx     KPI row + quick add + grid ProjectCard
+src/pages/Projects/ProjectRow.tsx        tính metrics/health qua @stm/shared, ghép với ProjectCard + Edit/Delete
+```
+
+Bám `writeProjectsKpis_()`/`writeProjectCard_()` trong `apps/google-sheets/src/14_Projects.gs` —
+4 KPI (Total/Active/At Risk/Avg Progress), card có dải màu health, badge health, progress, 4 metric
+chip, Top Focus, Next. `TaskDetailDrawer` (Phase 12) giờ có field **Project** thật (đọc
+`useProjectsContext().projects`) — đúng như đã hứa ở cuối Phase 12.
+
+`ProjectsPage`/`ProjectRow` đọc **cả hai** context (`useProjectsContext()` cho danh sách project,
+`useTasksContext()` cho task để tính metrics) — 2 context độc lập, page đọc từ cả hai, không cần
+context nào biết về context kia.
+
+**Verify bằng tương tác thật (claude-in-chrome):** mở Projects, xác nhận cả 4 project mock tính
+đúng health (Attention/At Risk/At Risk/Healthy — khớp tính tay trước khi code) và đúng Top
+Focus/Next text; mở Edit Drawer trên project rỗng (dữ liệu đúng); gán task "Water the plants" (vốn
+chưa có project) vào "Fitness Reset" qua field Project mới trong Task Detail → quay lại Projects,
+xác nhận thẻ "Fitness Reset" cập nhật Open 1, health tự chuyển HEALTHY→ATTENTION, Top Focus/Next
+đổi đúng — xác nhận việc gán Task→Project và tính toán lại theo thời gian thực hoạt động đúng qua
+2 context riêng biệt; tạo project mới qua quick-add (KPI cập nhật đúng); xoá project (quay lại số
+liệu cũ đúng). **Không phát hiện lỗi nào.**

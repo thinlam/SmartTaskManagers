@@ -6,6 +6,7 @@ import { DashboardPage } from '../pages/Dashboard/DashboardPage';
 import { TodayPage } from '../pages/Today/TodayPage';
 import { InboxPage } from '../pages/Inbox/InboxPage';
 import { TasksPage } from '../pages/Tasks/TasksPage';
+import { ProjectsPage } from '../pages/Projects/ProjectsPage';
 import { APP_ROUTES } from './routes';
 
 /**
@@ -19,6 +20,7 @@ const PAGE_BY_PATH: Record<string, ReactNode> = {
   '/today': <TodayPage />,
   '/inbox': <InboxPage />,
   '/tasks': <TasksPage />,
+  '/projects': <ProjectsPage />,
 };
 
 /**

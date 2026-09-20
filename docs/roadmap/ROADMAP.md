@@ -14,7 +14,7 @@ PHASE 09  Dashboard                                                            �
 PHASE 10  Today                                                                ✅ DONE (mock data)
 PHASE 11  Inbox                                                                ✅ DONE (local CRUD)
 PHASE 12  Tasks                                                                ✅ DONE (click-tested thật)
-PHASE 13  Projects
+PHASE 13  Projects                                                             ✅ DONE (click-tested thật)
 PHASE 14  Goals
 PHASE 15  Habits
 PHASE 16  Calendar
@@ -280,6 +280,34 @@ mất khỏi Inbox) → Delete (biến mất khỏi Tasks, `EmptyState` hiện �
 KPI summary cập nhật chính xác sau mỗi thao tác. **Không phát hiện lỗi nào** trong toàn bộ luồng —
 mọi thứ hoạt động đúng thiết kế ngay từ lần thử đầu. Cũng xác nhận lại `npm run dev:tauri` (cửa sổ
 native) vẫn mở ổn định sau khi test qua trình duyệt.
+
+Phase 13 đã thực hiện: đọc thật `computeProjectMetrics_()`/`computeProjectHealth_()`/
+`getProjectTopFocusText_()`/`getProjectNextAction_()`/`getProjectTargetLabel_()` trong
+`apps/google-sheets/src/14_Projects.gs` trước khi code — port đầy đủ sang `packages/shared`, giữ
+nguyên trọng số (`PROJECT_HEALTH_WEIGHTS`), ngưỡng bucket, và câu chữ khuyến nghị. Health **không
+lưu trên entity Project** — luôn tính trực tiếp từ task liên kết (tránh dữ liệu cũ/lệch, khác cách
+Sheets cache lại giá trị Health vào cột).
+
+`packages/types` thêm `Project` + `ProjectHealth` (type riêng, không dùng chung `Risk` dù cùng
+thang màu — tránh lẫn risk của Task với health của Project trong type system). `packages/ui` thêm
+`ProjectCard` (port layout 6 dòng từ `writeProjectCard_()`) và `ProjectHealthBadge` (dùng thẳng
+token `risk-*`, không tạo bộ token trùng — đúng tinh thần Frame 01 §5 "dùng chung 1 thang màu").
+`packages/hooks` thêm `useProjects`, cùng pattern `useTasks`, có ghi nhận rõ giới hạn: xoá project
+không dọn `projectId` của task liên kết (chấp nhận được cho local demo, backend thật Phase 27 cần
+xử lý đúng).
+
+Đúng như đã hứa cuối Phase 12: `TaskDetailDrawer` giờ có field **Project** thật (đọc từ
+`ProjectsContext` mới, độc lập với `TasksContext`, cả hai cùng mount trong `App.tsx`). Đây là lần
+đầu 2 context riêng biệt cùng được một trang đọc (`ProjectsPage` đọc cả `useProjectsContext()` lẫn
+`useTasksContext()` để tính metrics theo task thật).
+
+Verify thật: `npm run typecheck`/`lint`/`format` pass sạch ngay từ đầu dù thêm rất nhiều file cùng
+lúc (types/shared/ui/hooks/desktop). `npm run build:desktop` build production thành công. Verify
+bằng **click-test thật** (claude-in-chrome): cả 4 project mock tính đúng health khớp tính tay
+trước khi code (Attention/At Risk/At Risk/Healthy); gán task "Water the plants" vào project rỗng
+"Fitness Reset" qua field Project mới → xác nhận card cập nhật Open 1, health tự chuyển
+HEALTHY→ATTENTION, Top Focus/Next đổi đúng theo thời gian thực; tạo/xoá project qua quick-add, KPI
+cập nhật đúng mỗi lần. **Không phát hiện lỗi nào** trong toàn bộ luồng.
 
 Mỗi Phase kế tiếp sẽ được trình bày riêng theo format: Mục tiêu → File tạo/sửa → Full code →
 Command → Cách chạy → Cách test → Expected Result → Checklist → Git commit đề xuất.

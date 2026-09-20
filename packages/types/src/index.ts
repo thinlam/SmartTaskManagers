@@ -64,3 +64,30 @@ export interface Task {
   createdAt: string;
   updatedAt: string;
 }
+
+/**
+ * Project Health shares the same 4-level severity scale as Risk (Frame
+ * 01, section 5: Low/Healthy, Medium/Attention, High/At Risk, Critical)
+ * but uses Project-specific labels — kept a distinct type rather than
+ * reusing Risk so a Task's risk and a Project's health can't be mixed up
+ * by the type system. `packages/ui`'s ProjectHealthBadge reuses the
+ * `risk-*` color tokens directly for this reason.
+ */
+export type ProjectHealth = 'Healthy' | 'Attention' | 'At Risk' | 'Critical';
+
+/**
+ * The Project entity (Phase 13) — matches PROJECT_HEADERS in
+ * apps/google-sheets/src/00_Constants.gs, minus `Health`: that column is
+ * a cached/recalculated value there, but here it's always derived live
+ * from linked tasks via computeProjectHealth() (packages/shared) —
+ * storing it on the entity risks it going stale.
+ */
+export interface Project {
+  id: string;
+  name: string;
+  area: Area;
+  targetDate: string | null;
+  description: string;
+  createdAt: string;
+  updatedAt: string;
+}
