@@ -109,12 +109,18 @@ hai file này phải giữ đồng bộ thủ công mỗi khi đổi token. Mọ
 
 ## Backend
 
-ASP.NET Core, Clean Architecture 4 lớp:
+ASP.NET Core, Clean Architecture 4 lớp (**skeleton dựng thật ở Phase 20** — xem `backend/README.md`
+cho chi tiết verify: build sạch, 1 vertical slice thật `GET /api/health` chạy qua đủ 4 lớp, không
+lỗ hổng bảo mật nào trong `dotnet list package --vulnerable`):
 
-- `Domain` — entity thuần, không phụ thuộc framework.
+- `Domain` — entity thuần, không phụ thuộc framework (Phase 20 mới có base `Entity`, entity thật
+  Task/Project/Goal/Habit là Phase 21).
 - `Application` — use case, DTO, validation.
 - `Infrastructure` — EF Core, service ngoài (email, sync).
 - `Api` — controller/minimal API, auth, composition root.
+
+(`Persistence` là project riêng, không gộp vào `Infrastructure` — xem cây thư mục `backend/` bên
+dưới; `AppDbContext` hiện rỗng, chưa có `DbSet` nào, đợi Phase 21.)
 
 Trách nhiệm: Authentication/Authorization/Users, Tasks/Projects/Goals/Habits/Calendar CRUD,
 Settings, Sync, Notifications; sau này: Smart Engine (port từ `05_SmartEngine.gs`), AI Integration.

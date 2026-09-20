@@ -21,7 +21,7 @@ PHASE 16  Calendar                                                             �
 PHASE 17  Kanban                                                               ✅ DONE (chưa click-test — xem ghi chú)
 PHASE 18  Analytics (Reports)                                                 ✅ DONE (chưa click-test — xem ghi chú)
 PHASE 19  Settings                                                             ✅ DONE (chưa click-test — xem ghi chú)
-PHASE 20  Backend architecture (ASP.NET Core, Clean Architecture skeleton)
+PHASE 20  Backend architecture (ASP.NET Core, Clean Architecture skeleton)     ✅ DONE (build+run verify thật)
 PHASE 21  Database (EF Core + SQL Server, migrations, schema từ Tasks/Projects/Goals/Habits)
 PHASE 22  Authentication (JWT; sau này + Google/Microsoft)
 PHASE 23  Tasks API
@@ -495,6 +495,35 @@ build:desktop` build production thành công — grep trực tiếp bundle xác 
 mặt. `npm run dev:tauri` mở `app.exe` thật, ổn định. **Chưa click-test tương tác thật** —
 `claude-in-chrome` vẫn không kết nối được dù đã thử lại. Nên tự thử trên máy trước khi coi Phase 19
 là xong hẳn: đổi từng loại field và xác nhận cập nhật đúng ngay lập tức.
+
+Phase 20 đã thực hiện — bước ngoặt: lần đầu tiên rời khỏi `apps/desktop` (React/TS), chuyển sang
+`backend/` (C#/.NET). Kiểm tra máy trước khi cài (đúng nguyên tắc không giả định) — .NET SDK
+10.0.301 đã có sẵn, không cần cài gì thêm. Dựng skeleton Clean Architecture 5 project đúng như
+`docs/architecture/ARCHITECTURE.md`/`backend/README.md` đã đặc tả từ Phase 01: `SmartTask.Domain`
+(`dotnet new classlib`, target `net10.0`) ← `SmartTask.Application` ← `SmartTask.Infrastructure`/
+`SmartTask.Persistence` ← `SmartTask.Api` (`dotnet new webapi --use-controllers`), nối đúng chiều
+tham chiếu bằng `dotnet add reference`, gom vào `SmartTask.slnx` (định dạng solution XML mới của
+SDK hiện tại, không phải `.sln` cũ).
+
+Verify thật, không chỉ build: `Domain` xác nhận **0 package reference** nào (`dotnet list package`)
+— đúng nguyên tắc entity thuần không phụ thuộc framework. Viết 1 vertical slice thật xuyên suốt cả
+4 lớp để chứng minh composition root hoạt động, không phải chỉ "5 project rỗng build được": Domain
+có `Entity` base class; Application định nghĩa `IDateTimeProvider` + DTO `ApiHealthReport`;
+Infrastructure implement `SystemDateTimeProvider` + `AddInfrastructure()`; Persistence có
+`AppDbContext` **rỗng** (chưa `DbSet` nào — schema thật là Phase 21) + `AddPersistence()` đọc
+connection string SQL Server LocalDB từ `appsettings.json`; Api có `HealthController` inject
+`IDateTimeProvider` qua DI. Chạy thật `dotnet run --project SmartTask.Api` rồi `curl
+http://localhost:5299/api/health` → nhận JSON thật `{"status":"Healthy","serverTimeUtc":"..."}` —
+xác nhận DI xuyên 4 lớp hoạt động đúng, kể cả khi **chưa có SQL Server thật nào đang chạy** (EF Core
+không kết nối ngay lúc đăng ký DI). `GET /openapi/v1.json` cũng verify sinh đúng document.
+
+**Sự cố bảo mật thật gặp phải:** template `webapi` mặc định kéo `Microsoft.AspNetCore.OpenApi
+10.0.9` → transitively `Microsoft.OpenApi 2.0.0`, bản có lỗ hổng mức cao đã công bố
+(GHSA-v5pm-xwqc-g5wc). Thử ghim thẳng lên `Microsoft.OpenApi 3.10.2` (bản mới nhất) thì build lỗi
+thật — `IOpenApiMediaType.Example` đổi từ ghi được sang chỉ đọc giữa nhánh 2.x/3.x, phá vỡ source
+generator của `Microsoft.AspNetCore.OpenApi 10.0.9`. Sửa đúng bằng cách ghim `2.12.2` — bản vá mới
+nhất **cùng nhánh 2.x** — build lại sạch. Verify lại bằng `dotnet list package --vulnerable
+--include-transitive` trên cả 5 project: không còn cảnh báo nào.
 
 Mỗi Phase kế tiếp sẽ được trình bày riêng theo format: Mục tiêu → File tạo/sửa → Full code →
 Command → Cách chạy → Cách test → Expected Result → Checklist → Git commit đề xuất.
