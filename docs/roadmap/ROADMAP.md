@@ -12,7 +12,7 @@ PHASE 07  Application Shell                                                    �
 PHASE 08  Sidebar + Topbar + Navigation (Personal Mode — không có Members)      ✅ DONE
 PHASE 09  Dashboard                                                            ✅ DONE (mock data)
 PHASE 10  Today                                                                ✅ DONE (mock data)
-PHASE 11  Inbox
+PHASE 11  Inbox                                                                ✅ DONE (local CRUD)
 PHASE 12  Tasks
 PHASE 13  Projects
 PHASE 14  Goals
@@ -194,6 +194,26 @@ Verify thật: `npm run typecheck`/`lint`/`format` pass sạch; `npm run build:d
 thành công (CSS 16.72KB → 17.6KB), grep xác nhận "Best Next Action"/"Do Now"/"Scheduled"/"Quick
 Wins"/"End-of-Day Review" có trong bundle. `npm run dev:tauri` mở cửa sổ Windows thật, ổn định.
 Vẫn chưa xác nhận bằng mắt — không có công cụ chụp màn hình trong session.
+
+Phase 11 đã thực hiện: khác với Phase 09/10, **không có** Frame Canva hay view Google Sheets nào
+cho Inbox — kiểm tra kỹ trước khi code và xác nhận đây là màn hình mới thuần từ roadmap gốc, dựng
+trên phần data model đã thật (`Status = 'Inbox'` là default mà Quick Add gán, xem
+`apps/google-sheets/src/10_QuickAdd.gs`). Theo đúng gợi ý của người dùng, đây là màn hình đầu tiên
+có **CRUD tương tác thật** thay vì chỉ hiển thị: `QuickCaptureInput` (Create), nút Complete/Delete
+trên mỗi `InboxTaskRow` (Update/Delete) — tất cả qua `useState`, cố ý **không** dùng `localStorage`
+để tránh tạo ấn tượng sai là đã persist; refresh app sẽ mất hết, persistence thật là Phase 27.
+
+`packages/ui` thêm `IconButton` (đã hứa từ Phase 04, giờ mới có nhu cầu thật) — ép `aria-label`
+bắt buộc ở kiểu dữ liệu (không phải quy ước bằng lời) vì nút chỉ-icon không có cách nào khác để
+screen reader biết chức năng. `InboxTaskRow` ghép `TaskCard` (đã có) với 2 `IconButton` mới —
+không viết lại UI hiển thị task lần thứ 3.
+
+Verify thật: `npm run typecheck`/`lint`/`format` pass sạch; `npm run build:desktop` build production
+thành công (CSS 17.6KB → 17.91KB), grep xác nhận text Inbox có trong bundle. `npm run dev:tauri` mở
+cửa sổ Windows thật, ổn định. **Chưa tự tay click thử thêm/complete/xóa task** — không có công cụ
+trình duyệt/chụp màn hình trong session để thao tác hoặc xác nhận bằng mắt; logic đã qua typecheck
+và code review thủ công nhưng hành vi tương tác thật (click handler, re-render list) chưa được
+click-test trực tiếp. Bạn nên tự thử 3 thao tác này trên máy trước khi coi Phase 11 là xong hẳn.
 
 Mỗi Phase kế tiếp sẽ được trình bày riêng theo format: Mục tiêu → File tạo/sửa → Full code →
 Command → Cách chạy → Cách test → Expected Result → Checklist → Git commit đề xuất.

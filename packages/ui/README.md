@@ -27,6 +27,9 @@ Nguồn thiết kế: Canva Design System (xem
 - ✅ `components/SmartInsightCard` — dòng insight có icon Sparkles + màu theo tone (Phase 09).
 - ✅ `components/EmptyState` — dùng ở Today cho các section Do Now/Scheduled/Quick Wins khi rỗng
   (Phase 10).
+- ✅ `components/IconButton` — nút chỉ có icon, `aria-label` **bắt buộc** (ép kiểu, không phải quy
+  ước) vì đó là tên duy nhất screen reader đọc được. Dùng cho action Complete/Delete ở Inbox
+  (Phase 11).
 - ⏳ `Card`/`Modal`/`Dropdown`/`Tooltip`/... — chưa làm, theo sau khi các màn hình cần đến.
 
 ## Sidebar/Topbar — router-agnostic theo thiết kế

@@ -121,3 +121,24 @@ Today/Overdue/Focus Load/Completed/Quick Wins), Best Next Action, 3 nhóm task, 
 **không** viết lại UI task row lần thứ hai. `TaskSummary` (kiểu dữ liệu cho 1 task trong các danh
 sách này) chuyển sang `packages/types` ở Phase này vì Dashboard và Today giờ cùng cần đúng shape
 đó — tránh định nghĩa lại 2 lần rồi lệch nhau.
+
+## Inbox (Phase 11)
+
+```
+src/mock/inbox.ts                    MOCK_INBOX_TASKS — seed ban đầu cho state cục bộ
+src/pages/Inbox/InboxPage.tsx         useState — Create/Update/Delete thật, chỉ chưa persist
+src/pages/Inbox/QuickCaptureInput.tsx form thêm task nhanh (chỉ có title, không có form đầy đủ)
+src/pages/Inbox/InboxTaskRow.tsx      TaskCard + 2 IconButton (Complete/Delete)
+```
+
+Inbox **không có** Frame Canva hay view Google Sheets nào để bám theo — đây là màn hình mới hoàn
+toàn từ roadmap gốc, dựng trên một phần thật của data model: `Status = 'Inbox'` vốn đã là status
+mặc định mà Quick Add gán cho task mới (`apps/google-sheets/src/10_QuickAdd.gs`).
+
+**Màn đầu tiên có CRUD thật** (Create/Update/Delete tương tác thật qua `useState`), nhưng vẫn là
+mock theo nghĩa: không có `localStorage`, không có persistence nào — refresh app là mất hết. Cố ý
+không dùng `localStorage` để né persistence giả, tránh gây ấn tượng sai là dữ liệu đã được lưu.
+Persistence thật chỉ có ở **Phase 27** (Desktop ↔ Backend integration).
+
+`IconButton` (component mới trong `packages/ui`, đã hứa từ Phase 04) ép `aria-label` là bắt buộc
+ở type — nút chỉ có icon không có cách nào khác để screen reader biết nó làm gì.
