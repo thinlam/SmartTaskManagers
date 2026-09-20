@@ -281,8 +281,15 @@ Sheets thật duy nhất tồn tại cho Habits, dù nó là KPI của Dashboard
 thật — để dành cho Phase sau, ngoài phạm vi Phase này.
 
 **Chưa verify bằng tương tác thật lần này** — công cụ `claude-in-chrome` không kết nối được trong
-phiên làm việc này (môi trường mới, `E:\SmartTaskManager`, khác phiên trước dùng `D:\...`). Đã verify
-bằng `npm run typecheck`/`lint`/`format` (pass sạch ngay từ lần đầu) và `npm run build:desktop`
-(build production thành công). Nên tự click-test trên máy trước khi coi Phase này là xong hẳn —
-đặc biệt luồng "Check in today" (streak/completedCount tăng đúng, nút disable đúng khi đã check-in
-hôm nay, không tăng 2 lần cùng ngày).
+phiên làm việc này (môi trường mới, `E:\SmartTaskManager`, khác phiên trước dùng `D:\...`; đã thử
+lại sau khi cài Rust, extension vẫn không kết nối — có vẻ là sự cố phía extension/connector, không
+phải thiếu công cụ). Đã verify bằng `npm run typecheck`/`lint`/`format` (pass sạch ngay từ lần đầu)
+và `npm run build:desktop` (build production thành công). **Môi trường Windows native cũng đã được
+kiểm tra và cài đủ trong phiên này:** máy `E:\SmartTaskManager` ban đầu thiếu hẳn Rust (MSVC Build
+Tools + Windows SDK + WebView2 Runtime đã có sẵn từ trước) — đã cài qua
+`winget install --id Rustlang.Rustup` (ra Rust 1.98.1, khớp bản dùng ở Phase 06). `cargo check`
+trong `src-tauri/` pass sạch (biên dịch toàn bộ crate Tauri, ~1 phút lần đầu); `npm run dev:tauri`
+build và chạy `app.exe` thật, cửa sổ Windows native mở ổn định, process `Responding: True` sau vài
+giây — xác nhận app chạy đúng cả ở tầng native, không chỉ web. Nên tự click-test trên máy trước khi
+coi Phase này là xong hẳn — đặc biệt luồng "Check in today" (streak/completedCount tăng đúng, nút
+disable đúng khi đã check-in hôm nay, không tăng 2 lần cùng ngày).

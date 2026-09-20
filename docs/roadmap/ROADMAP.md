@@ -367,8 +367,22 @@ thật — để dành Phase sau, ngoài phạm vi Phase này.
 Verify thật: `npm run typecheck`/`lint`/`format` pass sạch ngay từ đầu. `npm run build:desktop`
 build production thành công. **Chưa click-test tương tác thật** — công cụ `claude-in-chrome` không
 kết nối được trong phiên làm việc này (môi trường `E:\SmartTaskManager`, khác phiên trước dùng
-`D:\SmartTaskManagers`). Nên tự thử trên máy trước khi coi Phase 15 là xong hẳn, đặc biệt luồng
-"Check in today".
+`D:\SmartTaskManagers`), kể cả sau khi thử lại — có vẻ là sự cố phía extension, không phải thiếu
+công cụ. Nên tự thử trên máy trước khi coi Phase 15 là xong hẳn, đặc biệt luồng "Check in today".
+
+**Cài đặt lại môi trường Windows native cho máy này** (theo yêu cầu người dùng "xem đã cài hết môi
+trường chưa và chưa cài giúp tui hết đi và test lại"): kiểm tra thật trước khi cài (đúng nguyên tắc
+không giả định, giống Phase 06) — phát hiện MSVC Build Tools (VS 2022 Community,
+`E:\Program Files\...`), Windows SDK và WebView2 Runtime đã có sẵn; chỉ thiếu Rust hoàn toàn (không
+có cả thư mục `.cargo`). Cài qua
+`winget install --id Rustlang.Rustup --source winget --accept-source-agreements --accept-package-agreements --silent`,
+ra Rust 1.98.1 — khớp đúng bản đã dùng ở Phase 06 trên máy `D:\SmartTaskManagers`. Verify thật:
+`cargo check` trong `apps/desktop/src-tauri` pass sạch (biên dịch toàn bộ crate Tauri +
+webview2-com, ~1 phút lần đầu); `npm run dev:tauri` build và chạy `app.exe` thật — cửa sổ Windows
+native mở, process ổn định (`Get-Process app` → `Responding: True` sau vài giây, không crash).
+Xác nhận app chạy đúng ở tầng native, không chỉ qua `npm run dev:desktop`/trình duyệt. Đã thử lại
+`claude-in-chrome` sau khi cài xong — vẫn không kết nối được, nên click-test tương tác thật cho
+Phase 15 vẫn còn treo, không phải do thiếu môi trường build.
 
 Mỗi Phase kế tiếp sẽ được trình bày riêng theo format: Mục tiêu → File tạo/sửa → Full code →
 Command → Cách chạy → Cách test → Expected Result → Checklist → Git commit đề xuất.
