@@ -1,11 +1,17 @@
 import { useCallback, useState } from 'react';
-import type { Area, Priority, Task } from '@stm/types';
+import type { Area, Priority, Task, TaskStatus } from '@stm/types';
 
 export interface NewTaskInput {
   title: string;
   area: Area;
+  description?: string;
   priority?: Priority;
+  /** Defaults to 'Inbox' — matches Quick Add's real default status. */
+  status?: TaskStatus;
+  startDate?: string | null;
   dueDate?: string | null;
+  progress?: number;
+  tags?: string[];
 }
 
 export interface UseTasksResult {
@@ -32,16 +38,16 @@ export function useTasks(initialTasks: Task[]): UseTasksResult {
     const newTask: Task = {
       id: crypto.randomUUID(),
       title: input.title,
-      description: '',
+      description: input.description ?? '',
       area: input.area,
       projectId: null,
-      tags: [],
+      tags: input.tags ?? [],
       priority: input.priority ?? 'Medium',
-      status: 'Inbox',
-      startDate: null,
+      status: input.status ?? 'Inbox',
+      startDate: input.startDate ?? null,
       dueDate: input.dueDate ?? null,
       completedDate: null,
-      progress: 0,
+      progress: input.progress ?? 0,
       estimateMinutes: null,
       createdAt: now,
       updatedAt: now,

@@ -73,8 +73,9 @@ sao 2 component này không phụ thuộc `react-router-dom`). File này là nơ
 `active` (từ `useLocation()`) và ghép `href` dạng hash (`#/tasks`) — `routes.ts` chỉ giữ path thật
 (`/tasks`), không tự thêm `#`.
 
-Nút "+ New Task" trên Topbar hiện chỉ `console.info` — Quick Add thật (dialog/sidebar tạo task
-nhanh, theo mẫu `10_QuickAdd.gs` bên Google Sheets) chưa tồn tại, sẽ xây ở **Phase 12**.
+Nút "+ New Task" trên Topbar (Phase 12, bước 2) mở `TaskDetailDrawer` ở chế độ tạo mới — hoạt
+động từ **mọi trang**, không chỉ Tasks, vì cả hai đều đọc/ghi `TasksContext` dùng chung (xem mục
+Tasks bên dưới).
 
 ## Lưu ý quan trọng khi thêm package mới dùng Tailwind class
 
@@ -122,50 +123,71 @@ Today/Overdue/Focus Load/Completed/Quick Wins), Best Next Action, 3 nhóm task, 
 sách này) chuyển sang `packages/types` ở Phase này vì Dashboard và Today giờ cùng cần đúng shape
 đó — tránh định nghĩa lại 2 lần rồi lệch nhau.
 
-## Inbox (Phase 11)
+## Inbox (Phase 11, refactor ở Phase 12 bước 2)
 
 ```
-src/mock/inbox.ts                    MOCK_INBOX_TASKS — seed ban đầu cho state cục bộ
-src/pages/Inbox/InboxPage.tsx         useState — Create/Update/Delete thật, chỉ chưa persist
-src/components/QuickCaptureInput.tsx  form thêm task nhanh (chỉ title) — dùng lại ở Tasks (Phase 12)
-src/pages/Inbox/InboxTaskRow.tsx      TaskCard + 2 IconButton (Complete/Delete)
+src/pages/Inbox/InboxPage.tsx         đọc TasksContext, lọc status === 'Inbox'
+src/components/QuickCaptureInput.tsx  form thêm task nhanh (chỉ title) — dùng chung với Tasks
+src/pages/Inbox/InboxTaskRow.tsx      TaskCard + 3 IconButton (Edit/Complete/Delete)
 ```
 
 Inbox **không có** Frame Canva hay view Google Sheets nào để bám theo — đây là màn hình mới hoàn
 toàn từ roadmap gốc, dựng trên một phần thật của data model: `Status = 'Inbox'` vốn đã là status
 mặc định mà Quick Add gán cho task mới (`apps/google-sheets/src/10_QuickAdd.gs`).
 
-**Màn đầu tiên có CRUD thật** (Create/Update/Delete tương tác thật qua `useState`), nhưng vẫn là
-mock theo nghĩa: không có `localStorage`, không có persistence nào — refresh app là mất hết. Cố ý
-không dùng `localStorage` để né persistence giả, tránh gây ấn tượng sai là dữ liệu đã được lưu.
-Persistence thật chỉ có ở **Phase 27** (Desktop ↔ Backend integration).
+**Phase 12 bước 2 đã gộp Inbox vào `TasksContext` dùng chung** — Phase 11 cho Inbox một mock
+(`MOCK_INBOX_TASKS`, kiểu `TaskSummary`) hoàn toàn tách biệt khỏi Tasks list, nghĩa là complete
+một task ở Inbox không phản ánh sang Tasks và ngược lại: hai danh sách "task của bạn" không đồng
+bộ trong cùng một app đang chạy. Đã sửa: Inbox giờ chỉ là `tasks.filter(t => t.status === 'Inbox')`
+từ đúng store mà Tasks/Topbar dùng. `src/mock/inbox.ts` đã xoá — không cần seed riêng nữa.
 
-`IconButton` (component mới trong `packages/ui`, đã hứa từ Phase 04) ép `aria-label` là bắt buộc
-ở type — nút chỉ có icon không có cách nào khác để screen reader biết nó làm gì.
+Không có `localStorage`, không persistence nào — refresh app là mất hết (kể cả các thay đổi làm ở
+Tasks/Inbox/Topbar). Persistence thật chỉ có ở **Phase 27**.
 
-## Tasks (Phase 12, bước 1/2 — list; Task Detail là bước sau)
+## Tasks (Phase 12 — cả 2 bước: list + Task Detail)
 
 ```
-src/mock/tasks.ts                MOCK_TASKS — seed cho useTasks(), entity Task đầy đủ (không phải TaskSummary)
-src/pages/Tasks/TasksPage.tsx     useTasks() (@stm/hooks) + filter + summary + quick add
-src/pages/Tasks/TaskFilters.tsx   search + select Status/Priority (native <select>, chưa cần Dropdown riêng)
-src/pages/Tasks/TaskRow.tsx       TaskCard (status+progress) + 2 IconButton (Complete/Delete)
+src/mock/tasks.ts                     MOCK_TASKS — seed DUY NHẤT cho TasksProvider (không phải per-page nữa)
+src/state/TasksContext.tsx             TasksProvider + useTasksContext() — store dùng chung toàn app
+src/components/TaskDetailDrawer.tsx    1 form cho cả Create và Edit, mở từ Topbar HOẶC từ dòng task
+src/pages/Tasks/TasksPage.tsx          đọc TasksContext + filter + summary + quick add
+src/pages/Tasks/TaskFilters.tsx        search + select Status/Priority (native <select>)
+src/pages/Tasks/TaskRow.tsx            TaskCard (status+progress) + 3 IconButton (Edit/Complete/Delete)
 ```
 
-Phase 12 **tách làm 2 bước** — bước này (list) xong: summary count (Inbox/Active/Overdue/Completed,
-khớp `computeTaskCounts_()` trong `apps/google-sheets/src/08_Tasks.gs`), filter theo tên/Status/
-Priority, Create (quick-add title-only, giống Inbox), Complete/Delete theo dòng. **Chưa làm**: sửa
-Area/Priority/Deadline/Project/Tag/Description, vì cần 1 form đủ chỗ — đó là **Task Detail**, bước
-2 của Phase 12. Nút "+ New Task" ở Topbar (Phase 08) **vẫn chưa nối** — nó sẽ mở đúng Task Detail
-đó, không phải form list-side này.
+**Bước 1 (list):** summary count (Inbox/Active/Overdue/Completed, khớp `computeTaskCounts_()` trong
+`apps/google-sheets/src/08_Tasks.gs`), filter theo tên/Status/Priority, quick-add title-only,
+Complete/Delete theo dòng.
 
-Lần đầu Tasks page dùng `@stm/hooks`'s `useTasks()` thay vì `useState` tại chỗ (khác Inbox) — vì
-đây là chỗ đầu tiên cần store Task đầy đủ, và hook giữ nguyên public API khi Phase 27 nối API thật
-sau này, trang gọi nó không cần sửa. `formatDueLabel` (mới, `@stm/shared`) tính nhãn hạn từ
-`dueDate` ISO thật — khác các Phase trước dùng chuỗi `dueLabel` viết tay trong mock.
+**Bước 2 (Task Detail) — vấn đề kiến trúc phải giải quyết trước khi code:** nút "+ New Task" ở
+Topbar là **toàn cục** (hiện trên mọi trang), nhưng `useTasks()` gọi cục bộ trong `TasksPage`
+(bước 1) nghĩa là mỗi lần mount lại mất state — Topbar không có cách nào ghi vào đúng danh sách
+Tasks đang hiển thị. Giải quyết bằng `TasksProvider` (React Context) bọc quanh `<RouterProvider/>`
+trong `App.tsx`, gọi `useTasks(MOCK_TASKS)` **một lần duy nhất** cho toàn app; `TasksPage`,
+`InboxPage`, `AppShell` (Topbar) đều đọc `useTasksContext()` thay vì tự gọi hook. `TaskDetailDrawer`
+render một lần trong `AppShell` (không lồng trong `TasksPage`) — `editingTask` (từ context) `null`
+= chế độ tạo, có giá trị = chế độ sửa; cùng 1 `<form>` cho cả hai, cùng nút Save/Cancel/Delete.
+
+`Drawer` (component mới trong `packages/ui`) — panel bên phải + backdrop, đóng bằng Escape hoặc
+click backdrop. **Giới hạn a11y đã ghi nhận, không giấu:** chưa có focus trap đầy đủ bên trong
+panel — đủ dùng cho Phase này, không phải bỏ sót âm thầm.
+
+Chưa có Project field trong form — Projects chưa tồn tại tới Phase 13, không có gì thật để chọn.
+
+`formatDueLabel` (`@stm/shared`) tính nhãn hạn từ `dueDate` ISO thật — khác các Phase trước dùng
+chuỗi `dueLabel` viết tay trong mock.
 
 **Sự cố phát hiện khi xây `StatusBadge`:** token màu Status (`packages/ui/src/tokens/colors.ts`,
 `theme.css`) từ Phase 04 lấy theo Canva Frame 02 bản team (8 trạng thái: Not Started/To Do/In
 Progress/Review/Blocked/On Hold/Completed/Cancelled) — nhưng `TaskStatus` thật (Personal Mode,
 `00_Constants.gs`) chỉ có 5: Inbox/To Do/In Progress/Waiting/Completed. Đã sửa token cho khớp domain
 thật (xem `packages/ui/README.md`).
+
+**Verify bằng tương tác thật (claude-in-chrome, lần đầu trong toàn bộ project):** mở
+`npm run dev:desktop` trong Chrome thật, click qua toàn bộ luồng — mở Edit Drawer trên 1 task có
+sẵn (form hiện đúng dữ liệu), đổi Priority/Status/Progress rồi Save (dòng trong list cập nhật
+đúng), mở "+ New Task" từ Topbar ở trang Tasks (form trống, mặc định hợp lý), tạo task mới (xuất
+hiện đúng ở cả Tasks lẫn Inbox — xác nhận `TasksContext` dùng chung hoạt động), Complete (biến mất
+khỏi Inbox), Delete (biến mất khỏi Tasks, `EmptyState` hiện đúng), search "gym" (lọc đúng 1 kết
+quả), KPI summary cập nhật đúng sau mỗi thao tác. **Không phát hiện lỗi nào** — toàn bộ hoạt động
+đúng như thiết kế ngay từ lần thử đầu tiên.

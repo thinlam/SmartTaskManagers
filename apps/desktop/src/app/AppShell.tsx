@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Outlet, useLocation } from 'react-router-dom';
 import { Sidebar, Topbar, type SidebarGroup } from '@stm/ui';
 import { APP_ROUTES, NAV_GROUP_ORDER } from './routes';
+import { useTasksContext } from '../state/TasksContext';
+import { TaskDetailDrawer } from '../components/TaskDetailDrawer';
 
 /**
  * Real Sidebar + Topbar (Phase 08), replacing Phase 07's temporary <nav>.
@@ -9,10 +11,15 @@ import { APP_ROUTES, NAV_GROUP_ORDER } from './routes';
  * packages/ui so apps/web can reuse them later) — this file is the only
  * place that knows about react-router: it computes `active` from the
  * current location and builds hrefs from APP_ROUTES.
+ *
+ * TaskDetailDrawer is rendered here, once, regardless of route — Topbar's
+ * "+ New Task" must work from any page (Phase 12, step 2), which only
+ * works if the drawer isn't nested inside a single page like TasksPage.
  */
 export function AppShell() {
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
+  const { openCreateDrawer } = useTasksContext();
 
   const groups: SidebarGroup[] = NAV_GROUP_ORDER.map((groupLabel) => ({
     label: groupLabel,
@@ -37,16 +44,12 @@ export function AppShell() {
         onToggleCollapse={() => setCollapsed((c) => !c)}
       />
       <div className="flex flex-1 flex-col overflow-hidden">
-        <Topbar
-          onNewTask={() => {
-            // Quick Add doesn't exist yet — real dialog lands with Phase 12 (Tasks).
-            console.info('Quick Add chưa được xây — sẽ làm ở Phase 12 (Tasks).');
-          }}
-        />
+        <Topbar onNewTask={openCreateDrawer} />
         <main className="flex-1 overflow-y-auto">
           <Outlet />
         </main>
       </div>
+      <TaskDetailDrawer />
     </div>
   );
 }

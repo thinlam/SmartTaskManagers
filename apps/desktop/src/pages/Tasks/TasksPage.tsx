@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react';
-import { useTasks } from '@stm/hooks';
 import { EmptyState, StatCard } from '@stm/ui';
-import { MOCK_TASKS } from '../../mock/tasks';
+import { useTasksContext } from '../../state/TasksContext';
 import { QuickCaptureInput } from '../../components/QuickCaptureInput';
 import { TaskFilters, type PriorityFilter, type StatusFilter } from './TaskFilters';
 import { TaskRow } from './TaskRow';
@@ -13,14 +12,15 @@ import { TaskRow } from './TaskRow';
  * Completed (To Do/In Progress/Waiting combined), Overdue excludes
  * Completed tasks regardless of due date.
  *
- * First screen backed by @stm/hooks' useTasks — same local-state CRUD
- * pattern as Inbox (Phase 11), just against the full Task entity instead
- * of TaskSummary. Row actions stay to Complete/Delete for this
- * sub-step; editing Area/Priority/due date/description happens in Task
- * Detail (the next sub-step of Phase 12), not inline here.
+ * Reads the shared TasksContext (Phase 12, step 2) instead of calling
+ * useTasks() locally (step 1) — the task list here must be the same one
+ * Topbar's "+ New Task" and Inbox write to, not a page-local copy that
+ * resets on remount. Row actions: Complete/Delete (step 1) plus Edit
+ * (step 2, opens TaskDetailDrawer for the full Area/Priority/Status/
+ * dates/tags form).
  */
 export function TasksPage() {
-  const { tasks, addTask, deleteTask, completeTask } = useTasks(MOCK_TASKS);
+  const { tasks, deleteTask, completeTask, addTask, openEditDrawer } = useTasksContext();
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<StatusFilter>('All');
   const [priority, setPriority] = useState<PriorityFilter>('All');
@@ -112,7 +112,13 @@ export function TasksPage() {
       ) : (
         <div className="flex flex-col gap-2">
           {filteredTasks.map((task) => (
-            <TaskRow key={task.id} task={task} onComplete={completeTask} onDelete={deleteTask} />
+            <TaskRow
+              key={task.id}
+              task={task}
+              onComplete={completeTask}
+              onDelete={deleteTask}
+              onEdit={openEditDrawer}
+            />
           ))}
         </div>
       )}

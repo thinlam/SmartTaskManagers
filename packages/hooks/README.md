@@ -8,7 +8,12 @@ React hooks dùng chung: `useTasks`, `useProjects`, `useGoals`, `useHabits`, `us
   `completeTask`, tất cả chỉ đổi React state (`useState`), không gọi `@stm/api-client`, không
   persist. Cố ý thiết kế public API giống hệt hình dạng một hook nối API thật sẽ có (`tasks` +
   4 hàm mutate) — khi Phase 27 nối `@stm/api-client` thật, trang gọi `useTasks()` không cần sửa,
-  chỉ cần sửa bên trong hook.
+  chỉ cần sửa bên trong hook. `addTask`'s `NewTaskInput` mở rộng ở Phase 12 bước 2 (thêm
+  `description`/`status`/`startDate`/`progress`/`tags`, tất cả optional) để form Task Detail tạo
+  task mới không cần tạo-rồi-vá-ngay bằng `updateTask` — 1 lệnh gọi đủ cho mọi field.
+  `useTasks()` **không tự quyết định được gọi ở đâu** — Phase 12 bước 2 phát hiện gọi nó cục bộ
+  trong từng page (như `TasksPage` ban đầu) khiến state không dùng chung được giữa các trang; xem
+  `apps/desktop/src/state/TasksContext.tsx` cho cách bọc 1 instance duy nhất dùng chung toàn app.
 - ⏳ `useProjects`/`useGoals`/`useHabits`/`useAuth` — chưa làm, thêm khi Phase tương ứng cần
   (Projects: Phase 13, ...).
 

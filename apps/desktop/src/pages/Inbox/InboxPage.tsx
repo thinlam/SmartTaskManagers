@@ -1,7 +1,5 @@
-import { useState } from 'react';
-import type { TaskSummary } from '@stm/types';
 import { EmptyState } from '@stm/ui';
-import { MOCK_INBOX_TASKS } from '../../mock/inbox';
+import { useTasksContext } from '../../state/TasksContext';
 import { QuickCaptureInput } from '../../components/QuickCaptureInput';
 import { InboxTaskRow } from './InboxTaskRow';
 
@@ -11,32 +9,23 @@ import { InboxTaskRow } from './InboxTaskRow';
  * a real part of the data model: Status = 'Inbox' is already the default
  * status Quick Add assigns (apps/google-sheets/src/10_QuickAdd.gs).
  *
- * First screen with real Create/Update/Delete — capture, complete,
- * delete all mutate real component state, not just static mock data.
+ * Reads the shared TasksContext (Phase 12, step 2) — Inbox used to keep
+ * its own separate mock task list (Phase 11), which meant completing a
+ * task here didn't show up anywhere else and vice versa: two
+ * disconnected "your tasks" lists in one running app. Now Inbox is just
+ * tasks filtered to status === 'Inbox' from the same store Tasks (Phase
+ * 12) and Topbar's "+ New Task" write to.
+ *
  * None of it persists past a reload: there is no backend yet (Phase 27)
  * and this intentionally doesn't reach for localStorage as a substitute,
  * to avoid the false impression that anything is actually saved.
  */
 export function InboxPage() {
-  const [tasks, setTasks] = useState<TaskSummary[]>(MOCK_INBOX_TASKS);
+  const { tasks, addTask, completeTask, deleteTask, openEditDrawer } = useTasksContext();
+  const inboxTasks = tasks.filter((task) => task.status === 'Inbox');
 
   function handleAdd(title: string) {
-    const newTask: TaskSummary = {
-      id: crypto.randomUUID(),
-      title,
-      area: 'Personal',
-      priority: 'Medium',
-      dueLabel: 'No due date',
-    };
-    setTasks((previous) => [newTask, ...previous]);
-  }
-
-  function handleComplete(id: string) {
-    setTasks((previous) => previous.filter((task) => task.id !== id));
-  }
-
-  function handleDelete(id: string) {
-    setTasks((previous) => previous.filter((task) => task.id !== id));
+    addTask({ title, area: 'Personal' });
   }
 
   return (
@@ -50,16 +39,17 @@ export function InboxPage() {
 
       <QuickCaptureInput onAdd={handleAdd} />
 
-      {tasks.length === 0 ? (
+      {inboxTasks.length === 0 ? (
         <EmptyState message="Your inbox is empty. Capture a task above to get started." />
       ) : (
         <div className="flex flex-col gap-2">
-          {tasks.map((task) => (
+          {inboxTasks.map((task) => (
             <InboxTaskRow
               key={task.id}
               task={task}
-              onComplete={handleComplete}
-              onDelete={handleDelete}
+              onComplete={completeTask}
+              onDelete={deleteTask}
+              onEdit={openEditDrawer}
             />
           ))}
         </div>

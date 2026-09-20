@@ -13,7 +13,7 @@ PHASE 08  Sidebar + Topbar + Navigation (Personal Mode — không có Members)  
 PHASE 09  Dashboard                                                            ✅ DONE (mock data)
 PHASE 10  Today                                                                ✅ DONE (mock data)
 PHASE 11  Inbox                                                                ✅ DONE (local CRUD)
-PHASE 12  Tasks                                                                🟡 IN PROGRESS (1/2 — list done, Task Detail còn lại)
+PHASE 12  Tasks                                                                ✅ DONE (click-tested thật)
 PHASE 13  Projects
 PHASE 14  Goals
 PHASE 15  Habits
@@ -253,6 +253,33 @@ nào dù thêm nhiều package cùng lúc); `npm run build:desktop` build produc
 "Search tasks by name", "All statuses"/"All priorities") có trong bundle. `npm run dev:tauri` mở
 cửa sổ Windows thật, ổn định. Chưa tự tay click-test filter/search/complete/xóa/thêm — không có
 công cụ trình duyệt trong session.
+
+Phase 12 (bước 2/2 — Task Detail) đã thực hiện. Vấn đề kiến trúc phải giải quyết **trước khi
+code**: nút "+ New Task" ở Topbar là toàn cục (mọi trang), nhưng `useTasks()` (bước 1) gọi cục bộ
+trong `TasksPage` — mỗi lần mount lại mất state, Topbar không có cách ghi vào đúng danh sách đang
+hiển thị. Giải quyết bằng `TasksProvider` (React Context, `apps/desktop/src/state/TasksContext.tsx`)
+bọc quanh `<RouterProvider/>` trong `App.tsx`, gọi `useTasks(MOCK_TASKS)` một lần duy nhất cho toàn
+app. Nhân tiện phát hiện và sửa luôn: Inbox (Phase 11) có mock tách biệt hoàn toàn khỏi Tasks —
+complete một task ở Inbox không phản ánh sang Tasks và ngược lại. Đã gộp Inbox vào cùng
+`TasksContext` (Inbox = `tasks.filter(status==='Inbox')`), xoá `mock/inbox.ts`.
+
+`packages/ui` thêm `Drawer` (panel phải + backdrop, Escape/backdrop để đóng; **chưa có focus trap
+đầy đủ** — ghi nhận rõ, không giấu). `apps/desktop/src/components/TaskDetailDrawer.tsx` là 1 form
+dùng chung cho cả Create (từ Topbar, mọi trang) và Edit (từ dòng task, Tasks/Inbox) — phân biệt
+qua `editingTask` (`null` = tạo mới) trong context. `useTasks`'s `NewTaskInput` mở rộng thêm
+`description`/`status`/`startDate`/`progress`/`tags` để tạo task đầy đủ field trong 1 lệnh gọi,
+không cần tạo-rồi-vá. Chưa có Project field trong form (Projects là Phase 13, chưa có gì để chọn).
+
+**Verify bằng tương tác thật lần đầu tiên trong toàn bộ project:** công cụ `claude-in-chrome` khả
+dụng trở lại trong phiên này (trước đó, ở Phase 05, người dùng đã chọn tiếp tục không cần công cụ
+trình duyệt). Đã mở `npm run dev:desktop` trong Chrome thật và click qua toàn bộ luồng: mở Edit
+Drawer trên task có sẵn (dữ liệu hiện đúng) → đổi Priority/Status/Progress → Save (dòng trong list
+cập nhật đúng) → mở "+ New Task" từ Topbar tại trang Tasks (form trống, mặc định hợp lý) → tạo task
+mới (xuất hiện đúng ở cả Tasks lẫn Inbox, xác nhận context dùng chung hoạt động) → Complete (biến
+mất khỏi Inbox) → Delete (biến mất khỏi Tasks, `EmptyState` hiện đúng) → search "gym" (lọc đúng).
+KPI summary cập nhật chính xác sau mỗi thao tác. **Không phát hiện lỗi nào** trong toàn bộ luồng —
+mọi thứ hoạt động đúng thiết kế ngay từ lần thử đầu. Cũng xác nhận lại `npm run dev:tauri` (cửa sổ
+native) vẫn mở ổn định sau khi test qua trình duyệt.
 
 Mỗi Phase kế tiếp sẽ được trình bày riêng theo format: Mục tiêu → File tạo/sửa → Full code →
 Command → Cách chạy → Cách test → Expected Result → Checklist → Git commit đề xuất.

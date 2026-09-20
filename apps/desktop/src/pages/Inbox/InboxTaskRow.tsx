@@ -1,24 +1,31 @@
-import type { TaskSummary } from '@stm/types';
-import { Check, Trash2 } from 'lucide-react';
+import type { Task } from '@stm/types';
+import { formatDueLabel } from '@stm/shared';
+import { Check, Pencil, Trash2 } from 'lucide-react';
 import { IconButton, TaskCard } from '@stm/ui';
 
 interface InboxTaskRowProps {
-  task: TaskSummary;
+  task: Task;
   onComplete: (id: string) => void;
   onDelete: (id: string) => void;
+  onEdit: (task: Task) => void;
 }
 
-export function InboxTaskRow({ task, onComplete, onDelete }: InboxTaskRowProps) {
+export function InboxTaskRow({ task, onComplete, onDelete, onEdit }: InboxTaskRowProps) {
   return (
     <div className="flex items-center gap-2">
       <div className="min-w-0 flex-1">
         <TaskCard
           title={task.title}
           meta={task.area}
-          dueLabel={task.dueLabel}
+          dueLabel={formatDueLabel(task.dueDate)}
           priority={task.priority}
         />
       </div>
+      <IconButton
+        icon={<Pencil className="h-4 w-4" aria-hidden="true" />}
+        aria-label={`Edit "${task.title}"`}
+        onClick={() => onEdit(task)}
+      />
       <IconButton
         icon={<Check className="h-4 w-4" aria-hidden="true" />}
         aria-label={`Mark "${task.title}" complete`}

@@ -22,3 +22,4 @@ export { TaskCard, type TaskCardProps } from './components/TaskCard';
 export { SmartInsightCard, type SmartInsightCardProps } from './components/SmartInsightCard';
 export { EmptyState, type EmptyStateProps } from './components/EmptyState';
 export { IconButton, type IconButtonProps } from './components/IconButton';
+export { Drawer, type DrawerProps } from './components/Drawer';

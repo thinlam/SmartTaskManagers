@@ -33,6 +33,9 @@ Nguồn thiết kế: Canva Design System (xem
 - ✅ `components/IconButton` — nút chỉ có icon, `aria-label` **bắt buộc** (ép kiểu, không phải quy
   ước) vì đó là tên duy nhất screen reader đọc được. Dùng cho action Complete/Delete ở Inbox
   (Phase 11).
+- ✅ `components/Drawer` — panel phải + backdrop, đóng bằng Escape/click backdrop, dùng cho Task
+  Detail (Phase 12). **Chưa có focus trap đầy đủ** bên trong panel — ghi nhận rõ trong code, không
+  phải bỏ sót âm thầm; đủ dùng cho scope hiện tại.
 - ⏳ `Card`/`Modal`/`Dropdown`/`Tooltip`/... — chưa làm, theo sau khi các màn hình cần đến.
 
 ## Sidebar/Topbar — router-agnostic theo thiết kế
