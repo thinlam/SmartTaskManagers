@@ -127,7 +127,7 @@ sách này) chuyển sang `packages/types` ở Phase này vì Dashboard và Toda
 ```
 src/mock/inbox.ts                    MOCK_INBOX_TASKS — seed ban đầu cho state cục bộ
 src/pages/Inbox/InboxPage.tsx         useState — Create/Update/Delete thật, chỉ chưa persist
-src/pages/Inbox/QuickCaptureInput.tsx form thêm task nhanh (chỉ có title, không có form đầy đủ)
+src/components/QuickCaptureInput.tsx  form thêm task nhanh (chỉ title) — dùng lại ở Tasks (Phase 12)
 src/pages/Inbox/InboxTaskRow.tsx      TaskCard + 2 IconButton (Complete/Delete)
 ```
 
@@ -142,3 +142,30 @@ Persistence thật chỉ có ở **Phase 27** (Desktop ↔ Backend integration).
 
 `IconButton` (component mới trong `packages/ui`, đã hứa từ Phase 04) ép `aria-label` là bắt buộc
 ở type — nút chỉ có icon không có cách nào khác để screen reader biết nó làm gì.
+
+## Tasks (Phase 12, bước 1/2 — list; Task Detail là bước sau)
+
+```
+src/mock/tasks.ts                MOCK_TASKS — seed cho useTasks(), entity Task đầy đủ (không phải TaskSummary)
+src/pages/Tasks/TasksPage.tsx     useTasks() (@stm/hooks) + filter + summary + quick add
+src/pages/Tasks/TaskFilters.tsx   search + select Status/Priority (native <select>, chưa cần Dropdown riêng)
+src/pages/Tasks/TaskRow.tsx       TaskCard (status+progress) + 2 IconButton (Complete/Delete)
+```
+
+Phase 12 **tách làm 2 bước** — bước này (list) xong: summary count (Inbox/Active/Overdue/Completed,
+khớp `computeTaskCounts_()` trong `apps/google-sheets/src/08_Tasks.gs`), filter theo tên/Status/
+Priority, Create (quick-add title-only, giống Inbox), Complete/Delete theo dòng. **Chưa làm**: sửa
+Area/Priority/Deadline/Project/Tag/Description, vì cần 1 form đủ chỗ — đó là **Task Detail**, bước
+2 của Phase 12. Nút "+ New Task" ở Topbar (Phase 08) **vẫn chưa nối** — nó sẽ mở đúng Task Detail
+đó, không phải form list-side này.
+
+Lần đầu Tasks page dùng `@stm/hooks`'s `useTasks()` thay vì `useState` tại chỗ (khác Inbox) — vì
+đây là chỗ đầu tiên cần store Task đầy đủ, và hook giữ nguyên public API khi Phase 27 nối API thật
+sau này, trang gọi nó không cần sửa. `formatDueLabel` (mới, `@stm/shared`) tính nhãn hạn từ
+`dueDate` ISO thật — khác các Phase trước dùng chuỗi `dueLabel` viết tay trong mock.
+
+**Sự cố phát hiện khi xây `StatusBadge`:** token màu Status (`packages/ui/src/tokens/colors.ts`,
+`theme.css`) từ Phase 04 lấy theo Canva Frame 02 bản team (8 trạng thái: Not Started/To Do/In
+Progress/Review/Blocked/On Hold/Completed/Cancelled) — nhưng `TaskStatus` thật (Personal Mode,
+`00_Constants.gs`) chỉ có 5: Inbox/To Do/In Progress/Waiting/Completed. Đã sửa token cho khớp domain
+thật (xem `packages/ui/README.md`).

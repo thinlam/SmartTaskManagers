@@ -13,7 +13,7 @@ PHASE 08  Sidebar + Topbar + Navigation (Personal Mode — không có Members)  
 PHASE 09  Dashboard                                                            ✅ DONE (mock data)
 PHASE 10  Today                                                                ✅ DONE (mock data)
 PHASE 11  Inbox                                                                ✅ DONE (local CRUD)
-PHASE 12  Tasks
+PHASE 12  Tasks                                                                🟡 IN PROGRESS (1/2 — list done, Task Detail còn lại)
 PHASE 13  Projects
 PHASE 14  Goals
 PHASE 15  Habits
@@ -214,6 +214,45 @@ cửa sổ Windows thật, ổn định. **Chưa tự tay click thử thêm/comp
 trình duyệt/chụp màn hình trong session để thao tác hoặc xác nhận bằng mắt; logic đã qua typecheck
 và code review thủ công nhưng hành vi tương tác thật (click handler, re-render list) chưa được
 click-test trực tiếp. Bạn nên tự thử 3 thao tác này trên máy trước khi coi Phase 11 là xong hẳn.
+
+Phase 12 (bước 1/2 — Tasks list) đã thực hiện: trước khi code, đọc thật `computeTaskCounts_()`
+trong `apps/google-sheets/src/08_Tasks.gs` (Active = không phải Inbox và không phải Completed) và
+xác nhận Frame 05 của Canva (bản team, có cột Owner) cần bỏ Owner cho Personal Mode.
+
+Vì đây là màn đầu tiên cần **entity Task đầy đủ** (không phải `TaskSummary` rút gọn), Phase này mở
+rộng theo nhiều lớp:
+
+- `packages/types`: thêm `Task` (tập con thực dụng của 27 cột `TASK_HEADERS`, ngày tháng là chuỗi
+  ISO, không phải `Date`, để không đổi shape khi qua ranh giới API ở Phase 27).
+- `packages/hooks`: `useTasks` — hook thật đầu tiên, store cục bộ (`useState` bên trong) nhưng
+  public API (`tasks` + `addTask`/`updateTask`/`deleteTask`/`completeTask`) cố ý giống hệt hình
+  dạng một hook nối API thật, để trang gọi nó không cần sửa khi Phase 27 tới.
+- `packages/shared`: `formatDueLabel` — hàm thật đầu tiên, tính nhãn hạn tương đối từ `dueDate`
+  ISO (không port 1:1 `todayDueLabel_()` của Sheets vì hàm đó bỏ số ngày để vừa ô hẹp).
+- `packages/ui`: `TaskCard` mở rộng thêm `status?`/`progress?` (tùy chọn, không phá vỡ 2 nơi đang
+  dùng) — vẫn 1 component cho 3 ngữ cảnh (Focus Now, Focus Today, Tasks list) thay vì viết row-card
+  lần thứ 4. `StatusBadge` mới, cùng mẫu với `PriorityBadge`.
+- `apps/desktop`: `QuickCaptureInput` (trước ở `pages/Inbox/`) chuyển lên `src/components/` vì giờ
+  Inbox lẫn Tasks cùng dùng.
+
+**Sự cố thật phát hiện khi xây `StatusBadge`:** token màu Status (`packages/ui/src/tokens/colors.ts`,
+`theme.css`, `docs/design-system/design-tokens.md`) từ Phase 04 lấy nguyên 8 trạng thái Canva Frame
+02 (bản team) — nhưng `TaskStatus` thật của Personal Mode (`00_Constants.gs`) chỉ có 5 giá trị khác
+tên (Inbox/To Do/In Progress/Waiting/Completed). Đã sửa cả 3 file cho khớp domain thật — đây là lỗi
+tồn tại từ Phase 04 đến giờ mới bị phát hiện vì chưa có component nào thật sự cần hiển thị Status.
+
+**Quyết định tách Phase 12 thành 2 bước:** bước này chỉ có Tasks list (summary, filter, search,
+Create qua quick-add title-only, Complete/Delete theo dòng) — **chưa có** sửa Area/Priority/
+Deadline/Project/Tag/Description (cần form đủ chỗ, không hợp inline trong list) và **chưa nối**
+nút "+ New Task" ở Topbar (đợi Task Detail thật để mở, không phải form tạm này). Bước 2 (Task
+Detail) sẽ làm tiếp theo.
+
+Verify thật: `npm run typecheck`/`lint`/`format` pass sạch ngay từ đầu (không phát sinh lỗi type
+nào dù thêm nhiều package cùng lúc); `npm run build:desktop` build production thành công (CSS
+17.91KB → 19.49KB), grep xác nhận cả 5 token `status-*` mới và text Tasks ("Manage, prioritize",
+"Search tasks by name", "All statuses"/"All priorities") có trong bundle. `npm run dev:tauri` mở
+cửa sổ Windows thật, ổn định. Chưa tự tay click-test filter/search/complete/xóa/thêm — không có
+công cụ trình duyệt trong session.
 
 Mỗi Phase kế tiếp sẽ được trình bày riêng theo format: Mục tiêu → File tạo/sửa → Full code →
 Command → Cách chạy → Cách test → Expected Result → Checklist → Git commit đề xuất.

@@ -34,11 +34,17 @@ Canva) cho `packages/ui/tokens/colors.ts` ở Phase 04.
 | `border-strong`     | `#CBD5E1`                    | Viền nhấn                         |
 | `dark-header`       | `#172033`                    | Header tối (nếu dùng)             |
 
-## Semantic — Status (8)
+## Semantic — Status
 
-Not Started / To Do — gray-blue · In Progress — indigo (`#2563EB`) · Review — violet (`#7C3AED`)
-· Blocked — red (`#DC2626`) · On Hold — amber (`#F59E0B`) · Completed — green (`#16A34A`)
-· Cancelled — slate (`#475569`).
+Frame 02 originally showed 8 team statuses (Not Started/To Do/In Progress/Review/Blocked/On
+Hold/Completed/Cancelled). Personal Mode's real Status enum
+(`apps/google-sheets/src/00_Constants.gs` → `LOOKUP_LISTS.Status`, matching `TaskStatus` in
+`packages/types`) only has 5 — **Inbox / To Do / In Progress / Waiting / Completed** — discovered
+and corrected while building Phase 12 (Tasks). `Inbox` and `Waiting` reuse Frame 01's hex for the
+closest team equivalent (Not Started → gray-blue `#94A3B8`; On Hold → amber `#F59E0B`):
+
+Inbox — gray-blue (`#94A3B8`) · To Do — slate (`#64748B`) · In Progress — indigo (`#2563EB`)
+· Waiting — amber (`#F59E0B`) · Completed — green (`#16A34A`).
 
 ## Semantic — Priority (5)
 

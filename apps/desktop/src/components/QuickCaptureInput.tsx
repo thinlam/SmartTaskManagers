@@ -4,14 +4,20 @@ import { Button } from '@stm/ui';
 
 interface QuickCaptureInputProps {
   onAdd: (title: string) => void;
+  placeholder?: string;
 }
 
 /**
  * Fast capture, not a full task form — matches Google Sheets' own Quick
  * Add ("nhập tên task → tạo với Status = Inbox"). Full task detail
- * (Area/Priority/dates picker) is Phase 12; this only takes a title.
+ * (Area/Priority/dates picker) is the Task Detail sub-step of Phase 12,
+ * not this. Shared by Inbox and Tasks (Phase 12) — both just need a
+ * title and a place to put it.
  */
-export function QuickCaptureInput({ onAdd }: QuickCaptureInputProps) {
+export function QuickCaptureInput({
+  onAdd,
+  placeholder = 'Capture a task… e.g. Renew passport',
+}: QuickCaptureInputProps) {
   const [value, setValue] = useState('');
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -32,7 +38,7 @@ export function QuickCaptureInput({ onAdd }: QuickCaptureInputProps) {
         type="text"
         value={value}
         onChange={(event) => setValue(event.target.value)}
-        placeholder="Capture a task… e.g. Renew passport"
+        placeholder={placeholder}
         aria-label="Capture a task"
         className="w-full bg-transparent text-sm text-ink-primary outline-none placeholder:text-ink-muted"
       />

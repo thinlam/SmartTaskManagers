@@ -14,5 +14,8 @@
   "dependencies": {
     "@stm/api-client": "*",
     "@stm/types": "*"
+  },
+  "devDependencies": {
+    "react": "^19.0.0"
   }
 }

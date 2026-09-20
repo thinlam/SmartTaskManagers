@@ -39,14 +39,13 @@
 
   --color-dark-header: #172033;
 
-  --color-status-not-started: #94a3b8;
+  /* Personal Mode's real 5-value Status enum, not Frame 02's original
+     8-value team list — see the comment in tokens/colors.ts. */
+  --color-status-inbox: #94a3b8;
   --color-status-to-do: #64748b;
   --color-status-in-progress: #2563eb;
-  --color-status-review: #7c3aed;
-  --color-status-blocked: #dc2626;
-  --color-status-on-hold: #f59e0b;
+  --color-status-waiting: #f59e0b;
   --color-status-completed: #16a34a;
-  --color-status-cancelled: #475569;
 
   --color-priority-critical: #dc2626;
   --color-priority-urgent: #ea580c;

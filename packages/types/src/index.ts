@@ -29,3 +29,38 @@ export interface TaskSummary {
   /** Smart Engine output (Phase 29) — omit rather than fabricate until real. */
   recommendedAction?: string;
 }
+
+/**
+ * The full Task entity (Phase 12) — a working subset of the 27 columns in
+ * apps/google-sheets/src/00_Constants.gs's TASK_HEADERS, not a 1:1 port.
+ * Left out for now, added only once a screen needs them: Category, Tags
+ * beyond a plain list, Energy, Context, GoalId, RecurringType,
+ * DependencyTaskId, LastStatusChangedAt, Notes. Dates are ISO 8601
+ * strings (`null` = not set), not `Date`, so this shape survives crossing
+ * the Phase 27 API boundary unchanged.
+ */
+export interface Task {
+  id: string;
+  title: string;
+  description: string;
+  area: Area;
+  /** References a Project's id — Projects land in Phase 13. */
+  projectId: string | null;
+  tags: string[];
+  priority: Priority;
+  status: TaskStatus;
+  startDate: string | null;
+  dueDate: string | null;
+  completedDate: string | null;
+  /** 0–100. */
+  progress: number;
+  estimateMinutes: number | null;
+  /** Smart Engine output (Phase 29) — omit rather than fabricate until real. */
+  smartScore?: number;
+  /** Smart Engine output (Phase 29) — omit rather than fabricate until real. */
+  risk?: Risk;
+  /** Smart Engine output (Phase 29) — omit rather than fabricate until real. */
+  recommendedAction?: string;
+  createdAt: string;
+  updatedAt: string;
+}

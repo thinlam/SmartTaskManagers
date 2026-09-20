@@ -2,7 +2,7 @@ import { useState } from 'react';
 import type { TaskSummary } from '@stm/types';
 import { EmptyState } from '@stm/ui';
 import { MOCK_INBOX_TASKS } from '../../mock/inbox';
-import { QuickCaptureInput } from './QuickCaptureInput';
+import { QuickCaptureInput } from '../../components/QuickCaptureInput';
 import { InboxTaskRow } from './InboxTaskRow';
 
 /**

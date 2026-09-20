@@ -37,16 +37,23 @@ export const colors = {
   darkHeader: '#172033',
 } as const;
 
-/** 8 Task statuses (Frame 02 — Badges). */
+/**
+ * Task statuses. Frame 02's Badge component originally showed 8 (team)
+ * statuses — Not Started/To Do/In Progress/Review/Blocked/On Hold/
+ * Completed/Cancelled. Personal Mode's real Status enum
+ * (apps/google-sheets/src/00_Constants.gs LOOKUP_LISTS.Status, matching
+ * packages/types' TaskStatus) only has 5: Inbox/To Do/In Progress/
+ * Waiting/Completed — discovered while building Phase 12 (Tasks), which
+ * needed a StatusBadge and found this file still modeled the unused
+ * 8-value team list. `inbox`/`waiting` reuse the same hex Frame 01 used
+ * for the closest team equivalent (Not Started / On Hold).
+ */
 export const statusColors = {
-  notStarted: '#94A3B8',
+  inbox: '#94A3B8',
   toDo: '#64748B',
   inProgress: '#2563EB',
-  review: '#7C3AED',
-  blocked: '#DC2626',
-  onHold: '#F59E0B',
+  waiting: '#F59E0B',
   completed: '#16A34A',
-  cancelled: '#475569',
 } as const;
 
 /** 5 Priority levels (Frame 02 — Badges). */

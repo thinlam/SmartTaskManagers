@@ -17,13 +17,16 @@ Nguồn thiết kế: Canva Design System (xem
   dữ liệu thật để gắn số) (Phase 08).
 - ✅ `components/Topbar` — search box, nút notification, nút "+ New Task" (dùng `Button`), avatar
   (Phase 08).
-- ✅ `components/Badge` — `Badge` (tone chung) + `PriorityBadge` (dùng token `priority-*` riêng,
-  không phải tone chung — xem comment trong file) (Phase 09).
+- ✅ `components/Badge` — `Badge` (tone chung) + `PriorityBadge`/`StatusBadge` (mỗi cái dùng bộ
+  token `priority-*`/`status-*` riêng, không phải tone chung — xem comment trong file) (Phase 09,
+  `StatusBadge` thêm ở Phase 12).
 - ✅ `components/Progress` — thanh progress ngang, `value` 0–100, `tone` (Phase 09).
 - ✅ `components/StatCard` — KPI card (label/value/sub/tone), dùng cho Dashboard/Analytics (Phase 09).
 - ✅ `components/TaskCard` — dạng row-card "Focus Now"/"Focus Today" (title, meta, due, priority,
-  smartScore?, recommendedAction?) — dùng chung thật cho Dashboard (Phase 09) **và** Today
-  (Phase 10, không sửa gì thêm khi tái dùng) (Phase 09).
+  smartScore?, recommendedAction?) — dùng chung thật cho Dashboard (Phase 09) và Today (Phase 10,
+  không sửa gì khi tái dùng). Phase 12 mở rộng thêm `status?`/`progress?` (tùy chọn, không phá vỡ
+  2 nơi đang dùng) để Tasks list hiển thị được `StatusBadge` + thanh Progress — vẫn 1 component
+  cho 3 ngữ cảnh, không viết row-card lần thứ 4.
 - ✅ `components/SmartInsightCard` — dòng insight có icon Sparkles + màu theo tone (Phase 09).
 - ✅ `components/EmptyState` — dùng ở Today cho các section Do Now/Scheduled/Quick Wins khi rỗng
   (Phase 10).
@@ -54,7 +57,7 @@ bg-success / -soft · bg-warning / -soft · bg-danger / -soft · bg-info / -soft
 bg-background · bg-surface · bg-surface-secondary
 border-border · border-border-strong
 text-ink-primary · text-ink-secondary · text-ink-muted
-bg-status-{not-started|to-do|in-progress|review|blocked|on-hold|completed|cancelled}
+bg-status-{inbox|to-do|in-progress|waiting|completed}
 bg-priority-{critical|urgent|high|medium|low}
 bg-risk-{low|medium|high|critical}
 rounded-sm(8px) / -md(12px) / -lg(16px) / -xl(20px) / -pill(9999px)
@@ -63,6 +66,13 @@ rounded-sm(8px) / -md(12px) / -lg(16px) / -xl(20px) / -pill(9999px)
 Nguồn thật của các tên này: `packages/ui/src/styles/theme.css` (Tailwind v4 `@theme`, xem
 `docs/architecture/ARCHITECTURE.md`). Không đổi tên, không tạo token trùng lặp khác — nếu cần màu
 mới, thêm vào `tokens/colors.ts` **và** `styles/theme.css` cùng lúc.
+
+**Sự cố đã sửa (Phase 12):** `statusColors`/`--color-status-*` ban đầu (Phase 04) lấy nguyên 8
+trạng thái của Canva Frame 02 (bản team: Not Started/To Do/In Progress/Review/Blocked/On Hold/
+Completed/Cancelled) — nhưng data model Personal Mode thật
+(`apps/google-sheets/src/00_Constants.gs` → `LOOKUP_LISTS.Status`) chỉ có 5 giá trị khác:
+Inbox/To Do/In Progress/Waiting/Completed. Phát hiện khi xây `StatusBadge` cho Tasks list — đã
+sửa lại `colors.ts` + `theme.css` + `docs/design-system/design-tokens.md` cho khớp domain thật.
 
 ## Icon
 
