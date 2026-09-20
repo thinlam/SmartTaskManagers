@@ -138,8 +138,10 @@ Settings, Sync, Notifications; sau này: Smart Engine (port từ `05_SmartEngine
 
 EF Core (`Microsoft.EntityFrameworkCore.SqlServer`) làm ORM chính. Schema khởi tạo từ
 `TASK_HEADERS`/`PROJECT_HEADERS`/`GOAL_HEADERS`/`HABIT_HEADERS` trong
-`apps/google-sheets/src/00_Constants.gs` (Phase 21), cộng thêm cột đồng bộ (`Id` UUID,
-`SyncStatus`, `LastSyncedAt`, `Version`) chuẩn bị cho Phase 28.
+`apps/google-sheets/src/00_Constants.gs`, cộng thêm cột đồng bộ (`Id` UUID, `SyncStatus`,
+`LastSyncedAt`, `Version`) chuẩn bị cho Phase 28 — **dựng và áp migration thật ở Phase 21**, xem
+`backend/README.md` cho chi tiết (4 bảng Tasks/Projects/Goals/Habits, verify độc lập bằng `sqlcmd`
+trên SQL Server Express thật, không chỉ tin CLI của EF).
 
 ## Smart Engine
 

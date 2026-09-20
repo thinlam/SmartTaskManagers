@@ -22,7 +22,7 @@ PHASE 17  Kanban                                                               �
 PHASE 18  Analytics (Reports)                                                 ✅ DONE (chưa click-test — xem ghi chú)
 PHASE 19  Settings                                                             ✅ DONE (chưa click-test — xem ghi chú)
 PHASE 20  Backend architecture (ASP.NET Core, Clean Architecture skeleton)     ✅ DONE (build+run verify thật)
-PHASE 21  Database (EF Core + SQL Server, migrations, schema từ Tasks/Projects/Goals/Habits)
+PHASE 21  Database (EF Core + SQL Server, migrations, schema từ Tasks/Projects/Goals/Habits)   ✅ DONE (áp migration thật lên SQL Server Express)
 PHASE 22  Authentication (JWT; sau này + Google/Microsoft)
 PHASE 23  Tasks API
 PHASE 24  Projects API
@@ -524,6 +524,33 @@ thật — `IOpenApiMediaType.Example` đổi từ ghi được sang chỉ đọ
 generator của `Microsoft.AspNetCore.OpenApi 10.0.9`. Sửa đúng bằng cách ghim `2.12.2` — bản vá mới
 nhất **cùng nhánh 2.x** — build lại sạch. Verify lại bằng `dotnet list package --vulnerable
 --include-transitive` trên cả 5 project: không còn cảnh báo nào.
+
+Phase 21 đã thực hiện — người dùng đã tự đổi connection string trong `appsettings.json` từ LocalDB
+(Phase 20) sang SQL Server Express thật đang chạy sẵn trên máy (`DESKTOP-CKNT19A\SQLEXPRESS`); đã
+xác nhận service `MSSQL$SQLEXPRESS` đang `Running` và kết nối được thật (`dotnet ef dbcontext info`)
+trước khi bắt đầu, cập nhật `dotnet-ef` (10.0.8 → 10.0.12) khớp runtime.
+
+Đọc lại đầy đủ `TASK_HEADERS`/`PROJECT_HEADERS`/`GOAL_HEADERS`/`HABIT_HEADERS` và `LOOKUP_LISTS`
+trong `00_Constants.gs` trước khi model entity. `SmartTask.Domain` thêm `SyncableEntity` (cột đồng
+bộ `SyncStatus`/`LastSyncedAt`/`Version` cộng `Id` UUID có sẵn từ Phase 20), 10 enum khớp
+`LOOKUP_LISTS`, và 4 entity `TaskItem`/`Project`/`Goal`/`Habit` khớp headers — có ghi rõ 4 khác biệt
+có chủ đích: khoá chính dùng UUID thay vì mã hiển thị kiểu Sheets, `Project.Health` được lưu thật
+(khác frontend cố ý không lưu), enum lưu dạng chuỗi thay vì int mặc định của EF Core, `Tags` giữ 1
+cột chuỗi phân tách dấu phẩy đúng cách Sheets lưu. `SmartTask.Persistence` thêm
+`Configurations/` (Fluent API) + cập nhật `AppDbContext` với 4 `DbSet` thật.
+
+**Sự cố thật gặp khi migrate — không chỉ giả định sẽ chạy:** `dotnet ef database update` lần đầu
+thất bại thật với lỗi SQL Server "Introducing FOREIGN KEY constraint ... may cause cycles or
+multiple cascade paths" trên `Tasks.DependencyTaskId` (tự tham chiếu, cấu hình `SetNull` ban đầu).
+Sửa bằng đổi sang `DeleteBehavior.Restrict`, `migrations remove` rồi sinh lại migration, áp lại —
+thành công.
+
+Verify thật, nhiều lớp: đọc lại nội dung file migration sinh ra (đúng 4 bảng/kiểu cột/FK trước khi
+áp); `dotnet ef database update` áp thật vào SQL Server Express; **xác nhận độc lập bằng `sqlcmd`**
+(không chỉ tin CLI của EF) — `SELECT TABLE_NAME FROM INFORMATION_SCHEMA.TABLES` trả đúng 5 bảng
+(`Goals`/`Habits`/`Projects`/`Tasks`/`__EFMigrationsHistory`); `dotnet run --project SmartTask.Api`
+sau khi có schema thật vẫn chạy tốt, `GET /api/health` vẫn trả JSON đúng — xác nhận thêm schema
+không phá vỡ vertical slice đã verify ở Phase 20.
 
 Mỗi Phase kế tiếp sẽ được trình bày riêng theo format: Mục tiêu → File tạo/sửa → Full code →
 Command → Cách chạy → Cách test → Expected Result → Checklist → Git commit đề xuất.
