@@ -161,4 +161,6 @@ Cột chuẩn bị trước trong Apps Script data model (không thêm ngay, ch�
 
 ## Auth
 
-Sau này: Email + Google + Microsoft. Không làm Auth trước khi có UI cần đến (Phase 22).
+**Email + JWT dựng thật ở Phase 22** — xem `backend/README.md` cho chi tiết verify (đăng ký/đăng
+nhập/endpoint được bảo vệ, đã curl thật cả 6 trường hợp, khóa ký JWT lưu bằng `dotnet user-secrets`
+không commit vào repo). Google + Microsoft: sau này, chưa làm.

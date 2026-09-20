@@ -1,14 +1,15 @@
 # backend
 
 ASP.NET Core, Clean Architecture. Skeleton dựng ở **Phase 20**, schema thật + migration dựng ở
-**Phase 21** — cả hai đều verify bằng chạy thật, không chỉ build.
+**Phase 21**, JWT Authentication (email/password) dựng ở **Phase 22** — cả ba đều verify bằng chạy
+thật, không chỉ build.
 
 ```
-SmartTask.Api/             Controllers, DI composition root (Program.cs)
-SmartTask.Application/     Use cases, DTOs, abstraction cho Infrastructure implement (ví dụ IDateTimeProvider)
+SmartTask.Api/             Controllers, DI composition root (Program.cs), JWT bearer validation
+SmartTask.Application/     Use cases, DTOs, abstraction cho Infrastructure implement (IDateTimeProvider, IPasswordHasher, IJwtTokenGenerator)
 SmartTask.Domain/          Entity thuần — build KHÔNG có package reference nào (verify: dotnet list package)
-SmartTask.Infrastructure/  Implement abstraction của Application (SystemDateTimeProvider), external service sau này
-SmartTask.Persistence/     AppDbContext + Configurations/ (EF Core Fluent API), Migrations/
+SmartTask.Infrastructure/  Implement abstraction của Application (SystemDateTimeProvider, PasswordHasherAdapter, JwtTokenGenerator)
+SmartTask.Persistence/     AppDbContext + Configurations/ (EF Core Fluent API), Repositories/, Migrations/
 ```
 
 Target framework: **net10.0** (bản .NET mới nhất tại thời điểm cài, khớp tinh thần "dùng bản stable
@@ -79,6 +80,47 @@ xoá 1 task mà task khác đang phụ thuộc sẽ bị chặn ở tầng DB ch
   `Tasks`/`__EFMigrationsHistory`), không chỉ tin vào output của chính EF CLI.
 - `dotnet run --project SmartTask.Api` sau khi có schema thật vẫn chạy tốt, `GET /api/health` vẫn
   trả JSON đúng.
+
+## Authentication (Phase 22)
+
+JWT, email/password — Google/Microsoft (roadmap gốc) để sau, chưa làm. Personal Mode's Sheets app
+**không có khái niệm user/auth nào cả** (1 spreadsheet, 1 chủ sở hữu) nên `User` là thiết kế mới
+hoàn toàn, không port từ đâu — xem doc comment trong `SmartTask.Domain/Users/User.cs`.
+
+```
+POST /api/auth/register   { email, password, displayName? } → { userId, email, token, expiresAt }
+POST /api/auth/login      { email, password }                → { userId, email, token, expiresAt } | 401
+GET  /api/auth/me         [Authorize] Bearer <token>          → { userId, email } | 401
+```
+
+Kiến trúc: `AuthService` (use case thật) nằm trong `SmartTask.Application`, không phải
+`Infrastructure` — nó chỉ điều phối qua 3 abstraction (`IUserRepository`/`IPasswordHasher`/
+`IJwtTokenGenerator`), không đụng trực tiếp EF Core hay thư viện JWT nào, đúng nghĩa "Application:
+use case" trong `docs/architecture/ARCHITECTURE.md`. Mật khẩu băm bằng
+`Microsoft.AspNetCore.Identity`'s `PasswordHasher<T>` (PBKDF2 + salt ngẫu nhiên) — **không** kéo
+theo toàn bộ ASP.NET Core Identity (DbContext/store/SignInManager riêng của nó); Personal Mode hợp
+với luồng User + JWT gọn nhẹ tự viết hơn là một framework dựng cho multi-tenant/team.
+
+**Khóa ký JWT không nằm trong repo:** `Jwt:Secret` được tạo ngẫu nhiên thật
+(`openssl rand -base64 48`) và lưu bằng `dotnet user-secrets` (`SmartTask.Api`, file nằm ở
+`%APPDATA%\Microsoft\UserSecrets\<id>\secrets.json`, ngoài thư mục repo hoàn toàn — đã verify `git
+status` không thấy gì). `appsettings.json` chỉ có `Jwt:Issuer`/`Jwt:Audience`/`Jwt:ExpiryMinutes`
+(không nhạy cảm). Thiếu `Jwt:Secret` → app ném rõ `InvalidOperationException` khi phát hành hoặc xác
+thực token, không âm thầm ký bằng khoá rỗng.
+
+Máy dev khác cần chạy:
+
+```bash
+cd backend/SmartTask.Api
+dotnet user-secrets set "Jwt:Secret" "<chuỗi ngẫu nhiên dài, tự tạo>"
+```
+
+**Verify thật đã làm — luồng đầy đủ, không chỉ build:** chạy `dotnet run` thật, gọi `curl` thật theo
+thứ tự: đăng ký (200, nhận token) → đăng ký lại cùng email (409) → đăng nhập đúng mật khẩu (200,
+token mới) → đăng nhập sai mật khẩu (401) → gọi `/api/auth/me` không kèm token (401) → gọi lại kèm
+`Authorization: Bearer <token>` (200, đúng `userId`/`email` giải mã từ claim JWT). Cả 6 trường hợp
+đều đúng như kỳ vọng. Dữ liệu test (`demo@example.com`) đã xoá khỏi SQL Server thật sau khi verify
+xong, không để lại rác trong DB.
 
 ## Sự cố thật gặp phải khi dựng skeleton (Phase 20)
 

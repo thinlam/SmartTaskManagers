@@ -1,16 +1,18 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using SmartTask.Application.Users;
+using SmartTask.Persistence.Repositories;
 
 namespace SmartTask.Persistence;
 
 /// <summary>
 /// Registers AppDbContext against the "DefaultConnection" connection
-/// string (see SmartTask.Api/appsettings.json). EF Core doesn't actually
-/// open a connection at registration time, only when a DbContext is
-/// first used — so this builds and the app starts fine even without a
-/// live SQL Server instance; real connectivity is exercised once Phase
-/// 21 adds migrations.
+/// string (see SmartTask.Api/appsettings.json) plus the repositories
+/// implemented against it. EF Core doesn't actually open a connection at
+/// registration time, only when a DbContext is first used — so this
+/// builds and the app starts fine even without a live SQL Server
+/// instance.
 /// </summary>
 public static class DependencyInjection
 {
@@ -26,6 +28,8 @@ public static class DependencyInjection
             );
 
         services.AddDbContext<AppDbContext>(options => options.UseSqlServer(connectionString));
+        services.AddScoped<IUserRepository, UserRepository>();
+
         return services;
     }
 }

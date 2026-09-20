@@ -23,7 +23,7 @@ PHASE 18  Analytics (Reports)                                                 �
 PHASE 19  Settings                                                             ✅ DONE (chưa click-test — xem ghi chú)
 PHASE 20  Backend architecture (ASP.NET Core, Clean Architecture skeleton)     ✅ DONE (build+run verify thật)
 PHASE 21  Database (EF Core + SQL Server, migrations, schema từ Tasks/Projects/Goals/Habits)   ✅ DONE (áp migration thật lên SQL Server Express)
-PHASE 22  Authentication (JWT; sau này + Google/Microsoft)
+PHASE 22  Authentication (JWT; sau này + Google/Microsoft)                     ✅ DONE (curl thật cả luồng register/login/protected)
 PHASE 23  Tasks API
 PHASE 24  Projects API
 PHASE 25  Goals API
@@ -551,6 +551,33 @@ Verify thật, nhiều lớp: đọc lại nội dung file migration sinh ra (đ
 (`Goals`/`Habits`/`Projects`/`Tasks`/`__EFMigrationsHistory`); `dotnet run --project SmartTask.Api`
 sau khi có schema thật vẫn chạy tốt, `GET /api/health` vẫn trả JSON đúng — xác nhận thêm schema
 không phá vỡ vertical slice đã verify ở Phase 20.
+
+Phase 22 đã thực hiện — Personal Mode's Sheets app không có khái niệm user/auth nào cả (1
+spreadsheet, 1 chủ sở hữu), nên `User` (`SmartTask.Domain/Users/User.cs`) là thiết kế mới hoàn
+toàn, không port từ đâu; không phải `SyncableEntity` vì User không nằm trong phạm vi sync Phase 28.
+
+`SmartTask.Application` thêm `IUserRepository`/`IPasswordHasher`/`IJwtTokenGenerator` (abstraction)
+và `AuthService` (use case thật — chỉ điều phối qua 3 abstraction trên, không đụng EF Core/JWT
+library trực tiếp, đúng vai trò "Application" trong Clean Architecture). `SmartTask.Infrastructure`
+implement `PasswordHasherAdapter` (bọc `Microsoft.AspNetCore.Identity`'s `PasswordHasher<T>` — PBKDF2
++ salt ngẫu nhiên, **không** kéo theo toàn bộ ASP.NET Core Identity framework, hợp với luồng gọn nhẹ
+cho Personal Mode hơn) và `JwtTokenGenerator`. `SmartTask.Persistence` thêm `UserRepository` +
+migration `AddUsers` (bảng `Users`, unique index trên `Email`, không có cột đồng bộ). `SmartTask.Api`
+thêm `AuthController` (`POST /api/auth/register`, `POST /api/auth/login`, `GET /api/auth/me` có
+`[Authorize]`) và cấu hình JWT bearer validation trong `Program.cs`.
+
+**Bảo mật khoá ký JWT:** tạo secret ngẫu nhiên thật (`openssl rand -base64 48`), lưu bằng `dotnet
+user-secrets` (nằm ngoài repo hoàn toàn, `%APPDATA%\Microsoft\UserSecrets\...`) — đã verify `git
+status` không thấy gì nhạy cảm. `appsettings.json` chỉ chứa Issuer/Audience/ExpiryMinutes, không
+chứa secret. Thiếu secret → app ném lỗi rõ ràng, không âm thầm ký bằng khoá rỗng.
+
+Verify thật, đầy đủ luồng — không chỉ build: chạy `dotnet run` thật, `curl` thật theo đúng thứ tự
+và xác nhận đúng cả 6 trường hợp: đăng ký (200 + token) → đăng ký lại cùng email (409) → đăng nhập
+đúng mật khẩu (200 + token mới) → đăng nhập sai mật khẩu (401) → gọi endpoint được bảo vệ không kèm
+token (401) → gọi lại kèm `Authorization: Bearer <token>` (200, đúng `userId`/`email` giải mã từ
+claim JWT). Migration `AddUsers` áp thật vào SQL Server Express, xác nhận độc lập bằng `sqlcmd` (6
+bảng, có `Users`). Dữ liệu test đã xoá khỏi DB thật sau khi verify xong. `dotnet list package
+--vulnerable --include-transitive` vẫn sạch trên cả 5 project sau khi thêm các package auth mới.
 
 Mỗi Phase kế tiếp sẽ được trình bày riêng theo format: Mục tiêu → File tạo/sửa → Full code →
 Command → Cách chạy → Cách test → Expected Result → Checklist → Git commit đề xuất.
