@@ -19,7 +19,10 @@ React hooks dùng chung: `useTasks`, `useProjects`, `useGoals`, `useHabits`, `us
   `deleteProject` không dọn `projectId` của các task đang tham chiếu project đó — chấp nhận được
   cho store demo cục bộ, nhưng backend thật (Phase 27) cần xử lý ràng buộc tham chiếu đúng cách
   (cascade clear, hoặc chặn xoá khi còn task liên kết).
-- ⏳ `useGoals`/`useHabits`/`useAuth` — chưa làm, thêm khi Phase tương ứng cần (Goals: Phase 14, ...).
+- ✅ `useGoals` (Phase 14): cùng pattern với `useProjects` — `goals` +
+  `addGoal`/`updateGoal`/`deleteGoal`, cục bộ, không persist. Cùng giới hạn đã ghi nhận:
+  `deleteGoal` không dọn `goalId` của các task đang tham chiếu goal đó.
+- ⏳ `useHabits`/`useAuth` — chưa làm, thêm khi Phase tương ứng cần (Habits: Phase 15, ...).
 
 ## Test
 

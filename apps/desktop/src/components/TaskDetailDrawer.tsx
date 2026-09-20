@@ -3,6 +3,7 @@ import type { Area, Priority, Task, TaskStatus } from '@stm/types';
 import { Button, Drawer } from '@stm/ui';
 import { useTasksContext } from '../state/TasksContext';
 import { useProjectsContext } from '../state/ProjectsContext';
+import { useGoalsContext } from '../state/GoalsContext';
 
 const AREAS: Area[] = ['Career', 'Learning', 'Health', 'Personal', 'Personal Admin'];
 const PRIORITIES: Priority[] = ['Critical', 'Urgent', 'High', 'Medium', 'Low'];
@@ -18,6 +19,8 @@ interface FormState {
   area: Area;
   /** '' = no project — matches the "No project" option's value. */
   projectId: string;
+  /** '' = no goal — matches the "No goal" option's value. */
+  goalId: string;
   priority: Priority;
   status: TaskStatus;
   startDate: string;
@@ -32,6 +35,7 @@ function emptyForm(): FormState {
     description: '',
     area: 'Personal',
     projectId: '',
+    goalId: '',
     priority: 'Medium',
     status: 'Inbox',
     startDate: '',
@@ -47,6 +51,7 @@ function formFromTask(task: Task): FormState {
     description: task.description,
     area: task.area,
     projectId: task.projectId ?? '',
+    goalId: task.goalId ?? '',
     priority: task.priority,
     status: task.status,
     startDate: task.startDate ?? '',
@@ -62,15 +67,16 @@ function formFromTask(task: Task): FormState {
  * editingTask (null = create). Rendered once in AppShell so it's
  * available from every route, not nested inside TasksPage.
  *
- * Project field (Phase 13) reads ProjectsContext directly — Projects and
- * Tasks are separate providers, both mounted in App.tsx, so this drawer
- * can read from both without either context needing to know about the
- * other.
+ * Project field (Phase 13) and Goal field (Phase 14) each read their own
+ * context directly — Projects, Goals and Tasks are separate providers,
+ * all mounted in App.tsx, so this drawer can read from any of them
+ * without the contexts needing to know about each other.
  */
 export function TaskDetailDrawer() {
   const { isDrawerOpen, editingTask, closeDrawer, addTask, updateTask, deleteTask } =
     useTasksContext();
   const { projects } = useProjectsContext();
+  const { goals } = useGoalsContext();
   const [form, setForm] = useState<FormState>(emptyForm());
 
   useEffect(() => {
@@ -93,6 +99,7 @@ export function TaskDetailDrawer() {
       description: form.description,
       area: form.area,
       projectId: form.projectId || null,
+      goalId: form.goalId || null,
       priority: form.priority,
       status: form.status,
       startDate: form.startDate || null,
@@ -208,6 +215,24 @@ export function TaskDetailDrawer() {
 
         <div className="grid grid-cols-2 gap-3">
           <div className="flex flex-col gap-1">
+            <label htmlFor="task-goal" className={labelClasses}>
+              Goal
+            </label>
+            <select
+              id="task-goal"
+              value={form.goalId}
+              onChange={(event) => setForm((f) => ({ ...f, goalId: event.target.value }))}
+              className={fieldClasses}
+            >
+              <option value="">No goal</option>
+              {goals.map((goal) => (
+                <option key={goal.id} value={goal.id}>
+                  {goal.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="flex flex-col gap-1">
             <label htmlFor="task-priority" className={labelClasses}>
               Priority
             </label>
@@ -226,25 +251,26 @@ export function TaskDetailDrawer() {
               ))}
             </select>
           </div>
-          <div className="flex flex-col gap-1">
-            <label htmlFor="task-status" className={labelClasses}>
-              Status
-            </label>
-            <select
-              id="task-status"
-              value={form.status}
-              onChange={(event) =>
-                setForm((f) => ({ ...f, status: event.target.value as TaskStatus }))
-              }
-              className={fieldClasses}
-            >
-              {STATUSES.map((status) => (
-                <option key={status} value={status}>
-                  {status}
-                </option>
-              ))}
-            </select>
-          </div>
+        </div>
+
+        <div className="flex flex-col gap-1">
+          <label htmlFor="task-status" className={labelClasses}>
+            Status
+          </label>
+          <select
+            id="task-status"
+            value={form.status}
+            onChange={(event) =>
+              setForm((f) => ({ ...f, status: event.target.value as TaskStatus }))
+            }
+            className={fieldClasses}
+          >
+            {STATUSES.map((status) => (
+              <option key={status} value={status}>
+                {status}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className="flex flex-col gap-1">

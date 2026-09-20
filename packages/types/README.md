@@ -13,17 +13,23 @@ Một nguồn duy nhất — không định nghĩa lại Task interface khác nh
   đều dùng chung interface này thay vì mỗi mock data tự định nghĩa lại.
 - ✅ `Task` (Phase 12): entity đầy đủ dùng cho CRUD thật ở Tasks list — chỉ là tập con thực dụng
   của 27 cột trong `TASK_HEADERS` (`00_Constants.gs`), không port 1:1. Bỏ qua đến khi màn hình nào
-  cần thật: `Category`, `Tags` dạng phức tạp hơn `string[]`, `Energy`, `Context`, `GoalId`,
+  cần thật: `Category`, `Tags` dạng phức tạp hơn `string[]`, `Energy`, `Context`,
   `RecurringType`, `DependencyTaskId`, `LastStatusChangedAt`, `Notes`. Ngày tháng là chuỗi ISO
   8601 (`string | null`), không phải `Date` — để shape này không đổi khi vượt qua ranh giới API ở
-  Phase 27.
+  Phase 27. `goalId` thêm ở Phase 14.
 - ✅ `Project` + `ProjectHealth` (Phase 13): entity khớp `PROJECT_HEADERS` (`00_Constants.gs`) trừ
   `Health` — Health **luôn tính trực tiếp** từ task liên kết qua `computeProjectHealth()`
   (`@stm/shared`), không lưu trên entity để tránh dữ liệu cũ/lệch. `ProjectHealth` là type riêng,
   không dùng chung `Risk` — dù 2 thang màu giống nhau (Frame 01 §5), tách để type-system không lẫn
   risk của Task với health của Project.
-- ⏳ `Goal`, `Habit`, `User`, `Notification`, `CalendarEvent` — chưa làm, sẽ thêm khi Phase tương
-  ứng cần đến (Goals: Phase 14, ...), không model trước khi chưa có yêu cầu cụ thể.
+- ✅ `Goal` + `GoalStatus` (Phase 14): entity khớp `GOAL_HEADERS` (`00_Constants.gs`). **Khác
+  `Project`**: `progress`/`status` là field người dùng nhập trực tiếp, không tính từ task liên kết
+  — Goals không có "view engine" tương đương `14_Projects.gs` ở phía Sheets (`createGoal_()` trong
+  `03_Data.gs` mặc định `Progress: 0, Status: "On Track"` rồi để nguyên, không có hàm
+  `computeGoalHealth_()` nào cả). `Task.goalId` (Phase 14) là link 1 chiều từ Task sang Goal, khớp
+  `GoalId` trong `TASK_HEADERS` — giống hệt cơ chế `projectId`.
+- ⏳ `Habit`, `User`, `Notification`, `CalendarEvent` — chưa làm, sẽ thêm khi Phase tương ứng cần
+  đến (Habits: Phase 15, ...), không model trước khi chưa có yêu cầu cụ thể.
 
 ## Test
 

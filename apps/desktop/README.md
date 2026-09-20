@@ -217,3 +217,36 @@ xác nhận thẻ "Fitness Reset" cập nhật Open 1, health tự chuyển HEAL
 đổi đúng — xác nhận việc gán Task→Project và tính toán lại theo thời gian thực hoạt động đúng qua
 2 context riêng biệt; tạo project mới qua quick-add (KPI cập nhật đúng); xoá project (quay lại số
 liệu cũ đúng). **Không phát hiện lỗi nào.**
+
+## Goals (Phase 14)
+
+```
+src/mock/goals.ts                   MOCK_GOALS — 1 số task trong mock/tasks.ts tham chiếu id ở đây qua goalId
+src/state/GoalsContext.tsx           GoalsProvider + useGoalsContext() — cùng pattern TasksContext/ProjectsContext
+src/components/GoalDetailDrawer.tsx  form Create/Edit Goal — CÓ field Status + Progress (khác Project)
+src/pages/Goals/GoalsPage.tsx        KPI row + quick add + grid GoalCard
+src/pages/Goals/GoalRow.tsx          đếm task liên kết (goalId) + ghép GoalCard + Edit/Delete
+```
+
+**Khác biệt quan trọng với Projects (Phase 13):** Goals không có view/metrics engine nào ở phía
+Sheets (không có `15_Goals.gs`) — chỉ có CRUD thô (`GOAL_HEADERS`, `createGoal_()`/`getAllGoals_()`
+trong `00_Constants.gs`/`03_Data.gs`). `Progress`/`Status` là field người dùng **nhập tay**, không
+tính từ task liên kết — vì vậy `GoalDetailDrawer` có thêm Status select + Progress range (giống
+Task Detail), khác hẳn `ProjectDetailDrawer` (không có field Health vì Health luôn tính). KPI row
+của `GoalsPage` (Total/On Track/At Risk/Avg Progress) chỉ là rollup trực tiếp từ field đã lưu, không
+gọi `@stm/shared` nào — Phase này không thêm hàm nào vào `packages/shared` (xem
+`packages/shared/README.md`).
+
+`GoalRow` hiển thị số task liên kết bằng cách đếm thẳng `allTasks.filter(t => t.goalId === goal.id)`
+— một phép đếm đơn giản trên dữ liệu thật (`Task.goalId`), không phải điểm số Smart Engine nào.
+`TaskDetailDrawer` (Phase 12) giờ có thêm field **Goal** (đọc `useGoalsContext().goals`), đặt cạnh
+Priority — cùng cơ chế field Project ở Phase 13, đọc từ context riêng, độc lập với TasksContext.
+
+**Verify bằng tương tác thật (claude-in-chrome):** mở Goals, xác nhận 3 goal mock hiển thị đúng
+status/progress/target/số task liên kết (1/2/0); sửa "Learn Conversational English" từ On Track
+sang At Risk qua Edit Drawer → Save, xác nhận card đổi badge và KPI (On Track 1→0, At Risk 1→2)
+cập nhật ngay; mở "+ New Task", chọn Goal = "Run a 5K", Add task → quay lại Goals, xác nhận card
+"Run a 5K" đổi từ "No tasks linked yet" sang "1 task linked" theo thời gian thực; tạo goal mới qua
+quick-add (mặc định Personal/On Track/0%/không target date đúng, KPI cập nhật đúng); xoá goal đó
+(quay lại số liệu cũ đúng). **Không phát hiện lỗi nào** — `npm run typecheck`/`lint`/`format` cũng
+pass sạch ngay từ lần đầu.

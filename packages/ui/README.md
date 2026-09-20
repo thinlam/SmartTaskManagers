@@ -42,6 +42,14 @@ Nguồn thiết kế: Canva Design System (xem
   `apps/google-sheets/src/14_Projects.gs`: dải màu health bên trái, tên + health badge, area/target
   - progress%, thanh progress, 4 chip metric (Open/Done/Overdue/Waiting), dòng Top Focus + Next.
     Chỉ hiển thị — mọi text/số đều do caller tính qua `@stm/shared` (Phase 13).
+- ✅ `components/Badge/GoalStatusBadge` — không có bộ token `goal-status-*` riêng (khác
+  `StatusBadge`/`PriorityBadge`/`ProjectHealthBadge`, mỗi cái đều có thang màu riêng khớp Frame 01)
+  vì Goals không có Frame team gốc nào để lệch màu ra khỏi — dùng thẳng tone chung sẵn có của
+  `Badge` (`info`/`warning`/`success`) (Phase 14).
+- ✅ `components/GoalCard` — đơn giản hơn hẳn `ProjectCard` **có chủ đích**: Goals không có view
+  engine tương đương `14_Projects.gs` ở phía Sheets, nên không có health score/top focus/next
+  action để hiển thị — chỉ tên, `GoalStatusBadge`, area/target + progress%, thanh progress, và số
+  task liên kết (đếm thẳng từ `Task.goalId`, không phải metrics engine) (Phase 14).
 - ⏳ `Card`/`Modal`/`Dropdown`/`Tooltip`/... — chưa làm, theo sau khi các màn hình cần đến.
 
 ## Sidebar/Topbar — router-agnostic theo thiết kế

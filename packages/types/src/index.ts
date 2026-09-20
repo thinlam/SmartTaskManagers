@@ -34,10 +34,10 @@ export interface TaskSummary {
  * The full Task entity (Phase 12) — a working subset of the 27 columns in
  * apps/google-sheets/src/00_Constants.gs's TASK_HEADERS, not a 1:1 port.
  * Left out for now, added only once a screen needs them: Category, Tags
- * beyond a plain list, Energy, Context, GoalId, RecurringType,
- * DependencyTaskId, LastStatusChangedAt, Notes. Dates are ISO 8601
- * strings (`null` = not set), not `Date`, so this shape survives crossing
- * the Phase 27 API boundary unchanged.
+ * beyond a plain list, Energy, Context, RecurringType, DependencyTaskId,
+ * LastStatusChangedAt, Notes. Dates are ISO 8601 strings (`null` = not
+ * set), not `Date`, so this shape survives crossing the Phase 27 API
+ * boundary unchanged.
  */
 export interface Task {
   id: string;
@@ -46,6 +46,8 @@ export interface Task {
   area: Area;
   /** References a Project's id — Projects land in Phase 13. */
   projectId: string | null;
+  /** References a Goal's id (Phase 14) — matches GoalId in TASK_HEADERS. */
+  goalId: string | null;
   tags: string[];
   priority: Priority;
   status: TaskStatus;
@@ -88,6 +90,29 @@ export interface Project {
   area: Area;
   targetDate: string | null;
   description: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type GoalStatus = 'On Track' | 'At Risk' | 'Completed';
+
+/**
+ * The Goal entity (Phase 14) — matches GOAL_HEADERS in
+ * apps/google-sheets/src/00_Constants.gs. Unlike Project, Goals have no
+ * computed-metrics engine on the Sheets side (no equivalent of
+ * `14_Projects.gs`) — `progress`/`status` are plain fields the user sets
+ * directly (see `createGoal_()` in `apps/google-sheets/src/03_Data.gs`,
+ * which defaults them to `0`/`'On Track'`), not derived from linked
+ * tasks.
+ */
+export interface Goal {
+  id: string;
+  name: string;
+  area: Area;
+  targetDate: string | null;
+  /** 0–100, entered directly. */
+  progress: number;
+  status: GoalStatus;
   createdAt: string;
   updatedAt: string;
 }

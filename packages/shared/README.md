@@ -15,6 +15,10 @@ Utils, formatters, date logic dùng chung.
   `getProjectTargetLabel_()` trong `apps/google-sheets/src/14_Projects.gs` — cùng công thức, cùng
   trọng số (`PROJECT_HEALTH_WEIGHTS`), cùng ngưỡng bucket, cùng câu chữ khuyến nghị. Health luôn
   tính lại từ task liên kết mỗi lần gọi, không cache.
+- **Phase 14 (Goals) không thêm hàm nào ở đây.** `formatTargetLabel` (Phase 13) đủ dùng lại
+  nguyên vẹn cho `Goal.targetDate` — cùng shape `string | null`, cùng cách hiển thị nhãn tương đối
+  mong muốn. Không có `computeGoalMetrics`/`computeGoalHealth` vì Sheets không có view engine nào
+  cho Goals để port (`progress`/`status` là field nhập tay, xem `@stm/types`'s `Goal`).
 - ⏳ Smart Score / Risk / RecommendedAction (`apps/google-sheets/src/05_SmartEngine.gs`) —
   **chưa port** — đó là Phase 29 (Smart Engine), không làm sớm.
 

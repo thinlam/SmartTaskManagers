@@ -15,7 +15,7 @@ PHASE 10  Today                                                                �
 PHASE 11  Inbox                                                                ✅ DONE (local CRUD)
 PHASE 12  Tasks                                                                ✅ DONE (click-tested thật)
 PHASE 13  Projects                                                             ✅ DONE (click-tested thật)
-PHASE 14  Goals
+PHASE 14  Goals                                                                ✅ DONE (click-tested thật)
 PHASE 15  Habits
 PHASE 16  Calendar
 PHASE 17  Kanban
@@ -308,6 +308,38 @@ trước khi code (Attention/At Risk/At Risk/Healthy); gán task "Water the plan
 "Fitness Reset" qua field Project mới → xác nhận card cập nhật Open 1, health tự chuyển
 HEALTHY→ATTENTION, Top Focus/Next đổi đúng theo thời gian thực; tạo/xoá project qua quick-add, KPI
 cập nhật đúng mỗi lần. **Không phát hiện lỗi nào** trong toàn bộ luồng.
+
+Phase 14 đã thực hiện: trước khi code, kiểm tra kỹ phía Sheets và xác nhận Goals **không có** view
+engine tương đương `14_Projects.gs` (không có `15_Goals.gs`) — chỉ có CRUD thô (`GOAL_HEADERS`,
+`createGoal_()`/`getAllGoals_()` trong `00_Constants.gs`/`03_Data.gs`) cộng với link một chiều từ
+Task (`TASK_HEADERS`'s `GoalId`, đã dùng ở Quick Add và Task Details phía Sheets). Đây là khác biệt
+quan trọng nhất so với Phase 13: `Goal.progress`/`Goal.status` là field người dùng **nhập tay**
+(`createGoal_()` chỉ set mặc định `Progress: 0, Status: "On Track"` rồi để nguyên), không tính từ
+task liên kết — nên Phase này **không thêm hàm nào vào `packages/shared`** (tái dùng thẳng
+`formatTargetLabel` từ Phase 13 cho `targetDate`).
+
+`packages/types` thêm `Goal` + `GoalStatus`, và `Task.goalId` (link 1 chiều, cùng cơ chế
+`projectId`). `packages/ui` thêm `GoalStatusBadge` (dùng thẳng tone chung `info`/`warning`/`success`
+của `Badge` — Goals không có bộ token màu riêng như Status/Priority/Risk vì không có Frame team gốc
+nào để lệch ra khỏi) và `GoalCard` (đơn giản hơn hẳn `ProjectCard` có chủ đích: không có health
+score/top focus/next action để hiển thị, chỉ tên/badge/area/target/progress/số task liên kết —
+số task liên kết là phép đếm thẳng trên `Task.goalId`, không phải metrics engine). `packages/hooks`
+thêm `useGoals`, cùng pattern `useProjects` kể cả giới hạn đã ghi nhận (xoá goal không dọn `goalId`
+của task liên kết).
+
+`apps/desktop` thêm `GoalsProvider` + `GoalDetailDrawer` (form Create/Edit **có** Status select và
+Progress range — khác `ProjectDetailDrawer` không có field Health) + trang Goals (`GoalsPage`/
+`GoalRow`, KPI Total/On Track/At Risk/Avg Progress là rollup trực tiếp từ field đã lưu). Đúng như
+đã hứa ở Phase 13's field Project: `TaskDetailDrawer` giờ có thêm field **Goal** (đọc từ
+`GoalsContext` mới, độc lập, cùng cơ chế field Project).
+
+Verify thật: `npm run typecheck`/`lint`/`format` pass sạch ngay từ đầu. `npm run build:desktop`
+build production thành công. Verify bằng **click-test thật** (claude-in-chrome): 3 goal mock hiển
+thị đúng status/progress/target/số task liên kết (1/2/0); sửa status 1 goal từ On Track sang At
+Risk qua Edit Drawer → card và KPI cập nhật ngay; tạo task mới gán Goal = "Run a 5K" từ Task Detail
+→ quay lại Goals, card "Run a 5K" đổi từ "No tasks linked yet" sang "1 task linked" theo thời gian
+thực (xác nhận liên kết Task→Goal qua 2 context riêng biệt hoạt động đúng); tạo/xoá goal qua
+quick-add, KPI cập nhật đúng mỗi lần. **Không phát hiện lỗi nào** trong toàn bộ luồng.
 
 Mỗi Phase kế tiếp sẽ được trình bày riêng theo format: Mục tiêu → File tạo/sửa → Full code →
 Command → Cách chạy → Cách test → Expected Result → Checklist → Git commit đề xuất.

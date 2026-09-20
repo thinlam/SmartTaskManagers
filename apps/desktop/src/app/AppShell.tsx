@@ -5,6 +5,7 @@ import { APP_ROUTES, NAV_GROUP_ORDER } from './routes';
 import { useTasksContext } from '../state/TasksContext';
 import { TaskDetailDrawer } from '../components/TaskDetailDrawer';
 import { ProjectDetailDrawer } from '../components/ProjectDetailDrawer';
+import { GoalDetailDrawer } from '../components/GoalDetailDrawer';
 
 /**
  * Real Sidebar + Topbar (Phase 08), replacing Phase 07's temporary <nav>.
@@ -52,6 +53,7 @@ export function AppShell() {
       </div>
       <TaskDetailDrawer />
       <ProjectDetailDrawer />
+      <GoalDetailDrawer />
     </div>
   );
 }

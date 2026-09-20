@@ -6,7 +6,8 @@ import type { Task } from '@stm/types';
  * mutated only in memory. No persistence until Phase 27.
  *
  * Some `projectId`s (Phase 13) reference apps/desktop/src/mock/projects.ts
- * — keep both files' ids in sync if either seed set changes.
+ * and some `goalId`s (Phase 14) reference apps/desktop/src/mock/goals.ts
+ * — keep all three files' ids in sync if any seed set changes.
  */
 export const MOCK_TASKS: Task[] = [
   {
@@ -15,6 +16,7 @@ export const MOCK_TASKS: Task[] = [
     description: 'Write up the Smart Task Manager build as a case study for the portfolio site.',
     area: 'Career',
     projectId: 'PRJ-0001',
+    goalId: 'GOAL-0002',
     tags: ['writing'],
     priority: 'Critical',
     status: 'In Progress',
@@ -35,6 +37,7 @@ export const MOCK_TASKS: Task[] = [
     description: '',
     area: 'Learning',
     projectId: 'PRJ-0002',
+    goalId: 'GOAL-0001',
     tags: [],
     priority: 'High',
     status: 'To Do',
@@ -55,6 +58,7 @@ export const MOCK_TASKS: Task[] = [
     description: '',
     area: 'Health',
     projectId: null,
+    goalId: null,
     tags: [],
     priority: 'Medium',
     status: 'Waiting',
@@ -72,6 +76,7 @@ export const MOCK_TASKS: Task[] = [
     description: '',
     area: 'Personal Admin',
     projectId: 'PRJ-0003',
+    goalId: null,
     tags: ['bills'],
     priority: 'High',
     status: 'To Do',
@@ -92,6 +97,7 @@ export const MOCK_TASKS: Task[] = [
     description: '',
     area: 'Personal',
     projectId: null,
+    goalId: null,
     tags: [],
     priority: 'Low',
     status: 'Inbox',
@@ -109,6 +115,7 @@ export const MOCK_TASKS: Task[] = [
     description: '',
     area: 'Career',
     projectId: 'PRJ-0001',
+    goalId: 'GOAL-0002',
     tags: [],
     priority: 'Medium',
     status: 'Completed',
