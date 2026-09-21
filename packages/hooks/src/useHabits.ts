@@ -1,83 +1,75 @@
-import { useCallback, useState } from 'react';
-import type { Habit, HabitFrequency } from '@stm/types';
+import { useCallback, useEffect, useState } from 'react';
+import type { Habit } from '@stm/types';
+import { habitApi, type HabitWriteFields } from '@stm/api-client';
 
 export interface NewHabitInput {
   name: string;
-  frequency?: HabitFrequency;
+  frequency?: Habit['frequency'];
   targetCount?: number;
 }
 
 export interface UseHabitsResult {
   habits: Habit[];
-  addHabit: (input: NewHabitInput) => Habit;
-  updateHabit: (id: string, patch: Partial<Habit>) => void;
-  deleteHabit: (id: string) => void;
-  /** Marks today done: +1 streak, +1 completedCount, sets lastCompletedDate. No-op if already checked in today. */
-  checkInHabit: (id: string) => void;
+  isLoading: boolean;
+  error: string | null;
+  addHabit: (input: NewHabitInput) => Promise<Habit>;
+  updateHabit: (id: string, patch: Partial<Habit>) => Promise<Habit>;
+  deleteHabit: (id: string) => Promise<void>;
+  /** Calls SmartTask.Api's POST /api/habits/{id}/check-in (Phase 26) — the real no-op-if-already-checked-in-today logic now lives server-side, not in this hook. */
+  checkInHabit: (id: string) => Promise<Habit>;
 }
 
-/**
- * Local habit store (Phase 15) — same pattern as useGoals (Phase 14):
- * Create/Update/Delete mutate React state only, no @stm/api-client call,
- * no persistence (Phase 27).
- *
- * `checkInHabit` has no equivalent to port — apps/google-sheets/src has
- * `createHabit_()`/`getAllHabits_()` only, no habit-completion function
- * anywhere in the source. A naive "+1 streak, +1 completedCount" per
- * check-in (guarded so the same calendar day can't be counted twice) is
- * a reasonable minimal design for this app, not a port of real Sheets
- * logic — deliberately no "reset streak if a day was missed" heuristic,
- * since that would be inventing behavior with no reference to verify
- * against.
- */
-export function useHabits(initialHabits: Habit[]): UseHabitsResult {
-  const [habits, setHabits] = useState<Habit[]>(initialHabits);
+/** Real backend store (Phase 27) — same shape/reasoning as useTasks/useProjects/useGoals. */
+export function useHabits(): UseHabitsResult {
+  const [habits, setHabits] = useState<Habit[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const addHabit = useCallback((input: NewHabitInput): Habit => {
-    const now = new Date().toISOString();
-    const newHabit: Habit = {
-      id: crypto.randomUUID(),
-      name: input.name,
-      frequency: input.frequency ?? 'Daily',
-      streak: 0,
-      targetCount: input.targetCount ?? 0,
-      completedCount: 0,
-      lastCompletedDate: null,
-      createdAt: now,
-      updatedAt: now,
+  useEffect(() => {
+    let cancelled = false;
+    habitApi
+      .getAll()
+      .then((data) => {
+        if (!cancelled) setHabits(data);
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load habits.');
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoading(false);
+      });
+    return () => {
+      cancelled = true;
     };
-    setHabits((previous) => [newHabit, ...previous]);
-    return newHabit;
   }, []);
 
-  const updateHabit = useCallback((id: string, patch: Partial<Habit>) => {
-    setHabits((previous) =>
-      previous.map((habit) =>
-        habit.id === id ? { ...habit, ...patch, updatedAt: new Date().toISOString() } : habit,
-      ),
-    );
+  const addHabit = useCallback(async (input: NewHabitInput): Promise<Habit> => {
+    const created = await habitApi.create(input);
+    setHabits((previous) => [created, ...previous]);
+    return created;
   }, []);
 
-  const deleteHabit = useCallback((id: string) => {
+  const updateHabit = useCallback(async (id: string, patch: Partial<Habit>): Promise<Habit> => {
+    const fields: HabitWriteFields = {
+      name: patch.name,
+      frequency: patch.frequency,
+      targetCount: patch.targetCount,
+    };
+    const updated = await habitApi.update(id, fields);
+    setHabits((previous) => previous.map((habit) => (habit.id === id ? updated : habit)));
+    return updated;
+  }, []);
+
+  const deleteHabit = useCallback(async (id: string): Promise<void> => {
+    await habitApi.remove(id);
     setHabits((previous) => previous.filter((habit) => habit.id !== id));
   }, []);
 
-  const checkInHabit = useCallback((id: string) => {
-    const now = new Date().toISOString();
-    const today = now.slice(0, 10);
-    setHabits((previous) =>
-      previous.map((habit) => {
-        if (habit.id !== id || habit.lastCompletedDate === today) return habit;
-        return {
-          ...habit,
-          streak: habit.streak + 1,
-          completedCount: habit.completedCount + 1,
-          lastCompletedDate: today,
-          updatedAt: now,
-        };
-      }),
-    );
+  const checkInHabit = useCallback(async (id: string): Promise<Habit> => {
+    const checkedIn = await habitApi.checkIn(id);
+    setHabits((previous) => previous.map((habit) => (habit.id === id ? checkedIn : habit)));
+    return checkedIn;
   }, []);
 
-  return { habits, addHabit, updateHabit, deleteHabit, checkInHabit };
+  return { habits, isLoading, error, addHabit, updateHabit, deleteHabit, checkInHabit };
 }

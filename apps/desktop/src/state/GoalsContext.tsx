@@ -1,7 +1,6 @@
 import { createContext, useContext, useState, type ReactNode } from 'react';
 import { useGoals, type UseGoalsResult } from '@stm/hooks';
 import type { Goal } from '@stm/types';
-import { MOCK_GOALS } from '../mock/goals';
 
 interface GoalsContextValue extends UseGoalsResult {
   isDrawerOpen: boolean;
@@ -22,7 +21,7 @@ const GoalsContext = createContext<GoalsContextValue | null>(null);
  * ProjectsProvider.
  */
 export function GoalsProvider({ children }: { children: ReactNode }) {
-  const goalsApi = useGoals(MOCK_GOALS);
+  const goalsApi = useGoals();
   const [isDrawerOpen, setDrawerOpen] = useState(false);
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
 

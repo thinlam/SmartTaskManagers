@@ -1,7 +1,6 @@
 import { createContext, useContext, useState, type ReactNode } from 'react';
 import { useTasks, type UseTasksResult } from '@stm/hooks';
 import type { Task } from '@stm/types';
-import { MOCK_TASKS } from '../mock/tasks';
 
 interface TasksContextValue extends UseTasksResult {
   isDrawerOpen: boolean;
@@ -26,9 +25,12 @@ const TasksContext = createContext<TasksContextValue | null>(null);
  * status === 'Inbox'), since maintaining two disconnected "your tasks"
  * lists in one running app was a real inconsistency, not a deliberate
  * design.
+ *
+ * `useTasks()` takes no seed data since Phase 27 — it fetches from the
+ * real backend on mount instead of starting from MOCK_TASKS.
  */
 export function TasksProvider({ children }: { children: ReactNode }) {
-  const tasksApi = useTasks(MOCK_TASKS);
+  const tasksApi = useTasks();
   const [isDrawerOpen, setDrawerOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
 

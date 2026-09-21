@@ -93,7 +93,7 @@ xoá 1 task mà task khác đang phụ thuộc sẽ bị chặn ở tầng DB ch
   đầu thất bại thật (lỗi FK ở trên), sửa Fluent API, xoá migration cũ (`migrations remove`), sinh
   lại, áp lại — thành công.
 - Xác nhận độc lập bằng `sqlcmd -S "DESKTOP-CKNT19A\SQLEXPRESS" -d SmartTask -E -C -Q "SELECT
-  TABLE_NAME FROM INFORMATION_SCHEMA.TABLES..."` — thấy đúng 5 bảng (`Goals`/`Habits`/`Projects`/
+TABLE_NAME FROM INFORMATION_SCHEMA.TABLES..."` — thấy đúng 5 bảng (`Goals`/`Habits`/`Projects`/
   `Tasks`/`__EFMigrationsHistory`), không chỉ tin vào output của chính EF CLI.
 - `dotnet run --project SmartTask.Api` sau khi có schema thật vẫn chạy tốt, `GET /api/health` vẫn
   trả JSON đúng.
@@ -272,6 +272,18 @@ chứ không chỉ đọc code) → **check-in lần 3 cùng ngày** (vẫn y h�
 list package --vulnerable --include-transitive` vẫn sạch — và một sự cố thật gặp giữa chừng: 1
 process `SmartTask.Api` cũ (từ lần chạy Swagger UI trước) còn giữ khoá file DLL khiến `dotnet build`
 lỗi thật `MSB3027`; `Stop-Process` process đó rồi build lại mới qua.
+
+## CORS (Phase 27)
+
+`Program.cs` có policy tên `DesktopClient` (`AddCors`/`UseCors`), cho phép origin
+`http://localhost:5173` (Vite dev server) + `tauri://localhost`/`http://tauri.localhost` (cửa sổ
+Tauri packaged) gọi API — không `AllowAnyOrigin`, API này không định cho website bất kỳ gọi.
+`UseCors` đặt **trước** `UseAuthentication` trong pipeline: request `OPTIONS` preflight của trình
+duyệt không mang header `Authorization`, nên CORS phải được xử lý trước khi middleware auth có cơ
+hội từ chối nó. Sự cố thật gặp giữa chừng khi build phase này: lần đầu chỉ gọi `AddCors` (đăng ký
+policy) mà quên `app.UseCors()` trong pipeline — verify bằng `curl -X OPTIONS` xác nhận vẫn trả
+`405 Method Not Allowed` thay vì `204` kèm `Access-Control-Allow-Origin`; thêm dòng `UseCors` mới
+qua, verify lại thấy đúng header.
 
 ## Sự cố thật gặp phải khi dựng skeleton (Phase 20)
 

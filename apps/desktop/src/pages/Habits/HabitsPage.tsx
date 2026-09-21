@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { EmptyState, StatCard } from '@stm/ui';
 import { useHabitsContext } from '../../state/HabitsContext';
 import { QuickCaptureInput } from '../../components/QuickCaptureInput';
+import { reportError } from '../../lib/reportError';
 import { HabitRow } from './HabitRow';
 
 /**
@@ -16,7 +17,7 @@ import { HabitRow } from './HabitRow';
  * (still Phase 09's static mock), left for a future phase.
  */
 export function HabitsPage() {
-  const { habits, addHabit, deleteHabit, openEditDrawer } = useHabitsContext();
+  const { habits, isLoading, addHabit, deleteHabit, openEditDrawer } = useHabitsContext();
 
   const summary = useMemo(() => {
     const today = new Date().toISOString().slice(0, 10);
@@ -38,7 +39,11 @@ export function HabitsPage() {
   }, [habits]);
 
   function handleAdd(name: string) {
-    addHabit({ name });
+    addHabit({ name }).catch(reportError);
+  }
+
+  if (isLoading) {
+    return <div className="p-8 text-sm text-ink-muted">Loading habits…</div>;
   }
 
   return (
@@ -87,7 +92,12 @@ export function HabitsPage() {
       ) : (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           {habits.map((habit) => (
-            <HabitRow key={habit.id} habit={habit} onEdit={openEditDrawer} onDelete={deleteHabit} />
+            <HabitRow
+              key={habit.id}
+              habit={habit}
+              onEdit={openEditDrawer}
+              onDelete={(id) => deleteHabit(id).catch(reportError)}
+            />
           ))}
         </div>
       )}

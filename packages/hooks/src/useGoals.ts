@@ -1,61 +1,71 @@
-import { useCallback, useState } from 'react';
-import type { Area, Goal, GoalStatus } from '@stm/types';
+import { useCallback, useEffect, useState } from 'react';
+import type { Goal } from '@stm/types';
+import { goalApi, type GoalWriteFields } from '@stm/api-client';
 
 export interface NewGoalInput {
   name: string;
-  area: Area;
+  area: Goal['area'];
   targetDate?: string | null;
   progress?: number;
-  status?: GoalStatus;
+  status?: Goal['status'];
 }
 
 export interface UseGoalsResult {
   goals: Goal[];
-  addGoal: (input: NewGoalInput) => Goal;
-  updateGoal: (id: string, patch: Partial<Goal>) => void;
-  deleteGoal: (id: string) => void;
+  isLoading: boolean;
+  error: string | null;
+  addGoal: (input: NewGoalInput) => Promise<Goal>;
+  updateGoal: (id: string, patch: Partial<Goal>) => Promise<Goal>;
+  deleteGoal: (id: string) => Promise<void>;
 }
 
-/**
- * Local goal store (Phase 14) — same pattern as useProjects (Phase 13):
- * Create/Update/Delete mutate React state only, no @stm/api-client call,
- * no persistence (Phase 27).
- *
- * Known simplification: deleteGoal does not touch tasks that reference
- * the deleted goal's id — their `goalId` is left dangling rather than
- * cleared. Same accepted tradeoff as useProjects's deleteProject; a real
- * backend (Phase 27) needs real referential-integrity handling.
- */
-export function useGoals(initialGoals: Goal[]): UseGoalsResult {
-  const [goals, setGoals] = useState<Goal[]>(initialGoals);
+/** Real backend store (Phase 27) — same shape/reasoning as useTasks/useProjects. `Tasks.GoalId`'s ON DELETE SET NULL is now real, same as Projects. */
+export function useGoals(): UseGoalsResult {
+  const [goals, setGoals] = useState<Goal[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const addGoal = useCallback((input: NewGoalInput): Goal => {
-    const now = new Date().toISOString();
-    const newGoal: Goal = {
-      id: crypto.randomUUID(),
-      name: input.name,
-      area: input.area,
-      targetDate: input.targetDate ?? null,
-      progress: input.progress ?? 0,
-      status: input.status ?? 'On Track',
-      createdAt: now,
-      updatedAt: now,
+  useEffect(() => {
+    let cancelled = false;
+    goalApi
+      .getAll()
+      .then((data) => {
+        if (!cancelled) setGoals(data);
+      })
+      .catch((err: unknown) => {
+        if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load goals.');
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoading(false);
+      });
+    return () => {
+      cancelled = true;
     };
-    setGoals((previous) => [newGoal, ...previous]);
-    return newGoal;
   }, []);
 
-  const updateGoal = useCallback((id: string, patch: Partial<Goal>) => {
-    setGoals((previous) =>
-      previous.map((goal) =>
-        goal.id === id ? { ...goal, ...patch, updatedAt: new Date().toISOString() } : goal,
-      ),
-    );
+  const addGoal = useCallback(async (input: NewGoalInput): Promise<Goal> => {
+    const created = await goalApi.create(input);
+    setGoals((previous) => [created, ...previous]);
+    return created;
   }, []);
 
-  const deleteGoal = useCallback((id: string) => {
+  const updateGoal = useCallback(async (id: string, patch: Partial<Goal>): Promise<Goal> => {
+    const fields: GoalWriteFields = {
+      name: patch.name,
+      area: patch.area,
+      targetDate: patch.targetDate,
+      progress: patch.progress,
+      status: patch.status,
+    };
+    const updated = await goalApi.update(id, fields);
+    setGoals((previous) => previous.map((goal) => (goal.id === id ? updated : goal)));
+    return updated;
+  }, []);
+
+  const deleteGoal = useCallback(async (id: string): Promise<void> => {
+    await goalApi.remove(id);
     setGoals((previous) => previous.filter((goal) => goal.id !== id));
   }, []);
 
-  return { goals, addGoal, updateGoal, deleteGoal };
+  return { goals, isLoading, error, addGoal, updateGoal, deleteGoal };
 }

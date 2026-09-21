@@ -92,6 +92,25 @@ builder
     });
 builder.Services.AddAuthorization();
 
+// Phase 27 — apps/desktop's Vite dev server (localhost:5173) and the
+// packaged Tauri window both call this API from the browser/webview, so
+// it needs an explicit CORS policy; without one, every request from
+// the desktop app fails at the browser level before it even reaches a
+// controller. Named, not AllowAnyOrigin — this API isn't meant to be
+// called from an arbitrary website.
+const string DesktopCorsPolicy = "DesktopClient";
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy(
+        DesktopCorsPolicy,
+        policy =>
+            policy
+                .WithOrigins("http://localhost:5173", "tauri://localhost", "http://tauri.localhost")
+                .AllowAnyHeader()
+                .AllowAnyMethod()
+    );
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -110,6 +129,11 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// Before Authentication — the browser's preflight OPTIONS request carries
+// no Authorization header, so CORS has to be resolved before the auth
+// middleware would otherwise reject it.
+app.UseCors(DesktopCorsPolicy);
 
 // Authentication before Authorization — order matters, ASP.NET Core won't warn you if it's backwards.
 app.UseAuthentication();

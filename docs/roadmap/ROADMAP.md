@@ -560,11 +560,12 @@ toàn, không port từ đâu; không phải `SyncableEntity` vì User không n�
 và `AuthService` (use case thật — chỉ điều phối qua 3 abstraction trên, không đụng EF Core/JWT
 library trực tiếp, đúng vai trò "Application" trong Clean Architecture). `SmartTask.Infrastructure`
 implement `PasswordHasherAdapter` (bọc `Microsoft.AspNetCore.Identity`'s `PasswordHasher<T>` — PBKDF2
-+ salt ngẫu nhiên, **không** kéo theo toàn bộ ASP.NET Core Identity framework, hợp với luồng gọn nhẹ
-cho Personal Mode hơn) và `JwtTokenGenerator`. `SmartTask.Persistence` thêm `UserRepository` +
-migration `AddUsers` (bảng `Users`, unique index trên `Email`, không có cột đồng bộ). `SmartTask.Api`
-thêm `AuthController` (`POST /api/auth/register`, `POST /api/auth/login`, `GET /api/auth/me` có
-`[Authorize]`) và cấu hình JWT bearer validation trong `Program.cs`.
+
+- salt ngẫu nhiên, **không** kéo theo toàn bộ ASP.NET Core Identity framework, hợp với luồng gọn nhẹ
+  cho Personal Mode hơn) và `JwtTokenGenerator`. `SmartTask.Persistence` thêm `UserRepository` +
+  migration `AddUsers` (bảng `Users`, unique index trên `Email`, không có cột đồng bộ). `SmartTask.Api`
+  thêm `AuthController` (`POST /api/auth/register`, `POST /api/auth/login`, `GET /api/auth/me` có
+  `[Authorize]`) và cấu hình JWT bearer validation trong `Program.cs`.
 
 **Bảo mật khoá ký JWT:** tạo secret ngẫu nhiên thật (`openssl rand -base64 48`), lưu bằng `dotnet
 user-secrets` (nằm ngoài repo hoàn toàn, `%APPDATA%\Microsoft\UserSecrets\...`) — đã verify `git
@@ -656,6 +657,67 @@ về **y hệt lần 1** kể cả `updatedAt` không đổi, xác nhận no-op 
 không tồn tại (404), xoá (204), lấy lại sau xoá (404). Dữ liệu test đã xoá sạch. Sự cố thật gặp
 giữa chừng: process `SmartTask.Api` cũ từ lần test Swagger UI trước còn giữ khoá DLL khiến
 `dotnet build` lỗi `MSB3027` — `Stop-Process` rồi build lại mới qua. Vulnerability scan vẫn sạch.
+
+Phase 27 đã thực hiện — Desktop ↔ Backend thật, bỏ toàn bộ mock data. `packages/api-client` từ chỗ
+placeholder rỗng thành package thật: `httpClient.ts` (fetch wrapper, `ApiError`, Bearer token qua
+module-level `setAuthToken()`), `authApi`/`taskApi`/`projectApi`/`goalApi`/`habitApi` (mỗi entity 1
+file, map `Dto` ↔ shape frontend). `packages/hooks`'s 4 hook (`useTasks`/`useProjects`/`useGoals`/
+`useHabits`) viết lại hoàn toàn: không còn nhận `initialX` (mock seed), tự fetch qua `useEffect` khi
+mount, mọi mutator giờ `async` gọi API thật, thêm `isLoading`/`error` vào return shape. 4 file
+`apps/desktop/src/mock/{tasks,projects,goals,habits}.ts` bị xoá hẳn (Dashboard/Today's
+`mock/{dashboard,today}.ts` và `mock/settings.ts` vẫn giữ — xem quyết định phạm vi bên dưới).
+
+**Bug thật phát hiện khi build `taskApi.ts`:** enum C# không chứa được khoảng trắng
+(`PersonalAdmin`, `ToDo`, `InProgress`, `OnTrack`, `AtRisk`) nhưng union TS phía frontend giữ
+nguyên chuỗi gốc từ Sheets có khoảng trắng (`'Personal Admin'`, `'To Do'`, `'In Progress'`,
+`'On Track'`, `'At Risk'`) — 2 tầng lệch shape thật sự, không phải giả thuyết: verify bằng curl gửi
+thẳng `"area":"Personal Admin"` bị 400 `"The JSON value could not be converted to
+SmartTask.Domain.Enums.AreaType"`, gửi `"PersonalAdmin"` mới qua. Vá bằng
+`packages/api-client/src/enumMappings.ts` — bảng tra 2 chiều tường minh cho Area/TaskStatus/
+GoalStatus (`xToFrontend`/`xToBackend`), áp trong mỗi `fromDto()`/`toWriteBody()`. Priority/Risk/
+HabitFrequency không lệch (không khoảng trắng cả 2 phía) nên không cần map.
+
+Auth thật: `AuthContext` (`localStorage` key `stm.auth`, check `expiresAt`) + `LoginPage` (combined
+login/register) + `App.tsx` gate — chưa đăng nhập chỉ render `LoginPage` (không Sidebar/Topbar/
+router), đăng nhập xong mới mount 4 entity Provider + `RouterProvider`. Topbar's nút Account trước
+giờ không làm gì (từ Phase 08) nay có chức năng thật: sign out (`onAccountClick`/`accountLabel` mới
+trên `TopbarProps`, nối qua `AppShell` tới `useAuthContext().logout`).
+
+Loading/error UX: 5 trang CRUD chính (`TasksPage`/`InboxPage`/`ProjectsPage`/`GoalsPage`/
+`HabitsPage`) thêm early-return `isLoading` guard (tránh flash "No X yet" trước khi fetch đầu tiên
+xong). 4 Detail Drawer (`TaskDetailDrawer`/`ProjectDetailDrawer`/`GoalDetailDrawer`/
+`HabitDetailDrawer`) thêm `isSubmitting`/`error` state, `handleSubmit`/`handleDelete` giờ `async`,
+chỉ đóng drawer khi thành công, hiện lỗi API thật bằng dòng đỏ trong form. Hành động nhanh không có
+form (Complete/Delete/Check-in ở row, QuickCaptureInput) dùng `apps/desktop/src/lib/reportError.ts`
+— `console.error` tối giản, ghi rõ là giải pháp tạm, toast/notification thật để dành phase sau.
+
+**Quyết định phạm vi cần nói rõ, không chỉ chôn trong commit message:** Dashboard và Today **không**
+được nối dây thật trong Phase 27 này, dù README của Phase 15/18 từng ghi "nối dây thật là Phase 27".
+Lý do: Dashboard/Today cần một tầng tính toán KPI hoàn toàn mới (tương đương công việc port logic
+một lần nữa, như Calendar/Kanban đã từng là phase riêng) — gộp vào cùng Phase 27 với toàn bộ api-
+client + 4 hook + auth + 5 trang + 4 drawer sẽ vượt xa phạm vi hợp lý của một phase. Cả hai vẫn dùng
+`mock/dashboard.ts`/`mock/today.ts` tĩnh như cũ; việc này để dành cho phase riêng sau.
+
+CORS: `Program.cs` thêm `AddCors`/`UseCors` policy tên `DesktopClient`, cho phép
+`http://localhost:5173` (Vite dev) + `tauri://localhost`/`http://tauri.localhost` (Tauri packaged).
+**Sự cố thật gặp giữa chừng:** lần đầu chỉ gọi `AddCors` (đăng ký policy) mà quên gọi `app.UseCors()`
+trong pipeline — verify bằng curl `OPTIONS` preflight vẫn trả `405 Method Not Allowed` thay vì `204`
+kèm `Access-Control-Allow-*` header; thêm `app.UseCors(DesktopCorsPolicy)` (đặt sau
+`UseHttpsRedirection`, trước `UseAuthentication` — preflight `OPTIONS` không mang `Authorization`
+header nên CORS phải được xử lý trước khi auth middleware có cơ hội từ chối nó) mới qua.
+
+Verify thật, đầy đủ luồng — không chỉ build: `npm run typecheck`/`lint`/`format` sạch trên toàn bộ
+file Phase 27 (sau khi `prettier --write` 10 file lệch format); `dotnet build` backend sạch;
+`npm run build --workspace=apps/desktop` (production Vite build) sạch. Chạy backend thật + `curl`
+thật (không dùng Tauri/browser tương tác — môi trường không có công cụ điều khiển trình duyệt trong
+phiên này, nói rõ giới hạn thay vì nhận là đã test UI): `OPTIONS` preflight từ origin
+`localhost:5173` → `204` kèm đúng `Access-Control-Allow-Origin`; register user test thật
+(`phase27-test@example.com`) → `200` kèm JWT; login lấy token; tạo task với enum kiểu backend
+(`"PersonalAdmin"`/`"ToDo"`) → `201`; PATCH đổi status → `200`; complete → `200`; delete → `204`;
+list lại → `[]` xác nhận cleanup sạch. Riêng test enum kiểu frontend (`"Personal Admin"` có khoảng
+trắng) cố ý gửi thẳng không qua `enumMappings.ts` để chứng minh bug thật tồn tại ở tầng API (400),
+đúng lý do package `enumMappings.ts` cần tồn tại. Không đụng 2 user có sẵn (`taska@example.com`/
+`taskb@example.com`).
 
 Mỗi Phase kế tiếp sẽ được trình bày riêng theo format: Mục tiêu → File tạo/sửa → Full code →
 Command → Cách chạy → Cách test → Expected Result → Checklist → Git commit đề xuất.

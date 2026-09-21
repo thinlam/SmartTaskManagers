@@ -441,3 +441,80 @@ thật, ổn định, `Responding: True`. **Chưa click-test tương tác thật
 không kết nối được (đã thử lại). Nên tự thử trên máy trước khi coi Phase 19 là xong hẳn: đổi từng
 loại field (text/select/number/time/switch) và xác nhận giá trị cập nhật đúng ngay lập tức, không
 cần bấm Save.
+
+## Desktop ↔ Backend thật (Phase 27)
+
+Toàn bộ mock data bị xoá — 4 hook entity (`useTasks`/`useProjects`/`useGoals`/`useHabits`, trong
+`packages/hooks`) giờ tự fetch từ backend thật (`SmartTask.Api`, Phase 23–26) qua `packages/
+api-client`, không còn nhận `initialX` seed. `src/mock/{tasks,projects,goals,habits}.ts` đã xoá
+hẳn. `src/mock/{dashboard,today,settings}.ts` **vẫn giữ nguyên** — xem quyết định phạm vi bên dưới.
+
+`packages/api-client` từ placeholder trống (Phase 02) thành package thật:
+
+```
+src/httpClient.ts      fetch wrapper, ApiError, Bearer token qua setAuthToken() (module-level, không phải React state)
+src/enumMappings.ts     bảng tra 2 chiều Area/TaskStatus/GoalStatus — xem bug thật bên dưới
+src/authApi.ts          register/login
+src/taskApi.ts          getAll/create/update/complete/remove — map TaskDto ↔ Task
+src/projectApi.ts       getAll/create/update/remove — map ProjectDto ↔ Project (bỏ qua field health khi đọc, xem Phase 24)
+src/goalApi.ts          getAll/create/update/remove — map GoalDto ↔ Goal
+src/habitApi.ts         getAll/create/update/checkIn/remove — map HabitDto ↔ Habit
+```
+
+**Bug thật phát hiện khi build `taskApi.ts`:** enum C# (`SmartTask.Domain/Enums/Lookups.cs`) không
+chứa được khoảng trắng (`PersonalAdmin`, `ToDo`, `InProgress`, `OnTrack`, `AtRisk`), nhưng union TS
+phía `@stm/types` giữ nguyên chuỗi gốc từ Sheets có khoảng trắng (`'Personal Admin'`, `'To Do'`,
+`'In Progress'`, `'On Track'`, `'At Risk'`). Verify bằng curl: gửi thẳng `"area":"Personal Admin"`
+lên backend → `400` `"The JSON value could not be converted to SmartTask.Domain.Enums.AreaType"`;
+gửi `"PersonalAdmin"` mới qua — xác nhận đây là lỗi tương thích thật giữa 2 tầng, không phải giả
+thuyết. Vá bằng `enumMappings.ts` (bảng `Record<string,X>` 2 chiều rõ ràng), áp trong `fromDto()`/
+`toWriteBody()` của mỗi `*Api.ts`. `Priority`/`Risk`/`HabitFrequency` không cần map (không khoảng
+trắng cả 2 phía).
+
+Auth thật: `AuthContext` (mới, `localStorage` key `stm.auth` — `{ token, email, expiresAt }`,
+kiểm `expiresAt` mỗi lần hydrate) + `LoginPage` (mới, combined login/register 1 form, toggle mode)
+
+- `App.tsx` viết lại thành gate: chưa đăng nhập chỉ render `LoginPage` (không Sidebar/Topbar/
+  router nào cả), đăng nhập xong mới mount `TasksProvider`/`ProjectsProvider`/`GoalsProvider`/
+  `HabitsProvider`/`SettingsProvider` + `RouterProvider`. `main.tsx` gọi `configureApiClient({ baseUrl:
+import.meta.env.VITE_API_URL })` 1 lần khi khởi động — không có `.env` file nào set biến này, nên
+  rơi về default hard-code trong `httpClient.ts` (`http://localhost:5277`, khớp đúng port thật của
+  backend) — chấp nhận được cho local dev, nhưng nên set `.env`/`VITE_API_URL` khi deploy thật.
+
+Topbar's nút Account (tồn tại từ Phase 08, chưa từng làm gì) nay có chức năng thật: click để sign
+out. `TopbarProps` thêm `onAccountClick`/`accountLabel`, nối qua `AppShell` tới
+`useAuthContext().logout`; `accountLabel` (email đang đăng nhập) hiện qua `title`/`aria-label` native
+tooltip.
+
+Loading/error UX thật, không giả: 5 trang CRUD chính (`TasksPage`/`InboxPage`/`ProjectsPage`/
+`GoalsPage`/`HabitsPage`) thêm early-return khi `isLoading` — tránh flash "No X yet" (`EmptyState`)
+trước khi lần fetch đầu tiên xong. 4 Detail Drawer (`TaskDetailDrawer`/`ProjectDetailDrawer`/
+`GoalDetailDrawer`/`HabitDetailDrawer`) thêm `isSubmitting`/`error` state — `handleSubmit`/
+`handleDelete` giờ `async`, chỉ `closeDrawer()` khi mutation thành công, hiện lỗi API thật (dòng đỏ
+trong form) khi thất bại, disable nút khi đang submit. Hành động nhanh không có form quanh nó
+(Complete/Delete/Check-in ở row, `QuickCaptureInput`'s add) dùng `src/lib/reportError.ts` mới —
+`console.error` tối giản, ghi rõ trong code là giải pháp tạm; toast/notification thật để dành phase
+sau (không có trong scope Phase 27).
+
+**Quyết định phạm vi cần nói rõ:** Dashboard và Today **không** được nối dây thật trong Phase 27
+này, dù README của chính Phase 15 (KPI Streak) và Phase 18 (Analytics) từng ghi chú "nối dây thật là
+Phase 27". Lý do: cả hai cần 1 tầng tính KPI hoàn toàn mới (tương đương độ lớn công việc của
+Calendar/Kanban — từng là phase riêng), gộp thêm vào Phase 27 (vốn đã gồm toàn bộ api-client mới +
+4 hook viết lại + auth mới + 5 trang + 4 drawer) sẽ vượt phạm vi hợp lý 1 phase. Cả 2 trang vẫn dùng
+`mock/dashboard.ts`/`mock/today.ts` tĩnh như cũ — để dành phase riêng sau.
+
+CORS: xem `backend/README.md`'s mục "CORS (Phase 27)" — policy `DesktopClient` cho phép
+`localhost:5173`.
+
+**Verify thật, đầy đủ luồng — không chỉ build:** `npm run typecheck`/`lint`/`format` sạch trên toàn
+bộ file Phase 27 (10 file lệch Prettier format, đã `--write` sửa). `npm run build --workspace=
+apps/desktop` (production Vite build) thành công sạch. Chạy `SmartTask.Api` thật + `curl` thật mô
+phỏng đúng origin `localhost:5173`: `OPTIONS` preflight → `204` kèm đúng `Access-Control-Allow-
+Origin`; register user test (`phase27-test@example.com`) → JWT thật; login lấy token; tạo/sửa/
+complete/xoá 1 task thật qua API với enum kiểu backend (`PersonalAdmin`/`ToDo`) — toàn bộ round-trip
+đúng; list lại rỗng, xác nhận cleanup sạch. **Chưa test UI tương tác thật trong trình duyệt/Tauri**
+— môi trường phiên này không có công cụ điều khiển trình duyệt, nên nói rõ giới hạn này thay vì
+nhận là đã kiểm tra: nên tự chạy `npm run dev:tauri` + `dotnet run` cùng lúc, đăng ký 1 tài khoản
+qua `LoginPage` thật, và thử tạo/sửa/xoá/complete/check-in qua UI trên cả 4 trang trước khi coi
+Phase 27 là xong hẳn về mặt UX, đặc biệt xác nhận enum Area/Status/GoalStatus hiển thị và lưu đúng
+(chỗ dễ vỡ nhất của phase này). Không đụng 2 user có sẵn (`taska@example.com`/`taskb@example.com`).

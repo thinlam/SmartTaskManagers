@@ -1,7 +1,6 @@
 import { createContext, useContext, useState, type ReactNode } from 'react';
 import { useProjects, type UseProjectsResult } from '@stm/hooks';
 import type { Project } from '@stm/types';
-import { MOCK_PROJECTS } from '../mock/projects';
 
 interface ProjectsContextValue extends UseProjectsResult {
   isDrawerOpen: boolean;
@@ -20,9 +19,12 @@ const ProjectsContext = createContext<ProjectsContextValue | null>(null);
  * project list for its Project select field regardless of which page is
  * active, so a page-local useProjects() call wouldn't work. Mounted once
  * around the router in App.tsx, alongside TasksProvider.
+ *
+ * `useProjects()` takes no seed data since Phase 27 — fetches from the
+ * real backend on mount instead of MOCK_PROJECTS.
  */
 export function ProjectsProvider({ children }: { children: ReactNode }) {
-  const projectsApi = useProjects(MOCK_PROJECTS);
+  const projectsApi = useProjects();
   const [isDrawerOpen, setDrawerOpen] = useState(false);
   const [editingProject, setEditingProject] = useState<Project | null>(null);
 

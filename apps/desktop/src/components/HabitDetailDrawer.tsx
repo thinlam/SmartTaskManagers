@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import type { Habit, HabitFrequency } from '@stm/types';
+import { ApiError } from '@stm/api-client';
 import { Button, Drawer } from '@stm/ui';
 import { useHabitsContext } from '../state/HabitsContext';
 
@@ -40,13 +41,16 @@ export function HabitDetailDrawer() {
   const { isDrawerOpen, editingHabit, closeDrawer, addHabit, updateHabit, deleteHabit } =
     useHabitsContext();
   const [form, setForm] = useState<FormState>(emptyForm());
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isDrawerOpen) return;
     setForm(editingHabit ? formFromHabit(editingHabit) : emptyForm());
+    setError(null);
   }, [isDrawerOpen, editingHabit]);
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const name = form.name.trim();
     if (!name) return;
@@ -57,18 +61,34 @@ export function HabitDetailDrawer() {
       targetCount: form.targetCount ? Math.max(0, Number(form.targetCount)) : 0,
     };
 
-    if (editingHabit) {
-      updateHabit(editingHabit.id, shared);
-    } else {
-      addHabit(shared);
+    setIsSubmitting(true);
+    setError(null);
+    try {
+      if (editingHabit) {
+        await updateHabit(editingHabit.id, shared);
+      } else {
+        await addHabit(shared);
+      }
+      closeDrawer();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Could not save this habit.');
+    } finally {
+      setIsSubmitting(false);
     }
-    closeDrawer();
   }
 
-  function handleDelete() {
+  async function handleDelete() {
     if (!editingHabit) return;
-    deleteHabit(editingHabit.id);
-    closeDrawer();
+    setIsSubmitting(true);
+    setError(null);
+    try {
+      await deleteHabit(editingHabit.id);
+      closeDrawer();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Could not delete this habit.');
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -79,17 +99,22 @@ export function HabitDetailDrawer() {
       footer={
         <div className="flex items-center justify-between gap-2">
           {editingHabit ? (
-            <Button type="button" variant="ghost" onClick={handleDelete}>
+            <Button type="button" variant="ghost" onClick={handleDelete} disabled={isSubmitting}>
               Delete
             </Button>
           ) : (
             <span />
           )}
           <div className="flex items-center gap-2">
-            <Button type="button" variant="secondary" onClick={closeDrawer}>
+            <Button type="button" variant="secondary" onClick={closeDrawer} disabled={isSubmitting}>
               Cancel
             </Button>
-            <Button type="submit" form="habit-detail-form" variant="primary">
+            <Button
+              type="submit"
+              form="habit-detail-form"
+              variant="primary"
+              disabled={isSubmitting}
+            >
               {editingHabit ? 'Save changes' : 'Add habit'}
             </Button>
           </div>
@@ -97,6 +122,7 @@ export function HabitDetailDrawer() {
       }
     >
       <form id="habit-detail-form" onSubmit={handleSubmit} className="flex flex-col gap-4">
+        {error && <p className="text-sm text-danger">{error}</p>}
         <div className="flex flex-col gap-1">
           <label htmlFor="habit-name" className={labelClasses}>
             Name

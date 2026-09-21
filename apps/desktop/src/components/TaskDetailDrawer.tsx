@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import type { Area, Priority, Task, TaskStatus } from '@stm/types';
+import { ApiError } from '@stm/api-client';
 import { Button, Drawer } from '@stm/ui';
 import { useTasksContext } from '../state/TasksContext';
 import { useProjectsContext } from '../state/ProjectsContext';
@@ -78,13 +79,16 @@ export function TaskDetailDrawer() {
   const { projects } = useProjectsContext();
   const { goals } = useGoalsContext();
   const [form, setForm] = useState<FormState>(emptyForm());
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isDrawerOpen) return;
     setForm(editingTask ? formFromTask(editingTask) : emptyForm());
+    setError(null);
   }, [isDrawerOpen, editingTask]);
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const title = form.title.trim();
     if (!title) return;
@@ -108,18 +112,34 @@ export function TaskDetailDrawer() {
       tags,
     };
 
-    if (editingTask) {
-      updateTask(editingTask.id, shared);
-    } else {
-      addTask(shared);
+    setIsSubmitting(true);
+    setError(null);
+    try {
+      if (editingTask) {
+        await updateTask(editingTask.id, shared);
+      } else {
+        await addTask(shared);
+      }
+      closeDrawer();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Could not save this task.');
+    } finally {
+      setIsSubmitting(false);
     }
-    closeDrawer();
   }
 
-  function handleDelete() {
+  async function handleDelete() {
     if (!editingTask) return;
-    deleteTask(editingTask.id);
-    closeDrawer();
+    setIsSubmitting(true);
+    setError(null);
+    try {
+      await deleteTask(editingTask.id);
+      closeDrawer();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Could not delete this task.');
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -130,17 +150,17 @@ export function TaskDetailDrawer() {
       footer={
         <div className="flex items-center justify-between gap-2">
           {editingTask ? (
-            <Button type="button" variant="ghost" onClick={handleDelete}>
+            <Button type="button" variant="ghost" onClick={handleDelete} disabled={isSubmitting}>
               Delete
             </Button>
           ) : (
             <span />
           )}
           <div className="flex items-center gap-2">
-            <Button type="button" variant="secondary" onClick={closeDrawer}>
+            <Button type="button" variant="secondary" onClick={closeDrawer} disabled={isSubmitting}>
               Cancel
             </Button>
-            <Button type="submit" form="task-detail-form" variant="primary">
+            <Button type="submit" form="task-detail-form" variant="primary" disabled={isSubmitting}>
               {editingTask ? 'Save changes' : 'Add task'}
             </Button>
           </div>
@@ -148,6 +168,7 @@ export function TaskDetailDrawer() {
       }
     >
       <form id="task-detail-form" onSubmit={handleSubmit} className="flex flex-col gap-4">
+        {error && <p className="text-sm text-danger">{error}</p>}
         <div className="flex flex-col gap-1">
           <label htmlFor="task-title" className={labelClasses}>
             Title

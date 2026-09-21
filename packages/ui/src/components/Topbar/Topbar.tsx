@@ -8,6 +8,14 @@ export interface TopbarProps {
   searchPlaceholder?: string;
   /** Not populated by any screen yet — real counts land with Phase 30 (Notifications). */
   notificationCount?: number;
+  /**
+   * Phase 27 — the account button now does something: signs out of the
+   * real session. `accountLabel` (usually the signed-in email) shows as
+   * a native tooltip on hover; there's no account menu/settings page
+   * behind this yet, just the one real action available.
+   */
+  onAccountClick?: () => void;
+  accountLabel?: string;
 }
 
 /**
@@ -21,6 +29,8 @@ export function Topbar({
   onSearchChange,
   searchPlaceholder = 'Search tasks...',
   notificationCount = 0,
+  onAccountClick,
+  accountLabel,
 }: TopbarProps) {
   return (
     <header className="flex h-16 shrink-0 items-center gap-3 border-b border-border bg-surface px-6">
@@ -64,7 +74,9 @@ export function Topbar({
 
       <button
         type="button"
-        aria-label="Account"
+        aria-label={accountLabel ? `Sign out (${accountLabel})` : 'Sign out'}
+        title={accountLabel ? `Signed in as ${accountLabel} — click to sign out` : 'Sign out'}
+        onClick={onAccountClick}
         className={cn(
           'flex h-9 w-9 items-center justify-center rounded-full bg-surface-secondary text-ink-secondary transition-colors hover:text-ink-primary',
           'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',

@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import type { Area, Project } from '@stm/types';
+import { ApiError } from '@stm/api-client';
 import { Button, Drawer } from '@stm/ui';
 import { useProjectsContext } from '../state/ProjectsContext';
 
@@ -39,13 +40,16 @@ export function ProjectDetailDrawer() {
   const { isDrawerOpen, editingProject, closeDrawer, addProject, updateProject, deleteProject } =
     useProjectsContext();
   const [form, setForm] = useState<FormState>(emptyForm());
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isDrawerOpen) return;
     setForm(editingProject ? formFromProject(editingProject) : emptyForm());
+    setError(null);
   }, [isDrawerOpen, editingProject]);
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const name = form.name.trim();
     if (!name) return;
@@ -57,18 +61,34 @@ export function ProjectDetailDrawer() {
       description: form.description,
     };
 
-    if (editingProject) {
-      updateProject(editingProject.id, shared);
-    } else {
-      addProject(shared);
+    setIsSubmitting(true);
+    setError(null);
+    try {
+      if (editingProject) {
+        await updateProject(editingProject.id, shared);
+      } else {
+        await addProject(shared);
+      }
+      closeDrawer();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Could not save this project.');
+    } finally {
+      setIsSubmitting(false);
     }
-    closeDrawer();
   }
 
-  function handleDelete() {
+  async function handleDelete() {
     if (!editingProject) return;
-    deleteProject(editingProject.id);
-    closeDrawer();
+    setIsSubmitting(true);
+    setError(null);
+    try {
+      await deleteProject(editingProject.id);
+      closeDrawer();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Could not delete this project.');
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -79,17 +99,22 @@ export function ProjectDetailDrawer() {
       footer={
         <div className="flex items-center justify-between gap-2">
           {editingProject ? (
-            <Button type="button" variant="ghost" onClick={handleDelete}>
+            <Button type="button" variant="ghost" onClick={handleDelete} disabled={isSubmitting}>
               Delete
             </Button>
           ) : (
             <span />
           )}
           <div className="flex items-center gap-2">
-            <Button type="button" variant="secondary" onClick={closeDrawer}>
+            <Button type="button" variant="secondary" onClick={closeDrawer} disabled={isSubmitting}>
               Cancel
             </Button>
-            <Button type="submit" form="project-detail-form" variant="primary">
+            <Button
+              type="submit"
+              form="project-detail-form"
+              variant="primary"
+              disabled={isSubmitting}
+            >
               {editingProject ? 'Save changes' : 'Add project'}
             </Button>
           </div>
@@ -97,6 +122,7 @@ export function ProjectDetailDrawer() {
       }
     >
       <form id="project-detail-form" onSubmit={handleSubmit} className="flex flex-col gap-4">
+        {error && <p className="text-sm text-danger">{error}</p>}
         <div className="flex flex-col gap-1">
           <label htmlFor="project-name" className={labelClasses}>
             Name

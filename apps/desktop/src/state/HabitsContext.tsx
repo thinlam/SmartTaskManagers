@@ -1,7 +1,6 @@
 import { createContext, useContext, useState, type ReactNode } from 'react';
 import { useHabits, type UseHabitsResult } from '@stm/hooks';
 import type { Habit } from '@stm/types';
-import { MOCK_HABITS } from '../mock/habits';
 
 interface HabitsContextValue extends UseHabitsResult {
   isDrawerOpen: boolean;
@@ -22,7 +21,7 @@ const HabitsContext = createContext<HabitsContextValue | null>(null);
  * rather than a page-local useHabits() call.
  */
 export function HabitsProvider({ children }: { children: ReactNode }) {
-  const habitsApi = useHabits(MOCK_HABITS);
+  const habitsApi = useHabits();
   const [isDrawerOpen, setDrawerOpen] = useState(false);
   const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
 

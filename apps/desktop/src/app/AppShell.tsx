@@ -3,6 +3,7 @@ import { Outlet, useLocation } from 'react-router-dom';
 import { Sidebar, Topbar, type SidebarGroup } from '@stm/ui';
 import { APP_ROUTES, NAV_GROUP_ORDER } from './routes';
 import { useTasksContext } from '../state/TasksContext';
+import { useAuthContext } from '../state/AuthContext';
 import { TaskDetailDrawer } from '../components/TaskDetailDrawer';
 import { ProjectDetailDrawer } from '../components/ProjectDetailDrawer';
 import { GoalDetailDrawer } from '../components/GoalDetailDrawer';
@@ -23,6 +24,7 @@ export function AppShell() {
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
   const { openCreateDrawer } = useTasksContext();
+  const { email, logout } = useAuthContext();
 
   const groups: SidebarGroup[] = NAV_GROUP_ORDER.map((groupLabel) => ({
     label: groupLabel,
@@ -47,7 +49,11 @@ export function AppShell() {
         onToggleCollapse={() => setCollapsed((c) => !c)}
       />
       <div className="flex flex-1 flex-col overflow-hidden">
-        <Topbar onNewTask={openCreateDrawer} />
+        <Topbar
+          onNewTask={openCreateDrawer}
+          onAccountClick={logout}
+          accountLabel={email ?? undefined}
+        />
         <main className="flex-1 overflow-y-auto">
           <Outlet />
         </main>

@@ -4,6 +4,7 @@ import { EmptyState, StatCard } from '@stm/ui';
 import { useProjectsContext } from '../../state/ProjectsContext';
 import { useTasksContext } from '../../state/TasksContext';
 import { QuickCaptureInput } from '../../components/QuickCaptureInput';
+import { reportError } from '../../lib/reportError';
 import { ProjectRow } from './ProjectRow';
 
 /**
@@ -14,7 +15,7 @@ import { ProjectRow } from './ProjectRow';
  * live from tasks via @stm/shared — never stored or entered by hand.
  */
 export function ProjectsPage() {
-  const { projects, addProject, deleteProject, openEditDrawer } = useProjectsContext();
+  const { projects, isLoading, addProject, deleteProject, openEditDrawer } = useProjectsContext();
   const { tasks } = useTasksContext();
 
   const summary = useMemo(() => {
@@ -43,7 +44,11 @@ export function ProjectsPage() {
   }, [projects, tasks]);
 
   function handleAdd(name: string) {
-    addProject({ name, area: 'Personal' });
+    addProject({ name, area: 'Personal' }).catch(reportError);
+  }
+
+  if (isLoading) {
+    return <div className="p-8 text-sm text-ink-muted">Loading projects…</div>;
   }
 
   return (
@@ -95,7 +100,7 @@ export function ProjectsPage() {
               project={project}
               allTasks={tasks}
               onEdit={openEditDrawer}
-              onDelete={deleteProject}
+              onDelete={(id) => deleteProject(id).catch(reportError)}
             />
           ))}
         </div>

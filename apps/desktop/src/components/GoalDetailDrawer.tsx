@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import type { Area, Goal, GoalStatus } from '@stm/types';
+import { ApiError } from '@stm/api-client';
 import { Button, Drawer } from '@stm/ui';
 import { useGoalsContext } from '../state/GoalsContext';
 
@@ -44,13 +45,16 @@ export function GoalDetailDrawer() {
   const { isDrawerOpen, editingGoal, closeDrawer, addGoal, updateGoal, deleteGoal } =
     useGoalsContext();
   const [form, setForm] = useState<FormState>(emptyForm());
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isDrawerOpen) return;
     setForm(editingGoal ? formFromGoal(editingGoal) : emptyForm());
+    setError(null);
   }, [isDrawerOpen, editingGoal]);
 
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const name = form.name.trim();
     if (!name) return;
@@ -63,18 +67,34 @@ export function GoalDetailDrawer() {
       status: form.status,
     };
 
-    if (editingGoal) {
-      updateGoal(editingGoal.id, shared);
-    } else {
-      addGoal(shared);
+    setIsSubmitting(true);
+    setError(null);
+    try {
+      if (editingGoal) {
+        await updateGoal(editingGoal.id, shared);
+      } else {
+        await addGoal(shared);
+      }
+      closeDrawer();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Could not save this goal.');
+    } finally {
+      setIsSubmitting(false);
     }
-    closeDrawer();
   }
 
-  function handleDelete() {
+  async function handleDelete() {
     if (!editingGoal) return;
-    deleteGoal(editingGoal.id);
-    closeDrawer();
+    setIsSubmitting(true);
+    setError(null);
+    try {
+      await deleteGoal(editingGoal.id);
+      closeDrawer();
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : 'Could not delete this goal.');
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -85,17 +105,17 @@ export function GoalDetailDrawer() {
       footer={
         <div className="flex items-center justify-between gap-2">
           {editingGoal ? (
-            <Button type="button" variant="ghost" onClick={handleDelete}>
+            <Button type="button" variant="ghost" onClick={handleDelete} disabled={isSubmitting}>
               Delete
             </Button>
           ) : (
             <span />
           )}
           <div className="flex items-center gap-2">
-            <Button type="button" variant="secondary" onClick={closeDrawer}>
+            <Button type="button" variant="secondary" onClick={closeDrawer} disabled={isSubmitting}>
               Cancel
             </Button>
-            <Button type="submit" form="goal-detail-form" variant="primary">
+            <Button type="submit" form="goal-detail-form" variant="primary" disabled={isSubmitting}>
               {editingGoal ? 'Save changes' : 'Add goal'}
             </Button>
           </div>
@@ -103,6 +123,7 @@ export function GoalDetailDrawer() {
       }
     >
       <form id="goal-detail-form" onSubmit={handleSubmit} className="flex flex-col gap-4">
+        {error && <p className="text-sm text-danger">{error}</p>}
         <div className="flex flex-col gap-1">
           <label htmlFor="goal-name" className={labelClasses}>
             Name

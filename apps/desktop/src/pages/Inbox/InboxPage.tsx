@@ -1,6 +1,7 @@
 import { EmptyState } from '@stm/ui';
 import { useTasksContext } from '../../state/TasksContext';
 import { QuickCaptureInput } from '../../components/QuickCaptureInput';
+import { reportError } from '../../lib/reportError';
 import { InboxTaskRow } from './InboxTaskRow';
 
 /**
@@ -16,16 +17,19 @@ import { InboxTaskRow } from './InboxTaskRow';
  * tasks filtered to status === 'Inbox' from the same store Tasks (Phase
  * 12) and Topbar's "+ New Task" write to.
  *
- * None of it persists past a reload: there is no backend yet (Phase 27)
- * and this intentionally doesn't reach for localStorage as a substitute,
- * to avoid the false impression that anything is actually saved.
+ * Persists for real since Phase 27 — SmartTask.Api/SQL Server, via
+ * TasksContext's now-backend-backed useTasks().
  */
 export function InboxPage() {
-  const { tasks, addTask, completeTask, deleteTask, openEditDrawer } = useTasksContext();
+  const { tasks, isLoading, addTask, completeTask, deleteTask, openEditDrawer } = useTasksContext();
   const inboxTasks = tasks.filter((task) => task.status === 'Inbox');
 
   function handleAdd(title: string) {
-    addTask({ title, area: 'Personal' });
+    addTask({ title, area: 'Personal' }).catch(reportError);
+  }
+
+  if (isLoading) {
+    return <div className="p-8 text-sm text-ink-muted">Loading inbox…</div>;
   }
 
   return (
@@ -47,8 +51,8 @@ export function InboxPage() {
             <InboxTaskRow
               key={task.id}
               task={task}
-              onComplete={completeTask}
-              onDelete={deleteTask}
+              onComplete={(id) => completeTask(id).catch(reportError)}
+              onDelete={(id) => deleteTask(id).catch(reportError)}
               onEdit={openEditDrawer}
             />
           ))}

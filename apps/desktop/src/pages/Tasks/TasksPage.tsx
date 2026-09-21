@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { EmptyState, StatCard } from '@stm/ui';
 import { useTasksContext } from '../../state/TasksContext';
 import { QuickCaptureInput } from '../../components/QuickCaptureInput';
+import { reportError } from '../../lib/reportError';
 import { TaskFilters, type PriorityFilter, type StatusFilter } from './TaskFilters';
 import { TaskRow } from './TaskRow';
 
@@ -20,7 +21,7 @@ import { TaskRow } from './TaskRow';
  * dates/tags form).
  */
 export function TasksPage() {
-  const { tasks, deleteTask, completeTask, addTask, openEditDrawer } = useTasksContext();
+  const { tasks, isLoading, deleteTask, completeTask, addTask, openEditDrawer } = useTasksContext();
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<StatusFilter>('All');
   const [priority, setPriority] = useState<PriorityFilter>('All');
@@ -61,7 +62,11 @@ export function TasksPage() {
   }, [tasks, search, status, priority]);
 
   function handleAdd(title: string) {
-    addTask({ title, area: 'Personal' });
+    addTask({ title, area: 'Personal' }).catch(reportError);
+  }
+
+  if (isLoading) {
+    return <div className="p-8 text-sm text-ink-muted">Loading tasks…</div>;
   }
 
   return (
@@ -115,8 +120,8 @@ export function TasksPage() {
             <TaskRow
               key={task.id}
               task={task}
-              onComplete={completeTask}
-              onDelete={deleteTask}
+              onComplete={(id) => completeTask(id).catch(reportError)}
+              onDelete={(id) => deleteTask(id).catch(reportError)}
               onEdit={openEditDrawer}
             />
           ))}

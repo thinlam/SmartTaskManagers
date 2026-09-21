@@ -2,6 +2,7 @@ import type { Habit } from '@stm/types';
 import { Pencil, Trash2 } from 'lucide-react';
 import { HabitCard, IconButton } from '@stm/ui';
 import { useHabitsContext } from '../../state/HabitsContext';
+import { reportError } from '../../lib/reportError';
 
 interface HabitRowProps {
   habit: Habit;
@@ -50,7 +51,7 @@ export function HabitRow({ habit, onEdit, onDelete }: HabitRowProps) {
         targetCount={habit.targetCount}
         lastDoneLabel={formatLastDoneLabel(habit.lastCompletedDate)}
         checkedInToday={checkedInToday}
-        onCheckIn={() => checkInHabit(habit.id)}
+        onCheckIn={() => checkInHabit(habit.id).catch(reportError)}
       />
     </div>
   );

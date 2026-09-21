@@ -3,6 +3,7 @@ import { EmptyState, StatCard } from '@stm/ui';
 import { useGoalsContext } from '../../state/GoalsContext';
 import { useTasksContext } from '../../state/TasksContext';
 import { QuickCaptureInput } from '../../components/QuickCaptureInput';
+import { reportError } from '../../lib/reportError';
 import { GoalRow } from './GoalRow';
 
 /**
@@ -14,7 +15,7 @@ import { GoalRow } from './GoalRow';
  * rollup of the stored Status/Progress fields — no fabricated scoring.
  */
 export function GoalsPage() {
-  const { goals, addGoal, deleteGoal, openEditDrawer } = useGoalsContext();
+  const { goals, isLoading, addGoal, deleteGoal, openEditDrawer } = useGoalsContext();
   const { tasks } = useTasksContext();
 
   const summary = useMemo(() => {
@@ -41,7 +42,11 @@ export function GoalsPage() {
   }, [goals]);
 
   function handleAdd(name: string) {
-    addGoal({ name, area: 'Personal' });
+    addGoal({ name, area: 'Personal' }).catch(reportError);
+  }
+
+  if (isLoading) {
+    return <div className="p-8 text-sm text-ink-muted">Loading goals…</div>;
   }
 
   return (
@@ -93,7 +98,7 @@ export function GoalsPage() {
               goal={goal}
               allTasks={tasks}
               onEdit={openEditDrawer}
-              onDelete={deleteGoal}
+              onDelete={(id) => deleteGoal(id).catch(reportError)}
             />
           ))}
         </div>
