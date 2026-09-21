@@ -472,6 +472,45 @@ này chỉ có 1 máy, nên chỉ verify được ở mức "server lắng nghe 
 địa chỉ LAN của nó", chưa phải kết nối từ máy khác thật. Firewall rule cũng **chưa verify được** vì
 không tự tạo được (thiếu quyền) — người dùng cần tự chạy lệnh trên và tự xác nhận từ máy thứ 2.
 
+## Docker
+
+`Dockerfile` (multi-stage: `mcr.microsoft.com/dotnet/sdk:10.0` để build/publish, chuyển sang
+`mcr.microsoft.com/dotnet/aspnet:10.0` — runtime nhẹ hơn nhiều, không kéo theo SDK — cho image
+cuối) — khớp đúng `net10.0` của mọi `.csproj` trong solution (bản nháp người dùng đưa ban đầu dùng
+`dotnet/sdk:8.0`, sai target framework thật của dự án). Build context là `backend/` (khớp layout
+5 project ngang hàng qua `SmartTask.slnx`, không phải 1 project phẳng) — `dotnet restore` chỉ cần
+gọi trên `SmartTask.Api.csproj`, tự kéo theo restore cả `Application`/`Infrastructure`/
+`Persistence`/`Domain` qua `ProjectReference`.
+
+`.dockerignore` loại `bin/`/`obj/`/`.vs/` — thiếu file này, build context nặng **118MB** (kéo theo
+build artifact cục bộ đã có sẵn trên máy dev); thêm vào giảm còn **8.2KB** thật, verify lại bằng so
+sánh dòng "transferring context" giữa 2 lần build.
+
+`ENV ASPNETCORE_URLS=http://0.0.0.0:5277` + `EXPOSE 5277` — khớp đúng cách backend đã cấu hình lắng
+nghe mọi interface từ mục "Cài trên nhiều máy" ở trên, để port map ra ngoài container hoạt động
+đúng (không chỉ bind loopback bên trong container, vô dụng khi map port).
+
+**Không có gì baked vào image cả** — `ConnectionStrings__DefaultConnection`/`Jwt__Secret` phải
+truyền qua biến môi trường lúc `docker run` (ASP.NET Core tự đọc biến môi trường dạng
+`Section__Key`, ghi đè `appsettings.json`), đúng nguyên tắc đã áp dụng từ Phase 22 (JWT secret
+không bao giờ nằm trong repo).
+
+Verify thật, không chỉ build image xong là coi như đúng: `docker build` thật thành công (Docker
+Desktop cài sẵn trên máy dev, xác nhận qua `docker manifest inspect` cả 2 image tag `dotnet/sdk:10.0`
+và `dotnet/aspnet:10.0` đều tồn tại thật trên registry trước khi build). `docker run` thật với biến
+môi trường override kết nối SQL Server giả (cố ý sai để verify riêng phần "app tự khởi động đúng"
+tách khỏi phần "kết nối DB đúng") → log xác nhận app bind đúng `http://0.0.0.0:5277`, container
+`docker ps` hiện `Up`, port map `5278->5277` hoạt động → `curl` thật từ host tới
+`http://localhost:5278/api/health` (endpoint không cần DB) → `200` — xác nhận image chạy được thật,
+không chỉ build xong không lỗi. Lỗi SQL login (do cố ý dùng credential giả) xuất hiện đúng như dự
+kiến, không phải bug. Image + container test đã dọn sạch (`docker rm`/`docker rmi`).
+
+**Chưa test:** `docker run` với connection string SQL Server thật (migration + dữ liệu thật) — môi
+trường phiên này không có SQL Server nào chạy trong Docker network cùng container để nối vào; nên
+tự thử `docker run` trỏ `ConnectionStrings__DefaultConnection` vào SQL Server thật (kể cả SQL Server
+chạy ngay trên host qua `host.docker.internal`) trước khi coi Docker image là dùng được cho triển
+khai thật.
+
 ## Sự cố thật gặp phải khi dựng skeleton (Phase 20)
 
 Template `webapi` mặc định kéo theo `Microsoft.AspNetCore.OpenApi 10.0.9`, phiên bản này lại kéo
