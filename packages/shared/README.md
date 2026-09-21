@@ -49,14 +49,31 @@ Utils, formatters, date logic dùng chung.
   **chưa từng được build thật** trong app Sheets production (xác nhận bằng cách liệt kê toàn bộ
   file `.gs` thật có). Yêu cầu duy nhất còn giá trị từ spec đó vẫn được tuân thủ: chỉ dùng dữ liệu
   thực, không bịa analytics, không thêm team metrics. Ngoại lệ: `getAreaProgress` **có port thật**
-  — từ `getAreaProgress_()` trong `apps/google-sheets/src/06_Dashboard.gs`, hàm có thật dù Dashboard
-  chưa gọi nó (còn là mock tĩnh Phase 09, nối dây thật là Phase 27, ngoài phạm vi ở đây).
+  — từ `getAreaProgress_()` trong `apps/google-sheets/src/06_Dashboard.gs` — và nay được Dashboard
+  thật sự dùng (xem mục Dashboard/Today bên dưới).
   `getProjectProgressList` tái dùng thẳng `computeProjectMetrics` (Phase 13), không tính lại công
   thức progress. Các hàm còn lại (summary/priority distribution/weekly trend/insights) là thiết kế
   mới tối thiểu, chỉ đếm/tổng hợp trực tiếp trên field thật — không có điểm số hay suy luận nào như
   Smart Engine.
-- ⏳ Smart Score / Risk / RecommendedAction (`apps/google-sheets/src/05_SmartEngine.gs`) —
-  **chưa port** — đó là Phase 29 (Smart Engine), không làm sớm.
+- ✅ `computeDashboardData`/`computeTodayData` (sau Phase 30): port trực tiếp từ
+  `computeDashboardData_()` (`06_Dashboard.gs`) và `computeTodayData_()` (`07_Today.gs`) — cùng 5
+  KPI mỗi trang, cùng Focus Now (top 6 open task theo SmartScore, tie-break theo due date) / My
+  Areas (tái dùng `getAreaProgress` — không định nghĩa lại) / Smart Insights, cùng Do Now (urgent
+  pool trừ Waiting, sort theo `todayByScoreDesc_`) / Scheduled (task due hôm nay có `dueTime`, trừ
+  những task đã rơi vào Do Now) / Quick Wins / Best Next Action / End-of-Day Review.
+  **Không tính lại SmartScore/Risk/RecommendedAction** — 2 hàm này chỉ đọc field đã có sẵn trên
+  `Task` (do backend's Smart Engine, Phase 29, tính và trả về qua API), khớp quyết định đã chốt
+  cùng người dùng: "dùng giá trị có sẵn từ API, không port lại thuật toán sang TypeScript" (tránh 2
+  nơi tính lệch nhau theo thời gian). `dailyFocusLimitHours` hard-code `= 4` — khớp
+  `DEFAULT_SETTINGS`, chưa có Settings API ở cả 2 đầu (xem `apps/desktop/README.md`).
+  `computeDashboardData_()`'s `DueSoonDays` không được port — đọc kỹ hàm gốc xác nhận nó được lấy
+  ra nhưng chưa từng dùng tới, port đúng những gì hàm gốc THẬT SỰ làm, không thêm cái nó chưa từng
+  làm. `Task.dueTime` (mới, `packages/types`) — trước đây bị bỏ sót khi map từ backend response dù
+  backend luôn trả về field này; Today's Scheduled section cần nó nên bổ sung ở đây.
+  Verify thật bằng fixture data + `tsx` (không chỉ đọc code khớp dòng): KPI đếm đúng, Focus
+  Now/doNow sort đúng thứ tự SmartScore, Scheduled label format đúng "2:30 PM"/"9:15 AM", và xác
+  nhận đúng hành vi "doNow chiếm chỗ trước Scheduled" khi cả hai đều đủ điều kiện due hôm nay —
+  đúng y hệt hành vi hàm gốc, không phải giả định.
 
 ## Test
 

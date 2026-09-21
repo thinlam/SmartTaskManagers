@@ -47,3 +47,18 @@ export {
   type WeeklyTrendDay,
   type AnalyticsInsight,
 } from './analyticsMetrics';
+export {
+  computeDashboardData,
+  type DashboardKpi,
+  type DashboardFocusTask,
+  type DashboardInsight,
+  type DashboardData,
+} from './dashboardMetrics';
+export {
+  computeTodayData,
+  type TodayKpi,
+  type TodayTask,
+  type TodayTaskSection,
+  type TodayReview,
+  type TodayData,
+} from './todayMetrics';

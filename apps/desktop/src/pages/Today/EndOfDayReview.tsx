@@ -1,4 +1,4 @@
-import type { TodayReview } from '../../mock/today';
+import type { TodayReview } from '@stm/shared';
 import { Progress } from '@stm/ui';
 
 interface EndOfDayReviewProps {

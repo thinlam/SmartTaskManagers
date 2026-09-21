@@ -830,5 +830,29 @@ notification, message khớp từng loại; gọi lại lần 2 → `0` (dedupe 
 giới hạn. Dữ liệu test đã xoá sạch (kể cả notification rows qua `sqlcmd`, không có endpoint xoá —
 đúng thiết kế giữ lịch sử), không đụng 2 user có sẵn.
 
+**Sau Phase 30 — Dashboard/Today nối dữ liệu thật** (không phải phase số riêng, làm theo yêu cầu
+người dùng ngay sau Phase 30, vì Smart Engine + Notifications giờ đã cho đủ dữ liệu thật để làm 2
+trang này đúng nghĩa). Quyết định chốt cùng người dùng: dùng `SmartScore`/`Risk`/`RecommendedAction`
+có sẵn từ API, **không** port lại thuật toán Smart Engine sang TypeScript (tránh 2 nơi tính lệch
+nhau theo thời gian).
+
+`packages/shared` thêm `computeDashboardData`/`computeTodayData` — port trực tiếp từ
+`computeDashboardData_()`/`computeTodayData_()` (`06_Dashboard.gs`/`07_Today.gs`): cùng 5 KPI mỗi
+trang, Focus Now/My Areas/Smart Insights, Do Now/Scheduled/Quick Wins/Best Next Action/End-of-Day
+Review — chi tiết đầy đủ + các khác biệt có chủ đích xem `packages/shared/README.md`.
+`DashboardPage.tsx`/`TodayPage.tsx` đọc `tasks`/`habits` thật từ Context (backend-backed từ Phase 27) qua `useMemo`, có `isLoading` guard. `Task` (`packages/types`) thêm field `dueTime` — trước đó
+bị bỏ sót khi map response dù backend luôn trả về, Today's Scheduled section cần nó. Xoá
+`mock/dashboard.ts`/`mock/today.ts` — không còn trang nào dùng mock.
+
+Verify thật, không chỉ đọc code khớp dòng: dựng fixture `Task`/`Habit` thật, chạy trực tiếp qua
+`tsx` (không phải test suite chính thức, nhưng chạy code thật với input thật) — xác nhận KPI đếm
+đúng, Focus Now/Do Now sort đúng theo SmartScore, Scheduled label format đúng ("2:30 PM"), và xác
+nhận đúng hành vi "Do Now chiếm chỗ trước Scheduled" khi cả 2 đều đủ điều kiện due hôm nay (kịch
+bản overflow riêng: 6 task lấp đầy Do Now, task thứ 7 due hôm nay có giờ mới rớt xuống Scheduled) —
+khớp đúng thứ tự ưu tiên hàm gốc, phát hiện qua chạy thật chứ không phải giả định. `npm run
+typecheck`/`lint`/`format` sạch, production Vite build sạch. **Chưa test UI tương tác thật trên
+Desktop app** — môi trường phiên này không có công cụ điều khiển trình duyệt/Tauri, nói rõ giới hạn
+này thay vì nhận đã kiểm tra.
+
 Mỗi Phase kế tiếp sẽ được trình bày riêng theo format: Mục tiêu → File tạo/sửa → Full code →
 Command → Cách chạy → Cách test → Expected Result → Checklist → Git commit đề xuất.

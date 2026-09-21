@@ -1,5 +1,7 @@
+import { useMemo } from 'react';
 import { StatCard } from '@stm/ui';
-import { MOCK_TODAY_DATA } from '../../mock/today';
+import { computeTodayData } from '@stm/shared';
+import { useTasksContext } from '../../state/TasksContext';
 import { BestNextActionCard } from './BestNextActionCard';
 import { TaskListSection } from './TaskListSection';
 import { EndOfDayReview } from './EndOfDayReview';
@@ -8,17 +10,25 @@ import { EndOfDayReview } from './EndOfDayReview';
  * Frame 04 (Today), adapted to Personal Mode — mirrors
  * apps/google-sheets/src/07_Today.gs's computeTodayData_(): same 5 KPIs
  * (Due Today, Overdue, Focus Load, Completed, Quick Wins), Best Next
- * Action, Do Now / Scheduled / Quick Wins, End-of-Day Review. Uses
- * MOCK_TODAY_DATA until Phase 27 wires up the real API.
+ * Action, Do Now / Scheduled / Quick Wins, End-of-Day Review. Real data
+ * since Phase 30 — computeTodayData() (packages/shared) reads tasks
+ * straight from TasksContext (backend-backed since Phase 27); smartScore/
+ * recommendedAction are the real Smart Engine output (Phase 29).
  */
 export function TodayPage() {
-  const data = MOCK_TODAY_DATA;
+  const { tasks, isLoading } = useTasksContext();
+  const data = useMemo(() => computeTodayData(tasks), [tasks]);
+
   const dateLabel = new Date().toLocaleDateString('en-US', {
     weekday: 'long',
     day: '2-digit',
     month: 'long',
     year: 'numeric',
   });
+
+  if (isLoading) {
+    return <div className="p-8 text-sm text-ink-muted">Loading today…</div>;
+  }
 
   return (
     <div className="flex flex-col gap-6 p-8">

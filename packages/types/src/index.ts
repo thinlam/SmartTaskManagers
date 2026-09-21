@@ -53,6 +53,8 @@ export interface Task {
   status: TaskStatus;
   startDate: string | null;
   dueDate: string | null;
+  /** HH:mm:ss, or null — added in Phase 30 for Today's Scheduled section (time-specific tasks); the backend has always returned it (see TaskDto), this type just never carried it through until a screen needed it. */
+  dueTime: string | null;
   completedDate: string | null;
   /** 0–100. */
   progress: number;

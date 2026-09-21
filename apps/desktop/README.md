@@ -548,3 +548,32 @@ dropdown, click notification, xác nhận điều hướng đúng) — môi trư
 `npm run dev:tauri` + `dotnet run` cùng lúc, tạo vài task quá hạn/habit bỏ lỡ streak/goal at-risk,
 gọi `POST /api/notifications/generate` (hoặc chờ tối đa 30 phút), rồi mở chuông trên Topbar để xác
 nhận panel hiển thị đúng, click từng loại điều hướng đúng trang, mark-all-read xoá badge đỏ.
+
+## Dashboard/Today nối dữ liệu thật (sau Phase 30)
+
+Ở Phase 27 mình cố ý **không** nối Dashboard/Today vào backend thật (ghi rõ trong phần "Quyết định
+phạm vi cần nói rõ" ở trên) vì cả 2 cần 1 tầng tính KPI hoàn toàn mới, đủ lớn để tính là 1 phase
+riêng. Giờ Smart Engine (Phase 29) và Notifications (Phase 30) đã có dữ liệu thật ở backend, đây là
+lúc hợp lý để làm — quyết định cùng người dùng: **dùng `SmartScore`/`Risk`/`RecommendedAction` có
+sẵn từ API, không port lại thuật toán Smart Engine sang TypeScript** (tránh 2 nơi tính lệch nhau).
+
+`packages/shared` có thêm `computeDashboardData`/`computeTodayData` — port trực tiếp từ
+`computeDashboardData_()`/`computeTodayData_()` (`06_Dashboard.gs`/`07_Today.gs`), xem
+`packages/shared/README.md`'s mục tương ứng cho chi tiết đầy đủ (KPI, Focus Now, Do Now/Scheduled/
+Quick Wins, Best Next Action, End-of-Day Review, các khác biệt có chủ đích). `DashboardPage.tsx`/
+`TodayPage.tsx` giờ đọc `tasks`/`habits` thật từ `TasksContext`/`HabitsContext` (đã backend-backed
+từ Phase 27), gọi 2 hàm trên qua `useMemo`, và có `isLoading` guard giống các trang khác. `Task`
+(`packages/types`) thêm field `dueTime` (trước đây backend đã trả về qua API nhưng type/mapping
+phía frontend bỏ sót — Today's Scheduled section cần field này nên bổ sung).
+
+`mock/dashboard.ts`/`mock/today.ts` đã xoá — không còn trang nào dùng mock nữa (Settings vẫn còn
+`mock/settings.ts`, chưa có Settings API).
+
+Verify thật: `npm run typecheck`/`lint`/`format` sạch, production Vite build sạch. Logic tính toán
+(`computeDashboardData`/`computeTodayData`) verify bằng fixture data thật + `tsx` chạy trực tiếp
+(không chỉ đọc code khớp dòng với bản gốc) — xem `packages/shared/README.md` cho chi tiết kết quả.
+**Chưa test UI tương tác thật trên Desktop app** (mở app thật, xác nhận Dashboard/Today hiển thị
+đúng dữ liệu, KPI cập nhật khi tạo/sửa/xoá task) — môi trường phiên này không có công cụ điều khiển
+trình duyệt/Tauri, nói rõ giới hạn này. Nên tự chạy `npm run dev:tauri` + `dotnet run`, tạo vài task
+với ngày/priority/estimate khác nhau, xác nhận Dashboard/Today hiển thị đúng số liệu và Focus
+Now/Do Now sắp xếp đúng theo SmartScore thật (không phải giá trị tĩnh nữa).

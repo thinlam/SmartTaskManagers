@@ -56,6 +56,7 @@ function fromDto(dto: TaskDto): Task {
     status: taskStatusToFrontend(dto.status),
     startDate: dto.startDate,
     dueDate: dto.dueDate,
+    dueTime: dto.dueTime,
     completedDate: dto.completedDate,
     progress: dto.progress,
     estimateMinutes: dto.estimateMinutes,

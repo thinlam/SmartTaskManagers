@@ -16,7 +16,9 @@ Một nguồn duy nhất — không định nghĩa lại Task interface khác nh
   cần thật: `Category`, `Tags` dạng phức tạp hơn `string[]`, `Energy`, `Context`,
   `RecurringType`, `DependencyTaskId`, `LastStatusChangedAt`, `Notes`. Ngày tháng là chuỗi ISO
   8601 (`string | null`), không phải `Date` — để shape này không đổi khi vượt qua ranh giới API ở
-  Phase 27. `goalId` thêm ở Phase 14.
+  Phase 27. `goalId` thêm ở Phase 14. `dueTime` thêm sau Phase 30 (Today's Scheduled section cần
+  nó) — backend luôn trả field này qua API (Phase 23) nhưng type/mapping phía frontend bỏ sót cho
+  tới khi có màn hình thật sự cần đọc nó.
 - ✅ `Project` + `ProjectHealth` (Phase 13): entity khớp `PROJECT_HEADERS` (`00_Constants.gs`) trừ
   `Health` — Health **luôn tính trực tiếp** từ task liên kết qua `computeProjectHealth()`
   (`@stm/shared`), không lưu trên entity để tránh dữ liệu cũ/lệch. `ProjectHealth` là type riêng,
