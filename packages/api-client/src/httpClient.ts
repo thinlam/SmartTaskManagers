@@ -2,8 +2,12 @@
  * Framework-agnostic fetch wrapper — deliberately doesn't read
  * `import.meta.env` itself (that's a Vite-ism apps/desktop has, this
  * package doesn't assume any bundler). apps/desktop calls
- * `configureApiClient({ baseUrl: import.meta.env.VITE_API_URL })` once
- * at startup instead (see apps/desktop/src/main.tsx).
+ * `configureApiClient({ baseUrl: API_BASE_URL })` once at startup instead
+ * (see apps/desktop/src/config/api.ts and src/main.tsx).
+ *
+ * No hard-coded default here on purpose — a missing/wrong base URL
+ * should fail clearly (see the error below) instead of silently
+ * targeting `localhost` in a build that was never configured for it.
  */
 
 export class ApiError extends Error {
@@ -16,7 +20,7 @@ export class ApiError extends Error {
   }
 }
 
-let baseUrl = 'http://localhost:5277';
+let baseUrl: string | null = null;
 let authToken: string | null = null;
 
 export function configureApiClient(options: { baseUrl?: string }): void {
@@ -29,6 +33,13 @@ export function setAuthToken(token: string | null): void {
 }
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+  if (!baseUrl) {
+    throw new ApiError(
+      0,
+      'API base URL is not configured. Call configureApiClient({ baseUrl }) before making requests.',
+    );
+  }
+
   const headers = new Headers(init.headers);
   if (init.body) headers.set('Content-Type', 'application/json');
   if (authToken) headers.set('Authorization', `Bearer ${authToken}`);

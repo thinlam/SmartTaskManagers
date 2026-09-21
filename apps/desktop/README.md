@@ -122,10 +122,78 @@ dùng chung 1 backend" cho hướng dẫn đầy đủ phía server. Tóm tắt 
 bình thường trên bất kỳ máy nào (không cần build riêng từng máy), lần đầu mở app bấm "Connecting to
 a shared server?" ở màn hình đăng nhập → nhập địa chỉ LAN của máy chạy backend → đăng nhập.
 
-Backend URL giờ **cấu hình được lúc chạy** (`apps/desktop/src/lib/serverUrl.ts` mới), không còn cố
-định lúc build như `VITE_API_URL` (Phase 27) — lưu vào `localStorage` riêng từng máy, đọc lại mỗi
-lần mở app (`main.tsx`). `VITE_API_URL` vẫn còn tác dụng làm giá trị mặc định ban đầu nếu chưa từng
-nhập gì, không bị xoá.
+Backend URL giờ **cấu hình được lúc chạy** (`apps/desktop/src/lib/serverUrl.ts`), không còn cố định
+lúc build như `VITE_API_BASE_URL` (`src/config/api.ts`) — lưu vào `localStorage` riêng từng máy,
+đọc lại mỗi lần mở app (`main.tsx`). `VITE_API_BASE_URL` vẫn còn tác dụng làm giá trị mặc định ban
+đầu nếu chưa từng nhập gì, không bị xoá — xem mục "API base URL (env-based, không hard-code)" bên
+dưới cho chi tiết đầy đủ về `config/api.ts`/`.env.development`/`.env.production`.
+
+## API base URL (env-based, không hard-code)
+
+Bug thật xảy ra sau khi deploy backend lên Railway: app Desktop production vẫn báo
+`"Could not reach the server at http://localhost:5277"` — vì `httpClient.ts` (`packages/api-client`)
+có default hard-code `http://localhost:5277`, và `serverUrl.ts` cũng có cùng literal đó làm giá trị
+dự phòng cuối cùng. Đã tìm và sửa hết — kiến trúc giờ:
+
+```
+.env.development / .env.production
+       ↓  (VITE_API_BASE_URL)
+src/config/api.ts        — đọc biến, fail rõ ràng nếu thiếu (throw, không fallback localhost)
+       ↓  (API_BASE_URL)
+src/lib/serverUrl.ts      — dùng làm default cho localStorage override (mục "Cài trên nhiều máy")
+       ↓
+src/main.tsx              — configureApiClient({ baseUrl: getStoredServerUrl() })
+       ↓
+packages/api-client/src/httpClient.ts   — KHÔNG còn default hard-code nào, throw rõ nếu chưa configureApiClient()
+       ↓
+taskApi/projectApi/goalApi/habitApi/authApi/notificationApi
+       ↓
+packages/hooks (useTasks/useProjects/useGoals/useHabits/useNotifications)
+       ↓
+React UI
+```
+
+**File:**
+
+```
+apps/desktop/.env.example         template có comment — commit thật (ngoại lệ duy nhất trong .gitignore's `.env.*`)
+apps/desktop/.env.development     VITE_API_BASE_URL=http://localhost:5277           — KHÔNG commit (gitignored)
+apps/desktop/.env.production      VITE_API_BASE_URL=<Railway URL thật>              — KHÔNG commit (gitignored)
+apps/desktop/src/config/api.ts    export const API_BASE_URL — throw nếu VITE_API_BASE_URL rỗng
+apps/desktop/src/vite-env.d.ts    type ImportMetaEnv.VITE_API_BASE_URL cho typecheck thật, không phải `any`
+```
+
+Vite tự chọn đúng file `.env.*` theo mode: `vite`/`tauri dev` → mode `development` →
+`.env.development`; `vite build`/`tauri build` → mode `production` → `.env.production` — không cần
+cờ `--mode` nào, đây là hành vi mặc định của Vite.
+
+**Verify thật, không chỉ đọc code:**
+
+- Search toàn repo `localhost:5277`/`VITE_API_URL` xác nhận chỉ còn lại trong: comment ví dụ
+  (`config/api.ts`, `.env.example`), file cấu hình thật của **backend** (`launchSettings.json`,
+  `Program.cs`'s Swagger comment — backend chạy local thật ở port đó), và Apps Script's sync default
+  riêng (`15_Sync.gs`, hệ thống khác, không liên quan Vite build này) — không còn sót trong bất kỳ
+  code path nào của Desktop app production.
+- `npm run build --workspace=apps/desktop` (mode production) → `grep` thật trên file JS build ra
+  (`dist/assets/index-*.js`) xác nhận **có** chuỗi URL Railway thật, **không có** `localhost:5277`
+  nào (đếm được `0`).
+- Xoá tạm `.env.production`, build lại → build vẫn "thành công" (Vite không execute code lúc build,
+  chỉ bundle) nhưng `grep` xác nhận thông điệp lỗi `"VITE_API_BASE_URL is not configured..."` **có
+  mặt thật** trong bundle — nghĩa là app sẽ throw thật lúc khởi động nếu thiếu biến, không âm thầm
+  chạy sai. Khôi phục `.env.production` lại, build lại, xác nhận URL Railway trở lại đúng.
+- Chạy `npm run dev` thật, fetch trực tiếp `src/config/api.ts` qua Vite dev server → xác nhận
+  `import.meta.env.VITE_API_BASE_URL` thật là `"http://localhost:5277"` (không phải giả định) —
+  dev mode vẫn hoạt động đúng như trước.
+- `npm run tauri build` thật (không chỉ `vite build`) → `app.exe`/`.msi`/`.exe` setup build thành
+  công, mở `app.exe` thật xác nhận `Responding: True`, không crash lúc khởi động (nghĩa là
+  `config/api.ts`'s throw guard không bị kích hoạt sai — biến đã cấu hình đúng).
+- `npm run typecheck`/`lint`/`format` sạch toàn bộ sau khi sửa.
+
+**CORS phía backend:** đã kiểm tra `Program.cs`'s `WithOrigins("http://localhost:5173",
+"tauri://localhost", "http://tauri.localhost")` — **không cần sửa gì** để gọi Railway. CORS xác
+thực `Origin` header của **bên gọi** (luôn là `tauri://localhost` cho app Desktop đã đóng gói, dù
+gọi backend nào đi nữa), không phải địa chỉ đích — khớp đúng phân tích đã ghi trong
+`backend/README.md`'s mục "Cài trên nhiều máy".
 
 ## Application Shell (Phase 07)
 
@@ -557,9 +625,12 @@ kiểm `expiresAt` mỗi lần hydrate) + `LoginPage` (mới, combined login/reg
 - `App.tsx` viết lại thành gate: chưa đăng nhập chỉ render `LoginPage` (không Sidebar/Topbar/
   router nào cả), đăng nhập xong mới mount `TasksProvider`/`ProjectsProvider`/`GoalsProvider`/
   `HabitsProvider`/`SettingsProvider` + `RouterProvider`. `main.tsx` gọi `configureApiClient({ baseUrl:
-import.meta.env.VITE_API_URL })` 1 lần khi khởi động — không có `.env` file nào set biến này, nên
-  rơi về default hard-code trong `httpClient.ts` (`http://localhost:5277`, khớp đúng port thật của
-  backend) — chấp nhận được cho local dev, nhưng nên set `.env`/`VITE_API_URL` khi deploy thật.
+import.meta.env.VITE_API_URL })` 1 lần khi khởi động — không có `.env` file nào set biến này lúc
+  đó, nên rơi về default hard-code trong `httpClient.ts` (`http://localhost:5277`) — chấp nhận được
+  cho local dev tại thời điểm Phase 27, nhưng đây chính xác là kiểu "âm thầm fallback sang
+  localhost trong production" đã bị phát hiện và sửa hẳn sau này (mục "API base URL (env-based,
+  không hard-code)" bên dưới) — `httpClient.ts` giờ không còn default nào, fail rõ nếu chưa cấu
+  hình.
 
 Topbar's nút Account (tồn tại từ Phase 08, chưa từng làm gì) nay có chức năng thật: click để sign
 out. `TopbarProps` thêm `onAccountClick`/`accountLabel`, nối qua `AppShell` tới
