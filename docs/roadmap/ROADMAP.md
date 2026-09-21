@@ -873,5 +873,26 @@ Verify thật: dựng fixture Task/Project/Goal/Habit thật, chạy `computeSma
 typecheck`/`lint`/`format` sạch, production Vite build sạch. **Chưa test UI tương tác thật** — môi
 trường phiên này không có công cụ điều khiển trình duyệt/Tauri, nói rõ giới hạn này.
 
+Phase 31 đã thực hiện — Windows release build thật. `npm run build:tauri` build `app.exe` release
+(Rust `--release`, tối ưu hoá, không dính dev server) — thành công, cộng 2 bundle cài đặt sinh ra
+như tác dụng phụ của `bundle.targets: "all"` (`.msi` qua WiX, `.exe` setup qua NSIS) — tinh chỉnh
+sâu trải nghiệm cài đặt để dành Phase 32, phase này chỉ xác nhận bản build gốc chạy độc lập được
+thật.
+
+**Sự cố thật gặp khi verify:** cửa sổ mặc định `800×600` (từ Phase 06) quá chật cho layout Sidebar
+
+- Topbar + nội dung thật (Kanban/Calendar/Timeline cần nhiều chỗ). Sửa lên `1280×800` mặc định,
+  thêm `minWidth: 1024`/`minHeight: 640` trong `src-tauri/tauri.conf.json`.
+
+Verify thật, không chỉ build: chạy `dotnet run` (backend thật) song song, chạy trực tiếp `app.exe`
+(không qua `dev:tauri`, xác nhận không có Vite dev server nào chạy nền qua
+`Get-NetTCPConnection -LocalPort 5173` rỗng) → process `Responding: True`, ổn định, không crash,
+log rỗng. Verify kích thước cửa sổ thật bằng Win32 `GetWindowRect` qua PowerShell — đúng ~1280×800
+(phần dư là viền/titlebar Windows), không chỉ tin cấu hình ghi đúng trên giấy. CORS's
+`tauri://localhost` origin (đã có từ Phase 27) verify lại vẫn đúng, không cần sửa. **Chưa test click
+tương tác thật trong `app.exe`** — môi trường phiên này không có công cụ điều khiển GUI, chỉ verify
+được ở mức process/window (chạy, không crash, đúng kích thước), không phải toàn bộ UX — nói rõ giới
+hạn này.
+
 Mỗi Phase kế tiếp sẽ được trình bày riêng theo format: Mục tiêu → File tạo/sửa → Full code →
 Command → Cách chạy → Cách test → Expected Result → Checklist → Git commit đề xuất.

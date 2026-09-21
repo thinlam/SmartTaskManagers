@@ -47,6 +47,32 @@ npm run build:tauri     # build release + bundle (.exe/.msi) — xem apps/deskto
 `npm run dev:desktop` song song**, việc đó sẽ chiếm cổng 5173 và khiến Tauri kết nối nhầm dev
 server (đã gặp lỗi này thật khi verify Phase 06 — xem ghi chú trong `docs/roadmap/ROADMAP.md`).
 
+## Windows release build (Phase 31)
+
+`npm run build:tauri` build thật — `app.exe` release (Rust `--release`, tối ưu hoá, không dính dev
+server nào) tại `src-tauri/target/release/app.exe`, cộng 2 bundle cài đặt sinh ra như tác dụng phụ
+của `bundle.targets: "all"`: `bundle/msi/smart-task-manager_0.1.0_x64_en-US.msi` và
+`bundle/nsis/smart-task-manager_0.1.0_x64-setup.exe`. Việc tinh chỉnh/test kỹ trải nghiệm cài đặt
+(silent install, uninstall, shortcut) để dành Phase 32 — phase này chỉ xác nhận **bản build release
+gốc chạy được thật, độc lập**.
+
+**Sự cố thật gặp giữa chừng khi verify:** cửa sổ mặc định `800×600` (từ lúc scaffold Phase 06) quá
+chật cho layout thật (Sidebar + Topbar + nội dung — Kanban/Calendar/Timeline cần nhiều chỗ hơn
+nhiều). Sửa lên `1280×800` mặc định, `minWidth: 1024`/`minHeight: 640` (không cho co nhỏ hơn mức
+layout còn dùng được) trong `src-tauri/tauri.conf.json`.
+
+Verify thật, không chỉ build: chạy `dotnet run` (backend thật) song song, chạy trực tiếp
+`app.exe` (không qua `npm run dev:tauri`, không có Vite dev server nào chạy nền — verify bằng
+`Get-NetTCPConnection -LocalPort 5173` xác nhận rỗng) → process `Responding: True`, ổn định qua
+nhiều lần kiểm tra, không crash, log rỗng (`stdout`/`stderr` không có lỗi). Verify kích thước cửa sổ
+thật bằng Win32 `GetWindowRect` qua PowerShell — xác nhận đúng ~1280×800 (phần dư nhỏ là viền/
+titlebar Windows thêm vào), không chỉ tin cấu hình đã ghi đúng trên giấy. CORS's `tauri://localhost`/
+`http://tauri.localhost` origin (đã thêm từ Phase 27) không cần sửa gì thêm — verify lại vẫn đúng.
+**Chưa test click tương tác thật trong app.exe** (mở Dashboard/Tasks/... bằng chuột thật) — môi
+trường phiên này không có công cụ điều khiển GUI, chỉ verify được process/window level thật (chạy,
+không crash, đúng kích thước) chứ chưa phải toàn bộ UX — nói rõ giới hạn này thay vì nhận đã test
+đủ.
+
 ## Application Shell (Phase 07)
 
 ```
