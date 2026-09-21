@@ -27,11 +27,28 @@ cd backend
 dotnet build                                # build cả 5 project qua SmartTask.slnx
 dotnet ef database update `
   --project SmartTask.Persistence --startup-project SmartTask.Api   # áp migration (idempotent)
-dotnet run --project SmartTask.Api
-curl http://localhost:5299/api/health       # {"status":"Healthy","serverTimeUtc":"..."}
+dotnet run --project SmartTask.Api          # mặc định http://localhost:5277 (xem Properties/launchSettings.json)
+curl http://localhost:5277/api/health       # {"status":"Healthy","serverTimeUtc":"..."}
 ```
 
 `GET /openapi/v1.json` (chỉ bật ở Development) cũng đã verify sinh đúng OpenAPI document.
+
+## Test bằng tay qua Swagger UI
+
+Mở **http://localhost:5277/swagger** khi `dotnet run` đang chạy (chỉ bật ở Development, giống
+`/openapi/v1.json`). Dùng `Swashbuckle.AspNetCore.SwaggerUI` (chỉ phần UI — bản thân OpenAPI
+document vẫn do `Microsoft.AspNetCore.OpenApi`'s `AddOpenApi()`/`MapOpenApi()` sinh ra, không đổi
+sang Swashbuckle's generator).
+
+Để gọi được các route có `[Authorize]` (Tasks/Projects/Goals): mở `POST /api/auth/register` hoặc
+`/api/auth/login`, "Try it out" để lấy `token` từ response → bấm nút **Authorize** (góc trên phải
+trang Swagger) → dán đúng giá trị `token` (không cần gõ chữ `Bearer` trước, Swagger UI tự thêm) →
+Authorize → Close. Sau đó mọi request "Try it out" từ Swagger UI sẽ tự kèm header
+`Authorization: Bearer <token>`.
+
+Đã verify thật: `GET /openapi/v1.json` có đúng `components.securitySchemes.Bearer` (kiểu `http`/
+`bearer`/`JWT`) và `security: [{ "Bearer": [] }]` ở gốc document — xác nhận nút Authorize hoạt động
+đúng, không chỉ hiện ra cho có. `curl http://localhost:5277/swagger/index.html` trả `200` thật.
 
 ## Schema (Phase 21)
 

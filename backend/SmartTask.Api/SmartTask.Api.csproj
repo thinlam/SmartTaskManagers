@@ -20,6 +20,7 @@
          Microsoft.OpenApi 2.x's API shape — 3.x made IOpenApiMediaType.Example read-only, which
          breaks that generator at build time (verified: it does). -->
     <PackageReference Include="Microsoft.OpenApi" Version="2.12.2" />
+    <PackageReference Include="Swashbuckle.AspNetCore.SwaggerUI" Version="10.2.3" />
   </ItemGroup>
 
   <ItemGroup>

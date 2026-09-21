@@ -2,6 +2,7 @@ using System.Text;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi;
 using SmartTask.Application.Auth;
 using SmartTask.Application.Goals;
 using SmartTask.Application.Projects;
@@ -24,7 +25,34 @@ builder
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter())
     );
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
+builder.Services.AddOpenApi(options =>
+{
+    // Lets Swagger UI's "Authorize" button send a Bearer token on every
+    // [Authorize] endpoint — without this, the OpenAPI doc has no
+    // security scheme and Swagger UI has no way to attach the header.
+    options.AddDocumentTransformer(
+        (document, _, _) =>
+        {
+            document.Components ??= new OpenApiComponents();
+            document.Components.SecuritySchemes ??= new Dictionary<string, IOpenApiSecurityScheme>();
+            document.Components.SecuritySchemes["Bearer"] = new OpenApiSecurityScheme
+            {
+                Type = SecuritySchemeType.Http,
+                Scheme = "bearer",
+                BearerFormat = "JWT",
+                Description = "Paste the token from POST /api/auth/login or /api/auth/register — no \"Bearer \" prefix needed here.",
+            };
+            document.Security ??= new List<OpenApiSecurityRequirement>();
+            document.Security.Add(
+                new OpenApiSecurityRequirement
+                {
+                    [new OpenApiSecuritySchemeReference("Bearer", document)] = [],
+                }
+            );
+            return Task.CompletedTask;
+        }
+    );
+});
 
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddPersistence(builder.Configuration);
@@ -68,6 +96,15 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+    // Swagger UI only — the doc itself is Microsoft.AspNetCore.OpenApi's
+    // (MapOpenApi above), not Swashbuckle's own generator. Browse
+    // http://localhost:5277/swagger, click "Authorize", paste a token
+    // from /api/auth/login to try [Authorize] endpoints interactively.
+    app.UseSwaggerUI(options =>
+    {
+        options.SwaggerEndpoint("/openapi/v1.json", "SmartTask.Api v1");
+        options.RoutePrefix = "swagger";
+    });
 }
 
 app.UseHttpsRedirection();
