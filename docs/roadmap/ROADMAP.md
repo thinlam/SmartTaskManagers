@@ -26,7 +26,7 @@ PHASE 21  Database (EF Core + SQL Server, migrations, schema từ Tasks/Projects
 PHASE 22  Authentication (JWT; sau này + Google/Microsoft)                     ✅ DONE (curl thật cả luồng register/login/protected)
 PHASE 23  Tasks API                                                             ✅ DONE (curl thật cả 9 trường hợp CRUD)
 PHASE 24  Projects API                                                          ✅ DONE (curl thật, xác nhận cascade clear xuyên entity)
-PHASE 25  Goals API
+PHASE 25  Goals API                                                             ✅ DONE (curl thật, xác nhận cascade clear Tasks.GoalId)
 PHASE 26  Habits API
 PHASE 27  Desktop ↔ Backend integration (api-client thật, bỏ mock)
 PHASE 28  Google Sheets ↔ Backend Sync
@@ -618,6 +618,24 @@ trỏ `projectId` vào project vừa tạo → xoá project (204) → gọi lạ
 `null` và task không bị xoá theo — lần đầu có API thật để chứng minh hành vi "cascade clear"
 (`ON DELETE SET NULL`) cấu hình từ Phase 21 hoạt động đúng, không chỉ đọc migration bằng mắt như
 trước. Dữ liệu test đã xoá sạch, không đụng 2 user có sẵn trong DB. Vulnerability scan vẫn sạch.
+
+Phase 25 đã thực hiện — cùng khuôn Tasks/Projects API: `GoalContracts`/`IGoalRepository`/
+`GoalService` (`SmartTask.Application`), `GoalRepository` (`SmartTask.Persistence`),
+`GoalsController` (`SmartTask.Api`, `[Authorize]`, 5 route CRUD).
+
+**Khác Projects (Phase 24) ở đúng 1 điểm có chủ đích:** `CreateGoalRequest`/`UpdateGoalRequest` CÓ
+field `Progress`/`Status` — Goal không có khái niệm "computed" để bảo vệ như Project's Health, vì
+Sheets không có view engine nào cho Goals; `Progress`/`Status` luôn là field nhập tay trực tiếp cả
+3 tầng (Sheets, frontend `GoalDetailDrawer` Phase 14, backend), nên cho client set qua API là đúng,
+không mâu thuẫn gì.
+
+Verify thật, đầy đủ luồng — không chỉ build: `curl` thật xác nhận không token (401), có token danh
+sách rỗng (200), tạo goal với `progress`/`status` tự chọn (201, đúng giá trị gửi lên — khác
+Project's `health` luôn mặc định "Healthy"), lấy theo id, PATCH đổi progress+status (`UpdatedAt`
+cập nhật đúng), id không tồn tại (404). **Verify xuyên-entity:** tạo 1 task thật trỏ `goalId` vào
+goal vừa tạo → xoá goal (204) → gọi lại task, xác nhận `goalId` tự về `null` và task không bị xoá
+theo — xác nhận `Tasks.GoalId`'s `ON DELETE SET NULL` hoạt động đúng y hệt `Tasks.ProjectId` ở
+Phase 24. Dữ liệu test đã xoá sạch, không đụng 2 user có sẵn trong DB. Vulnerability scan vẫn sạch.
 
 Mỗi Phase kế tiếp sẽ được trình bày riêng theo format: Mục tiêu → File tạo/sửa → Full code →
 Command → Cách chạy → Cách test → Expected Result → Checklist → Git commit đề xuất.

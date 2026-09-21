@@ -191,6 +191,34 @@ API thật để chứng minh nó hoạt động đúng, không chỉ đọc mig
 404 khi gọi lại. Dữ liệu test đã xoá sạch khỏi SQL Server thật, không đụng 2 user có sẵn trong DB.
 `dotnet list package --vulnerable --include-transitive` vẫn sạch.
 
+## Goals API (Phase 25)
+
+Cùng khuôn Tasks/Projects API, CRUD trên `Goals`:
+
+```
+GET    /api/goals              [Authorize] → 200 [GoalResponse...]
+GET    /api/goals/{id}         [Authorize] → 200 GoalResponse | 404
+POST   /api/goals              [Authorize] → 201 GoalResponse
+PATCH  /api/goals/{id}         [Authorize] → 200 GoalResponse | 404
+DELETE /api/goals/{id}         [Authorize] → 204 | 404
+```
+
+**Khác Projects (Phase 24) ở đúng 1 điểm có chủ đích:** `CreateGoalRequest`/`UpdateGoalRequest`
+**CÓ** field `Progress`/`Status` — vì Goal không có khái niệm "computed" nào để bảo vệ: Sheets
+không có view engine nào cho Goals (không như Project có `14_Projects.gs`), nên `Progress`/`Status`
+luôn là field người dùng nhập trực tiếp cả ở Sheets, frontend (`GoalDetailDrawer`, Phase 14) lẫn
+backend — không có gì mâu thuẫn khi cho client set qua API. `GoalService` cùng pattern
+`ProjectService`/`TaskService`.
+
+**Verify thật, đầy đủ luồng — không chỉ build:** `GET /api/goals` không token (401) → có token
+(200, rỗng) → tạo goal với `progress`/`status` tự chọn (201, đúng giá trị gửi lên — khác Project's
+`health` luôn mặc định) → lấy theo id (200) → `PATCH` đổi progress+status (200, `UpdatedAt` cập
+nhật đúng) → id không tồn tại (404). **Verify xuyên-entity:** tạo 1 task thật có `goalId` trỏ vào
+goal vừa tạo → xoá goal (204) → gọi lại task, xác nhận `goalId` tự về `null`, task không bị xoá
+theo — xác nhận `Tasks.GoalId`'s `ON DELETE SET NULL` (Phase 21) hoạt động đúng y hệt
+`Tasks.ProjectId` ở Phase 24. Goal sau khi xoá trả 404. Dữ liệu test đã xoá sạch, không đụng 2 user
+có sẵn trong DB. `dotnet list package --vulnerable --include-transitive` vẫn sạch.
+
 ## Sự cố thật gặp phải khi dựng skeleton (Phase 20)
 
 Template `webapi` mặc định kéo theo `Microsoft.AspNetCore.OpenApi 10.0.9`, phiên bản này lại kéo
