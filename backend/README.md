@@ -162,6 +162,35 @@ khi xoá (404 cả hai). Dữ liệu test đã xoá khỏi SQL Server thật sau
 2 user thật (`taska@example.com`/`taskb@example.com`) đã có sẵn trong DB từ trước (không phải do
 phiên này tạo ra). `dotnet list package --vulnerable --include-transitive` vẫn sạch.
 
+## Projects API (Phase 24)
+
+Cùng khuôn với Tasks API (Phase 23), CRUD trên `Projects`:
+
+```
+GET    /api/projects           [Authorize] → 200 [ProjectResponse...]
+GET    /api/projects/{id}      [Authorize] → 200 ProjectResponse | 404
+POST   /api/projects           [Authorize] → 201 ProjectResponse
+PATCH  /api/projects/{id}      [Authorize] → 200 ProjectResponse | 404
+DELETE /api/projects/{id}      [Authorize] → 204 | 404
+```
+
+**Không có field `Health` ở `CreateProjectRequest`/`UpdateProjectRequest`** — đúng sự kiềm chế
+`ProjectDetailDrawer` bên frontend đã áp dụng từ Phase 13: Health luôn được tính, không nhập tay.
+Ở backend, cột `Health` có lưu thật (khác frontend, xem mục Schema) nhưng **chưa có gì tính nó cả**
+— nếu để client tự set qua API thì phá vỡ đúng ngay ý nghĩa "computed" khi logic tính (port
+`computeProjectHealth()` sang C#) thật sự làm sau này. `ProjectService` cùng pattern `TaskService`/
+`AuthService` — chỉ điều phối qua `IProjectRepository`/`IDateTimeProvider`.
+
+**Verify thật, đầy đủ luồng — không chỉ build:** chạy `dotnet run` thật, `curl` thật: `GET
+/api/projects` không token (401) → có token (200, rỗng) → tạo project (201, `health` mặc định
+`"Healthy"`) → lấy theo id (200) → `PATCH` đổi description (200, `UpdatedAt` cập nhật đúng).
+**Verify xuyên-entity quan trọng nhất:** tạo 1 task thật có `projectId` trỏ vào project vừa tạo →
+xoá project (204) → gọi lại task đó, xác nhận `projectId` đã tự về `null` (task **không** bị xoá
+theo) — đúng hành vi "cascade clear" của FK `ON DELETE SET NULL` đã cấu hình ở Phase 21, giờ mới có
+API thật để chứng minh nó hoạt động đúng, không chỉ đọc migration bằng mắt. Project sau khi xoá trả
+404 khi gọi lại. Dữ liệu test đã xoá sạch khỏi SQL Server thật, không đụng 2 user có sẵn trong DB.
+`dotnet list package --vulnerable --include-transitive` vẫn sạch.
+
 ## Sự cố thật gặp phải khi dựng skeleton (Phase 20)
 
 Template `webapi` mặc định kéo theo `Microsoft.AspNetCore.OpenApi 10.0.9`, phiên bản này lại kéo

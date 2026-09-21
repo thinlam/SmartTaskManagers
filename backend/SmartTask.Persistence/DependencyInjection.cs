@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using SmartTask.Application.Projects;
 using SmartTask.Application.Tasks;
 using SmartTask.Application.Users;
 using SmartTask.Persistence.Repositories;
@@ -31,6 +32,7 @@ public static class DependencyInjection
         services.AddDbContext<AppDbContext>(options => options.UseSqlServer(connectionString));
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<ITaskRepository, TaskRepository>();
+        services.AddScoped<IProjectRepository, ProjectRepository>();
 
         return services;
     }

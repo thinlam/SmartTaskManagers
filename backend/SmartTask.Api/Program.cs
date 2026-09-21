@@ -3,6 +3,7 @@ using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using SmartTask.Application.Auth;
+using SmartTask.Application.Projects;
 using SmartTask.Application.Tasks;
 using SmartTask.Infrastructure;
 using SmartTask.Infrastructure.Security;
@@ -28,6 +29,7 @@ builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddPersistence(builder.Configuration);
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ITaskService, TaskService>();
+builder.Services.AddScoped<IProjectService, ProjectService>();
 
 // JWT validation (incoming requests) — token *issuance* is
 // SmartTask.Infrastructure.Security.JwtTokenGenerator; this is the

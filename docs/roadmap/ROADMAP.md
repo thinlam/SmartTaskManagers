@@ -25,7 +25,7 @@ PHASE 20  Backend architecture (ASP.NET Core, Clean Architecture skeleton)     �
 PHASE 21  Database (EF Core + SQL Server, migrations, schema từ Tasks/Projects/Goals/Habits)   ✅ DONE (áp migration thật lên SQL Server Express)
 PHASE 22  Authentication (JWT; sau này + Google/Microsoft)                     ✅ DONE (curl thật cả luồng register/login/protected)
 PHASE 23  Tasks API                                                             ✅ DONE (curl thật cả 9 trường hợp CRUD)
-PHASE 24  Projects API
+PHASE 24  Projects API                                                          ✅ DONE (curl thật, xác nhận cascade clear xuyên entity)
 PHASE 25  Goals API
 PHASE 26  Habits API
 PHASE 27  Desktop ↔ Backend integration (api-client thật, bỏ mock)
@@ -600,6 +600,24 @@ enum trả chuỗi đúng) → lấy theo id (200) → id không tồn tại (40
 Status/Progress/CompletedDate) → xoá (204) → lấy/xoá lại sau khi xoá (404 cả hai). Dữ liệu test đã
 xoá sạch, không đụng 2 user thật đã có sẵn trong DB (không phải do phiên này tạo). Vulnerability
 scan vẫn sạch trên cả 5 project.
+
+Phase 24 đã thực hiện — cùng khuôn Tasks API (Phase 23): `ProjectContracts`/`IProjectRepository`/
+`ProjectService` (`SmartTask.Application`), `ProjectRepository` (`SmartTask.Persistence`),
+`ProjectsController` (`SmartTask.Api`, `[Authorize]`, 5 route GET all/GET by id/POST/PATCH/DELETE).
+
+**Quyết định đáng chú ý:** `CreateProjectRequest`/`UpdateProjectRequest` **không có field `Health`**
+— đúng sự kiềm chế `ProjectDetailDrawer` bên frontend đã áp dụng từ Phase 13 (Health luôn tính,
+không nhập tay); cột `Health` phía backend có lưu thật (Phase 21) nhưng chưa có gì tính, nên để
+client tự set qua API sẽ phá vỡ đúng ý nghĩa "computed" khi logic tính thật (port
+`computeProjectHealth()` sang C#) được làm sau này.
+
+Verify thật, đầy đủ luồng — không chỉ build: `curl` thật xác nhận không token (401), có token danh
+sách rỗng (200), tạo project (201, `health` mặc định `"Healthy"`), lấy theo id, PATCH đổi
+description (`UpdatedAt` cập nhật đúng). **Verify xuyên-entity quan trọng nhất:** tạo 1 task thật
+trỏ `projectId` vào project vừa tạo → xoá project (204) → gọi lại task, xác nhận `projectId` tự về
+`null` và task không bị xoá theo — lần đầu có API thật để chứng minh hành vi "cascade clear"
+(`ON DELETE SET NULL`) cấu hình từ Phase 21 hoạt động đúng, không chỉ đọc migration bằng mắt như
+trước. Dữ liệu test đã xoá sạch, không đụng 2 user có sẵn trong DB. Vulnerability scan vẫn sạch.
 
 Mỗi Phase kế tiếp sẽ được trình bày riêng theo format: Mục tiêu → File tạo/sửa → Full code →
 Command → Cách chạy → Cách test → Expected Result → Checklist → Git commit đề xuất.
