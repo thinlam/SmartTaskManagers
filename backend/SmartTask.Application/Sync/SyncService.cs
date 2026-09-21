@@ -1,6 +1,7 @@
 using SmartTask.Application.Abstractions;
 using SmartTask.Application.Goals;
 using SmartTask.Application.Habits;
+using SmartTask.Application.Notifications;
 using SmartTask.Application.Projects;
 using SmartTask.Application.SmartEngine;
 using SmartTask.Application.Tasks;
@@ -27,7 +28,8 @@ public sealed class SyncService(
     IGoalRepository goalRepository,
     IHabitRepository habitRepository,
     IDateTimeProvider dateTimeProvider,
-    ISmartEngineService smartEngineService
+    ISmartEngineService smartEngineService,
+    INotificationService notificationService
 ) : ISyncService
 {
     public async Task<SyncPushResponse> PushAsync(
@@ -176,13 +178,20 @@ public sealed class SyncService(
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             taskRepository.DiscardTracking();
+            var errorMessage = "Invalid ProjectId, GoalId, or DependencyTaskId reference: " + ex.Message;
+            await notificationService.NotifySyncFailureAsync(
+                "Task",
+                item.ExternalId,
+                errorMessage,
+                cancellationToken
+            );
             return new SyncPushItemResult(
                 item.ExternalId,
                 null,
                 SyncItemOutcome.Error,
                 null,
                 null,
-                "Invalid ProjectId, GoalId, or DependencyTaskId reference: " + ex.Message
+                errorMessage
             );
         }
     }
@@ -320,6 +329,12 @@ public sealed class SyncService(
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             projectRepository.DiscardTracking();
+            await notificationService.NotifySyncFailureAsync(
+                "Project",
+                item.ExternalId,
+                ex.Message,
+                cancellationToken
+            );
             return new SyncPushItemResult(
                 item.ExternalId,
                 null,
@@ -405,6 +420,12 @@ public sealed class SyncService(
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             goalRepository.DiscardTracking();
+            await notificationService.NotifySyncFailureAsync(
+                "Goal",
+                item.ExternalId,
+                ex.Message,
+                cancellationToken
+            );
             return new SyncPushItemResult(
                 item.ExternalId,
                 null,
@@ -495,6 +516,12 @@ public sealed class SyncService(
         catch (Exception ex) when (ex is not OperationCanceledException)
         {
             habitRepository.DiscardTracking();
+            await notificationService.NotifySyncFailureAsync(
+                "Habit",
+                item.ExternalId,
+                ex.Message,
+                cancellationToken
+            );
             return new SyncPushItemResult(
                 item.ExternalId,
                 null,

@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using SmartTask.Domain.Goals;
 using SmartTask.Domain.Habits;
+using SmartTask.Domain.Notifications;
 using SmartTask.Domain.Projects;
 using SmartTask.Domain.Tasks;
 using SmartTask.Domain.Users;
@@ -22,6 +23,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options) : DbCon
     public DbSet<Goal> Goals => Set<Goal>();
     public DbSet<Habit> Habits => Set<Habit>();
     public DbSet<User> Users => Set<User>();
+    public DbSet<Notification> Notifications => Set<Notification>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

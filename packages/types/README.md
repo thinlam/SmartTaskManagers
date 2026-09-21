@@ -44,8 +44,13 @@ Một nguồn duy nhất — không định nghĩa lại Task interface khác nh
   09/10) — 13 key còn lại được định nghĩa nhưng chưa hàm nào đọc tới. Phase này làm cả 18 key thật
   và sửa được; nối các nơi tiêu thụ (default khi tạo Task, dữ liệu thật cho Dashboard/Today) cố ý để
   dành Phase sau, cùng mức độ kiềm chế đã áp dụng cho KPI Streak của Dashboard ở Phase 15.
-- ⏳ `User`, `Notification`, `CalendarEvent` — chưa làm, sẽ thêm khi Phase tương ứng cần đến, không
-  model trước khi chưa có yêu cầu cụ thể.
+- ✅ `AppNotification` + `NotificationType` (Phase 30): đặt tên `AppNotification`, không phải
+  `Notification`, để không đụng type `Notification` có sẵn của trình duyệt (Notifications API).
+  Hoàn toàn mới, không có tiền lệ Sheets — `type`/`entityType` khớp value của backend's
+  `NotificationType` enum/`EntityType` string 1:1, không cần bảng ánh xạ (không có khoảng trắng bên
+  nào cả, khác vấn đề `Area`/`TaskStatus`/`GoalStatus` đã gặp ở Phase 27).
+- ⏳ `User`, `CalendarEvent` — chưa làm, sẽ thêm khi Phase tương ứng cần đến, không model trước khi
+  chưa có yêu cầu cụ thể.
 
 ## Test
 

@@ -7,6 +7,7 @@ using SmartTask.Api.BackgroundServices;
 using SmartTask.Application.Auth;
 using SmartTask.Application.Goals;
 using SmartTask.Application.Habits;
+using SmartTask.Application.Notifications;
 using SmartTask.Application.Projects;
 using SmartTask.Application.SmartEngine;
 using SmartTask.Application.Sync;
@@ -67,7 +68,9 @@ builder.Services.AddScoped<IGoalService, GoalService>();
 builder.Services.AddScoped<IHabitService, HabitService>();
 builder.Services.AddScoped<ISyncService, SyncService>();
 builder.Services.AddScoped<ISmartEngineService, SmartEngineService>();
+builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddHostedService<DailySmartRecalcHostedService>();
+builder.Services.AddHostedService<NotificationGenerationHostedService>();
 
 // JWT validation (incoming requests) — token *issuance* is
 // SmartTask.Infrastructure.Security.JwtTokenGenerator; this is the

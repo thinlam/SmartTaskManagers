@@ -164,6 +164,30 @@ export interface Habit {
  * Today's real data) is deliberately left for later phases, the same
  * restraint applied to Dashboard's Streak KPI in Phase 15.
  */
+/**
+ * Notifications (Phase 30) — entirely new, no Sheets precedent (grepping
+ * apps/google-sheets/src confirmed no notif/email/reminder logic
+ * anywhere). Backend-generated only (SmartTask.Application/Notifications/
+ * NotificationService.cs) from 4 rules: task overdue/due-soon, habit
+ * streak at risk, goal at-risk, sync push failure. `type`/`entityType`
+ * values match the backend's NotificationType enum member names
+ * (PascalCase, no spaces — same reason enumMappings.ts exists for Task
+ * fields) and its literal "Task"/"Habit"/"Goal" EntityType strings.
+ */
+export type NotificationType =
+  'TaskOverdue' | 'TaskDueSoon' | 'HabitStreakAtRisk' | 'GoalAtRisk' | 'SyncFailed';
+
+export interface AppNotification {
+  id: string;
+  type: NotificationType;
+  title: string;
+  message: string;
+  entityType?: 'Task' | 'Habit' | 'Goal';
+  entityId?: string;
+  isRead: boolean;
+  createdAt: string;
+}
+
 export interface Settings {
   workspaceName: string;
   language: string;

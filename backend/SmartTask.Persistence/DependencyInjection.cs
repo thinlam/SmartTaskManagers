@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using SmartTask.Application.Goals;
 using SmartTask.Application.Habits;
+using SmartTask.Application.Notifications;
 using SmartTask.Application.Projects;
 using SmartTask.Application.Tasks;
 using SmartTask.Application.Users;
@@ -37,6 +38,7 @@ public static class DependencyInjection
         services.AddScoped<IProjectRepository, ProjectRepository>();
         services.AddScoped<IGoalRepository, GoalRepository>();
         services.AddScoped<IHabitRepository, HabitRepository>();
+        services.AddScoped<INotificationRepository, NotificationRepository>();
 
         return services;
     }

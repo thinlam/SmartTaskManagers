@@ -518,3 +518,33 @@ nhận là đã kiểm tra: nên tự chạy `npm run dev:tauri` + `dotnet run` 
 qua `LoginPage` thật, và thử tạo/sửa/xoá/complete/check-in qua UI trên cả 4 trang trước khi coi
 Phase 27 là xong hẳn về mặt UX, đặc biệt xác nhận enum Area/Status/GoalStatus hiển thị và lưu đúng
 (chỗ dễ vỡ nhất của phase này). Không đụng 2 user có sẵn (`taska@example.com`/`taskb@example.com`).
+
+## Notifications (Phase 30)
+
+Topbar's nút chuông (có từ Phase 08, `notificationCount` luôn `0` vì chưa có nguồn dữ liệu thật) giờ
+mở 1 dropdown panel thật, hiển thị notification thật từ backend (`SmartTask.Api`, xem
+`backend/README.md`'s mục "Notifications (Phase 30)" cho 4 quy tắc trigger + thiết kế đầy đủ).
+
+`packages/hooks`'s `useNotifications` poll `GET /api/notifications`/`GET /api/notifications/
+unread-count` mỗi 60 giây (không có websocket/SSE nào trong dự án — notification được sinh nền phía
+backend mỗi 30 phút, polling 60 giây là đủ, không cần hạ tầng phức tạp hơn). `packages/ui`'s
+`NotificationPanel`/`NotificationItem` (tên đã ghi sẵn trong `docs/design-system/design-tokens.md`
+từ lâu, giờ mới có code thật) — icon/màu theo `NotificationType` (đỏ cho Overdue/GoalAtRisk, vàng
+cho DueSoon/HabitStreakAtRisk, xanh info cho SyncFailed).
+
+`AppShell.tsx` nối `useNotifications` vào `Topbar`; click 1 notification → mark-read (nếu đang
+unread) + điều hướng sang trang nguồn (`Task`→`/tasks`, `Habit`→`/habits`, `Goal`→`/goals`) qua
+`ENTITY_TYPE_PATH` map cục bộ trong file — `SyncFailed` không có `entityType` nên click chỉ mark-read,
+không điều hướng (không có trang "Sync" riêng để tới).
+
+`packages/types`'s `AppNotification` (không đặt tên `Notification` — trùng type `Notification` có
+sẵn của trình duyệt/Notifications API, dễ gây lỗi mơ hồ khi import).
+
+Verify thật: `npm run typecheck`/`lint`/`format` sạch, `npm run build --workspace=apps/desktop`
+(production Vite build) thành công sạch. Logic phía backend (4 quy tắc trigger, dedupe, mark-read)
+đã verify đầy đủ qua `curl` thật — xem `backend/README.md`. **Chưa test UI tương tác thật** (mở
+dropdown, click notification, xác nhận điều hướng đúng) — môi trường phiên này không có công cụ
+điều khiển trình duyệt/Tauri, nói rõ giới hạn này thay vì nhận đã kiểm tra. Nên tự chạy
+`npm run dev:tauri` + `dotnet run` cùng lúc, tạo vài task quá hạn/habit bỏ lỡ streak/goal at-risk,
+gọi `POST /api/notifications/generate` (hoặc chờ tối đa 30 phút), rồi mở chuông trên Topbar để xác
+nhận panel hiển thị đúng, click từng loại điều hướng đúng trang, mark-all-read xoá badge đỏ.

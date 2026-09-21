@@ -1,13 +1,23 @@
 import { useState } from 'react';
-import { Outlet, useLocation } from 'react-router-dom';
+import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import type { AppNotification } from '@stm/types';
+import { useNotifications } from '@stm/hooks';
 import { Sidebar, Topbar, type SidebarGroup } from '@stm/ui';
 import { APP_ROUTES, NAV_GROUP_ORDER } from './routes';
 import { useTasksContext } from '../state/TasksContext';
 import { useAuthContext } from '../state/AuthContext';
+import { reportError } from '../lib/reportError';
 import { TaskDetailDrawer } from '../components/TaskDetailDrawer';
 import { ProjectDetailDrawer } from '../components/ProjectDetailDrawer';
 import { GoalDetailDrawer } from '../components/GoalDetailDrawer';
 import { HabitDetailDrawer } from '../components/HabitDetailDrawer';
+
+/** Where a notification's entity lives — clicking one navigates there. */
+const ENTITY_TYPE_PATH: Record<NonNullable<AppNotification['entityType']>, string> = {
+  Task: '/tasks',
+  Habit: '/habits',
+  Goal: '/goals',
+};
 
 /**
  * Real Sidebar + Topbar (Phase 08), replacing Phase 07's temporary <nav>.
@@ -22,9 +32,25 @@ import { HabitDetailDrawer } from '../components/HabitDetailDrawer';
  */
 export function AppShell() {
   const location = useLocation();
+  const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
   const { openCreateDrawer } = useTasksContext();
   const { email, logout } = useAuthContext();
+  const {
+    notifications,
+    isLoading: notificationsLoading,
+    markRead,
+    markAllRead,
+  } = useNotifications();
+
+  function handleNotificationClick(notification: AppNotification) {
+    if (!notification.isRead) {
+      markRead(notification.id).catch(reportError);
+    }
+    if (notification.entityType) {
+      navigate(ENTITY_TYPE_PATH[notification.entityType]);
+    }
+  }
 
   const groups: SidebarGroup[] = NAV_GROUP_ORDER.map((groupLabel) => ({
     label: groupLabel,
@@ -53,6 +79,10 @@ export function AppShell() {
           onNewTask={openCreateDrawer}
           onAccountClick={logout}
           accountLabel={email ?? undefined}
+          notifications={notifications}
+          notificationsLoading={notificationsLoading}
+          onNotificationClick={handleNotificationClick}
+          onMarkAllNotificationsRead={() => markAllRead().catch(reportError)}
         />
         <main className="flex-1 overflow-y-auto">
           <Outlet />

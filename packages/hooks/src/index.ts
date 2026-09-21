@@ -3,3 +3,4 @@ export { useProjects, type UseProjectsResult, type NewProjectInput } from './use
 export { useGoals, type UseGoalsResult, type NewGoalInput } from './useGoals';
 export { useHabits, type UseHabitsResult, type NewHabitInput } from './useHabits';
 export { useSettings, type UseSettingsResult } from './useSettings';
+export { useNotifications, type UseNotificationsResult } from './useNotifications';

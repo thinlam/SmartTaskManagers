@@ -13,17 +13,6 @@ namespace SmartTask.Application.SmartEngine;
 public sealed class SmartEngineService(ITaskRepository taskRepository, IDateTimeProvider dateTimeProvider)
     : ISmartEngineService
 {
-    /// <summary>
-    /// Matches DEFAULT_SETTINGS's DueSoonDays in
-    /// apps/google-sheets/src/00_Constants.gs. The backend has no
-    /// Settings table yet (the Desktop app's own Settings page is still
-    /// Phase 19's static mock too — see apps/desktop/README.md), so this
-    /// is hard-coded rather than read from a store that doesn't exist.
-    /// Wiring a real Settings API is its own future phase, not bundled
-    /// into this one.
-    /// </summary>
-    private const int DueSoonDaysDefault = 2;
-
     public Task<SmartFieldsResult> ComputeAsync(TaskItem task, CancellationToken cancellationToken = default)
     {
         var today = DateOnly.FromDateTime(dateTimeProvider.UtcNow.UtcDateTime);
@@ -83,7 +72,7 @@ public sealed class SmartEngineService(ITaskRepository taskRepository, IDateTime
 
         var stalled = IsStalled(task, ageDays);
 
-        var urgency = UrgencyScore(daysUntilDue, DueSoonDaysDefault);
+        var urgency = UrgencyScore(daysUntilDue, AppDefaults.DueSoonDays);
         var impact = SmartWeights.Impact.GetValueOrDefault(task.Priority);
         var effort = EffortFitScore(task.EstimateMinutes);
         var goalAlign = task.GoalId is not null ? SmartWeights.GoalAlignment : 0;
@@ -98,7 +87,7 @@ public sealed class SmartEngineService(ITaskRepository taskRepository, IDateTime
                 riskPoints += SmartWeights.Risk.Overdue;
             else if (d == 0)
                 riskPoints += SmartWeights.Risk.DueToday;
-            else if (d <= DueSoonDaysDefault)
+            else if (d <= AppDefaults.DueSoonDays)
                 riskPoints += SmartWeights.Risk.DueSoon;
         }
         if (isBlocked)
@@ -118,7 +107,7 @@ public sealed class SmartEngineService(ITaskRepository taskRepository, IDateTime
                 DependencyPending: dependencyPending,
                 Stalled: stalled,
                 DaysUntilDue: daysUntilDue,
-                DueSoonDays: DueSoonDaysDefault,
+                DueSoonDays: AppDefaults.DueSoonDays,
                 EstimateMinutes: task.EstimateMinutes ?? 0,
                 SmartScore: smartScore
             )

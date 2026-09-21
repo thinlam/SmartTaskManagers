@@ -800,5 +800,35 @@ có kịch bản thật kéo dài ngày nào trong phiên này — nói rõ gi�
 Build + `dotnet list package --vulnerable --include-transitive` sạch cả 5 project. Dữ liệu test đã
 xoá sạch, không đụng 2 user có sẵn.
 
+Phase 30 đã thực hiện — Notifications, hoàn toàn mới (không có tiền lệ Sheets — grep xác nhận
+không notif/email/reminder nào cả). Thiết kế chốt cùng người dùng trước khi code: 4 quy tắc trigger
+(task overdue/due-soon, habit streak at risk, goal at-risk, sync push thất bại) + lưu bảng thật có
+Read/Unread, không tính live mỗi lần gọi.
+
+Backend: `Notification` entity mới (migration `AddNotifications`), `NotificationService` đọc field
+đã có sẵn trên Task/Habit/Goal (không thêm cột nghiệp vụ nào), chống spam bằng kiểm tra đã có
+notification **chưa đọc** cùng `(Type, EntityId)` chưa trước khi tạo. `SyncFailed` nối trực tiếp
+vào `SyncService` (Phase 28) — mỗi item `Outcome=Error` giờ tạo 1 notification thật, không chỉ nằm
+im trong response JSON. `AppDefaults.DueSoonDays` tách ra dùng chung giữa `NotificationService` và
+`SmartEngineService` (Phase 29) để 2 nơi không lệch hằng số. `NotificationGenerationHostedService`
+(`PeriodicTimer` 30 phút) tự động quét — cùng tinh thần `DailySmartRecalcHostedService`.
+
+Frontend nối đầy đủ luôn trong phase này (không để dở như Phase 27's Dashboard/Today): `packages/
+types`'s `AppNotification` (đặt tên tránh đụng `Notification` built-in của trình duyệt),
+`notificationApi.ts`, `useNotifications` (poll 60 giây — không có websocket/SSE, khớp nhịp sinh
+notification nền 30 phút), `NotificationPanel`/`NotificationItem` (packages/ui — tên đã ghi sẵn
+trong `design-tokens.md` từ lâu, giờ mới có code thật). Topbar's nút chuông (từ Phase 08, chưa từng
+làm gì) giờ mở dropdown panel thật, click → mark-read + điều hướng đúng trang nguồn.
+
+Verify thật, đầy đủ luồng — không chỉ build: migration áp thật + verify độc lập qua `sqlcmd`. `curl`
+thật dựng đủ 4 kịch bản trigger (dùng `sqlcmd` chỉnh `Streak`/`LastCompletedDate` 1 habit để mô
+phỏng "chưa check-in hôm nay" — API bình thường không back-date được) → `generate` tạo đúng 4
+notification, message khớp từng loại; gọi lại lần 2 → `0` (dedupe đúng); mark-read/mark-all-read
+đúng; push sync lỗi FK → `SyncFailed` notification thật xuất hiện. `npm run typecheck`/`lint`/
+`format` sạch, production Vite build sạch, `dotnet build` + vulnerability scan sạch cả 5 project.
+**Chưa test UI tương tác thật** (không có công cụ điều khiển trình duyệt trong phiên này) — nói rõ
+giới hạn. Dữ liệu test đã xoá sạch (kể cả notification rows qua `sqlcmd`, không có endpoint xoá —
+đúng thiết kế giữ lịch sử), không đụng 2 user có sẵn.
+
 Mỗi Phase kế tiếp sẽ được trình bày riêng theo format: Mục tiêu → File tạo/sửa → Full code →
 Command → Cách chạy → Cách test → Expected Result → Checklist → Git commit đề xuất.

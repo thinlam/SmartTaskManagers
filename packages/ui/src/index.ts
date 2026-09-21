@@ -35,3 +35,9 @@ export { EmptyState, type EmptyStateProps } from './components/EmptyState';
 export { IconButton, type IconButtonProps } from './components/IconButton';
 export { Drawer, type DrawerProps } from './components/Drawer';
 export { Switch, type SwitchProps } from './components/Switch';
+export {
+  NotificationPanel,
+  type NotificationPanelProps,
+  NotificationItem,
+  type NotificationItemProps,
+} from './components/NotificationPanel';

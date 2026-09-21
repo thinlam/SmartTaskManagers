@@ -374,6 +374,58 @@ code đối chiếu từng dòng với bản gốc — **không** verify bằng 
 phiên này, nói rõ giới hạn thay vì nhận đã test full. Dữ liệu test đã xoá sạch, không đụng 2 user có
 sẵn trong DB.
 
+## Notifications (Phase 30)
+
+Hoàn toàn mới — grep `apps/google-sheets/src` xác nhận không có logic notif/email/reminder nào cả
+(`docs/audit/PHASE_00_AUDIT_REPORT.md` đã ghi sẵn "Notifications — chưa làm" từ Phase 00). Thiết kế
+chốt cùng người dùng trước khi code: 4 quy tắc trigger + lưu bảng thật có Read/Unread (không tính
+live mỗi lần gọi).
+
+```
+GET  /api/notifications                [Authorize]  →  danh sách 100 gần nhất, mới nhất trước
+GET  /api/notifications/unread-count   [Authorize]  →  { unreadCount }
+POST /api/notifications/{id}/read      [Authorize]  →  đánh dấu 1 cái đã đọc
+POST /api/notifications/read-all       [Authorize]  →  đánh dấu tất cả đã đọc
+POST /api/notifications/generate       [Authorize]  →  chạy quét thủ công (không cần chờ 30 phút)
+```
+
+4 quy tắc (`SmartTask.Application/Notifications/NotificationService.cs`), tất cả đọc field đã có
+sẵn, không thêm cột mới ở Task/Habit/Goal: **TaskOverdue**/**TaskDueSoon** (dựa `DueDate` +
+`AppDefaults.DueSoonDays`, cùng hằng số Smart Engine Phase 29 đang dùng — tách ra
+`SmartTask.Application/Abstractions/AppDefaults.cs` để 2 service không lệch nhau), **HabitStreakAtRisk**
+(Habit `Frequency=Daily` + `Streak>0` + `LastCompletedDate != hôm nay`), **GoalAtRisk**
+(`Goal.Status=AtRisk`), **SyncFailed** (mỗi item `Outcome=Error` trong `POST /api/sync/push` —
+Phase 28 — giờ tạo 1 notification thật, không chỉ nằm trong response JSON).
+
+**Chống spam:** trước khi tạo 1 notification, kiểm tra đã có notification **chưa đọc** cùng
+`(Type, EntityId)` chưa (SyncFailed không có `EntityId` nên đối chiếu theo `Title` thay thế) — 1
+điều kiện còn đúng qua nhiều lần quét không tạo thêm bản sao; đánh dấu đã đọc rồi mà điều kiện vẫn
+còn đúng thì lần quét sau sẽ tạo lại (đúng ý "nhắc lại nếu chưa xử lý").
+
+**Tự động:** `NotificationGenerationHostedService` (`BackgroundService`, `PeriodicTimer` 30 phút,
+chạy ngay lúc khởi động rồi lặp) — không có scheduler/cron riêng, đúng tinh thần
+`DailySmartRecalcHostedService` (Phase 29). 1 lần chạy lỗi được log, không crash vòng lặp.
+
+Verify thật, đầy đủ luồng — không chỉ build: migration `AddNotifications` áp thật + verify độc lập
+qua `sqlcmd`. `curl` thật tạo đủ 4 kịch bản trigger (dùng `sqlcmd` chỉnh trực tiếp `Streak`/
+`LastCompletedDate` của 1 habit để mô phỏng "chưa check-in hôm nay" — API không cho phép back-date
+qua check-in bình thường) → `POST /api/notifications/generate` tạo đúng 4 notification, message
+đúng nội dung mong đợi cho từng loại. Gọi `generate` lần 2 → `createdCount: 0` (dedupe hoạt động
+đúng). Mark 1 cái đã đọc → `unreadCount` giảm đúng 1. `read-all` → `unreadCount` về `0`. Push 1
+task sync với `ProjectId` sai → `SyncFailed` notification xuất hiện thật với đúng `Title`/`Message`.
+Dữ liệu test đã xoá sạch (kể cả notification rows, qua `sqlcmd` — không có endpoint xoá, đúng thiết
+kế "lưu lịch sử", không cần cho use case thật).
+
+Frontend: `packages/types`'s `AppNotification` (đặt tên vậy, không phải `Notification`, để không
+đụng type `Notification` có sẵn của trình duyệt), `packages/api-client/src/notificationApi.ts`,
+`packages/hooks/src/useNotifications.ts` (poll mỗi 60 giây — không có hạ tầng websocket/SSE nào
+trong dự án, và notification được sinh nền mỗi 30 phút nên polling là đủ), `packages/ui`'s
+`NotificationPanel`/`NotificationItem` (tên khớp `design-tokens.md` đã ghi "NotificationItem" từ
+trước, giờ mới có code thật), Topbar's nút chuông (có từ Phase 08, chưa từng làm gì) giờ mở dropdown
+panel thật, click 1 notification → mark-read + điều hướng đúng trang (Task/Habit/Goal). Verify:
+`npm run typecheck`/`lint`/`format` sạch, production Vite build sạch. **Chưa test UI tương tác thật**
+(môi trường phiên này không có công cụ điều khiển trình duyệt) — nói rõ giới hạn, không nhận đã test.
+
 ## Sự cố thật gặp phải khi dựng skeleton (Phase 20)
 
 Template `webapi` mặc định kéo theo `Microsoft.AspNetCore.OpenApi 10.0.9`, phiên bản này lại kéo

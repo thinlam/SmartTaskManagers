@@ -1,13 +1,19 @@
+import { useEffect, useRef, useState } from 'react';
 import { Bell, CircleUserRound, Plus, Search } from 'lucide-react';
+import type { AppNotification } from '@stm/types';
 import { Button } from '../Button';
+import { NotificationPanel } from '../NotificationPanel';
 import { cn } from '../../lib/cn';
 
 export interface TopbarProps {
   onNewTask?: () => void;
   onSearchChange?: (value: string) => void;
   searchPlaceholder?: string;
-  /** Not populated by any screen yet — real counts land with Phase 30 (Notifications). */
-  notificationCount?: number;
+  /** Phase 30 — real notifications, generated server-side (see NotificationPanel). */
+  notifications?: AppNotification[];
+  notificationsLoading?: boolean;
+  onNotificationClick?: (notification: AppNotification) => void;
+  onMarkAllNotificationsRead?: () => void;
   /**
    * Phase 27 — the account button now does something: signs out of the
    * real session. `accountLabel` (usually the signed-in email) shows as
@@ -28,10 +34,28 @@ export function Topbar({
   onNewTask,
   onSearchChange,
   searchPlaceholder = 'Search tasks...',
-  notificationCount = 0,
+  notifications = [],
+  notificationsLoading = false,
+  onNotificationClick,
+  onMarkAllNotificationsRead,
   onAccountClick,
   accountLabel,
 }: TopbarProps) {
+  const [isPanelOpen, setIsPanelOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const unreadCount = notifications.filter((n) => !n.isRead).length;
+
+  useEffect(() => {
+    if (!isPanelOpen) return;
+    function handleClickOutside(event: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsPanelOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isPanelOpen]);
+
   return (
     <header className="flex h-16 shrink-0 items-center gap-3 border-b border-border bg-surface px-6">
       <div
@@ -49,19 +73,36 @@ export function Topbar({
         />
       </div>
 
-      <button
-        type="button"
-        aria-label={notificationCount > 0 ? `${notificationCount} notifications` : 'Notifications'}
-        className={cn(
-          'relative rounded-md p-2 text-ink-secondary transition-colors hover:bg-surface-secondary hover:text-ink-primary',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+      <div className="relative" ref={containerRef}>
+        <button
+          type="button"
+          aria-label={unreadCount > 0 ? `${unreadCount} notifications` : 'Notifications'}
+          onClick={() => setIsPanelOpen((open) => !open)}
+          className={cn(
+            'relative rounded-md p-2 text-ink-secondary transition-colors hover:bg-surface-secondary hover:text-ink-primary',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+          )}
+        >
+          <Bell className="h-5 w-5" aria-hidden="true" />
+          {unreadCount > 0 && (
+            <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-danger" />
+          )}
+        </button>
+
+        {isPanelOpen && (
+          <div className="absolute right-0 top-full z-20 mt-2">
+            <NotificationPanel
+              notifications={notifications}
+              isLoading={notificationsLoading}
+              onItemClick={(notification) => {
+                onNotificationClick?.(notification);
+                setIsPanelOpen(false);
+              }}
+              onMarkAllRead={onMarkAllNotificationsRead}
+            />
+          </div>
         )}
-      >
-        <Bell className="h-5 w-5" aria-hidden="true" />
-        {notificationCount > 0 && (
-          <span className="absolute right-1.5 top-1.5 h-2 w-2 rounded-full bg-danger" />
-        )}
-      </button>
+      </div>
 
       <Button
         variant="primary"
