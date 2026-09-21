@@ -5,6 +5,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using SmartTask.Application.Auth;
 using SmartTask.Application.Goals;
+using SmartTask.Application.Habits;
 using SmartTask.Application.Projects;
 using SmartTask.Application.Tasks;
 using SmartTask.Infrastructure;
@@ -60,6 +61,7 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ITaskService, TaskService>();
 builder.Services.AddScoped<IProjectService, ProjectService>();
 builder.Services.AddScoped<IGoalService, GoalService>();
+builder.Services.AddScoped<IHabitService, HabitService>();
 
 // JWT validation (incoming requests) — token *issuance* is
 // SmartTask.Infrastructure.Security.JwtTokenGenerator; this is the

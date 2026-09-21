@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using SmartTask.Application.Goals;
+using SmartTask.Application.Habits;
 using SmartTask.Application.Projects;
 using SmartTask.Application.Tasks;
 using SmartTask.Application.Users;
@@ -35,6 +36,7 @@ public static class DependencyInjection
         services.AddScoped<ITaskRepository, TaskRepository>();
         services.AddScoped<IProjectRepository, ProjectRepository>();
         services.AddScoped<IGoalRepository, GoalRepository>();
+        services.AddScoped<IHabitRepository, HabitRepository>();
 
         return services;
     }

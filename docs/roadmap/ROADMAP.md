@@ -27,7 +27,7 @@ PHASE 22  Authentication (JWT; sau này + Google/Microsoft)                     
 PHASE 23  Tasks API                                                             ✅ DONE (curl thật cả 9 trường hợp CRUD)
 PHASE 24  Projects API                                                          ✅ DONE (curl thật, xác nhận cascade clear xuyên entity)
 PHASE 25  Goals API                                                             ✅ DONE (curl thật, xác nhận cascade clear Tasks.GoalId)
-PHASE 26  Habits API
+PHASE 26  Habits API                                                            ✅ DONE (curl thật, xác nhận check-in idempotent 3 lần/ngày)
 PHASE 27  Desktop ↔ Backend integration (api-client thật, bỏ mock)
 PHASE 28  Google Sheets ↔ Backend Sync
 PHASE 29  Smart Engine (port apps/google-sheets/src/05_SmartEngine.gs → C#)
@@ -636,6 +636,26 @@ cập nhật đúng), id không tồn tại (404). **Verify xuyên-entity:** t�
 goal vừa tạo → xoá goal (204) → gọi lại task, xác nhận `goalId` tự về `null` và task không bị xoá
 theo — xác nhận `Tasks.GoalId`'s `ON DELETE SET NULL` hoạt động đúng y hệt `Tasks.ProjectId` ở
 Phase 24. Dữ liệu test đã xoá sạch, không đụng 2 user có sẵn trong DB. Vulnerability scan vẫn sạch.
+
+Phase 26 đã thực hiện — cùng khuôn Tasks/Projects/Goals API: `HabitContracts`/`IHabitRepository`/
+`HabitService` (`SmartTask.Application`), `HabitRepository` (`SmartTask.Persistence`),
+`HabitsController` (`SmartTask.Api`, `[Authorize]`, 6 route: CRUD + `POST .../check-in`).
+
+**Khác Projects/Goals:** `Habits` đứng riêng hoàn toàn, không có quan hệ xuyên-entity nào để verify
+cascade clear — grep xác nhận không có `Task.HabitId` nào cả (giống kết luận đã có từ Phase 15
+frontend). `CreateHabitRequest`/`UpdateHabitRequest` không có `Streak`/`CompletedCount`/
+`LastCompletedDate` — 3 field này chỉ đổi qua action `check-in` riêng, đúng
+`HabitDetailDrawer`/`useHabits` bên frontend Phase 15. `CheckInAsync` port trực tiếp logic
+`checkInHabit()` frontend: +1 Streak, +1 CompletedCount, LastCompletedDate = hôm nay, **no-op nếu
+hôm nay đã check-in rồi**.
+
+Verify thật, đầy đủ luồng — không chỉ build: không token (401), có token danh sách rỗng (200), tạo
+habit (201, streak/completedCount=0), PATCH đổi targetCount, **check-in 3 lần liên tiếp cùng
+ngày** — lần 1 tăng đúng (streak=1/completedCount=1/lastCompletedDate=hôm nay), lần 2 và lần 3 trả
+về **y hệt lần 1** kể cả `updatedAt` không đổi, xác nhận no-op thật chứ không chỉ đọc code — id
+không tồn tại (404), xoá (204), lấy lại sau xoá (404). Dữ liệu test đã xoá sạch. Sự cố thật gặp
+giữa chừng: process `SmartTask.Api` cũ từ lần test Swagger UI trước còn giữ khoá DLL khiến
+`dotnet build` lỗi `MSB3027` — `Stop-Process` rồi build lại mới qua. Vulnerability scan vẫn sạch.
 
 Mỗi Phase kế tiếp sẽ được trình bày riêng theo format: Mục tiêu → File tạo/sửa → Full code →
 Command → Cách chạy → Cách test → Expected Result → Checklist → Git commit đề xuất.

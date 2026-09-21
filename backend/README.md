@@ -236,6 +236,43 @@ theo — xác nhận `Tasks.GoalId`'s `ON DELETE SET NULL` (Phase 21) hoạt đ�
 `Tasks.ProjectId` ở Phase 24. Goal sau khi xoá trả 404. Dữ liệu test đã xoá sạch, không đụng 2 user
 có sẵn trong DB. `dotnet list package --vulnerable --include-transitive` vẫn sạch.
 
+## Habits API (Phase 26)
+
+Cùng khuôn Tasks/Projects/Goals API, CRUD trên `Habits` — cộng 1 action riêng:
+
+```
+GET    /api/habits                [Authorize] → 200 [HabitResponse...]
+GET    /api/habits/{id}           [Authorize] → 200 HabitResponse | 404
+POST   /api/habits                [Authorize] → 201 HabitResponse (Streak/CompletedCount=0, LastCompletedDate=null)
+PATCH  /api/habits/{id}           [Authorize] → 200 HabitResponse | 404
+POST   /api/habits/{id}/check-in  [Authorize] → 200 HabitResponse (+1 Streak, +1 CompletedCount, LastCompletedDate=hôm nay) | 404
+DELETE /api/habits/{id}           [Authorize] → 204 | 404
+```
+
+**Không có quan hệ xuyên-entity nào** — khác Projects (Phase 24)/Goals (Phase 25), `Habits` đứng
+riêng hoàn toàn: không có `Task.HabitId` nào cả (đã grep `apps/google-sheets/src` xác nhận từ Phase
+15 phía frontend, giờ đúng y hệt ở backend), nên không có FK nào để verify cascade clear.
+`CreateHabitRequest`/`UpdateHabitRequest` **không có** `Streak`/`CompletedCount`/
+`LastCompletedDate` — 3 field này chỉ đổi qua `POST .../check-in`, không sửa tay được, đúng
+`HabitDetailDrawer` bên frontend (Phase 15).
+
+`CheckInAsync` (`HabitService`) là port trực tiếp logic `checkInHabit()` của `useHabits` bên
+frontend (Phase 15, bản thân nó cũng không phải port từ Sheets — Sheets không có hàm hoàn thành
+habit nào): +1 `Streak`, +1 `CompletedCount`, `LastCompletedDate` = hôm nay (tính theo
+`IDateTimeProvider.UtcNow`, không phải `DateTime.UtcNow` trực tiếp — dễ test hơn sau này). **No-op
+nếu hôm nay đã check-in rồi** — gọi endpoint này nhiều lần trong 1 ngày không tăng số lần thứ 2 trở
+đi.
+
+**Verify thật, đầy đủ luồng — không chỉ build:** `GET /api/habits` không token (401) → có token
+(200, rỗng) → tạo habit (201, `streak`/`completedCount` = 0, `lastCompletedDate` = `null`) → `PATCH`
+đổi `targetCount` → **check-in lần 1** (200, `streak`=1/`completedCount`=1/`lastCompletedDate`=hôm
+nay) → **check-in lần 2 cùng ngày** (200, y hệt lần 1 — `updatedAt` không đổi, xác nhận no-op thật
+chứ không chỉ đọc code) → **check-in lần 3 cùng ngày** (vẫn y hệt) → id không tồn tại (404) → xoá
+(204) → lấy lại sau xoá (404). Dữ liệu test đã xoá sạch, không đụng 2 user có sẵn trong DB. `dotnet
+list package --vulnerable --include-transitive` vẫn sạch — và một sự cố thật gặp giữa chừng: 1
+process `SmartTask.Api` cũ (từ lần chạy Swagger UI trước) còn giữ khoá file DLL khiến `dotnet build`
+lỗi thật `MSB3027`; `Stop-Process` process đó rồi build lại mới qua.
+
 ## Sự cố thật gặp phải khi dựng skeleton (Phase 20)
 
 Template `webapi` mặc định kéo theo `Microsoft.AspNetCore.OpenApi 10.0.9`, phiên bản này lại kéo
