@@ -1,7 +1,9 @@
 using System.Text;
+using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using SmartTask.Application.Auth;
+using SmartTask.Application.Tasks;
 using SmartTask.Infrastructure;
 using SmartTask.Infrastructure.Security;
 using SmartTask.Persistence;
@@ -10,13 +12,22 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 
-builder.Services.AddControllers();
+builder
+    .Services.AddControllers()
+    // Enums serialize/bind as strings ("Critical"), not ints — matches
+    // the string storage decision Phase 21 already made in Persistence's
+    // EntityTypeConfiguration classes, so the API and the database agree
+    // on what a lookup value looks like.
+    .AddJsonOptions(options =>
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter())
+    );
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddOpenApi();
 
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddPersistence(builder.Configuration);
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<ITaskService, TaskService>();
 
 // JWT validation (incoming requests) — token *issuance* is
 // SmartTask.Infrastructure.Security.JwtTokenGenerator; this is the

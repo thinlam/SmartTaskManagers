@@ -1,12 +1,12 @@
 # backend
 
 ASP.NET Core, Clean Architecture. Skeleton dựng ở **Phase 20**, schema thật + migration dựng ở
-**Phase 21**, JWT Authentication (email/password) dựng ở **Phase 22** — cả ba đều verify bằng chạy
-thật, không chỉ build.
+**Phase 21**, JWT Authentication (email/password) dựng ở **Phase 22**, Tasks CRUD API dựng ở
+**Phase 23** — cả bốn đều verify bằng chạy thật, không chỉ build.
 
 ```
 SmartTask.Api/             Controllers, DI composition root (Program.cs), JWT bearer validation
-SmartTask.Application/     Use cases, DTOs, abstraction cho Infrastructure implement (IDateTimeProvider, IPasswordHasher, IJwtTokenGenerator)
+SmartTask.Application/     Use cases, DTOs, abstraction cho Infrastructure implement (IDateTimeProvider, IPasswordHasher, IJwtTokenGenerator, ITaskRepository, IUserRepository)
 SmartTask.Domain/          Entity thuần — build KHÔNG có package reference nào (verify: dotnet list package)
 SmartTask.Infrastructure/  Implement abstraction của Application (SystemDateTimeProvider, PasswordHasherAdapter, JwtTokenGenerator)
 SmartTask.Persistence/     AppDbContext + Configurations/ (EF Core Fluent API), Repositories/, Migrations/
@@ -121,6 +121,46 @@ token mới) → đăng nhập sai mật khẩu (401) → gọi `/api/auth/me` k
 `Authorization: Bearer <token>` (200, đúng `userId`/`email` giải mã từ claim JWT). Cả 6 trường hợp
 đều đúng như kỳ vọng. Dữ liệu test (`demo@example.com`) đã xoá khỏi SQL Server thật sau khi verify
 xong, không để lại rác trong DB.
+
+## Tasks API (Phase 23)
+
+CRUD đầu tiên trên schema thật của Phase 21, có `[Authorize]` (yêu cầu Bearer token thật từ Phase
+22). Bảng `Tasks` **không** chia theo user (không có cột `OwnerId`) — khớp đúng `TASK_HEADERS` gốc
+vốn cũng không có cột Owner, và đúng nguyên tắc Personal Mode "không Team/Member/Owner" đã áp dụng
+xuyên suốt cả frontend lẫn backend. `[Authorize]` ở đây chỉ có nghĩa "phải có token hợp lệ", không
+phải "mỗi user thấy dữ liệu riêng" — đúng với 1 instance app cá nhân, không phải giả định multi-tenant.
+
+```
+GET    /api/tasks              [Authorize] → 200 [TaskResponse...]
+GET    /api/tasks/{id}         [Authorize] → 200 TaskResponse | 404
+POST   /api/tasks              [Authorize] → 201 TaskResponse | 400 (sai ProjectId/GoalId/DependencyTaskId)
+PATCH  /api/tasks/{id}         [Authorize] → 200 TaskResponse | 404 | 400
+POST   /api/tasks/{id}/complete [Authorize] → 200 TaskResponse (Status=Completed, Progress=100, CompletedDate=now) | 404
+DELETE /api/tasks/{id}         [Authorize] → 204 | 404
+```
+
+`TaskService` (use case thật, `SmartTask.Application`) chỉ điều phối qua `ITaskRepository` +
+`IDateTimeProvider` — không đụng EF Core trực tiếp, cùng pattern `AuthService` ở Phase 22.
+`PATCH` là **cập nhật từng phần có giới hạn đã ghi rõ**: field nào gửi lên thì áp dụng, field nào bỏ
+qua thì giữ nguyên — nhưng vì bind từ JSON object phẳng, **không phân biệt được** "bỏ qua trường
+này" với "gửi `null` để xoá trường này" cho các cột nullable của entity (ví dụ không thể tự xoá
+`ProjectId` về `null` qua endpoint này) — JSON Patch/Merge Patch thật sẽ giải quyết được, cố ý chưa
+làm ở Phase này để giữ DTO đơn giản.
+
+Enum (Area/Priority/Status/...) serialize/bind dạng chuỗi (`"Critical"` không phải `0`) qua
+`JsonStringEnumConverter` đăng ký toàn cục trong `Program.cs` — khớp quyết định lưu enum dạng chuỗi
+trong DB từ Phase 21, để API và DB nói cùng "ngôn ngữ".
+
+**Verify thật, đầy đủ luồng — không chỉ build:** chạy `dotnet run` thật, `curl` thật theo đúng thứ
+tự và xác nhận đúng cả 9 trường hợp: `GET /api/tasks` không token (401) → đăng ký lấy token →
+`GET /api/tasks` có token (200, `[]` rỗng) → `POST` tạo task (201, đúng field, enum trả về dạng
+chuỗi) → `GET` theo id (200, đúng dữ liệu) → `GET` id không tồn tại (404) → `PATCH` đổi
+progress+status (200, `UpdatedAt`/`LastStatusChangedAt` cập nhật đúng vì status đổi thật) → `POST`
+tạo task với `ProjectId` không tồn tại (400) → `POST .../complete` (200, đúng
+Status=Completed/Progress=100/CompletedDate có giá trị) → `DELETE` (204) → `GET`/`DELETE` lại sau
+khi xoá (404 cả hai). Dữ liệu test đã xoá khỏi SQL Server thật sau khi verify xong — không đụng vào
+2 user thật (`taska@example.com`/`taskb@example.com`) đã có sẵn trong DB từ trước (không phải do
+phiên này tạo ra). `dotnet list package --vulnerable --include-transitive` vẫn sạch.
 
 ## Sự cố thật gặp phải khi dựng skeleton (Phase 20)
 

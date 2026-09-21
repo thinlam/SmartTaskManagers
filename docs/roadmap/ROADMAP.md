@@ -24,7 +24,7 @@ PHASE 19  Settings                                                             �
 PHASE 20  Backend architecture (ASP.NET Core, Clean Architecture skeleton)     ✅ DONE (build+run verify thật)
 PHASE 21  Database (EF Core + SQL Server, migrations, schema từ Tasks/Projects/Goals/Habits)   ✅ DONE (áp migration thật lên SQL Server Express)
 PHASE 22  Authentication (JWT; sau này + Google/Microsoft)                     ✅ DONE (curl thật cả luồng register/login/protected)
-PHASE 23  Tasks API
+PHASE 23  Tasks API                                                             ✅ DONE (curl thật cả 9 trường hợp CRUD)
 PHASE 24  Projects API
 PHASE 25  Goals API
 PHASE 26  Habits API
@@ -578,6 +578,28 @@ token (401) → gọi lại kèm `Authorization: Bearer <token>` (200, đúng `u
 claim JWT). Migration `AddUsers` áp thật vào SQL Server Express, xác nhận độc lập bằng `sqlcmd` (6
 bảng, có `Users`). Dữ liệu test đã xoá khỏi DB thật sau khi verify xong. `dotnet list package
 --vulnerable --include-transitive` vẫn sạch trên cả 5 project sau khi thêm các package auth mới.
+
+Phase 23 đã thực hiện — CRUD API thật đầu tiên trên schema Phase 21, có `[Authorize]` (yêu cầu
+token thật từ Phase 22). `Tasks` không chia theo user (không cột `OwnerId`) — khớp `TASK_HEADERS`
+gốc (không có Owner) và đúng nguyên tắc Personal Mode; `[Authorize]` chỉ có nghĩa "cần token hợp
+lệ", không phải phân vùng dữ liệu theo user.
+
+`SmartTask.Application` thêm `TaskContracts` (`TaskResponse`/`CreateTaskRequest`/
+`UpdateTaskRequest`), `ITaskRepository`, `TaskService` (use case — chỉ điều phối qua
+`ITaskRepository`/`IDateTimeProvider`, cùng pattern `AuthService`). `PATCH` là cập nhật từng phần
+có giới hạn ghi rõ: không phân biệt được "bỏ qua field" với "gửi null để xoá field" cho cột nullable
+— chấp nhận được, JSON Patch thật để sau. `SmartTask.Persistence` thêm `TaskRepository`.
+`SmartTask.Api` thêm `TasksController` (5 route: GET all/GET by id/POST/PATCH/POST complete/DELETE)
+và đăng ký `JsonStringEnumConverter` toàn cục trong `Program.cs` — enum serialize/bind dạng chuỗi,
+khớp quyết định lưu string trong DB từ Phase 21.
+
+Verify thật, đầy đủ luồng — không chỉ build: chạy `dotnet run` thật, `curl` thật theo đúng thứ tự,
+xác nhận đúng cả 9 trường hợp: không token (401) → có token, danh sách rỗng (200) → tạo task (201,
+enum trả chuỗi đúng) → lấy theo id (200) → id không tồn tại (404) → PATCH đổi progress+status (200,
+`UpdatedAt`/`LastStatusChangedAt` cập nhật đúng) → tạo với FK sai (400) → complete (200, đúng
+Status/Progress/CompletedDate) → xoá (204) → lấy/xoá lại sau khi xoá (404 cả hai). Dữ liệu test đã
+xoá sạch, không đụng 2 user thật đã có sẵn trong DB (không phải do phiên này tạo). Vulnerability
+scan vẫn sạch trên cả 5 project.
 
 Mỗi Phase kế tiếp sẽ được trình bày riêng theo format: Mục tiêu → File tạo/sửa → Full code →
 Command → Cách chạy → Cách test → Expected Result → Checklist → Git commit đề xuất.
