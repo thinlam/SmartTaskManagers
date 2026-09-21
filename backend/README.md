@@ -486,9 +486,13 @@ gọi trên `SmartTask.Api.csproj`, tự kéo theo restore cả `Application`/`I
 build artifact cục bộ đã có sẵn trên máy dev); thêm vào giảm còn **8.2KB** thật, verify lại bằng so
 sánh dòng "transferring context" giữa 2 lần build.
 
-`ENV ASPNETCORE_URLS=http://0.0.0.0:5277` + `EXPOSE 5277` — khớp đúng cách backend đã cấu hình lắng
-nghe mọi interface từ mục "Cài trên nhiều máy" ở trên, để port map ra ngoài container hoạt động
-đúng (không chỉ bind loopback bên trong container, vô dụng khi map port).
+`EXPOSE 8080` — không tự đặt `ASPNETCORE_URLS`/`ASPNETCORE_HTTP_PORTS` (bản rút gọn theo yêu cầu
+người dùng, bỏ dòng `ENV` mình thêm ban đầu). Verify thật xác nhận **không cần** dòng đó: image
+`dotnet/aspnet:10.0` tự đặt sẵn `ASPNETCORE_HTTP_PORTS=8080` bên trong, Kestrel tự bind
+`http://[::]:8080` (mọi interface, IPv6+IPv4) không cần cấu hình gì thêm — log thật xác nhận dòng
+`Now listening on: http://[::]:8080`. Port container **bên trong luôn là 8080** — map ra port nào ở
+host là tuỳ `docker run -p <host-port>:8080` (ví dụ `-p 5277:8080` nếu muốn giữ đúng port quen
+thuộc `5277` phía ngoài).
 
 **Không có gì baked vào image cả** — `ConnectionStrings__DefaultConnection`/`Jwt__Secret` phải
 truyền qua biến môi trường lúc `docker run` (ASP.NET Core tự đọc biến môi trường dạng
@@ -499,11 +503,12 @@ Verify thật, không chỉ build image xong là coi như đúng: `docker build`
 Desktop cài sẵn trên máy dev, xác nhận qua `docker manifest inspect` cả 2 image tag `dotnet/sdk:10.0`
 và `dotnet/aspnet:10.0` đều tồn tại thật trên registry trước khi build). `docker run` thật với biến
 môi trường override kết nối SQL Server giả (cố ý sai để verify riêng phần "app tự khởi động đúng"
-tách khỏi phần "kết nối DB đúng") → log xác nhận app bind đúng `http://0.0.0.0:5277`, container
-`docker ps` hiện `Up`, port map `5278->5277` hoạt động → `curl` thật từ host tới
-`http://localhost:5278/api/health` (endpoint không cần DB) → `200` — xác nhận image chạy được thật,
-không chỉ build xong không lỗi. Lỗi SQL login (do cố ý dùng credential giả) xuất hiện đúng như dự
-kiến, không phải bug. Image + container test đã dọn sạch (`docker rm`/`docker rmi`).
+tách khỏi phần "kết nối DB đúng"), **không set** biến port nào cả → log xác nhận app tự bind đúng
+`http://[::]:8080` mà không cần override, container `docker ps` hiện `Up`, port map
+`5279->8080` hoạt động → `curl` thật từ host tới `http://localhost:5279/api/health` (endpoint không
+cần DB) → `200` — xác nhận image chạy được thật với bản Dockerfile rút gọn, không chỉ build xong
+không lỗi. Lỗi SQL login (do cố ý dùng credential giả) xuất hiện đúng như dự kiến, không phải bug.
+Image + container test đã dọn sạch (`docker rm`/`docker rmi`).
 
 **Chưa test:** `docker run` với connection string SQL Server thật (migration + dữ liệu thật) — môi
 trường phiên này không có SQL Server nào chạy trong Docker network cùng container để nối vào; nên
