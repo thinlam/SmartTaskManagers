@@ -719,5 +719,54 @@ trắng) cố ý gửi thẳng không qua `enumMappings.ts` để chứng minh b
 đúng lý do package `enumMappings.ts` cần tồn tại. Không đụng 2 user có sẵn (`taska@example.com`/
 `taskb@example.com`).
 
+Phase 28 đã thực hiện — Google Sheets ↔ Backend Sync, 2 chiều, Last-Write-Wins theo `UpdatedAt`
+(quyết định cùng người dùng trước khi code: 2 chiều thay vì 1 chiều Sheets→Backend, thủ công + time
+trigger 15 phút thay vì chỉ thủ công — xem trao đổi đầu Phase 28).
+
+**Backend:** `POST /api/sync/push` + `GET /api/sync/pull?since=` (`SyncController`,
+`SmartTask.Application/Sync/{SyncContracts,ISyncService,SyncService}.cs`). Dùng lại nguyên cột
+`SyncStatus`/`LastSyncedAt`/`Version` đã có từ Phase 21 (`SyncableEntity`), thêm mới `ExternalId`
+(mã hiển thị Sheets, migration `AddSyncExternalId`, unique filtered index `WHERE ExternalId IS NOT
+NULL` — filtered vì Task/Project/Goal/Habit tạo thẳng qua API/Desktop không có mã Sheets nào).
+
+**2 bug thật tìm thấy khi verify (không phải giả thuyết, cả 2 đều fix rồi verify lại bằng curl):**
+(1) đối chiếu chỉ theo `ExternalId` khiến 1 entity tạo qua Desktop, `pull` về Sheets lần đầu
+(`ExternalId` backend vẫn `null`), rồi Sheets gán mã mới và `push` lại → backend tạo **trùng** thay
+vì cập nhật — sửa bằng thêm field `Id` (optional) vào contract, ưu tiên tra theo `Id` trước
+`ExternalId`, backfill `ExternalId` khi tìm thấy theo `Id`. (2) `SaveChangesAsync` lỗi ở 1 item
+trong batch push khiến MỌI item sau đó trong cùng lần push cũng báo lỗi dù hợp lệ — do entity hỏng
+còn nằm trong EF Core change tracker, các lần save sau cố lưu lại nó — sửa bằng
+`DiscardTracking()` (`dbContext.ChangeTracker.Clear()`) trong mỗi `catch`, cô lập lỗi đúng từng item.
+
+**Apps Script (`apps/google-sheets/src/15_Sync.gs`, mới):** 1 engine (`syncAll_()`) dùng chung cho
+cả menu **Sync Now** (thủ công) lẫn time-driven trigger 15 phút (tự động) — không lặp logic.
+`onEdit(e)` (simple trigger) tự đánh dấu `SyncStatus = NotSynced` cho dòng vừa sửa ở 1 trong 4 sheet
+dữ liệu, kể cả sửa tay trực tiếp (Goals/Habits không có dialog UI riêng) — guard bằng kiểm tra dải
+cột bị sửa có nằm gọn trong 4 cột sync cuối hay không, để chính lần ghi-lại của sync engine không
+tự đánh dấu dirty vô hạn. `LockService` chống chạy chồng, `fetchWithRetry_` retry 3 lần backoff
+1s/2s/4s cho lỗi 5xx/network (không retry 4xx). Bảng ánh xạ enum `SYNC_ENUM_TO_BACKEND`/
+`SYNC_ENUM_TO_SHEET` (Area/Status/GoalStatus) giải đúng bài toán khoảng trắng đã gặp ở Phase 27
+(`enumMappings.ts`), lần này ở phía Apps Script. `ActivityLog` ghi lại mỗi lần sync
+(`EntityType=Sync`, `Action=Success/PartialFailure/Failed/Skipped`) — không cần sheet SyncLog riêng.
+
+**Quyết định phạm vi ghi rõ:** xoá không đồng bộ 2 chiều (xoá Sheets không xoá backend, xoá qua
+API/Desktop không xoá Sheets — `pull` chỉ hỏi "gì đã đổi", không biết "gì đã mất"; cần tombstone
+thật, ngoài phạm vi phase này). `DependencyTaskId` chỉ resolve đúng nếu task được phụ thuộc đã từng
+sync trước đó — 2 task hoàn toàn mới với liên kết phụ thuộc mới tạo, sync cùng 1 lần, sẽ trống field
+này tới chu kỳ sau.
+
+Verify thật, đầy đủ luồng — không chỉ build: `dotnet build` sạch, `dotnet list package
+--vulnerable --include-transitive` sạch cả 5 project, migration áp thật + verify độc lập qua
+`sqlcmd`. `curl` thật: push tạo mới/skip-vì-cũ-hơn/update-vì-mới-hơn (Version tăng đúng), pull xác
+nhận đúng bản mới nhất, cô lập lỗi per-item, chống trùng qua `Id`. Payload sinh thật từ
+`taskRowToSyncItem_()` (chạy qua Node `vm` với GAS API giả lập tối thiểu — không có môi trường Apps
+Script thật trong phiên này) gửi thẳng tới `/api/sync/push` thật, xác nhận khớp JSON 2 đầu. Toàn bộ
+enum mapping round-trip (Area/Status/GoalStatus qua lại) verify bằng harness riêng, tất cả khớp.
+**Chưa test qua Apps Script Editor/Sheets UI thật** (menu Sync Now/Connect to Backend/Auto-Sync
+click thật) — môi trường phiên này không triển khai `clasp push` lên 1 spreadsheet thật; nói rõ giới
+hạn này thay vì nhận đã kiểm tra. Nên tự `clasp push`, mở Sheet thật, Connect to Backend, Sync Now,
+và xác nhận tạo/sửa task cả 2 phía trước khi coi Phase 28 là xong hẳn về mặt vận hành thật. Dữ liệu
+test backend đã xoá sạch, không đụng 2 user có sẵn.
+
 Mỗi Phase kế tiếp sẽ được trình bày riêng theo format: Mục tiêu → File tạo/sửa → Full code →
 Command → Cách chạy → Cách test → Expected Result → Checklist → Git commit đề xuất.

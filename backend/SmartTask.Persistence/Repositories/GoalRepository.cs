@@ -12,6 +12,16 @@ public sealed class GoalRepository(AppDbContext dbContext) : IGoalRepository
     public Task<Goal?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
         dbContext.Goals.FirstOrDefaultAsync(g => g.Id == id, cancellationToken);
 
+    public Task<Goal?> GetByExternalIdAsync(
+        string externalId,
+        CancellationToken cancellationToken = default
+    ) => dbContext.Goals.FirstOrDefaultAsync(g => g.ExternalId == externalId, cancellationToken);
+
+    public Task<List<Goal>> GetChangedSinceAsync(
+        DateTimeOffset since,
+        CancellationToken cancellationToken = default
+    ) => dbContext.Goals.AsNoTracking().Where(g => g.UpdatedAt > since).ToListAsync(cancellationToken);
+
     public async Task AddAsync(Goal goal, CancellationToken cancellationToken = default) =>
         await dbContext.Goals.AddAsync(goal, cancellationToken);
 
@@ -19,4 +29,6 @@ public sealed class GoalRepository(AppDbContext dbContext) : IGoalRepository
 
     public Task SaveChangesAsync(CancellationToken cancellationToken = default) =>
         dbContext.SaveChangesAsync(cancellationToken);
+
+    public void DiscardTracking() => dbContext.ChangeTracker.Clear();
 }

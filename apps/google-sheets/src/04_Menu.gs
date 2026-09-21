@@ -166,6 +166,25 @@ function onOpen() {
     .addItem("⚙  Set Up / Repair Workspace", "setupSmartTaskSafe_");
 
   /* ----------------------------------------------------------------------
+   * SYNC (Phase 28)
+   * -------------------------------------------------------------------- */
+
+  const syncMenu = ui
+    .createMenu("Sync")
+
+    .addItem("🔄  Sync Now", "syncNowManual_")
+
+    .addSeparator()
+
+    .addItem("🔌  Connect to Backend...", "connectToBackendPrompt_")
+
+    .addSeparator()
+
+    .addItem("⏱  Enable Auto-Sync (every 15 min)", "setupSyncTrigger_")
+
+    .addItem("⏹  Disable Auto-Sync", "disableSyncTrigger_");
+
+  /* ----------------------------------------------------------------------
    * ROOT MENU
    * -------------------------------------------------------------------- */
 
@@ -188,6 +207,8 @@ function onOpen() {
     .addSeparator()
 
     .addSubMenu(workspaceMenu)
+
+    .addSubMenu(syncMenu)
 
     .addToUi();
 }

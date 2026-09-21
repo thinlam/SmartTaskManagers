@@ -70,6 +70,12 @@ function createTask_(fields) {
       RecommendedAction: "",
 
       Notes: "",
+
+      // Phase 28 — starts dirty; syncPush_() picks it up on the next run.
+      BackendId: "",
+      SyncStatus: "NotSynced",
+      LastSyncedAt: "",
+      Version: 1,
     },
     fields,
     {
@@ -356,6 +362,12 @@ function createProject_(fields) {
       Health: "Healthy",
       TargetDate: "",
       Description: "",
+
+      // Phase 28 — see createTask_'s identical defaults.
+      BackendId: "",
+      SyncStatus: "NotSynced",
+      LastSyncedAt: "",
+      Version: 1,
     },
     fields,
     {
@@ -448,6 +460,12 @@ function createGoal_(fields) {
       TargetDate: "",
       Progress: 0,
       Status: "On Track",
+
+      // Phase 28 — see createTask_'s identical defaults.
+      BackendId: "",
+      SyncStatus: "NotSynced",
+      LastSyncedAt: "",
+      Version: 1,
     },
     fields,
     {
@@ -493,6 +511,12 @@ function createHabit_(fields) {
       TargetCount: 0,
       CompletedCount: 0,
       LastCompletedDate: "",
+
+      // Phase 28 — see createTask_'s identical defaults.
+      BackendId: "",
+      SyncStatus: "NotSynced",
+      LastSyncedAt: "",
+      Version: 1,
     },
     fields,
     {

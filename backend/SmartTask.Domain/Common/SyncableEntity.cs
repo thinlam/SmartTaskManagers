@@ -15,4 +15,14 @@ public abstract class SyncableEntity : Entity
 
     /// <summary>Incremented on every update — optimistic concurrency today, conflict detection once Phase 28 exists.</summary>
     public int Version { get; set; } = 1;
+
+    /// <summary>
+    /// Phase 28 — the Sheets-side display id (e.g. "TASK-0001"), the join
+    /// key push/pull sync uses to reconcile a Sheets row with this row's
+    /// UUID. Null for anything created directly through the API/Desktop
+    /// app that has never round-tripped through Sheets. Unique per table
+    /// when set (see each EntityTypeConfiguration) — Sheets' own ID_PREFIX
+    /// scheme already guarantees no collision within one entity type.
+    /// </summary>
+    public string? ExternalId { get; set; }
 }

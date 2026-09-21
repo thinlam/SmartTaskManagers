@@ -7,6 +7,7 @@ using SmartTask.Application.Auth;
 using SmartTask.Application.Goals;
 using SmartTask.Application.Habits;
 using SmartTask.Application.Projects;
+using SmartTask.Application.Sync;
 using SmartTask.Application.Tasks;
 using SmartTask.Infrastructure;
 using SmartTask.Infrastructure.Security;
@@ -62,6 +63,7 @@ builder.Services.AddScoped<ITaskService, TaskService>();
 builder.Services.AddScoped<IProjectService, ProjectService>();
 builder.Services.AddScoped<IGoalService, GoalService>();
 builder.Services.AddScoped<IHabitService, HabitService>();
+builder.Services.AddScoped<ISyncService, SyncService>();
 
 // JWT validation (incoming requests) — token *issuance* is
 // SmartTask.Infrastructure.Security.JwtTokenGenerator; this is the

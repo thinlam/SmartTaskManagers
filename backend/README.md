@@ -285,6 +285,52 @@ policy) mà quên `app.UseCors()` trong pipeline — verify bằng `curl -X OPTI
 `405 Method Not Allowed` thay vì `204` kèm `Access-Control-Allow-Origin`; thêm dòng `UseCors` mới
 qua, verify lại thấy đúng header.
 
+## Sync (Phase 28)
+
+```
+POST /api/sync/push   [Authorize]  { tasks[], projects[], goals[], habits[] }  →  per-item outcome (Created/Updated/SkippedOlder/Error)
+GET  /api/sync/pull   [Authorize]  ?since=<ISO timestamp>                      →  { serverTime, tasks[], projects[], goals[], habits[] } changed after `since`
+```
+
+Bidirectional, **Last-Write-Wins theo `UpdatedAt`**, đối chiếu qua Phase 21's cột
+`ExternalId`/`SyncStatus`/`LastSyncedAt`/`Version` (đã có sẵn trên `SyncableEntity`, giờ mới thật sự
+dùng). `ExternalId` là mã hiển thị phía Sheets (`TASK-0001`...) — Phase 21 cố tình không dùng nó
+làm khoá chính; migration này (`AddSyncExternalId`) thêm nó như 1 cột riêng, unique có điều kiện
+(`WHERE ExternalId IS NOT NULL`, filtered index) để không phá vỡ những Task/Project/Goal/Habit tạo
+thẳng qua API/Desktop app mà không có mã Sheets nào cả.
+
+**Đối chiếu theo `Id` trước, `ExternalId` sau — không chỉ `ExternalId`.** Mỗi `SyncXItem` có thêm
+field `Id` (optional): khi Sheets đã biết `BackendId` của 1 dòng (cột `BackendId` của nó, ghi lại từ
+lần sync trước hoặc từ 1 lần `pull` mang một entity tạo thẳng qua Desktop app về Sheets lần đầu — lúc
+đó `ExternalId` trên backend vẫn `null`), `SyncService` ưu tiên tìm theo `Id` này thay vì
+`ExternalId`. **Bug thật tìm thấy khi verify:** ban đầu chỉ đối chiếu theo `ExternalId`; test thật
+(tạo task qua API bình thường, `pull` nó vào Sheets — lúc đó `ExternalId` backend vẫn `null` — rồi
+Sheets gán 1 mã mới và `push` lại) cho thấy backend **tạo trùng 1 dòng mới** thay vì cập nhật dòng
+cũ, vì tìm theo `ExternalId` không ra (backend chưa từng biết mã đó). Sửa bằng thêm field `Id` vào
+contract, ưu tiên tra theo `Id` khi có, đồng thời backfill `ExternalId` lên entity đã tìm thấy — verify
+lại bằng đúng kịch bản trên: `curl` tạo → `pull` (thấy `externalId: null`) → `push` lại với `id` +
+`externalId` mới → `Outcome: Updated` (không phải `Created`) → `GET /api/tasks` xác nhận **chỉ 1
+dòng**, không trùng.
+
+**Cô lập lỗi từng item, không rớt cả batch.** Mỗi item trong 1 lần `push` có `SaveChangesAsync`
+riêng, bọc try/catch riêng — 1 item lỗi (vd `ProjectId` tham chiếu không tồn tại) trả `Outcome:
+Error` chỉ cho item đó, các item hợp lệ khác trong cùng batch vẫn `Created`/`Updated` bình thường.
+**Bug thật tìm thấy khi verify:** ban đầu, sau 1 item lỗi, MỌI item sau đó trong cùng batch cũng báo
+`Error` dù dữ liệu hợp lệ — nguyên nhân: `SaveChangesAsync` thất bại vẫn để entity bị lỗi nằm lại
+trong EF Core's change tracker của `DbContext` (dùng chung suốt vòng lặp), khiến lần `SaveChangesAsync`
+kế tiếp cố lưu lại luôn cả entity hỏng đó và thất bại theo. Sửa bằng `DiscardTracking()` (mới, gọi
+`dbContext.ChangeTracker.Clear()`) trong mỗi `catch`, verify lại bằng batch 2 item (1 lỗi + 1 hợp
+lệ) → item hợp lệ trả đúng `Created`.
+
+Verify thật, đầy đủ luồng — không chỉ build: migration `AddSyncExternalId` áp thật vào SQL Server
+Express, verify độc lập bằng `sqlcmd`. `curl` thật: push tạo mới (`Created`), push lại với
+`updatedAt` cũ hơn (`SkippedOlder`, không ghi đè), push lại với `updatedAt` mới hơn (`Updated`,
+`Version` tăng), `pull` xác nhận thấy đúng bản mới nhất. Kịch bản trùng lặp qua `Id` và kịch bản cô
+lập lỗi per-item ở trên đều verify bằng `curl` thật, không chỉ đọc code. Payload sinh thật từ
+`taskRowToSyncItem_()` (Apps Script, chạy qua Node `vm` harness với GAS API giả lập tối thiểu) được
+gửi thẳng tới `/api/sync/push` thật — xác nhận đúng khớp JSON shape 2 đầu, không chỉ khớp trên giấy.
+Dữ liệu test đã xoá sạch, không đụng 2 user có sẵn trong DB.
+
 ## Sự cố thật gặp phải khi dựng skeleton (Phase 20)
 
 Template `webapi` mặc định kéo theo `Microsoft.AspNetCore.OpenApi 10.0.9`, phiên bản này lại kéo

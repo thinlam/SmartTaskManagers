@@ -15,6 +15,7 @@ public sealed class TaskItemConfiguration : IEntityTypeConfiguration<TaskItem>
         builder.Property(t => t.Tags).HasMaxLength(1000);
         builder.Property(t => t.RecommendedAction).HasMaxLength(500);
         builder.Property(t => t.Notes).HasMaxLength(4000);
+        builder.Property(t => t.ExternalId).HasMaxLength(50);
 
         builder.Property(t => t.Area).HasConversion<string>().HasMaxLength(20);
         builder.Property(t => t.Priority).HasConversion<string>().HasMaxLength(20);
@@ -51,5 +52,11 @@ public sealed class TaskItemConfiguration : IEntityTypeConfiguration<TaskItem>
 
         builder.HasIndex(t => t.Status);
         builder.HasIndex(t => t.DueDate);
+
+        // Phase 28 — the join key sync uses to find "the row this Sheets
+        // TaskId already maps to". Filtered (WHERE ExternalId IS NOT NULL)
+        // so any number of API/Desktop-only tasks (ExternalId = null) can
+        // coexist without tripping the uniqueness constraint.
+        builder.HasIndex(t => t.ExternalId).IsUnique().HasFilter("[ExternalId] IS NOT NULL");
     }
 }

@@ -12,8 +12,12 @@ public sealed class ProjectConfiguration : IEntityTypeConfiguration<Project>
 
         builder.Property(p => p.Name).HasMaxLength(200).IsRequired();
         builder.Property(p => p.Description).HasMaxLength(4000);
+        builder.Property(p => p.ExternalId).HasMaxLength(50);
 
         builder.Property(p => p.Area).HasConversion<string>().HasMaxLength(20);
         builder.Property(p => p.Health).HasConversion<string>().HasMaxLength(20);
+
+        // Phase 28 — see TaskItemConfiguration's identical index for why filtered.
+        builder.HasIndex(p => p.ExternalId).IsUnique().HasFilter("[ExternalId] IS NOT NULL");
     }
 }

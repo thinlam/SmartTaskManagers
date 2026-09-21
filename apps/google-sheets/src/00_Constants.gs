@@ -84,7 +84,15 @@ const TASK_HEADERS = [
   'CreatedAt',         // X
   'UpdatedAt',         // Y
   'LastStatusChangedAt', // Z
-  'Notes'              // AA
+  'Notes',             // AA
+
+  // Phase 28 — sync columns, always trailing so appending them never
+  // shifts an existing row's business columns. BackendId is the join key
+  // the other direction (this row's UUID once pushed at least once).
+  'BackendId',         // AB  UUID once synced, blank until first successful push
+  'SyncStatus',        // AC  NotSynced/Synced/Conflict — see LOOKUP_LISTS.SyncStatus
+  'LastSyncedAt',       // AD
+  'Version'             // AE  bumped by the backend on every accepted push
 ];
 
 // PROJECTS
@@ -97,7 +105,13 @@ const PROJECT_HEADERS = [
   'TargetDate',
   'Description',
   'CreatedAt',
-  'UpdatedAt'
+  'UpdatedAt',
+
+  // Phase 28 — see TASK_HEADERS's identical trailing block.
+  'BackendId',
+  'SyncStatus',
+  'LastSyncedAt',
+  'Version'
 ];
 
 // GOALS
@@ -110,7 +124,13 @@ const GOAL_HEADERS = [
   'Progress',     // 0-100
   'Status',       // On Track/At Risk/Completed
   'CreatedAt',
-  'UpdatedAt'
+  'UpdatedAt',
+
+  // Phase 28 — see TASK_HEADERS's identical trailing block.
+  'BackendId',
+  'SyncStatus',
+  'LastSyncedAt',
+  'Version'
 ];
 
 // HABITS
@@ -123,7 +143,13 @@ const HABIT_HEADERS = [
   'CompletedCount',
   'LastCompletedDate',
   'CreatedAt',
-  'UpdatedAt'
+  'UpdatedAt',
+
+  // Phase 28 — see TASK_HEADERS's identical trailing block.
+  'BackendId',
+  'SyncStatus',
+  'LastSyncedAt',
+  'Version'
 ];
 
 // ACTIVITY LOG
@@ -148,7 +174,41 @@ const LOOKUP_LISTS = {
   RecurringType: ['None', 'Daily', 'Weekly', 'Monthly'],
   ProjectHealth: ['Healthy', 'Attention', 'At Risk', 'Critical'],
   GoalStatus: ['On Track', 'At Risk', 'Completed'],
-  HabitFrequency: ['Daily', 'Weekly', 'Custom']
+  HabitFrequency: ['Daily', 'Weekly', 'Custom'],
+  SyncStatus: ['NotSynced', 'Synced', 'Conflict']
+};
+
+// SYNC (Phase 28)
+// -----------------------------------------------------------------------
+// Which data sheets round-trip with the backend, and how to find each
+// one's dirty rows. `key` matches the JSON array name the backend's
+// SyncPushRequest/SyncPullResponse use (tasks/projects/goals/habits) —
+// see backend/SmartTask.Application/Sync/SyncContracts.cs.
+const SYNC_ENTITIES = [
+  { key: 'tasks', sheet: SHEETS.TASKS, headers: TASK_HEADERS, idHeader: 'TaskId', prefix: ID_PREFIX.TASK },
+  { key: 'projects', sheet: SHEETS.PROJECTS, headers: PROJECT_HEADERS, idHeader: 'ProjectId', prefix: ID_PREFIX.PROJECT },
+  { key: 'goals', sheet: SHEETS.GOALS, headers: GOAL_HEADERS, idHeader: 'GoalId', prefix: ID_PREFIX.GOAL },
+  { key: 'habits', sheet: SHEETS.HABITS, headers: HABIT_HEADERS, idHeader: 'HabitId', prefix: ID_PREFIX.HABIT }
+];
+
+// Enum values where the C# backend's enum member name (no spaces allowed)
+// diverges from Sheets' own display string. Everything not listed here
+// (Priority/Risk/Energy/Context/RecurringType/HabitFrequency) is identical
+// on both sides and needs no mapping — mirrors
+// packages/api-client/src/enumMappings.ts's frontend-side version of this
+// exact problem, found independently in Phase 27.
+const SYNC_ENUM_TO_BACKEND = {
+  Area: { 'Personal Admin': 'PersonalAdmin' },
+  Status: { 'To Do': 'ToDo', 'In Progress': 'InProgress' },
+  GoalStatus: { 'On Track': 'OnTrack', 'At Risk': 'AtRisk' }
+};
+const SYNC_ENUM_TO_SHEET = {
+  Area: { PersonalAdmin: 'Personal Admin' },
+  Status: { ToDo: 'To Do', InProgress: 'In Progress' },
+  GoalStatus: { OnTrack: 'On Track', AtRisk: 'At Risk' },
+  // ProjectHealth is pull-only (never pushed — see backend's Project.Health
+  // doc comment, Phase 21/24), so only the to-Sheet direction is needed.
+  ProjectHealth: { AtRisk: 'At Risk' }
 };
 
 // SETTINGS DEFAULTS
