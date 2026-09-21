@@ -894,5 +894,30 @@ tương tác thật trong `app.exe`** — môi trường phiên này không có 
 được ở mức process/window (chạy, không crash, đúng kích thước), không phải toàn bộ UX — nói rõ giới
 hạn này.
 
+Phase 32 đã thực hiện — Installer .exe (NSIS)/.msi (WiX) thật. `bundle` trong `tauri.conf.json`
+thêm metadata thật (`publisher`/`copyright`/`category`/`shortDescription`/`longDescription`, hiện
+đúng trong Apps & Features) và `bundle.windows.nsis` (`installMode: "currentUser"` — không cần
+Admin, `startMenuFolder`).
+
+**3 phát hiện thật khi verify vòng đời cài đặt đầy đủ (không chỉ build ra file):**
+
+1. `setup.exe /S` qua Git Bash lần đầu **không** chạy im lặng — MSYS tự dịch `/S` thành path Windows
+   (`C:/Program Files/Git/S`), phá đối số dòng lệnh. Sửa bằng `MSYS_NO_PATHCONV=1`.
+2. `.msi` cài đặt thất bại thật (exit `1603`, lỗi `1925` "insufficient privileges") khi không có
+   quyền Admin — đặc tính vốn có của WiX (per-machine, cần elevation), Tauri's `WixConfig` không có
+   option "cài cho user hiện tại" như NSIS, cần custom `.wxs` mới đổi được — ngoài phạm vi phase
+   này. Verify bằng chạy nâng quyền thật (`-Verb RunAs`) → thành công. **Khuyến nghị: dùng bản
+   `.exe` (NSIS) cho người dùng cuối, `.msi` chỉ dành triển khai doanh nghiệp qua Group Policy.**
+3. Publisher hiện lỗi font khi đọc registry qua terminal Git Bash (`l�m Nguy�n Th�n`) — verify bằng
+   ghi UTF-8 ra file riêng xác nhận giá trị lưu thật đúng ("lâm Nguyên Thìn"), chỉ là lỗi hiển thị
+   codepage terminal, không phải bug installer thật.
+
+Verify thật, đầy đủ vòng đời — không chỉ build: **NSIS** cài (`/S`, không Admin) → xác nhận thư mục
+cài/Start Menu shortcut/registry entry thật → mở app **qua chính shortcut vừa cài** → `Responding:
+True` → gỡ (`uninstall.exe /S`) → xác nhận sạch hoàn toàn. **MSI** cài/gỡ nâng quyền (`-Verb RunAs`)
+→ verify file/registry đúng cả 2 chiều, exit code `0`. **Chưa test:** click tương tác thật bên
+trong app sau khi cài — không có công cụ điều khiển GUI trong phiên này, chỉ verify được mức
+process/window/file-system.
+
 Mỗi Phase kế tiếp sẽ được trình bày riêng theo format: Mục tiêu → File tạo/sửa → Full code →
 Command → Cách chạy → Cách test → Expected Result → Checklist → Git commit đề xuất.

@@ -73,6 +73,48 @@ trường phiên này không có công cụ điều khiển GUI, chỉ verify đ
 không crash, đúng kích thước) chứ chưa phải toàn bộ UX — nói rõ giới hạn này thay vì nhận đã test
 đủ.
 
+## Installer — .exe (NSIS) / .msi (WiX) (Phase 32)
+
+`src-tauri/tauri.conf.json`'s `bundle` thêm metadata thật (`publisher`, `copyright`, `category:
+"Productivity"`, `shortDescription`, `longDescription` — hiện đúng trong "Apps & Features"/registry
+uninstall entry, không để trống) và `bundle.windows.nsis` (`installMode: "currentUser"` — cài không
+cần quyền Admin, đúng tinh thần Personal Mode 1 người dùng; `languages: ["English"]`;
+`startMenuFolder: "Smart Task Manager"`).
+
+**Sự cố/phát hiện thật khi verify (không phải đọc config suông):**
+
+- Chạy `setup.exe /S` qua Git Bash lần đầu **không** chạy im lặng — cửa sổ cài đặt vẫn hiện ra thật.
+  Nguyên nhân: MSYS/Git Bash tự động dịch `/S` (bắt đầu bằng `/`) thành đường dẫn Windows kiểu
+  `C:/Program Files/Git/S`, phá đối số dòng lệnh. Sửa bằng `MSYS_NO_PATHCONV=1` trước lệnh — verify
+  lại xác nhận chạy im lặng thật.
+- `.msi` chạy `msiexec /i ... /quiet` **thất bại thật** với exit code `1603`/lỗi `1925`
+  ("You do not have sufficient privileges... Log on as administrator") khi không có quyền Admin —
+  đây là đặc tính vốn có của MSI/WiX (per-machine install cần elevation), không phải bug sinh ra từ
+  cấu hình Tauri, và **không sửa được** chỉ bằng JSON config (`WixConfig` của Tauri không có option
+  "cài cho user hiện tại" như NSIS có — cần custom `.wxs` template mới đổi được `InstallScope`, ngoài
+  phạm vi phase này). Verify lại bằng `Start-Process msiexec.exe -Verb RunAs` (chạy nâng quyền thật)
+  → exit code `0`, cài đặt/gỡ đều thành công. **Khuyến nghị thật cho người dùng cuối: dùng bản
+  `.exe` (NSIS), không cần quyền Admin** — `.msi` chỉ nên dùng khi có nhu cầu triển khai theo chính
+  sách doanh nghiệp (Group Policy) cần MSI.
+- Publisher hiển thị lỗi font trong terminal Git Bash khi đọc registry (`l�m Nguy�n Th�n`) — verify
+  bằng ghi ra file UTF-8 riêng xác nhận **giá trị lưu thật đúng UTF-8** ("lâm Nguyên Thìn"), chỉ là
+  lỗi hiển thị codepage của terminal, không phải bug thật trong installer.
+
+**Verify thật, đầy đủ vòng đời cài đặt — không chỉ build ra file:**
+
+- **NSIS** (`setup.exe /S`, `MSYS_NO_PATHCONV=1`, không cần Admin): cài xong → xác nhận thật thư mục
+  cài (`%LOCALAPPDATA%\smart-task-manager\app.exe`), Start Menu shortcut thật
+  (`Smart Task Manager\smart-task-manager.lnk`), registry uninstall entry đúng
+  `DisplayName`/`Publisher`/`DisplayVersion` → mở app **qua chính shortcut vừa cài** (không phải
+  chạy thẳng exe) → xác nhận `Responding: True`, đúng `MainWindowTitle` → đóng app → chạy
+  `uninstall.exe /S` → verify thư mục cài/shortcut/registry entry **đều biến mất sạch**.
+- **MSI** (`msiexec /i ... -Verb RunAs`, cần Admin — đúng bản chất WiX): cài xong → verify file cài
+  đặt thật, registry entry đúng → `msiexec /x ... -Verb RunAs` gỡ → verify sạch, exit code `0` cả 2
+  chiều.
+
+**Chưa test:** click tương tác thật bên trong app sau khi cài (chỉ verify process/window/file-system
+level, giống giới hạn đã ghi ở Phase 31) — không có công cụ điều khiển GUI trong phiên này.
+
 ## Application Shell (Phase 07)
 
 ```

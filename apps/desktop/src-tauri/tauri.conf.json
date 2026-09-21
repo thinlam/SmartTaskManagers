@@ -28,6 +28,11 @@
   "bundle": {
     "active": true,
     "targets": "all",
+    "publisher": "lâm Nguyên Thìn",
+    "copyright": "© 2026 lâm Nguyên Thìn",
+    "category": "Productivity",
+    "shortDescription": "Personal task, project, goal and habit manager",
+    "longDescription": "Smart Task Manager is a personal productivity app for tracking tasks, projects, goals and habits, with a rule-based Smart Engine that scores and prioritizes your work. Syncs with a local backend and, optionally, a Google Sheets workbook.",
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -35,6 +40,13 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
+    "windows": {
+      "nsis": {
+        "installMode": "currentUser",
+        "languages": ["English"],
+        "startMenuFolder": "Smart Task Manager"
+      }
+    },
     "android": {
       "debugApplicationIdSuffix": ".debug"
     }
