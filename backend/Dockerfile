@@ -17,6 +17,13 @@ WORKDIR /app
 
 COPY --from=build /app/publish .
 
+# ASP.NET Core defaults to Production when unset, so this is belt-and-
+# suspenders rather than strictly required — explicit here so it's never
+# ambiguous which appsettings.*.json applies inside the container (never
+# appsettings.Development.json, which is the only place the local
+# DESKTOP-CKNT19A\SQLEXPRESS connection string lives).
+ENV ASPNETCORE_ENVIRONMENT=Production
+
 EXPOSE 8080
 
 # Railway (and most PaaS hosts) assign a container a $PORT env var at

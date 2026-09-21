@@ -13,11 +13,16 @@ namespace SmartTask.Persistence;
 
 /// <summary>
 /// Registers AppDbContext against the "DefaultConnection" connection
-/// string (see SmartTask.Api/appsettings.json) plus the repositories
-/// implemented against it. EF Core doesn't actually open a connection at
-/// registration time, only when a DbContext is first used — so this
-/// builds and the app starts fine even without a live SQL Server
-/// instance.
+/// string plus the repositories implemented against it. The base
+/// SmartTask.Api/appsettings.json deliberately has no ConnectionStrings
+/// section at all — the value comes from appsettings.Development.json
+/// (local dev, DESKTOP-CKNT19A\SQLEXPRESS) or, in production, the
+/// ConnectionStrings__DefaultConnection environment variable (Railway),
+/// never a committed file — see backend/README.md's "Cài trên nhiều máy"
+/// and "Bug thật gặp khi deploy Railway" sections. EF Core doesn't
+/// actually open a connection at registration time, only when a
+/// DbContext is first used — so this builds and the app starts fine even
+/// without a live SQL Server instance.
 /// </summary>
 public static class DependencyInjection
 {

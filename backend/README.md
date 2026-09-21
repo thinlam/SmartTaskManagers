@@ -552,6 +552,147 @@ tới Railway) — mọi request sẽ âm thầm đi sai chỗ thay vì lỗi r�
 throw lỗi rõ ràng ngay lúc app khởi động, thay vì âm thầm gọi sai — chặn đúng loại lỗi vừa gặp
 thật, không lặp lại lần sau.
 
+## Cấu hình Dev vs Production, Railway SQL Server, auto-migrate, health check
+
+Sau khi có SQL Server riêng trên Railway (service `MicrosoftSQL`, cùng project với API, dùng
+Private Network), chuẩn hoá lại toàn bộ cấu hình theo đúng convention ASP.NET Core — không hard-code
+connection string/JWT secret ở bất kỳ đâu, dev và production tách biệt hoàn toàn bằng
+`appsettings.{Environment}.json` + biến môi trường.
+
+**File đã sửa/tạo:**
+
+```
+SmartTask.Api/appsettings.json                appsettings gốc — KHÔNG còn ConnectionStrings nào cả (trước đây có DESKTOP-CKNT19A\SQLEXPRESS commit thẳng vào đây — đã gỡ)
+SmartTask.Api/appsettings.Development.json     ConnectionStrings:DefaultConnection = DESKTOP-CKNT19A\SQLEXPRESS — chỉ load khi ASPNETCORE_ENVIRONMENT=Development
+SmartTask.Api/appsettings.Production.json      mới — chỉ Logging, KHÔNG ConnectionStrings/Jwt:Secret nào
+SmartTask.Api/Program.cs                       auto-migrate có retry, health checks, exception handler production
+SmartTask.Api/HealthChecks/DatabaseHealthCheck.cs    mới — CanConnectAsync() thật
+SmartTask.Api/HealthChecks/HealthCheckJsonWriter.cs  mới — {"status": "Healthy"} thay vì text mặc định
+SmartTask.Persistence/DependencyInjection.cs   cập nhật doc comment (logic đọc ConnectionStrings đã đúng từ trước, không đổi)
+Dockerfile                                     ENV ASPNETCORE_ENVIRONMENT=Production
+```
+
+**`appsettings.json` (base) không còn `ConnectionStrings` nào** — trước đây connection string
+`DESKTOP-CKNT19A\SQLEXPRESS` với `Trusted_Connection=True` nằm thẳng trong file này, tức là commit
+thẳng vào git dù không phải "secret" thật (Trusted_Connection không có password) nhưng vẫn lộ
+hostname/topology nội bộ, và đúng loại giá trị-chỉ-đúng-cho-1-máy tuyệt đối không nên có trong file
+base dùng chung mọi environment. Đã chuyển sang `appsettings.Development.json` (chỉ load khi
+`ASPNETCORE_ENVIRONMENT=Development`) — **lưu ý: giá trị cũ vẫn còn trong lịch sử git** (các commit
+trước đó), không rewrite history trong lần sửa này.
+
+**`Program.cs`/`DependencyInjection.cs` đọc connection string đúng chuẩn đã có sẵn từ Phase 21,
+không cần sửa:**
+
+```csharp
+var connectionString =
+    configuration.GetConnectionString("DefaultConnection")
+    ?? throw new InvalidOperationException(
+        "Missing 'ConnectionStrings:DefaultConnection' — see SmartTask.Api/appsettings.json."
+    );
+services.AddDbContext<AppDbContext>(options => options.UseSqlServer(connectionString));
+```
+
+`IConfiguration.GetConnectionString("DefaultConnection")` tự đọc theo đúng thứ tự layer chuẩn của
+ASP.NET Core: `appsettings.json` → `appsettings.{Environment}.json` → biến môi trường (dạng
+`ConnectionStrings__DefaultConnection`, 2 dấu gạch dưới) → (chỉ Development) User Secrets. Production
+trên Railway **không có file nào chứa connection string cả** — giá trị đến từ biến môi trường
+`ConnectionStrings__DefaultConnection` Railway set qua reference cú pháp
+`${{MicrosoftSQL.MSSQL_SERVER}}`/`${{MicrosoftSQL.MSSQL_TCP_PORT}}`/... (Railway Variables, không
+commit vào repo) — **ưu tiên `MSSQL_SERVER`/`MSSQL_TCP_PORT` (Private Network), không dùng
+`*_PUBLIC`** vì API và SQL Server nằm cùng Railway project.
+
+**JWT secret** cũng đã đúng chuẩn từ Phase 22, không cần sửa — `jwtSection["Secret"] ?? throw
+InvalidOperationException(...)` fail rõ ràng nếu thiếu, đọc qua biến môi trường `Jwt__Secret` trên
+Railway giống hệt cách `ConnectionStrings__DefaultConnection` hoạt động.
+
+**Auto-migrate lúc khởi động, có retry:**
+
+```csharp
+{
+    const int maxAttempts = 5;
+    for (var attempt = 1; ; attempt++)
+    {
+        try
+        {
+            using var migrationScope = app.Services.CreateScope();
+            var dbContext = migrationScope.ServiceProvider.GetRequiredService<AppDbContext>();
+            await dbContext.Database.MigrateAsync();
+            break;
+        }
+        catch (Exception ex) when (attempt < maxAttempts)
+        {
+            app.Logger.LogWarning(ex, "Migration attempt {Attempt}/{MaxAttempts} failed — retrying in {DelaySeconds}s.",
+                attempt, maxAttempts, attempt * 3);
+            await Task.Delay(TimeSpan.FromSeconds(attempt * 3));
+        }
+    }
+}
+```
+
+Chọn auto-migrate (không phải bước migrate thủ công riêng) vì cả 4 migration hiện có
+(`InitialSchema`/`AddUsers`/`AddSyncExternalId`/`AddNotifications`) đều **thuần cộng thêm**, không
+migration nào xoá cột/bảng — `MigrateAsync()` tự idempotent (chỉ áp migration chưa có trong
+`__EFMigrationsHistory`), chạy lại trên DB đã cập nhật là no-op thật, verify bằng log
+`"No migrations were applied. The database is already up to date."`.
+
+**Bug thật phát hiện khi verify:** thử `MigrateAsync()` không retry (1 lần duy nhất) với connection
+string trỏ vào host không tồn tại → app crash ngay lập tức ở dòng migrate, **trước khi Kestrel kịp
+lắng nghe port nào cả** — nghĩa là nếu Railway khởi động API service nhanh hơn SQL Server service
+sẵn sàng nhận kết nối (không có thứ tự khởi động đảm bảo giữa 2 service Railway riêng biệt), app sẽ
+crash-loop vô ích dù DB Railway sẽ tự sẵn sàng sau vài giây. Sửa bằng retry 5 lần, backoff tăng dần
+3s/6s/9s/12s — verify thật bằng cùng kịch bản connection string sai, log xác nhận đúng 4 dòng
+`"Migration attempt N/5 failed — retrying in Xs."` rồi crash thật ở lần thử thứ 5 (không retry vô
+hạn — vẫn fail rõ ràng nếu DB thật sự không bao giờ sẵn sàng, không âm thầm chạy thiếu schema).
+
+**Health check thật (`Microsoft.Extensions.Diagnostics.HealthChecks`, có sẵn trong ASP.NET Core,
+không cần NuGet package mới):**
+
+```
+GET /health       — liveness, Predicate = _ => false (không chạy check nào, chỉ xác nhận Kestrel đang trả lời)
+GET /health/db     — readiness, chạy DatabaseHealthCheck (CanConnectAsync() thật, không phải giả định DbContext dựng được là DB sống)
+```
+
+Cả 2 đều **không yêu cầu JWT** (`MapHealthChecks` không nằm dưới `[Authorize]` nào, `[Authorize]`
+trong app này chỉ áp per-controller — xem doc comment `TasksController`). Response format chuẩn hoá
+qua `HealthCheckJsonWriter` thành `{"status": "Healthy"}`/`{"status": "Unhealthy"}` thay vì text
+"Healthy"/"Unhealthy" mặc định của framework. `DatabaseHealthCheck` **không bao giờ** đưa
+`ex.Message`/connection string vào response — chỉ log server-side (khớp yêu cầu không lộ thông tin
+nhạy cảm qua API).
+
+**Exception handler cho production:** trước đây không có middleware xử lý exception nào cả — 1
+exception chưa bắt (vd lỗi SQL giữa request) sẽ khiến response bất thường mà `apps/desktop`'s
+`httpClient.ts` hiểu nhầm thành "Could not reach the server" (dù server có phản hồi, chỉ là phản hồi
+dị dạng) thay vì lỗi HTTP rõ ràng. Thêm `app.UseExceptionHandler(...)` (chỉ khi **không**
+`IsDevelopment()`) — trả JSON `{"message": "An unexpected error occurred."}` với status `500`
+thật, log đầy đủ exception (kể cả nội dung nhạy cảm nếu có) chỉ ở server-side qua `ILogger`, **không
+bao giờ** đưa stack trace hay chi tiết exception vào response.
+
+**CORS: đã kiểm tra lại, không cần sửa gì** — `WithOrigins("http://localhost:5173",
+"tauri://localhost", "http://tauri.localhost")` xác thực `Origin` header của **bên gọi** (luôn là
+`tauri://localhost` cho app Desktop đã đóng gói, dù gọi backend nào), không phải địa chỉ đích —
+Desktop production gọi Railway hoàn toàn bình thường mà không cần thêm origin nào (đã giải thích chi
+tiết ở mục "Cài trên nhiều máy" phía trên).
+
+**Verify thật, đầy đủ — không chỉ build:** `dotnet restore` + `dotnet build -c Release` sạch, `dotnet
+list package --vulnerable --include-transitive` sạch cả 5 project (không có test project nào trong
+solution nên bỏ qua `dotnet test`). Chạy thật ở Development (`dotnet run`, dùng launchSettings)
+→ migration "already up to date" → `GET /health`/`GET /health/db`/`GET /api/health` đều `200`, đăng
+nhập + `GET /api/tasks` vẫn hoạt động đúng (business logic không đổi). Chạy thật ở **Production**
+(`dotnet bin/Debug/net10.0/SmartTask.Api.dll` trực tiếp — đúng cách Docker/Railway chạy, không qua
+`dotnet run`/launchSettings — với `ASPNETCORE_ENVIRONMENT=Production` +
+`ConnectionStrings__DefaultConnection`/`Jwt__Secret` qua biến môi trường) → xác nhận `/swagger` trả
+`404` (đúng — chỉ bật ở Development), login + tasks vẫn `200`, `/health/db` vẫn `Healthy` với DB
+thật. Retry logic verify bằng kịch bản DB sai thật (native lẫn trong container Docker) — log đúng
+4 lần retry rồi crash rõ ràng, không treo vô hạn, không silent-fail. Search toàn `backend/` xác nhận
+`appsettings.json` (base) sạch hoàn toàn, `Trusted_Connection`/`SQLEXPRESS`/`DESKTOP-CKNT19A` chỉ
+còn trong `appsettings.Development.json` (đúng, dev-only) và comment/doc (không phải code path
+thật). **Chưa test được:** container Docker thật kết nối vào SQL Server thật qua network (SQL
+Server local dùng Windows Integrated Auth, không kết nối được từ container Linux qua
+`host.docker.internal`) — đã verify tương đương bằng cách chạy trực tiếp (không qua container) ở
+Production mode với connection string + JWT secret qua biến môi trường, và verify riêng phần
+container (`$PORT` binding, retry logic) bằng DB giả — kết hợp 2 phần này cho độ tin cậy cao nhưng
+chưa phải test Railway thật 100% end-to-end; cần bạn tự xác nhận sau khi redeploy.
+
 ## Sự cố thật gặp phải khi dựng skeleton (Phase 20)
 
 Template `webapi` mặc định kéo theo `Microsoft.AspNetCore.OpenApi 10.0.9`, phiên bản này lại kéo

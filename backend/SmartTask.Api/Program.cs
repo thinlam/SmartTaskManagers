@@ -1,9 +1,13 @@
 using System.Text;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using SmartTask.Api.BackgroundServices;
+using SmartTask.Api.HealthChecks;
 using SmartTask.Application.Auth;
 using SmartTask.Application.Goals;
 using SmartTask.Application.Habits;
@@ -72,6 +76,14 @@ builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddHostedService<DailySmartRecalcHostedService>();
 builder.Services.AddHostedService<NotificationGenerationHostedService>();
 
+// GET /health (liveness — is the process up at all) and GET /health/db
+// (readiness — can it actually reach SQL Server) — see HealthChecks/.
+// Neither requires a JWT: MapHealthChecks endpoints aren't covered by
+// [Authorize] (that's only ever applied per-controller in this app, see
+// TasksController's own doc comment), and a health probe that itself
+// needs auth defeats the point of a health probe.
+builder.Services.AddHealthChecks().AddCheck<DatabaseHealthCheck>("database", tags: ["db"]);
+
 // JWT validation (incoming requests) — token *issuance* is
 // SmartTask.Infrastructure.Security.JwtTokenGenerator; this is the
 // other half, checking a Bearer token on [Authorize] endpoints.
@@ -122,6 +134,50 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+// Applies pending EF Core migrations on every startup — safe to run
+// unconditionally because MigrateAsync() only ever applies migrations
+// not yet recorded in __EFMigrationsHistory (idempotent: a no-op on a
+// database that's already current, which is every local dev run today).
+// Chosen over a separate manual-migration step because every migration
+// in this project so far (InitialSchema/AddUsers/AddSyncExternalId/
+// AddNotifications) is purely additive — no destructive migration has
+// ever been authored here.
+//
+// Retried a few times with backoff rather than failing on the very
+// first attempt — verified for real that a plain single-shot
+// MigrateAsync() crashes the whole process immediately if the database
+// isn't reachable *yet* (SqlException, unhandled, process exits). On
+// Railway, the API and MicrosoftSQL are separate services with no
+// guaranteed startup ordering, so the DB being a few seconds slow to
+// accept connections is a real, recoverable race, not a real
+// misconfiguration — worth a few retries before giving up. Still fails
+// fast and loud (crashes) once retries are exhausted, rather than
+// accepting traffic against a stale/missing schema.
+{
+    const int maxAttempts = 5;
+    for (var attempt = 1; ; attempt++)
+    {
+        try
+        {
+            using var migrationScope = app.Services.CreateScope();
+            var dbContext = migrationScope.ServiceProvider.GetRequiredService<AppDbContext>();
+            await dbContext.Database.MigrateAsync();
+            break;
+        }
+        catch (Exception ex) when (attempt < maxAttempts)
+        {
+            app.Logger.LogWarning(
+                ex,
+                "Migration attempt {Attempt}/{MaxAttempts} failed — retrying in {DelaySeconds}s.",
+                attempt,
+                maxAttempts,
+                attempt * 3
+            );
+            await Task.Delay(TimeSpan.FromSeconds(attempt * 3));
+        }
+    }
+}
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
@@ -136,6 +192,43 @@ if (app.Environment.IsDevelopment())
         options.RoutePrefix = "swagger";
     });
 }
+else
+{
+    // Production only — an unhandled exception must never reach the
+    // client as a raw stack trace or a connection-reset (which
+    // apps/desktop's httpClient.ts would misreport as "could not reach
+    // the server", hiding a real server-side failure behind a networking
+    // message). Logs the real exception server-side only; the response
+    // body never contains it.
+    app.UseExceptionHandler(errorApp =>
+    {
+        errorApp.Run(async context =>
+        {
+            context.Response.StatusCode = StatusCodes.Status500InternalServerError;
+            context.Response.ContentType = "application/json";
+
+            var exception = context.Features.Get<IExceptionHandlerFeature>()?.Error;
+            context
+                .RequestServices.GetRequiredService<ILogger<Program>>()
+                .LogError(exception, "Unhandled exception processing {Path}", context.Request.Path);
+
+            await context.Response.WriteAsJsonAsync(new { message = "An unexpected error occurred." });
+        });
+    });
+}
+
+app.MapHealthChecks(
+    "/health",
+    new HealthCheckOptions { Predicate = _ => false, ResponseWriter = HealthCheckJsonWriter.Write }
+);
+app.MapHealthChecks(
+    "/health/db",
+    new HealthCheckOptions
+    {
+        Predicate = check => check.Tags.Contains("db"),
+        ResponseWriter = HealthCheckJsonWriter.Write,
+    }
+);
 
 app.UseHttpsRedirection();
 
