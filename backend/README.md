@@ -516,6 +516,42 @@ tự thử `docker run` trỏ `ConnectionStrings__DefaultConnection` vào SQL Se
 chạy ngay trên host qua `host.docker.internal`) trước khi coi Docker image là dùng được cho triển
 khai thật.
 
+### Bug thật gặp khi deploy Railway: 502 "Application failed to respond"
+
+Sau khi backend deploy lên Railway, `curl` thật tới URL Railway trả về `502` — container build
+đúng, chạy đúng cục bộ (`docker run` verify sạch ở trên) nhưng **không trả lời được trên Railway**.
+Nguyên nhân thật: Railway (và hầu hết PaaS) gán 1 `$PORT` **động** cho container lúc chạy và định
+tuyến traffic tới đúng cổng đó — hiếm khi là `8080`. Dockerfile cũ chỉ dựa vào
+`ASPNETCORE_HTTP_PORTS=8080` mặc định sẵn trong image `dotnet/aspnet:10.0` (giá trị **cố định**),
+nên khi Railway route traffic tới `$PORT` thật (khác `8080`) thì container không lắng nghe ở đó —
+đúng triệu chứng `502`.
+
+Sửa bằng đổi `ENTRYPOINT` sang dạng shell, đọc `$PORT` lúc container khởi động (không phải lúc
+build):
+
+```dockerfile
+ENTRYPOINT ["sh", "-c", "ASPNETCORE_URLS=http://+:${PORT:-8080} exec dotnet SmartTask.Api.dll"]
+```
+
+`${PORT:-8080}` — dùng `$PORT` nếu Railway (hoặc host khác) đặt sẵn, rơi về `8080` nếu không (khớp
+`docker run` cục bộ, không đổi hành vi cũ). Verify thật bằng `docker run` với `-e PORT=3000` (mô
+phỏng đúng cách Railway gán port động) → log xác nhận `Now listening on: http://[::]:3000` (không
+còn `8080` nữa), map port `5280->3000` → `curl /api/health` → `200`. Chạy lại **không** set `PORT`
+→ vẫn đúng `8080` như cũ, không phá hành vi hiện có. **Cần redeploy lên Railway để áp dụng fix
+này** — phiên làm việc này không có quyền truy cập Railway CLI/dashboard, chỉ sửa + verify được
+cục bộ qua Docker.
+
+### Bug thật gặp trong `.env.production`: thiếu scheme `https://`
+
+`apps/desktop/.env.production`'s `VITE_API_BASE_URL` ban đầu được set thành
+`smarttaskmanagers-production.up.railway.app` — **thiếu `https://`**. Không có scheme,
+`fetch()` coi đó là đường dẫn **tương đối** so với origin của chính app (không phải URL tuyệt đối
+tới Railway) — mọi request sẽ âm thầm đi sai chỗ thay vì lỗi rõ ràng. Đã sửa thành
+`https://smarttaskmanagers-production.up.railway.app`, đồng thời thêm guard thật trong
+`apps/desktop/src/config/api.ts`: `VITE_API_BASE_URL` không bắt đầu bằng `http://`/`https://` giờ
+throw lỗi rõ ràng ngay lúc app khởi động, thay vì âm thầm gọi sai — chặn đúng loại lỗi vừa gặp
+thật, không lặp lại lần sau.
+
 ## Sự cố thật gặp phải khi dựng skeleton (Phase 20)
 
 Template `webapi` mặc định kéo theo `Microsoft.AspNetCore.OpenApi 10.0.9`, phiên bản này lại kéo

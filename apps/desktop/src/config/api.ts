@@ -33,5 +33,19 @@ if (!rawApiBaseUrl) {
   );
 }
 
+// Caught for real once: VITE_API_BASE_URL set to
+// "smarttaskmanagers-production.up.railway.app" with no "https://" — a
+// scheme-less value doesn't fail loudly like a missing one does, it
+// silently becomes a *relative* URL to `fetch()` (resolved against the
+// app's own origin), so every request quietly goes nowhere real instead
+// of throwing. Worth guarding explicitly since it already happened once.
+if (!/^https?:\/\//i.test(rawApiBaseUrl)) {
+  throw new Error(
+    `VITE_API_BASE_URL ("${rawApiBaseUrl}") is missing its scheme — it must start with ` +
+      '"http://" or "https://", otherwise fetch() treats it as a relative path instead of ' +
+      'an absolute URL to the backend.',
+  );
+}
+
 /** Guaranteed non-empty — the check above throws before this line is reached otherwise. */
 export const API_BASE_URL: string = rawApiBaseUrl;
