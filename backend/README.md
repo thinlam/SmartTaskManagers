@@ -331,6 +331,49 @@ lập lỗi per-item ở trên đều verify bằng `curl` thật, không chỉ 
 gửi thẳng tới `/api/sync/push` thật — xác nhận đúng khớp JSON shape 2 đầu, không chỉ khớp trên giấy.
 Dữ liệu test đã xoá sạch, không đụng 2 user có sẵn trong DB.
 
+## Smart Engine (Phase 29)
+
+Port 1:1 từ `apps/google-sheets/src/05_SmartEngine.gs` — `SmartTask.Application/SmartEngine/`
+(`SmartWeights.cs` giữ nguyên mọi con số từ `SMART_WEIGHTS`, `SmartEngineService.cs` port
+`computeSmartFields_()` và toàn bộ helper của nó: `urgencyScore_`, `effortFitScore_`, `isStalled_`,
+`riskBucket_`, `recommendAction_`, `isDependencyCompleted_`). Không đổi 1 con số/1 rule nào so với
+bản gốc — mọi nhánh trong `SmartEngineService` trace được về đúng dòng tương ứng bên Apps Script.
+
+`TaskService.CreateAsync`/`UpdateAsync`/`CompleteAsync` đều gọi Smart Engine trước khi lưu — đúng y
+hệt `createTask_()`/`updateTask_()` gọi `computeSmartFields_()` mỗi lần ở Sheets, không để
+`SmartScore`/`Risk`/`RecommendedAction` bị cũ giữa các lần sửa. `SyncService`'s `PushTaskAsync` (Phase 28) cũng gọi Smart Engine khi tạo/sửa task qua sync — nếu không, 1 task tạo thuần qua sync sẽ có
+Smart fields `null`/cũ cho tới lần recalculate-all kế tiếp.
+
+```
+POST /api/smart-engine/recalculate-all   [Authorize]   →  { updatedCount: <n> }
+```
+
+Tương đương `recalculateAllSmartFields_()` (menu action) — gọi thủ công, không cần chờ tới 06:00.
+
+**Daily auto-recalc thật:** `DailySmartRecalcHostedService` (`BackgroundService`, đăng ký qua
+`AddHostedService`) — port của `ensureDailyRecalcTrigger_()`'s time-driven trigger (06:00 UTC mỗi
+ngày). Không có scheduler/cron riêng trong dự án nên chọn vòng lặp in-process (`Task.Delay` tới lần
+chạy kế tiếp) thay vì hạ tầng phân tán — đúng quy mô Personal Mode, 1 instance. 1 lần chạy lỗi
+(exception) được log lại, không làm crash vòng lặp — lần kế tiếp vẫn chạy đúng giờ.
+
+**Quyết định phạm vi ghi rõ:** `DueSoonDays` (đọc từ Settings sheet ở bản gốc) bị **hard-code = 2**
+— backend chưa có bảng Settings nào cả (`apps/desktop`'s trang Settings cũng vẫn là mock tĩnh từ
+Phase 19), nên đọc từ 1 store không tồn tại là không thể; nối Settings API thật là phase riêng sau,
+không gộp vào đây.
+
+Verify thật, đầy đủ luồng — không chỉ đọc code khớp dòng: `curl` thật qua 7 kịch bản, mỗi kịch bản
+tính tay trước rồi so khớp response — overdue+Critical (`63` = `30+25+8+0+0`, risk `50`→`High`,
+action `"Overdue - do now"`), due-today+estimate lớn (`"Break down"`), blocked/Waiting
+(`"Review blocked task"`), Completed (`0`/`Low`/`"Completed"`), quick win (estimate 10 phút →
+`"Quick win"`), dependency chưa xong (`"Waiting for dependency"`), goal-linked (`26` =
+`3+8+15+0+0`, verify đúng cộng dồn `GoalAlignment`). `POST /api/smart-engine/recalculate-all` chạy
+thật, trả đúng số task đã update. `DailySmartRecalcHostedService`'s `TimeUntilNextRun()` verify
+độc lập qua `dotnet-script` — trước 6h/đúng 6h/sau 6h/gần nửa đêm, cả 4 case đều tính đúng thời điểm
+chạy kế tiếp. Task age/stalled logic (phụ thuộc thời gian nhiều ngày trôi qua thật) verify bằng đọc
+code đối chiếu từng dòng với bản gốc — **không** verify bằng kịch bản thật kéo dài nhiều ngày trong
+phiên này, nói rõ giới hạn thay vì nhận đã test full. Dữ liệu test đã xoá sạch, không đụng 2 user có
+sẵn trong DB.
+
 ## Sự cố thật gặp phải khi dựng skeleton (Phase 20)
 
 Template `webapi` mặc định kéo theo `Microsoft.AspNetCore.OpenApi 10.0.9`, phiên bản này lại kéo

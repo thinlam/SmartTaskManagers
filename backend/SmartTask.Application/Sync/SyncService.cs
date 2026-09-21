@@ -2,6 +2,7 @@ using SmartTask.Application.Abstractions;
 using SmartTask.Application.Goals;
 using SmartTask.Application.Habits;
 using SmartTask.Application.Projects;
+using SmartTask.Application.SmartEngine;
 using SmartTask.Application.Tasks;
 using SmartTask.Domain.Common;
 using SmartTask.Domain.Goals;
@@ -25,7 +26,8 @@ public sealed class SyncService(
     IProjectRepository projectRepository,
     IGoalRepository goalRepository,
     IHabitRepository habitRepository,
-    IDateTimeProvider dateTimeProvider
+    IDateTimeProvider dateTimeProvider,
+    ISmartEngineService smartEngineService
 ) : ISyncService
 {
     public async Task<SyncPushResponse> PushAsync(
@@ -130,6 +132,7 @@ public sealed class SyncService(
                     LastSyncedAt = now,
                     Version = 1,
                 };
+                await ApplySmartFieldsAsync(task, cancellationToken);
                 await taskRepository.AddAsync(task, cancellationToken);
                 await taskRepository.SaveChangesAsync(cancellationToken);
                 return Result(item.ExternalId, task.Id, SyncItemOutcome.Created, task);
@@ -166,6 +169,7 @@ public sealed class SyncService(
             existing.SyncStatus = SyncStatus.Synced;
             existing.LastSyncedAt = dateTimeProvider.UtcNow;
 
+            await ApplySmartFieldsAsync(existing, cancellationToken);
             await taskRepository.SaveChangesAsync(cancellationToken);
             return Result(item.ExternalId, existing.Id, SyncItemOutcome.Updated, existing);
         }
@@ -181,6 +185,21 @@ public sealed class SyncService(
                 "Invalid ProjectId, GoalId, or DependencyTaskId reference: " + ex.Message
             );
         }
+    }
+
+    /// <summary>
+    /// A task arriving via sync (from Sheets, or backfilled by a Desktop-
+    /// originated row — see SyncTaskItem.Id's doc comment) goes through
+    /// the same Smart Engine as TaskService.CreateAsync/UpdateAsync —
+    /// without this, a task created purely through sync would show a
+    /// stale/null SmartScore until the next daily recalculation run.
+    /// </summary>
+    private async Task ApplySmartFieldsAsync(TaskItem task, CancellationToken cancellationToken)
+    {
+        var fields = await smartEngineService.ComputeAsync(task, cancellationToken);
+        task.SmartScore = fields.SmartScore;
+        task.Risk = fields.Risk;
+        task.RecommendedAction = fields.RecommendedAction;
     }
 
     private static SyncPushItemResult Result(

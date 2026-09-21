@@ -3,10 +3,12 @@ using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
+using SmartTask.Api.BackgroundServices;
 using SmartTask.Application.Auth;
 using SmartTask.Application.Goals;
 using SmartTask.Application.Habits;
 using SmartTask.Application.Projects;
+using SmartTask.Application.SmartEngine;
 using SmartTask.Application.Sync;
 using SmartTask.Application.Tasks;
 using SmartTask.Infrastructure;
@@ -64,6 +66,8 @@ builder.Services.AddScoped<IProjectService, ProjectService>();
 builder.Services.AddScoped<IGoalService, GoalService>();
 builder.Services.AddScoped<IHabitService, HabitService>();
 builder.Services.AddScoped<ISyncService, SyncService>();
+builder.Services.AddScoped<ISmartEngineService, SmartEngineService>();
+builder.Services.AddHostedService<DailySmartRecalcHostedService>();
 
 // JWT validation (incoming requests) — token *issuance* is
 // SmartTask.Infrastructure.Security.JwtTokenGenerator; this is the

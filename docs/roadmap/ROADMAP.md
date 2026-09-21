@@ -768,5 +768,37 @@ hạn này thay vì nhận đã kiểm tra. Nên tự `clasp push`, mở Sheet t
 và xác nhận tạo/sửa task cả 2 phía trước khi coi Phase 28 là xong hẳn về mặt vận hành thật. Dữ liệu
 test backend đã xoá sạch, không đụng 2 user có sẵn.
 
+Phase 29 đã thực hiện — Smart Engine, port 1:1 từ `apps/google-sheets/src/05_SmartEngine.gs` sang
+`SmartTask.Application/SmartEngine/` (`SmartWeights.cs` + `SmartEngineService.cs`). Không đổi 1 con
+số/1 rule nào — mọi nhánh trace được về đúng dòng gốc bên Apps Script (urgency/impact/effort
+fit/goal alignment/task age cộng dồn thành `SmartScore`, risk points cộng dồn rồi bucket hoá thành
+`Risk`, `recommendAction_()` port nguyên if/else chain thành `RecommendAction`).
+
+Nối vào đúng những chỗ bản gốc gọi `computeSmartFields_()`: `TaskService.CreateAsync`/`UpdateAsync`/
+`CompleteAsync` (khớp `createTask_()`/`updateTask_()`), và `SyncService.PushTaskAsync` (Phase 28) —
+nếu bỏ sót chỗ này, 1 task tạo thuần qua sync sẽ có Smart fields `null` cho tới lần recalculate-all
+kế tiếp, không khớp hành vi "luôn tính lại mỗi lần đổi" của bản gốc.
+
+`POST /api/smart-engine/recalculate-all` (thủ công, tương đương menu "Recalculate Smart Score") +
+`DailySmartRecalcHostedService` (`BackgroundService`, port `ensureDailyRecalcTrigger_()`'s trigger
+06:00 UTC hằng ngày — chọn vòng lặp in-process `Task.Delay` vì dự án chưa có hạ tầng scheduler/cron
+riêng, đúng quy mô Personal Mode 1 instance; 1 lần chạy lỗi được log, không crash vòng lặp).
+
+**Quyết định phạm vi ghi rõ:** `DueSoonDays` hard-code `= 2` thay vì đọc từ Settings — backend chưa
+có bảng Settings nào (`apps/desktop`'s Settings vẫn mock tĩnh từ Phase 19), nối Settings API thật là
+phase riêng sau.
+
+Verify thật, đầy đủ luồng — không chỉ đọc code khớp dòng: `curl` thật qua 7 kịch bản, mỗi kịch bản
+tính tay trước rồi so khớp response thật — overdue+Critical (`63`, risk `High`, `"Overdue - do
+now"`), due-today+estimate lớn (`"Break down"`), blocked (`"Review blocked task"`), Completed
+(`0`/`Low`/`"Completed"`), quick win (`"Quick win"`), dependency chưa xong (`"Waiting for
+dependency"`), goal-linked (`26` = đúng cộng dồn `GoalAlignment=15`) — tất cả khớp 100%.
+`recalculate-all` chạy thật trả đúng số lượng. `TimeUntilNextRun()` verify độc lập qua
+`dotnet-script`, 4 mốc biên (trước/đúng/sau 6h, gần nửa đêm) đều đúng. **Task age/stalled logic**
+(phụ thuộc nhiều ngày trôi qua thật) chỉ verify bằng đọc code đối chiếu từng dòng với bản gốc, không
+có kịch bản thật kéo dài ngày nào trong phiên này — nói rõ giới hạn này, không nhận đã test đủ.
+Build + `dotnet list package --vulnerable --include-transitive` sạch cả 5 project. Dữ liệu test đã
+xoá sạch, không đụng 2 user có sẵn.
+
 Mỗi Phase kế tiếp sẽ được trình bày riêng theo format: Mục tiêu → File tạo/sửa → Full code →
 Command → Cách chạy → Cách test → Expected Result → Checklist → Git commit đề xuất.

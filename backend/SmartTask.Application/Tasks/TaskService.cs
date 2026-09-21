@@ -1,4 +1,5 @@
 using SmartTask.Application.Abstractions;
+using SmartTask.Application.SmartEngine;
 using SmartTask.Domain.Enums;
 using SmartTask.Domain.Tasks;
 
@@ -9,8 +10,11 @@ namespace SmartTask.Application.Tasks;
 /// only, same pattern as Phase 22's AuthService. First real CRUD slice
 /// on top of Phase 21's schema.
 /// </summary>
-public sealed class TaskService(ITaskRepository taskRepository, IDateTimeProvider dateTimeProvider)
-    : ITaskService
+public sealed class TaskService(
+    ITaskRepository taskRepository,
+    IDateTimeProvider dateTimeProvider,
+    ISmartEngineService smartEngineService
+) : ITaskService
 {
     public async Task<List<TaskResponse>> GetAllAsync(CancellationToken cancellationToken = default)
     {
@@ -55,6 +59,8 @@ public sealed class TaskService(ITaskRepository taskRepository, IDateTimeProvide
             UpdatedAt = now,
             LastStatusChangedAt = now,
         };
+
+        await ApplySmartFieldsAsync(task, cancellationToken);
 
         await taskRepository.AddAsync(task, cancellationToken);
         await taskRepository.SaveChangesAsync(cancellationToken);
@@ -103,6 +109,8 @@ public sealed class TaskService(ITaskRepository taskRepository, IDateTimeProvide
             task.LastStatusChangedAt = now;
         }
 
+        await ApplySmartFieldsAsync(task, cancellationToken);
+
         await taskRepository.SaveChangesAsync(cancellationToken);
 
         return ToResponse(task);
@@ -139,9 +147,24 @@ public sealed class TaskService(ITaskRepository taskRepository, IDateTimeProvide
         task.UpdatedAt = now;
         task.LastStatusChangedAt = now;
 
+        await ApplySmartFieldsAsync(task, cancellationToken);
+
         await taskRepository.SaveChangesAsync(cancellationToken);
 
         return ToResponse(task);
+    }
+
+    /// <summary>
+    /// Matches computeSmartFields_() being called on every create/update
+    /// in apps/google-sheets/src/03_Data.gs — SmartScore/Risk/
+    /// RecommendedAction are never allowed to go stale between edits.
+    /// </summary>
+    private async Task ApplySmartFieldsAsync(TaskItem task, CancellationToken cancellationToken)
+    {
+        var fields = await smartEngineService.ComputeAsync(task, cancellationToken);
+        task.SmartScore = fields.SmartScore;
+        task.Risk = fields.Risk;
+        task.RecommendedAction = fields.RecommendedAction;
     }
 
     private static TaskResponse ToResponse(TaskItem task) =>
