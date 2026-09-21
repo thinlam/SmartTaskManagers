@@ -62,3 +62,12 @@ export {
   type TodayReview,
   type TodayData,
 } from './todayMetrics';
+export {
+  computeSmartAssistantData,
+  type AssistantTask,
+  type AssistantActionGroup,
+  type AssistantProjectAlert,
+  type AssistantGoalAlert,
+  type AssistantHabitAlert,
+  type SmartAssistantData,
+} from './smartAssistantMetrics';

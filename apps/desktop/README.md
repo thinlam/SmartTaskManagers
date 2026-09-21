@@ -577,3 +577,25 @@ Verify thật: `npm run typecheck`/`lint`/`format` sạch, production Vite build
 trình duyệt/Tauri, nói rõ giới hạn này. Nên tự chạy `npm run dev:tauri` + `dotnet run`, tạo vài task
 với ngày/priority/estimate khác nhau, xác nhận Dashboard/Today hiển thị đúng số liệu và Focus
 Now/Do Now sắp xếp đúng theo SmartScore thật (không phải giá trị tĩnh nữa).
+
+## Smart Assistant (post-Phase 30)
+
+`/assistant` chỉ là chỗ trống trong nav từ Phase 04 ("Phase 29+ (Smart Engine)"), chưa từng được
+build — `router.tsx` fallback về `PlaceholderPage`. Phạm vi chốt cùng người dùng: trang khuyến nghị
+rule-based thật (không phải chat/LLM — cần tích hợp AI thật, quyết định lớn hơn nhiều, chưa làm).
+
+`SmartAssistantPage.tsx` đọc `tasks`/`projects`/`goals`/`habits` thật từ 4 Context (đều
+backend-backed từ Phase 27), gọi `computeSmartAssistantData()` (`@stm/shared`, xem
+`packages/shared/README.md` cho chi tiết đầy đủ) qua `useMemo`. Hiển thị: risk count 4 mức (Critical/
+High/Medium/Low), danh sách "Needs Attention" (task risk cao, tối đa 10, sort theo SmartScore),
+nhóm task theo `recommendedAction` (Overdue - do now/Review blocked task/Waiting for dependency/Do
+now/Break down/Quick win/Schedule/Defer — đúng thứ tự ưu tiên của Smart Engine), và 3 cột cảnh báo
+Project/Goal/Habit. `packages/ui` thêm `RiskBadge` (tên đã ghi sẵn trong `design-tokens.md` từ Frame
+02, giờ mới có code thật).
+
+Verify thật: dựng fixture Task/Project/Goal/Habit thật, chạy `computeSmartAssistantData` qua `tsx`
+— 7 assertion đều pass (risk count, thứ tự sort, thứ tự action group, lọc đúng Project/Goal/Habit
+alert). `npm run typecheck`/`lint`/`format` sạch, production Vite build sạch. **Chưa test UI tương
+tác thật trên Desktop app** — môi trường phiên này không có công cụ điều khiển trình duyệt/Tauri,
+nói rõ giới hạn này. Nên tự chạy `npm run dev:tauri` + `dotnet run`, tạo vài task/project/goal/habit
+ở trạng thái rủi ro khác nhau, mở `/assistant` để xác nhận nhóm và cảnh báo hiển thị đúng.

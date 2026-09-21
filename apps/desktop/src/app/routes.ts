@@ -72,7 +72,7 @@ export const APP_ROUTES: AppRoute[] = [
     path: '/assistant',
     label: 'Smart Assistant',
     group: 'Insights',
-    phase: 'Phase 29+ (Smart Engine)',
+    phase: 'Post-Phase 30',
     icon: Sparkles,
   },
 

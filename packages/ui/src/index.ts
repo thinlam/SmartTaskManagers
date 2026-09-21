@@ -19,6 +19,8 @@ export {
   type ProjectHealthBadgeProps,
   GoalStatusBadge,
   type GoalStatusBadgeProps,
+  RiskBadge,
+  type RiskBadgeProps,
 } from './components/Badge';
 export { Progress, type ProgressProps } from './components/Progress';
 export { StatCard, type StatCardProps } from './components/StatCard';

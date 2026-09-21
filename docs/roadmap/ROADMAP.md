@@ -854,5 +854,24 @@ typecheck`/`lint`/`format` sạch, production Vite build sạch. **Chưa test UI
 Desktop app** — môi trường phiên này không có công cụ điều khiển trình duyệt/Tauri, nói rõ giới hạn
 này thay vì nhận đã kiểm tra.
 
+**Sau Phase 30 — Smart Assistant** (không phải phase số riêng, theo yêu cầu người dùng). `/assistant`
+chỉ là chỗ trống trong nav từ Phase 04 ("Phase 29+ (Smart Engine)"), chưa từng build — không có tiền
+lệ Sheets nào cả. Phạm vi chốt cùng người dùng: trang khuyến nghị rule-based thật, **không phải**
+chat/LLM (cần tích hợp AI thật, quyết định lớn hơn nhiều, chưa làm).
+
+`packages/shared` thêm `computeSmartAssistantData` — nhóm mọi task mở theo `recommendedAction`
+(đúng priority chain của Smart Engine), risk count 4 mức, cảnh báo Project (tái dùng
+`computeProjectMetrics`/`computeProjectHealth`/`getProjectNextAction`, Phase 13)/Goal (`Status =
+At Risk`)/Habit (khớp `NotificationService.GenerateHabitNotificationsAsync`'s HabitStreakAtRisk,
+Phase 30, tính lại phía client). `SmartAssistantPage.tsx` đọc 4 Context thật (backend-backed từ
+Phase 27). `packages/ui` thêm `RiskBadge` (tên đã ghi sẵn trong `design-tokens.md` từ lâu, giờ mới
+có code thật).
+
+Verify thật: dựng fixture Task/Project/Goal/Habit thật, chạy `computeSmartAssistantData` qua `tsx`
+— 7 assertion đều pass (risk count đúng, thứ tự sort theo risk rồi SmartScore, thứ tự action group
+đúng priority chain, lọc đúng Project Healthy/Goal On Track/Habit Weekly bị loại). `npm run
+typecheck`/`lint`/`format` sạch, production Vite build sạch. **Chưa test UI tương tác thật** — môi
+trường phiên này không có công cụ điều khiển trình duyệt/Tauri, nói rõ giới hạn này.
+
 Mỗi Phase kế tiếp sẽ được trình bày riêng theo format: Mục tiêu → File tạo/sửa → Full code →
 Command → Cách chạy → Cách test → Expected Result → Checklist → Git commit đề xuất.

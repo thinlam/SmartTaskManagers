@@ -3,3 +3,4 @@ export { PriorityBadge, type PriorityBadgeProps } from './PriorityBadge';
 export { StatusBadge, type StatusBadgeProps } from './StatusBadge';
 export { ProjectHealthBadge, type ProjectHealthBadgeProps } from './ProjectHealthBadge';
 export { GoalStatusBadge, type GoalStatusBadgeProps } from './GoalStatusBadge';
+export { RiskBadge, type RiskBadgeProps } from './RiskBadge';

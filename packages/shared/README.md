@@ -75,6 +75,24 @@ Utils, formatters, date logic dùng chung.
   nhận đúng hành vi "doNow chiếm chỗ trước Scheduled" khi cả hai đều đủ điều kiện due hôm nay —
   đúng y hệt hành vi hàm gốc, không phải giả định.
 
+- ✅ `computeSmartAssistantData` (Smart Assistant, post-Phase-30): **không có tiền lệ Sheets** —
+  route `/assistant` chỉ là chỗ trống trong nav từ Phase 04 ("Phase 29+ (Smart Engine)"), chưa từng
+  có phase build thật; grep `apps/google-sheets/src` xác nhận không view/recommendation nào tương
+  tự từng tồn tại. Phạm vi chốt cùng người dùng: trang khuyến nghị rule-based thật, **không phải**
+  chat/LLM (cần tích hợp AI thật — quyết định kỹ thuật lớn hơn nhiều, chưa làm).
+  Sâu hơn Dashboard's Focus Now (giới hạn 6, 1 danh sách phẳng): nhóm **mọi** task mở theo
+  `recommendedAction` (thứ tự hiển thị khớp đúng priority chain của `SmartEngineService.
+RecommendAction`, không phải alphabet), cộng thêm cảnh báo cấp Project/Goal/Habit mà Dashboard
+  không hiển thị. Quy tắc habit-streak-at-risk khớp y hệt `NotificationService.
+GenerateHabitNotificationsAsync` (Phase 30) nhưng tính lại phía client (trang này nói về "nên làm
+  gì tiếp theo", không phải đọc lại notification feed). Project alert tái dùng thẳng
+  `computeProjectMetrics`/`computeProjectHealth`/`getProjectNextAction` (Phase 13) — không định
+  nghĩa lại công thức health.
+  Verify thật bằng fixture data + `tsx`: risk count đúng (loại task Completed), thứ tự
+  criticalTasks theo risk rồi SmartScore, thứ tự actionGroups đúng priority chain, project/goal/
+  habit alert lọc đúng điều kiện (project Healthy bị loại, goal On Track bị loại, habit Weekly/đã
+  check-in hôm nay bị loại) — cả 7 assertion đều pass với dữ liệu dựng thật, không chỉ đọc code.
+
 ## Test
 
 ```bash

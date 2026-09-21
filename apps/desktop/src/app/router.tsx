@@ -12,6 +12,7 @@ import { HabitsPage } from '../pages/Habits/HabitsPage';
 import { CalendarPage } from '../pages/Calendar/CalendarPage';
 import { KanbanPage } from '../pages/Kanban/KanbanPage';
 import { AnalyticsPage } from '../pages/Analytics/AnalyticsPage';
+import { SmartAssistantPage } from '../pages/Assistant/SmartAssistantPage';
 import { SettingsPage } from '../pages/Settings/SettingsPage';
 import { APP_ROUTES } from './routes';
 
@@ -32,6 +33,7 @@ const PAGE_BY_PATH: Record<string, ReactNode> = {
   '/calendar': <CalendarPage />,
   '/kanban': <KanbanPage />,
   '/analytics': <AnalyticsPage />,
+  '/assistant': <SmartAssistantPage />,
   '/settings': <SettingsPage />,
 };
 
