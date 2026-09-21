@@ -37,9 +37,9 @@ và (dần dần) một backend/data layer duy nhất.
      Authentication    Smart Engine    Notifications
           │                │                │
           └────────────────┼────────────────┘
-                           │
-                           ▼
-                    SQL Server Database
+│
+                            ▼
+                     MySQL Database
 ```
 
 Windows và Web đều là **client**, không phải nguồn dữ liệu chính. Google Sheets sẽ đồng bộ hai

@@ -77,7 +77,7 @@ builder.Services.AddHostedService<DailySmartRecalcHostedService>();
 builder.Services.AddHostedService<NotificationGenerationHostedService>();
 
 // GET /health (liveness — is the process up at all) and GET /health/db
-// (readiness — can it actually reach SQL Server) — see HealthChecks/.
+// (readiness — can it actually reach the database) — see HealthChecks/.
 // Neither requires a JWT: MapHealthChecks endpoints aren't covered by
 // [Authorize] (that's only ever applied per-controller in this app, see
 // TasksController's own doc comment), and a health probe that itself
@@ -146,8 +146,8 @@ var app = builder.Build();
 // Retried a few times with backoff rather than failing on the very
 // first attempt — verified for real that a plain single-shot
 // MigrateAsync() crashes the whole process immediately if the database
-// isn't reachable *yet* (SqlException, unhandled, process exits). On
-// Railway, the API and MicrosoftSQL are separate services with no
+// isn't reachable *yet* (MySqlException, unhandled, process exits). On
+// Railway, the API and MySQL are separate services with no
 // guaranteed startup ordering, so the DB being a few seconds slow to
 // accept connections is a real, recoverable race, not a real
 // misconfiguration — worth a few retries before giving up. Still fails

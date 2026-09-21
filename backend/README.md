@@ -15,10 +15,10 @@ SmartTask.Persistence/     AppDbContext + Configurations/ (EF Core Fluent API), 
 Target framework: **net10.0** (bản .NET mới nhất tại thời điểm cài, khớp tinh thần "dùng bản stable
 mới nhất" đã áp dụng cho React 19/Vite 6/Tailwind v4/Tauri 2 ở frontend).
 
-Database: **SQL Server** (quyết định — xem [`docs/architecture/ARCHITECTURE.md`](../docs/architecture/ARCHITECTURE.md)).
-Connection string trong `SmartTask.Api/appsettings.json` trỏ tới SQL Server Express thật trên máy
-dev (`DESKTOP-CKNT19A\SQLEXPRESS`, đổi từ LocalDB mặc định lúc Phase 20 sang instance thật đang chạy
-sẵn trên máy).
+Database: **MySQL** (quyết định chuyển từ SQL Server sang MySQL để production chạy hoàn toàn trên
+Railway — xem mục "Cấu hình Dev vs Production, Railway MySQL" bên dưới). Provider là
+`Microting.EntityFrameworkCore.MySql` — fork được maintain của `Pomelo.EntityFrameworkCore.MySql`
+dành cho EF Core 10 / net10.0 (Pomelo gốc mới chỉ lên tới EF Core 9).
 
 ## Chạy thử
 
@@ -430,15 +430,15 @@ panel thật, click 1 notification → mark-read + điều hướng đúng trang
 
 Người dùng hỏi thật: "máy khác thì cài sao?" — trước đó **chưa có hướng dẫn nào cả**. Quyết định
 chốt cùng người dùng: **1 backend chạy trên 1 máy, nhiều máy khác chỉ cài Desktop app rồi trỏ tới
-backend đó qua mạng LAN** (không phải mỗi máy tự chạy backend + SQL Server riêng).
+backend đó qua mạng LAN** (không phải mỗi máy tự chạy backend + MySQL riêng).
 
 **Backend (máy chạy `dotnet run`):**
 
 - `Properties/launchSettings.json`'s `http` profile đổi `applicationUrl` từ `http://localhost:5277`
   sang `http://0.0.0.0:5277` — lắng nghe trên mọi network interface, không chỉ loopback. **Chỉ máy
-  chạy backend cần đổi** — SQL Server không cần cấu hình gì thêm, vì chỉ có tiến trình
-  `SmartTask.Api` trên chính máy đó nói chuyện trực tiếp với SQL Server; các máy Desktop khác chỉ
-  gọi HTTP tới `SmartTask.Api`, không bao giờ chạm SQL Server trực tiếp.
+  chạy backend cần đổi** — MySQL không cần cấu hình gì thêm, vì chỉ có tiến trình
+  `SmartTask.Api` trên chính máy đó nói chuyện trực tiếp với MySQL; các máy Desktop khác chỉ
+  gọi HTTP tới `SmartTask.Api`, không bao giờ chạm MySQL trực tiếp.
 - **Windows Firewall cần 1 rule inbound cho cổng 5277** — máy chạy backend phải tự mở, phiên làm
   việc này không có đủ quyền elevation để tự tạo rule (thử `New-NetFirewallRule` cả không và có
   `-Verb RunAs` đều báo "Access is denied" — khác hẳn `msiexec -Verb RunAs` ở Phase 32 chạy được).
@@ -510,11 +510,11 @@ cần DB) → `200` — xác nhận image chạy được thật với bản Doc
 không lỗi. Lỗi SQL login (do cố ý dùng credential giả) xuất hiện đúng như dự kiến, không phải bug.
 Image + container test đã dọn sạch (`docker rm`/`docker rmi`).
 
-**Chưa test:** `docker run` với connection string SQL Server thật (migration + dữ liệu thật) — môi
-trường phiên này không có SQL Server nào chạy trong Docker network cùng container để nối vào; nên
-tự thử `docker run` trỏ `ConnectionStrings__DefaultConnection` vào SQL Server thật (kể cả SQL Server
-chạy ngay trên host qua `host.docker.internal`) trước khi coi Docker image là dùng được cho triển
-khai thật.
+**Chưa test (tại thời điểm section này viết):** `docker run` với connection string SQL Server thật —
+môi trường lúc đó không có SQL Server nào chạy trong Docker network cùng container để nối vào. **Đã
+verify lại khi chuyển sang MySQL:** `docker run` với `ConnectionStrings__DefaultConnection` trỏ tới
+MySQL thật trên host qua `host.docker.internal` → migration + `/health` + `/health/db` đều `200`
+(xem mục "Cấu hình Dev vs Production, Railway MySQL" bên dưới).
 
 ### Bug thật gặp khi deploy Railway: 502 "Application failed to respond"
 
@@ -552,36 +552,31 @@ tới Railway) — mọi request sẽ âm thầm đi sai chỗ thay vì lỗi r�
 throw lỗi rõ ràng ngay lúc app khởi động, thay vì âm thầm gọi sai — chặn đúng loại lỗi vừa gặp
 thật, không lặp lại lần sau.
 
-## Cấu hình Dev vs Production, Railway SQL Server, auto-migrate, health check
+## Cấu hình Dev vs Production, Railway MySQL, auto-migrate, health check
 
-Sau khi có SQL Server riêng trên Railway (service `MicrosoftSQL`, cùng project với API, dùng
-Private Network), chuẩn hoá lại toàn bộ cấu hình theo đúng convention ASP.NET Core — không hard-code
-connection string/JWT secret ở bất kỳ đâu, dev và production tách biệt hoàn toàn bằng
+Sau khi có MySQL riêng trên Railway (database service, cùng project với API, dùng Private Network),
+chuẩn hoá lại toàn bộ cấu hình theo đúng convention ASP.NET Core — không hard-code connection
+string/JWT secret ở bất kỳ đâu, dev và production tách biệt hoàn toàn bằng
 `appsettings.{Environment}.json` + biến môi trường.
 
 **File đã sửa/tạo:**
 
 ```
-SmartTask.Api/appsettings.json                appsettings gốc — KHÔNG còn ConnectionStrings nào cả (trước đây có DESKTOP-CKNT19A\SQLEXPRESS commit thẳng vào đây — đã gỡ)
-SmartTask.Api/appsettings.Development.json     ConnectionStrings:DefaultConnection = DESKTOP-CKNT19A\SQLEXPRESS — chỉ load khi ASPNETCORE_ENVIRONMENT=Development
-SmartTask.Api/appsettings.Production.json      mới — chỉ Logging, KHÔNG ConnectionStrings/Jwt:Secret nào
-SmartTask.Api/Program.cs                       auto-migrate có retry, health checks, exception handler production
-SmartTask.Api/HealthChecks/DatabaseHealthCheck.cs    mới — CanConnectAsync() thật
-SmartTask.Api/HealthChecks/HealthCheckJsonWriter.cs  mới — {"status": "Healthy"} thay vì text mặc định
-SmartTask.Persistence/DependencyInjection.cs   cập nhật doc comment (logic đọc ConnectionStrings đã đúng từ trước, không đổi)
+SmartTask.Api/appsettings.json                appsettings gốc — KHÔNG chứa ConnectionStrings nào (không commit host/password)
+SmartTask.Api/appsettings.Development.json    KHÔNG chứa connection string — dev đọc từ user-secrets/env (MySQL local, tránh commit password)
+SmartTask.Api/appsettings.Production.json     chỉ Logging — KHÔNG ConnectionStrings/Jwt:Secret nào
+SmartTask.Api/Program.cs                      auto-migrate có retry, health checks, exception handler production
+SmartTask.Api/HealthChecks/DatabaseHealthCheck.cs    CanConnectAsync() thật
+SmartTask.Api/HealthChecks/HealthCheckJsonWriter.cs  {"status": "Healthy"} thay vì text mặc định
+SmartTask.Persistence/DependencyInjection.cs  UseMySql + ServerVersion.Parse (đọc từ Database:ServerVersion)
+SmartTask.Persistence/AppDbContextFactory.cs  mới — IDesignTimeDbContextFactory cho `dotnet ef` khi không có connection string thật
 Dockerfile                                     ENV ASPNETCORE_ENVIRONMENT=Production
 ```
 
-**`appsettings.json` (base) không còn `ConnectionStrings` nào** — trước đây connection string
-`DESKTOP-CKNT19A\SQLEXPRESS` với `Trusted_Connection=True` nằm thẳng trong file này, tức là commit
-thẳng vào git dù không phải "secret" thật (Trusted_Connection không có password) nhưng vẫn lộ
-hostname/topology nội bộ, và đúng loại giá trị-chỉ-đúng-cho-1-máy tuyệt đối không nên có trong file
-base dùng chung mọi environment. Đã chuyển sang `appsettings.Development.json` (chỉ load khi
-`ASPNETCORE_ENVIRONMENT=Development`) — **lưu ý: giá trị cũ vẫn còn trong lịch sử git** (các commit
-trước đó), không rewrite history trong lần sửa này.
+**`appsettings.json` (base) không chứa `ConnectionStrings` nào** — connection string chỉ tồn tại ở
+user-secrets (dev) hoặc biến môi trường (production), không bao giờ commit host/password.
 
-**`Program.cs`/`DependencyInjection.cs` đọc connection string đúng chuẩn đã có sẵn từ Phase 21,
-không cần sửa:**
+**`Program.cs`/`DependencyInjection.cs` đọc connection string đúng chuẩn:**
 
 ```csharp
 var connectionString =
@@ -589,7 +584,11 @@ var connectionString =
     ?? throw new InvalidOperationException(
         "Missing 'ConnectionStrings:DefaultConnection' — see SmartTask.Api/appsettings.json."
     );
-services.AddDbContext<AppDbContext>(options => options.UseSqlServer(connectionString));
+
+var serverVersionString = configuration["Database:ServerVersion"] ?? "8.0.0-mysql";
+var serverVersion = ServerVersion.Parse(serverVersionString);
+
+services.AddDbContext<AppDbContext>(options => options.UseMySql(connectionString, serverVersion));
 ```
 
 `IConfiguration.GetConnectionString("DefaultConnection")` tự đọc theo đúng thứ tự layer chuẩn của
@@ -597,9 +596,29 @@ ASP.NET Core: `appsettings.json` → `appsettings.{Environment}.json` → biến
 `ConnectionStrings__DefaultConnection`, 2 dấu gạch dưới) → (chỉ Development) User Secrets. Production
 trên Railway **không có file nào chứa connection string cả** — giá trị đến từ biến môi trường
 `ConnectionStrings__DefaultConnection` Railway set qua reference cú pháp
-`${{MicrosoftSQL.MSSQL_SERVER}}`/`${{MicrosoftSQL.MSSQL_TCP_PORT}}`/... (Railway Variables, không
-commit vào repo) — **ưu tiên `MSSQL_SERVER`/`MSSQL_TCP_PORT` (Private Network), không dùng
-`*_PUBLIC`** vì API và SQL Server nằm cùng Railway project.
+`${{MYSQL.MYSQLHOST}}`/`${{MYSQL.MYSQLPORT}}`/`${{MYSQL.MYSQLDATABASE}}`/`${{MYSQL.MYSQLUSER}}`/
+`${{MYSQL.MYSQLPASSWORD}}` (Railway Variables, không commit vào repo) — dùng **Private Network**, vì
+API và MySQL nằm cùng Railway project. Ví dụ:
+
+```
+ConnectionStrings__DefaultConnection = Server=${{MYSQL.MYSQLHOST}};Port=${{MYSQL.MYSQLPORT}};Database=${{MYSQL.MYSQLDATABASE}};User=${{MYSQL.MYSQLUSER}};Password=${{MYSQL.MYSQLPASSWORD}}
+```
+
+**`ServerVersion` cố định (không `AutoDetect`):** `AutoDetect` mở kết nối thật mỗi lần lạnh và làm
+`dotnet ef migrations add` thất bại khi không có MySQL nào reachable (design-time chạy options
+lambda). Giá trị cố định `8.0.0-mysql` (override được qua `Database:ServerVersion`) tạo DDL đúng cho
+MySQL 8.x của Railway và chạy offline. **Điểm cần biết về kiểu dữ liệu:** MySQL không có
+`datetimeoffset` — provider map `DateTimeOffset` sang `datetime(6)` lưu theo UTC (bỏ offset). Toàn bộ
+code viết `DateTimeOffset.UtcNow` và so sánh theo UTC, nên semantics được giữ nguyên.
+
+**Local development (MySQL local):** không commit password. Chạy trong `SmartTask.Api`:
+
+```bash
+dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Server=localhost;Port=3306;Database=SmartTask;User=root;Password=<password-local>"
+```
+
+`dotnet ef` dùng `AppDbContextFactory` (design-time only) — khi chạy `migrations add/remove/script`
+không cần connection string thật, EF chỉ dựng model, không mở kết nối.
 
 **JWT secret** cũng đã đúng chuẩn từ Phase 22, không cần sửa — `jwtSection["Secret"] ?? throw
 InvalidOperationException(...)` fail rõ ràng nếu thiếu, đọc qua biến môi trường `Jwt__Secret` trên
@@ -629,9 +648,10 @@ Railway giống hệt cách `ConnectionStrings__DefaultConnection` hoạt độn
 }
 ```
 
-Chọn auto-migrate (không phải bước migrate thủ công riêng) vì cả 4 migration hiện có
-(`InitialSchema`/`AddUsers`/`AddSyncExternalId`/`AddNotifications`) đều **thuần cộng thêm**, không
-migration nào xoá cột/bảng — `MigrateAsync()` tự idempotent (chỉ áp migration chưa có trong
+Chọn auto-migrate (không phải bước migrate thủ công riêng) vì migration hiện tại (`InitialCreate`,
+tạo lại cho MySQL — 4 migration SQL Server cũ `InitialSchema`/`AddUsers`/`AddSyncExternalId`/
+`AddNotifications` đã xoá, git history vẫn giữ) **thuần cộng thêm**, không migration nào xoá
+cột/bảng — `MigrateAsync()` tự idempotent (chỉ áp migration chưa có trong
 `__EFMigrationsHistory`), chạy lại trên DB đã cập nhật là no-op thật, verify bằng log
 `"No migrations were applied. The database is already up to date."`.
 
@@ -675,23 +695,20 @@ tiết ở mục "Cài trên nhiều máy" phía trên).
 
 **Verify thật, đầy đủ — không chỉ build:** `dotnet restore` + `dotnet build -c Release` sạch, `dotnet
 list package --vulnerable --include-transitive` sạch cả 5 project (không có test project nào trong
-solution nên bỏ qua `dotnet test`). Chạy thật ở Development (`dotnet run`, dùng launchSettings)
-→ migration "already up to date" → `GET /health`/`GET /health/db`/`GET /api/health` đều `200`, đăng
-nhập + `GET /api/tasks` vẫn hoạt động đúng (business logic không đổi). Chạy thật ở **Production**
-(`dotnet bin/Debug/net10.0/SmartTask.Api.dll` trực tiếp — đúng cách Docker/Railway chạy, không qua
-`dotnet run`/launchSettings — với `ASPNETCORE_ENVIRONMENT=Production` +
-`ConnectionStrings__DefaultConnection`/`Jwt__Secret` qua biến môi trường) → xác nhận `/swagger` trả
-`404` (đúng — chỉ bật ở Development), login + tasks vẫn `200`, `/health/db` vẫn `Healthy` với DB
-thật. Retry logic verify bằng kịch bản DB sai thật (native lẫn trong container Docker) — log đúng
-4 lần retry rồi crash rõ ràng, không treo vô hạn, không silent-fail. Search toàn `backend/` xác nhận
-`appsettings.json` (base) sạch hoàn toàn, `Trusted_Connection`/`SQLEXPRESS`/`DESKTOP-CKNT19A` chỉ
-còn trong `appsettings.Development.json` (đúng, dev-only) và comment/doc (không phải code path
-thật). **Chưa test được:** container Docker thật kết nối vào SQL Server thật qua network (SQL
-Server local dùng Windows Integrated Auth, không kết nối được từ container Linux qua
-`host.docker.internal`) — đã verify tương đương bằng cách chạy trực tiếp (không qua container) ở
-Production mode với connection string + JWT secret qua biến môi trường, và verify riêng phần
-container (`$PORT` binding, retry logic) bằng DB giả — kết hợp 2 phần này cho độ tin cậy cao nhưng
-chưa phải test Railway thật 100% end-to-end; cần bạn tự xác nhận sau khi redeploy.
+solution nên bỏ qua `dotnet test`). Chạy thật ở Development chống MySQL local (`dotnet run`, dùng
+launchSettings) → migration `InitialCreate` áp thật (xác nhận độc lập qua `mysql` client: đủ 6 bảng
+`Goals`/`Habits`/`Notifications`/`Projects`/`Tasks`/`Users` + `__EFMigrationsHistory`, kiểu cột
+`char(36)`/`datetime(6)`/`varchar(n)`/`tinyint(1)`/`date`/`time(6)`/`longtext`) → `GET /health`/
+`GET /health/db`/`GET /api/health` đều `200`, register/login, task CRUD + complete, project CRUD,
+goal CRUD, habit CRUD + check-in, sync push/pull, notifications generate/list/unread, smart-engine
+recalculate-all — tất cả chạy thật và đúng (business logic không đổi). Retry logic verify bằng kịch
+bản DB sai thật (native lẫn trong container Docker) — log đúng 4 lần retry rồi crash rõ ràng, không
+treo vô hạn, không silent-fail. **Container Docker chống MySQL thật đã verify được:** `docker run`
+với `PORT=3000` (mô phỏng Railway) + `ConnectionStrings__DefaultConnection` trỏ MySQL thật trên host
+qua `host.docker.internal` → auto-migrate + `/health` + `/health/db` đều `200`. Search toàn
+`backend/` xác nhận không còn `UseSqlServer`/`SqlConnection`/`Trusted_Connection`/`SQLEXPRESS`/
+`DESKTOP-CKNT19A` trong code path thật (chỉ còn trong comment/doc/history). Dữ liệu test đã dọn sạch
+khỏi MySQL local. Cần bạn tự xác nhận sau khi redeploy Railway (MySQL service + Variable reference).
 
 ## Sự cố thật gặp phải khi dựng skeleton (Phase 20)
 

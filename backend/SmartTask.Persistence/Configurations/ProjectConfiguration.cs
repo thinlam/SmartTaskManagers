@@ -17,7 +17,9 @@ public sealed class ProjectConfiguration : IEntityTypeConfiguration<Project>
         builder.Property(p => p.Area).HasConversion<string>().HasMaxLength(20);
         builder.Property(p => p.Health).HasConversion<string>().HasMaxLength(20);
 
-        // Phase 28 — see TaskItemConfiguration's identical index for why filtered.
-        builder.HasIndex(p => p.ExternalId).IsUnique().HasFilter("[ExternalId] IS NOT NULL");
+        // Phase 28 — see TaskItemConfiguration's identical index for why a plain
+        // UNIQUE index (no HasFilter) is the MySQL-compatible equivalent of
+        // SQL Server's filtered index: MySQL UNIQUE allows multiple NULLs.
+        builder.HasIndex(p => p.ExternalId).IsUnique();
     }
 }

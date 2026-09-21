@@ -54,9 +54,12 @@ public sealed class TaskItemConfiguration : IEntityTypeConfiguration<TaskItem>
         builder.HasIndex(t => t.DueDate);
 
         // Phase 28 — the join key sync uses to find "the row this Sheets
-        // TaskId already maps to". Filtered (WHERE ExternalId IS NOT NULL)
+        // TaskId already maps to". MySQL has no filtered indexes (the old
+        // SQL Server `HasFilter("[ExternalId] IS NOT NULL")` was dropped),
+        // but a MySQL UNIQUE index already permits multiple NULL values,
         // so any number of API/Desktop-only tasks (ExternalId = null) can
-        // coexist without tripping the uniqueness constraint.
-        builder.HasIndex(t => t.ExternalId).IsUnique().HasFilter("[ExternalId] IS NOT NULL");
+        // coexist without tripping the uniqueness constraint — identical
+        // behavior to the SQL Server filtered index.
+        builder.HasIndex(t => t.ExternalId).IsUnique();
     }
 }
