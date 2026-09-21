@@ -426,6 +426,52 @@ panel thật, click 1 notification → mark-read + điều hướng đúng trang
 `npm run typecheck`/`lint`/`format` sạch, production Vite build sạch. **Chưa test UI tương tác thật**
 (môi trường phiên này không có công cụ điều khiển trình duyệt) — nói rõ giới hạn, không nhận đã test.
 
+## Cài trên nhiều máy, dùng chung 1 backend (sau Phase 32)
+
+Người dùng hỏi thật: "máy khác thì cài sao?" — trước đó **chưa có hướng dẫn nào cả**. Quyết định
+chốt cùng người dùng: **1 backend chạy trên 1 máy, nhiều máy khác chỉ cài Desktop app rồi trỏ tới
+backend đó qua mạng LAN** (không phải mỗi máy tự chạy backend + SQL Server riêng).
+
+**Backend (máy chạy `dotnet run`):**
+
+- `Properties/launchSettings.json`'s `http` profile đổi `applicationUrl` từ `http://localhost:5277`
+  sang `http://0.0.0.0:5277` — lắng nghe trên mọi network interface, không chỉ loopback. **Chỉ máy
+  chạy backend cần đổi** — SQL Server không cần cấu hình gì thêm, vì chỉ có tiến trình
+  `SmartTask.Api` trên chính máy đó nói chuyện trực tiếp với SQL Server; các máy Desktop khác chỉ
+  gọi HTTP tới `SmartTask.Api`, không bao giờ chạm SQL Server trực tiếp.
+- **Windows Firewall cần 1 rule inbound cho cổng 5277** — máy chạy backend phải tự mở, phiên làm
+  việc này không có đủ quyền elevation để tự tạo rule (thử `New-NetFirewallRule` cả không và có
+  `-Verb RunAs` đều báo "Access is denied" — khác hẳn `msiexec -Verb RunAs` ở Phase 32 chạy được).
+  Chạy lệnh sau **với quyền Administrator** trên máy chạy backend, 1 lần duy nhất:
+  ```powershell
+  New-NetFirewallRule -DisplayName "SmartTask.Api (5277)" -Direction Inbound -Protocol TCP -LocalPort 5277 -Action Allow -Profile Private
+  ```
+  Cố ý giới hạn `-Profile Private` (mạng nhà/tin cậy), không phải `Public` — không mở cổng ra mạng
+  công cộng.
+- **Chỉ HTTP, không HTTPS** — đúng cho mạng LAN nhà tin cậy, **không dùng để expose ra Internet
+  công cộng** (không có cert, không mã hoá). Nếu sau này cần truy cập từ xa thật (ngoài LAN), cần
+  thêm TLS + domain + cert — ngoài phạm vi hiện tại.
+- CORS (`tauri://localhost`, Phase 27) **không cần sửa gì** — CORS xác thực Origin của bên gọi
+  (luôn là `tauri://localhost` dù backend chạy ở đâu), không phải địa chỉ đích, nên chạy backend
+  trên máy khác không ảnh hưởng gì tới CORS.
+
+**Desktop app (mọi máy, kể cả máy chạy backend):** cài `.exe` (NSIS, Phase 32) như bình thường,
+không cần build riêng cho mỗi máy. Lần đầu mở app, ở màn hình đăng nhập bấm "Connecting to a shared
+server?" → nhập `http://<IP-LAN-của-máy-chạy-backend>:5277` (ví dụ `http://192.168.1.249:5277`) →
+đăng nhập bằng tài khoản đã tạo (hoặc tạo tài khoản mới — `[Authorize]` chỉ xác thực "có token hợp
+lệ", mọi tài khoản đều thấy chung 1 bộ dữ liệu, xem doc comment `TasksController`). Giá trị URL
+này lưu trong `localStorage` của từng máy (`packages/api-client`'s `configureApiClient`, qua
+`apps/desktop/src/lib/serverUrl.ts` mới) — chỉ cần nhập 1 lần, nhớ cho lần mở app sau.
+
+Verify thật: bind `0.0.0.0:5277` xác nhận qua `Get-NetTCPConnection -LocalPort 5277 -State Listen`
+(`LocalAddress: 0.0.0.0`, không còn `127.0.0.1`), `curl` thật tới địa chỉ LAN thật của máy
+(`192.168.1.249`, không phải `localhost`) — `GET /api/health` → `200`, `POST /api/auth/login` → JWT
+thật, round-trip đầy đủ qua LAN IP, không chỉ qua loopback. `npm run typecheck`/`lint`/`format`
+sạch, production Vite build sạch. **Chưa test thật từ 1 máy vật lý/VM thứ 2** — môi trường phiên
+này chỉ có 1 máy, nên chỉ verify được ở mức "server lắng nghe đúng interface + reachable qua chính
+địa chỉ LAN của nó", chưa phải kết nối từ máy khác thật. Firewall rule cũng **chưa verify được** vì
+không tự tạo được (thiếu quyền) — người dùng cần tự chạy lệnh trên và tự xác nhận từ máy thứ 2.
+
 ## Sự cố thật gặp phải khi dựng skeleton (Phase 20)
 
 Template `webapi` mặc định kéo theo `Microsoft.AspNetCore.OpenApi 10.0.9`, phiên bản này lại kéo

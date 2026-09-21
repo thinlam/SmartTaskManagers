@@ -115,6 +115,18 @@ cần quyền Admin, đúng tinh thần Personal Mode 1 người dùng; `languag
 **Chưa test:** click tương tác thật bên trong app sau khi cài (chỉ verify process/window/file-system
 level, giống giới hạn đã ghi ở Phase 31) — không có công cụ điều khiển GUI trong phiên này.
 
+## Cài trên nhiều máy (sau Phase 32)
+
+Người dùng hỏi thật "máy khác thì cài sao" — xem `backend/README.md`'s mục "Cài trên nhiều máy,
+dùng chung 1 backend" cho hướng dẫn đầy đủ phía server. Tóm tắt phía Desktop app: cài `.exe` như
+bình thường trên bất kỳ máy nào (không cần build riêng từng máy), lần đầu mở app bấm "Connecting to
+a shared server?" ở màn hình đăng nhập → nhập địa chỉ LAN của máy chạy backend → đăng nhập.
+
+Backend URL giờ **cấu hình được lúc chạy** (`apps/desktop/src/lib/serverUrl.ts` mới), không còn cố
+định lúc build như `VITE_API_URL` (Phase 27) — lưu vào `localStorage` riêng từng máy, đọc lại mỗi
+lần mở app (`main.tsx`). `VITE_API_URL` vẫn còn tác dụng làm giá trị mặc định ban đầu nếu chưa từng
+nhập gì, không bị xoá.
+
 ## Application Shell (Phase 07)
 
 ```

@@ -1,7 +1,8 @@
 import { useState, type FormEvent } from 'react';
 import { Button } from '@stm/ui';
-import { ApiError } from '@stm/api-client';
+import { ApiError, configureApiClient } from '@stm/api-client';
 import { useAuthContext } from '../../state/AuthContext';
+import { getStoredServerUrl, setStoredServerUrl } from '../../lib/serverUrl';
 
 const fieldClasses =
   'w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-ink-primary outline-none focus-visible:ring-2 focus-visible:ring-primary';
@@ -22,12 +23,17 @@ export function LoginPage() {
   const [displayName, setDisplayName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [serverUrl, setServerUrl] = useState(() => getStoredServerUrl());
+  const [showServerField, setShowServerField] = useState(false);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError(null);
     setIsSubmitting(true);
     try {
+      const trimmedUrl = serverUrl.trim().replace(/\/+$/, '');
+      configureApiClient({ baseUrl: trimmedUrl });
+      setStoredServerUrl(trimmedUrl);
       if (mode === 'login') {
         await login(email, password);
       } else {
@@ -55,6 +61,34 @@ export function LoginPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div className="flex flex-col gap-1">
+            <button
+              type="button"
+              onClick={() => setShowServerField((current) => !current)}
+              className="self-start text-xs font-medium text-ink-muted hover:text-ink-secondary hover:underline"
+            >
+              {showServerField ? 'Hide server address' : 'Connecting to a shared server?'}
+            </button>
+            {showServerField && (
+              <div className="flex flex-col gap-1">
+                <label htmlFor="login-server-url" className={labelClasses}>
+                  Server URL
+                </label>
+                <input
+                  id="login-server-url"
+                  type="text"
+                  placeholder="http://192.168.1.10:5277"
+                  value={serverUrl}
+                  onChange={(event) => setServerUrl(event.target.value)}
+                  className={fieldClasses}
+                />
+                <p className="text-xs text-ink-muted">
+                  Leave as-is if the backend runs on this same computer.
+                </p>
+              </div>
+            )}
+          </div>
+
           {mode === 'register' && (
             <div className="flex flex-col gap-1">
               <label htmlFor="login-display-name" className={labelClasses}>
