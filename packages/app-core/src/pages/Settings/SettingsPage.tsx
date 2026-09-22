@@ -1,6 +1,8 @@
 import type { Priority, TaskStatus } from '@stm/types';
 import { Switch } from '@stm/ui';
+import { useTranslation } from 'react-i18next';
 import { useSettingsContext } from '../../state/SettingsContext';
+import { useAuthContext } from '../../state/AuthContext';
 
 const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 const STATUSES: TaskStatus[] = ['Inbox', 'To Do', 'In Progress', 'Waiting', 'Completed'];
@@ -20,6 +22,8 @@ const labelClasses = 'text-xs font-semibold uppercase tracking-wide text-ink-mut
  */
 export function SettingsPage() {
   const { settings, updateSettings } = useSettingsContext();
+  const { t, i18n } = useTranslation();
+  const { setLanguage } = useAuthContext();
 
   return (
     <div className="flex flex-col gap-6 p-8">
@@ -47,15 +51,17 @@ export function SettingsPage() {
           </div>
           <div className="flex flex-col gap-1">
             <label htmlFor="settings-language" className={labelClasses}>
-              Language
+              {t('settings.language')}
             </label>
-            <input
+            <select
               id="settings-language"
-              type="text"
-              value={settings.language}
-              onChange={(event) => updateSettings({ language: event.target.value })}
+              value={i18n.language}
+              onChange={(event) => void setLanguage(event.target.value as 'vi' | 'en')}
               className={fieldClasses}
-            />
+            >
+              <option value="vi">{t('settings.languageVi')}</option>
+              <option value="en">{t('settings.languageEn')}</option>
+            </select>
           </div>
           <div className="flex flex-col gap-1">
             <label htmlFor="settings-week-start" className={labelClasses}>

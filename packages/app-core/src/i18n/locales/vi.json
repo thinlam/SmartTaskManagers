@@ -38,5 +38,10 @@
     "switchToRegister": "Chưa có tài khoản? Tạo ngay",
     "switchToLogin": "Đã có tài khoản? Đăng nhập",
     "genericError": "Không thể kết nối tới server. Backend có đang chạy không?"
+  },
+  "settings": {
+    "language": "Ngôn ngữ",
+    "languageVi": "Tiếng Việt",
+    "languageEn": "English"
   }
 }

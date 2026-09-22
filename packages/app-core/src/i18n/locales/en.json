@@ -38,5 +38,10 @@
     "switchToRegister": "Don't have an account? Create one",
     "switchToLogin": "Already have an account? Sign in",
     "genericError": "Could not reach the server. Is the backend running?"
+  },
+  "settings": {
+    "language": "Language",
+    "languageVi": "Vietnamese",
+    "languageEn": "English"
   }
 }
