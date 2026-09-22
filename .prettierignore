@@ -5,3 +5,8 @@ apps/excel/
 node_modules/
 dist/
 **/src-tauri/target/
+
+# Nested workspace with its own .gitignore ("*") meant to keep it out of git
+# and tooling entirely — Prettier doesn't honor non-root .gitignore files, so
+# it needs an explicit entry here too.
+.superpowers/

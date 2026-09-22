@@ -13,7 +13,7 @@ React hooks dùng chung: `useTasks`, `useProjects`, `useGoals`, `useHabits`, `us
   task mới không cần tạo-rồi-vá-ngay bằng `updateTask` — 1 lệnh gọi đủ cho mọi field.
   `useTasks()` **không tự quyết định được gọi ở đâu** — Phase 12 bước 2 phát hiện gọi nó cục bộ
   trong từng page (như `TasksPage` ban đầu) khiến state không dùng chung được giữa các trang; xem
-  `apps/desktop/src/state/TasksContext.tsx` cho cách bọc 1 instance duy nhất dùng chung toàn app.
+  `packages/app-core/src/state/TasksContext.tsx` cho cách bọc 1 instance duy nhất dùng chung toàn app.
 - ✅ `useProjects` (Phase 13): cùng pattern với `useTasks` — `projects` +
   `addProject`/`updateProject`/`deleteProject`, cục bộ, không persist. **Giới hạn đã ghi nhận:**
   `deleteProject` không dọn `projectId` của các task đang tham chiếu project đó — chấp nhận được

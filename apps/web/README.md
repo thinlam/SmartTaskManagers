@@ -32,5 +32,10 @@ npm run build --workspace=apps/web
 4. Environment Variables → thêm `VITE_API_BASE_URL` = URL backend Railway
    thật (giá trị giống `.env.production` ở đây).
 5. Sau khi deploy xong và có domain thật (vd. `https://smarttask.vercel.app`),
-   thêm domain đó vào biến môi trường `Cors__AllowedOrigins__0` trên Railway
+   thêm domain đó vào biến môi trường `Cors__AllowedOrigins__2` trên Railway
    (service `SmartTaskManagers`) — không cần sửa code hay deploy lại backend.
+   Dùng index `2`, không phải `0`: base `appsettings.json` đã định nghĩa sẵn
+   index `0`/`1` cho 2 origin Tauri (`tauri://localhost`/`http://tauri.localhost`),
+   và ASP.NET Core's environment-variable config provider merge mảng **theo
+   index** với layer bên dưới (base `appsettings.json`) chứ không append —
+   dùng `__0` sẽ ghi đè mất origin Tauri đầu tiên thay vì thêm domain Vercel mới.

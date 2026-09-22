@@ -136,6 +136,13 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+if (allowedOrigins.Length == 0)
+{
+    app.Logger.LogWarning(
+        "Cors:AllowedOrigins is empty — all cross-origin browser requests will be rejected."
+    );
+}
+
 // Applies pending EF Core migrations on every startup — safe to run
 // unconditionally because MigrateAsync() only ever applies migrations
 // not yet recorded in __EFMigrationsHistory (idempotent: a no-op on a

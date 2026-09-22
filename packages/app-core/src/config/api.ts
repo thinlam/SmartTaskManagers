@@ -19,7 +19,8 @@
  * *default* `configureApiClient()` value, and a user can still override
  * it at runtime on the login screen when connecting to a shared backend
  * on their own LAN (see `apps/desktop/README.md`'s "Cài trên nhiều máy"
- * section). That runtime override is an explicit user action, not a
+ * section — that LAN-override feature is desktop-specific, `apps/web` has no
+ * equivalent UI for it). That runtime override is an explicit user action, not a
  * silent fallback, so it doesn't reintroduce the problem this file
  * guards against.
  */
@@ -27,9 +28,9 @@ const rawApiBaseUrl = import.meta.env.VITE_API_BASE_URL?.replace(/\/+$/, '');
 
 if (!rawApiBaseUrl) {
   throw new Error(
-    'VITE_API_BASE_URL is not configured. Set it in apps/desktop/.env.development ' +
-      '(local backend) or apps/desktop/.env.production (deployed backend) — see ' +
-      'apps/desktop/.env.example.',
+    "VITE_API_BASE_URL is not configured. Set it in your app's .env.development " +
+      '(local backend) or .env.production (deployed backend) — see the .env.example ' +
+      "in apps/desktop/ or apps/web/, whichever app you're running.",
   );
 }
 

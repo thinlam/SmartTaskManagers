@@ -934,7 +934,7 @@ UI/business logic thay vì copy-paste hoặc duy trì 2 bản lệch nhau theo t
 **Task 3 — CORS config-driven.** `Program.cs` đổi từ `WithOrigins(...)` cứng trong code sang đọc
 `Cors:AllowedOrigins` từ configuration. Lý do: domain Vercel thật cho `apps/web` chưa tồn tại tại
 thời điểm này (chưa tạo project Vercel) — origins giờ cấu hình được qua biến môi trường
-`Cors__AllowedOrigins__0` trên Railway, thêm domain Vercel thật sau này **không cần sửa code hay
+`Cors__AllowedOrigins__2` trên Railway, thêm domain Vercel thật sau này **không cần sửa code hay
 deploy lại backend**. `appsettings.Development.json` khai 3 origin cũ + `:5174` (cổng dự phòng của
 `apps/web` khi `apps/desktop` đã chiếm `:5173`) để hành vi dev local không đổi.
 
@@ -980,8 +980,11 @@ cho `packages/ui/src`.
 2. Đặt Build Command thủ công (`cd ../.. && npm install && npm run build --workspace=apps/web`,
    Output Directory `dist`) vì đây là npm workspaces monorepo, Vercel không tự đoán đúng.
 3. Thêm biến môi trường `VITE_API_BASE_URL` trỏ tới backend Railway thật.
-4. Sau khi có domain Vercel thật, thêm domain đó vào `Cors__AllowedOrigins__0` trên Railway (service
+4. Sau khi có domain Vercel thật, thêm domain đó vào `Cors__AllowedOrigins__2` trên Railway (service
    `SmartTaskManagers`) — không cần sửa code hay deploy lại backend, đúng mục đích Task 3's thay đổi.
+   Dùng index `2` chứ không phải `0`: base `appsettings.json` giờ định nghĩa sẵn index `0`/`1` cho 2
+   origin Tauri, và ASP.NET Core's env-var config provider merge mảng theo index với layer bên dưới
+   (base `appsettings.json`) chứ không append — `__0` sẽ ghi đè mất origin Tauri đầu tiên.
 5. Khi có MySQL local reachable hoặc công cụ điều khiển trình duyệt trong phiên sau, nên chạy lại
    đầy đủ Steps 1–6 của task brief này (click-test thật Login/Dashboard/Tasks/Projects trên
    `apps/web`) — chưa làm được trong phiên này.

@@ -3,7 +3,7 @@
  * `import.meta.env` itself (that's a Vite-ism apps/desktop has, this
  * package doesn't assume any bundler). apps/desktop calls
  * `configureApiClient({ baseUrl: API_BASE_URL })` once at startup instead
- * (see apps/desktop/src/config/api.ts and src/main.tsx).
+ * (see packages/app-core/src/config/api.ts and apps/desktop/src/main.tsx).
  *
  * No hard-coded default here on purpose — a missing/wrong base URL
  * should fail clearly (see the error below) instead of silently

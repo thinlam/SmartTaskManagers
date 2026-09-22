@@ -20,7 +20,7 @@ Utils, formatters, date logic dùng chung.
   mong muốn. Không có `computeGoalMetrics`/`computeGoalHealth` vì Sheets không có view engine nào
   cho Goals để port (`progress`/`status` là field nhập tay, xem `@stm/types`'s `Goal`).
 - **Phase 15 (Habits) cũng không thêm hàm nào ở đây.** "Last done" label của Habit được viết trực
-  tiếp trong `apps/desktop/src/pages/Habits/HabitRow.tsx` (không phải hàm dùng chung) — khác
+  tiếp trong `packages/app-core/src/pages/Habits/HabitRow.tsx` (không phải hàm dùng chung) — khác
   `formatDueLabel`/`formatTargetLabel`, nhãn này không có khái niệm "quá hạn"/khẩn cấp nào để lặp
   lại logic tương tự, nên chưa đủ lý do tách thành hàm `@stm/shared` riêng.
 - ✅ `computeCalendarMonthData`/`sortCalendarTasks`/`getCalendarTaskTone`/`calendarDateKey` (Phase

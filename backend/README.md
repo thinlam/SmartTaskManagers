@@ -275,15 +275,28 @@ lỗi thật `MSB3027`; `Stop-Process` process đó rồi build lại mới qua.
 
 ## CORS (Phase 27)
 
-`Program.cs` có policy tên `DesktopClient` (`AddCors`/`UseCors`), cho phép origin
-`http://localhost:5173` (Vite dev server) + `tauri://localhost`/`http://tauri.localhost` (cửa sổ
-Tauri packaged) gọi API — không `AllowAnyOrigin`, API này không định cho website bất kỳ gọi.
+`Program.cs` có policy tên `DesktopClient` (`AddCors`/`UseCors`), cho phép các origin đọc từ config
+`Cors:AllowedOrigins` (thay vì `WithOrigins(...)` cứng trong code như phase này ban đầu làm — đổi
+sang config-driven ở Phase 33) — không `AllowAnyOrigin`, API này không định cho website bất kỳ gọi.
 `UseCors` đặt **trước** `UseAuthentication` trong pipeline: request `OPTIONS` preflight của trình
 duyệt không mang header `Authorization`, nên CORS phải được xử lý trước khi middleware auth có cơ
 hội từ chối nó. Sự cố thật gặp giữa chừng khi build phase này: lần đầu chỉ gọi `AddCors` (đăng ký
 policy) mà quên `app.UseCors()` trong pipeline — verify bằng `curl -X OPTIONS` xác nhận vẫn trả
 `405 Method Not Allowed` thay vì `204` kèm `Access-Control-Allow-Origin`; thêm dòng `UseCors` mới
 qua, verify lại thấy đúng header.
+
+**Cấu hình theo layer (Phase 33):** base `SmartTask.Api/appsettings.json` định nghĩa 2 origin Tauri
+(`tauri://localhost`, `http://tauri.localhost`, index `0`/`1`) áp dụng ở **mọi** environment —
+2 origin này phải luôn có mặt kể cả Production vì app Desktop đã đóng gói (Phase 31/32) phụ thuộc
+vào chúng. `appsettings.Development.json` khai lại **toàn bộ** mảng 4 origin (2 origin Tauri + 2
+dev server `:5173`/`:5174`) vì ASP.NET Core config layering **thay thế nguyên mảng** khi cùng
+section/key giữa 2 file `appsettings.{Environment}.json`, không merge phần tử. Trên Railway
+(Production, không có `appsettings.Production.json` riêng cho `Cors`), thêm domain frontend thật
+(vd. Vercel) qua biến môi trường `Cors__AllowedOrigins__2` — **chú ý dùng index `2`, không phải
+`0`**: biến môi trường theo ASP.NET Core's env-var config provider merge mảng **theo index** với
+layer bên dưới nó (ở đây là base `appsettings.json`, đã chiếm index `0`/`1`), nên `__0` sẽ ghi đè
+mất origin Tauri đầu tiên thay vì thêm origin mới — không cần sửa code hay deploy lại backend, chỉ
+cần đặt đúng index.
 
 ## Sync (Phase 28)
 
@@ -461,7 +474,7 @@ server?" → nhập `http://<IP-LAN-của-máy-chạy-backend>:5277` (ví dụ `
 đăng nhập bằng tài khoản đã tạo (hoặc tạo tài khoản mới — `[Authorize]` chỉ xác thực "có token hợp
 lệ", mọi tài khoản đều thấy chung 1 bộ dữ liệu, xem doc comment `TasksController`). Giá trị URL
 này lưu trong `localStorage` của từng máy (`packages/api-client`'s `configureApiClient`, qua
-`apps/desktop/src/lib/serverUrl.ts` mới) — chỉ cần nhập 1 lần, nhớ cho lần mở app sau.
+`packages/app-core/src/lib/serverUrl.ts` mới) — chỉ cần nhập 1 lần, nhớ cho lần mở app sau.
 
 Verify thật: bind `0.0.0.0:5277` xác nhận qua `Get-NetTCPConnection -LocalPort 5277 -State Listen`
 (`LocalAddress: 0.0.0.0`, không còn `127.0.0.1`), `curl` thật tới địa chỉ LAN thật của máy
@@ -548,7 +561,7 @@ cục bộ qua Docker.
 `fetch()` coi đó là đường dẫn **tương đối** so với origin của chính app (không phải URL tuyệt đối
 tới Railway) — mọi request sẽ âm thầm đi sai chỗ thay vì lỗi rõ ràng. Đã sửa thành
 `https://smarttaskmanagers-production.up.railway.app`, đồng thời thêm guard thật trong
-`apps/desktop/src/config/api.ts`: `VITE_API_BASE_URL` không bắt đầu bằng `http://`/`https://` giờ
+`packages/app-core/src/config/api.ts`: `VITE_API_BASE_URL` không bắt đầu bằng `http://`/`https://` giờ
 throw lỗi rõ ràng ngay lúc app khởi động, thay vì âm thầm gọi sai — chặn đúng loại lỗi vừa gặp
 thật, không lặp lại lần sau.
 
@@ -687,11 +700,11 @@ dị dạng) thay vì lỗi HTTP rõ ràng. Thêm `app.UseExceptionHandler(...)`
 thật, log đầy đủ exception (kể cả nội dung nhạy cảm nếu có) chỉ ở server-side qua `ILogger`, **không
 bao giờ** đưa stack trace hay chi tiết exception vào response.
 
-**CORS: đã kiểm tra lại, không cần sửa gì** — `WithOrigins("http://localhost:5173",
-"tauri://localhost", "http://tauri.localhost")` xác thực `Origin` header của **bên gọi** (luôn là
-`tauri://localhost` cho app Desktop đã đóng gói, dù gọi backend nào), không phải địa chỉ đích —
-Desktop production gọi Railway hoàn toàn bình thường mà không cần thêm origin nào (đã giải thích chi
-tiết ở mục "Cài trên nhiều máy" phía trên).
+**CORS: config-driven, không hard-code** — origins đọc từ `Cors:AllowedOrigins` (xem mục "CORS
+(Phase 27)" phía trên cho chi tiết layer base/Development/env-var); CORS xác thực `Origin` header
+của **bên gọi** (luôn là `tauri://localhost` cho app Desktop đã đóng gói, dù gọi backend nào), không
+phải địa chỉ đích — Desktop production gọi Railway hoàn toàn bình thường mà không cần thêm origin
+nào (đã giải thích chi tiết ở mục "Cài trên nhiều máy" phía trên).
 
 **Verify thật, đầy đủ — không chỉ build:** `dotnet restore` + `dotnet build -c Release` sạch, `dotnet
 list package --vulnerable --include-transitive` sạch cả 5 project (không có test project nào trong

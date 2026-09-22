@@ -67,7 +67,7 @@ role="switch" aria-checked>` thuần, không phải `<input type="checkbox">` �
 ## Sidebar/Topbar — router-agnostic theo thiết kế
 
 `Sidebar` **không** import `react-router-dom` — mỗi nav item chỉ nhận `href` (string) và `active`
-(boolean) đã tính sẵn, do consumer (hiện tại là `apps/desktop/src/app/AppShell.tsx`) tính toán từ
+(boolean) đã tính sẵn, do consumer (hiện tại là `packages/app-core/src/app/AppShell.tsx`) tính toán từ
 router thật của app đó. Lý do: `packages/ui` phải dùng lại được ở `apps/web` (Phase 33), nơi có
 thể dùng router khác hoặc scheme URL khác (`apps/desktop` dùng hash route `#/tasks` vì lý do nêu ở
 `apps/desktop/README.md`; `apps/web` nhiều khả năng dùng path thật `/tasks`).

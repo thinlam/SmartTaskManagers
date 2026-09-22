@@ -122,7 +122,7 @@ dùng chung 1 backend" cho hướng dẫn đầy đủ phía server. Tóm tắt 
 bình thường trên bất kỳ máy nào (không cần build riêng từng máy), lần đầu mở app bấm "Connecting to
 a shared server?" ở màn hình đăng nhập → nhập địa chỉ LAN của máy chạy backend → đăng nhập.
 
-Backend URL giờ **cấu hình được lúc chạy** (`apps/desktop/src/lib/serverUrl.ts`), không còn cố định
+Backend URL giờ **cấu hình được lúc chạy** (`packages/app-core/src/lib/serverUrl.ts`), không còn cố định
 lúc build như `VITE_API_BASE_URL` (`src/config/api.ts`) — lưu vào `localStorage` riêng từng máy,
 đọc lại mỗi lần mở app (`main.tsx`). `VITE_API_BASE_URL` vẫn còn tác dụng làm giá trị mặc định ban
 đầu nếu chưa từng nhập gì, không bị xoá — xem mục "API base URL (env-based, không hard-code)" bên
@@ -159,7 +159,7 @@ React UI
 apps/desktop/.env.example         template có comment — commit thật (ngoại lệ duy nhất trong .gitignore's `.env.*`)
 apps/desktop/.env.development     VITE_API_BASE_URL=http://localhost:5277           — KHÔNG commit (gitignored)
 apps/desktop/.env.production      VITE_API_BASE_URL=<Railway URL thật>              — KHÔNG commit (gitignored)
-apps/desktop/src/config/api.ts    export const API_BASE_URL — throw nếu VITE_API_BASE_URL rỗng
+packages/app-core/src/config/api.ts  export const API_BASE_URL — throw nếu VITE_API_BASE_URL rỗng
 apps/desktop/src/vite-env.d.ts    type ImportMetaEnv.VITE_API_BASE_URL cho typecheck thật, không phải `any`
 ```
 
@@ -462,7 +462,7 @@ nào khác đọc).
 
 **Không thêm component mới vào `packages/ui`** — khác các Phase trước (ProjectCard/GoalCard/
 HabitCard), lưới tháng và ô ngày là bố cục đặc thù riêng cho 1 màn hình (không tái dùng ở đâu khác),
-nên ở lại `apps/desktop/src/pages/Calendar/` — đúng nguyên tắc đã áp dụng cho `TaskFilters`/
+nên ở lại `packages/app-core/src/pages/Calendar/` — đúng nguyên tắc đã áp dụng cho `TaskFilters`/
 `ProjectRow`/`GoalRow`/`HabitRow`. Agenda list tái dùng thẳng `TaskCard` (không viết row thứ 4).
 
 Prefix ký hiệu ✓/!/◆/• của Sheets (để vừa 1 ô hẹp) được thay bằng icon Lucide thật
