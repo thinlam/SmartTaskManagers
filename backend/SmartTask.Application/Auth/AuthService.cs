@@ -58,7 +58,7 @@ public sealed class AuthService(
     private AuthResult BuildAuthResult(User user)
     {
         var token = tokenGenerator.GenerateToken(user.Id, user.Email);
-        return new AuthResult(user.Id, user.Email, token.Value, token.ExpiresAt, user.Language);
+        return new AuthResult(user.Id, user.Email, token.Value, token.ExpiresAt, user.Language, user.Theme);
     }
 
     public async Task UpdateLanguageAsync(Guid userId, string language, CancellationToken cancellationToken)
@@ -66,6 +66,14 @@ public sealed class AuthService(
         var user = await userRepository.GetByIdAsync(userId, cancellationToken)
             ?? throw new InvalidOperationException("User not found.");
         user.Language = language;
+        await userRepository.SaveChangesAsync(cancellationToken);
+    }
+
+    public async Task UpdateThemeAsync(Guid userId, string theme, CancellationToken cancellationToken)
+    {
+        var user = await userRepository.GetByIdAsync(userId, cancellationToken)
+            ?? throw new InvalidOperationException("User not found.");
+        user.Theme = theme;
         await userRepository.SaveChangesAsync(cancellationToken);
     }
 }
