@@ -119,16 +119,18 @@ builder.Services.AddAuthorization();
 // the desktop app fails at the browser level before it even reaches a
 // controller. Named, not AllowAnyOrigin — this API isn't meant to be
 // called from an arbitrary website.
+//
+// Origins are now read from Cors:AllowedOrigins config instead of being
+// hard-coded, so a production frontend domain (e.g., a Vercel deployment)
+// can be added via the Cors__AllowedOrigins__0 environment variable on
+// Railway without a code change or redeploy.
 const string DesktopCorsPolicy = "DesktopClient";
+var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
 builder.Services.AddCors(options =>
 {
     options.AddPolicy(
         DesktopCorsPolicy,
-        policy =>
-            policy
-                .WithOrigins("http://localhost:5173", "tauri://localhost", "http://tauri.localhost")
-                .AllowAnyHeader()
-                .AllowAnyMethod()
+        policy => policy.WithOrigins(allowedOrigins).AllowAnyHeader().AllowAnyMethod()
     );
 });
 
