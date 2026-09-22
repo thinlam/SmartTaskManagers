@@ -25,21 +25,45 @@ export function SettingsPage() {
   const { t, i18n } = useTranslation();
   const { setLanguage } = useAuthContext();
 
+  const STATUS_LABELS: Record<TaskStatus, string> = {
+    Inbox: t('settings.statusInbox'),
+    'To Do': t('settings.statusToDo'),
+    'In Progress': t('settings.statusInProgress'),
+    Waiting: t('settings.statusWaiting'),
+    Completed: t('settings.statusCompleted'),
+  };
+  const PRIORITY_LABELS: Record<Priority, string> = {
+    Critical: t('settings.priorityCritical'),
+    Urgent: t('settings.priorityUrgent'),
+    High: t('settings.priorityHigh'),
+    Medium: t('settings.priorityMedium'),
+    Low: t('settings.priorityLow'),
+  };
+  const WEEKDAY_LABELS: Record<string, string> = {
+    Monday: t('settings.weekdayMonday'),
+    Tuesday: t('settings.weekdayTuesday'),
+    Wednesday: t('settings.weekdayWednesday'),
+    Thursday: t('settings.weekdayThursday'),
+    Friday: t('settings.weekdayFriday'),
+    Saturday: t('settings.weekdaySaturday'),
+    Sunday: t('settings.weekdaySunday'),
+  };
+
   return (
     <div className="flex flex-col gap-6 p-8">
       <header className="flex flex-col gap-1">
-        <h1 className="text-[28px] font-bold leading-[34px] text-ink-primary">Settings</h1>
-        <p className="text-sm text-ink-secondary">
-          Workspace defaults, task defaults, and focus preferences.
-        </p>
+        <h1 className="text-[28px] font-bold leading-[34px] text-ink-primary">
+          {t('settings.title')}
+        </h1>
+        <p className="text-sm text-ink-secondary">{t('settings.subtitle')}</p>
       </header>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-semibold text-ink-primary">General</h2>
+        <h2 className="text-lg font-semibold text-ink-primary">{t('settings.sectionGeneral')}</h2>
         <div className="grid grid-cols-1 gap-4 rounded-lg border border-border bg-surface p-4 sm:grid-cols-2">
           <div className="flex flex-col gap-1">
             <label htmlFor="settings-workspace-name" className={labelClasses}>
-              Workspace Name
+              {t('settings.fieldWorkspaceName')}
             </label>
             <input
               id="settings-workspace-name"
@@ -65,7 +89,7 @@ export function SettingsPage() {
           </div>
           <div className="flex flex-col gap-1">
             <label htmlFor="settings-week-start" className={labelClasses}>
-              Week Start
+              {t('settings.fieldWeekStart')}
             </label>
             <select
               id="settings-week-start"
@@ -75,14 +99,14 @@ export function SettingsPage() {
             >
               {WEEKDAYS.map((day) => (
                 <option key={day} value={day}>
-                  {day}
+                  {WEEKDAY_LABELS[day]}
                 </option>
               ))}
             </select>
           </div>
           <div className="flex flex-col gap-1">
             <label htmlFor="settings-date-format" className={labelClasses}>
-              Date Format
+              {t('settings.fieldDateFormat')}
             </label>
             <input
               id="settings-date-format"
@@ -96,11 +120,13 @@ export function SettingsPage() {
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-semibold text-ink-primary">Task Defaults</h2>
+        <h2 className="text-lg font-semibold text-ink-primary">
+          {t('settings.sectionTaskDefaults')}
+        </h2>
         <div className="grid grid-cols-1 gap-4 rounded-lg border border-border bg-surface p-4 sm:grid-cols-2">
           <div className="flex flex-col gap-1">
             <label htmlFor="settings-default-status" className={labelClasses}>
-              Default Status
+              {t('settings.fieldDefaultStatus')}
             </label>
             <select
               id="settings-default-status"
@@ -112,14 +138,14 @@ export function SettingsPage() {
             >
               {STATUSES.map((status) => (
                 <option key={status} value={status}>
-                  {status}
+                  {STATUS_LABELS[status]}
                 </option>
               ))}
             </select>
           </div>
           <div className="flex flex-col gap-1">
             <label htmlFor="settings-default-priority" className={labelClasses}>
-              Default Priority
+              {t('settings.fieldDefaultPriority')}
             </label>
             <select
               id="settings-default-priority"
@@ -131,14 +157,14 @@ export function SettingsPage() {
             >
               {PRIORITIES.map((priority) => (
                 <option key={priority} value={priority}>
-                  {priority}
+                  {PRIORITY_LABELS[priority]}
                 </option>
               ))}
             </select>
           </div>
           <div className="flex flex-col gap-1">
             <label htmlFor="settings-default-estimate" className={labelClasses}>
-              Default Estimate (minutes)
+              {t('settings.fieldDefaultEstimate')}
             </label>
             <input
               id="settings-default-estimate"
@@ -153,7 +179,7 @@ export function SettingsPage() {
           </div>
           <div className="flex flex-col gap-1">
             <label htmlFor="settings-due-soon-days" className={labelClasses}>
-              Due Soon (days)
+              {t('settings.fieldDueSoonDays')}
             </label>
             <input
               id="settings-due-soon-days"
@@ -168,11 +194,13 @@ export function SettingsPage() {
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-semibold text-ink-primary">Focus & Schedule</h2>
+        <h2 className="text-lg font-semibold text-ink-primary">
+          {t('settings.sectionFocusSchedule')}
+        </h2>
         <div className="grid grid-cols-1 gap-4 rounded-lg border border-border bg-surface p-4 sm:grid-cols-2">
           <div className="flex flex-col gap-1">
             <label htmlFor="settings-focus-days-start" className={labelClasses}>
-              Focus Days Start
+              {t('settings.fieldFocusDaysStart')}
             </label>
             <select
               id="settings-focus-days-start"
@@ -182,14 +210,14 @@ export function SettingsPage() {
             >
               {WEEKDAYS.map((day) => (
                 <option key={day} value={day}>
-                  {day}
+                  {WEEKDAY_LABELS[day]}
                 </option>
               ))}
             </select>
           </div>
           <div className="flex flex-col gap-1">
             <label htmlFor="settings-focus-days-end" className={labelClasses}>
-              Focus Days End
+              {t('settings.fieldFocusDaysEnd')}
             </label>
             <select
               id="settings-focus-days-end"
@@ -199,14 +227,14 @@ export function SettingsPage() {
             >
               {WEEKDAYS.map((day) => (
                 <option key={day} value={day}>
-                  {day}
+                  {WEEKDAY_LABELS[day]}
                 </option>
               ))}
             </select>
           </div>
           <div className="flex flex-col gap-1">
             <label htmlFor="settings-focus-window-start" className={labelClasses}>
-              Focus Window Start
+              {t('settings.fieldFocusWindowStart')}
             </label>
             <input
               id="settings-focus-window-start"
@@ -218,7 +246,7 @@ export function SettingsPage() {
           </div>
           <div className="flex flex-col gap-1">
             <label htmlFor="settings-focus-window-end" className={labelClasses}>
-              Focus Window End
+              {t('settings.fieldFocusWindowEnd')}
             </label>
             <input
               id="settings-focus-window-end"
@@ -230,7 +258,7 @@ export function SettingsPage() {
           </div>
           <div className="flex flex-col gap-1">
             <label htmlFor="settings-daily-focus-limit" className={labelClasses}>
-              Daily Focus Limit (hours)
+              {t('settings.fieldDailyFocusLimit')}
             </label>
             <input
               id="settings-daily-focus-limit"
@@ -245,7 +273,7 @@ export function SettingsPage() {
           </div>
           <div className="flex flex-col gap-1">
             <label htmlFor="settings-weekend" className={labelClasses}>
-              Weekend
+              {t('settings.fieldWeekend')}
             </label>
             <select
               id="settings-weekend"
@@ -255,7 +283,7 @@ export function SettingsPage() {
             >
               {WEEKDAYS.map((day) => (
                 <option key={day} value={day}>
-                  {day}
+                  {WEEKDAY_LABELS[day]}
                 </option>
               ))}
             </select>
@@ -264,37 +292,36 @@ export function SettingsPage() {
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-semibold text-ink-primary">Smart Engine</h2>
+        <h2 className="text-lg font-semibold text-ink-primary">
+          {t('settings.sectionSmartEngine')}
+        </h2>
         <div className="flex flex-col divide-y divide-border rounded-lg border border-border bg-surface">
           <SettingsToggleRow
-            label="Smart Score Enabled"
-            description="Compute a priority score for open tasks."
+            label={t('settings.toggleSmartScoreLabel')}
+            description={t('settings.toggleSmartScoreDescription')}
             checked={settings.smartScoreEnabled}
             onCheckedChange={(checked) => updateSettings({ smartScoreEnabled: checked })}
           />
           <SettingsToggleRow
-            label="Goal Alignment Enabled"
-            description="Factor linked goals into Smart Score."
+            label={t('settings.toggleGoalAlignmentLabel')}
+            description={t('settings.toggleGoalAlignmentDescription')}
             checked={settings.goalAlignmentEnabled}
             onCheckedChange={(checked) => updateSettings({ goalAlignmentEnabled: checked })}
           />
           <SettingsToggleRow
-            label="Schedule Overload Warning"
-            description="Warn when a day's focus load exceeds the daily limit."
+            label={t('settings.toggleScheduleOverloadLabel')}
+            description={t('settings.toggleScheduleOverloadDescription')}
             checked={settings.scheduleOverloadWarning}
             onCheckedChange={(checked) => updateSettings({ scheduleOverloadWarning: checked })}
           />
           <SettingsToggleRow
-            label="Explain Recommendations"
-            description="Show why a task was recommended, not just the recommendation."
+            label={t('settings.toggleExplainRecommendationsLabel')}
+            description={t('settings.toggleExplainRecommendationsDescription')}
             checked={settings.explainRecommendations}
             onCheckedChange={(checked) => updateSettings({ explainRecommendations: checked })}
           />
         </div>
-        <p className="text-xs text-ink-muted">
-          These control the Smart Engine (Phase 29), which isn't built yet — toggling them here
-          doesn't change any behavior in the app today.
-        </p>
+        <p className="text-xs text-ink-muted">{t('settings.smartEngineHelperText')}</p>
       </section>
     </div>
   );
