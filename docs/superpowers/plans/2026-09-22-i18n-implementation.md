@@ -30,6 +30,8 @@
 - Create: `backend/SmartTask.Persistence/Migrations/<timestamp>_AddUserLanguage.cs` (via `dotnet ef migrations add`, not hand-written)
 - Modify: `backend/SmartTask.Application/Auth/AuthContracts.cs`
 - Modify: `backend/SmartTask.Application/Auth/AuthService.cs`
+- Modify: `backend/SmartTask.Application/Users/IUserRepository.cs`
+- Modify: `backend/SmartTask.Persistence/Repositories/UserRepository.cs`
 - Modify: `backend/SmartTask.Api/Controllers/AuthController.cs`
 
 **Interfaces:**
@@ -114,23 +116,37 @@ Add this new action inside `AuthController`, after `Login`:
     }
 ```
 
-- [ ] **Step 7: Add `UpdateLanguageAsync` to the auth service**
+- [ ] **Step 7: Add `GetByIdAsync` to `IUserRepository` and `UpdateLanguageAsync` to the auth service**
+
+**Ruling (preflight scan, controller):** `backend/SmartTask.Application/Users/IUserRepository.cs` was checked directly — it currently only has `GetByEmailAsync`, `AddAsync`, `SaveChangesAsync`. There is no `GetByIdAsync` and no `UpdateAsync`. The plan draft's original Step 7 assumed both existed — they don't. Fixed here: add `GetByIdAsync` to the interface (a genuinely new capability this task needs), and rely on EF Core's change-tracking for the update (no `UpdateAsync` method needed — mutating a tracked entity then calling the existing `SaveChangesAsync()` persists it, the same way `RegisterAsync` already does after `AddAsync`).
+
+Read `backend/SmartTask.Application/Users/IUserRepository.cs` first, then add this method to the interface:
+```csharp
+    Task<User?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
+```
+
+Read `backend/SmartTask.Persistence/Repositories/UserRepository.cs` and implement it there, following the exact same style as `GetByEmailAsync`:
+```csharp
+    public Task<User?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
+        dbContext.Users.FirstOrDefaultAsync(u => u.Id == id, cancellationToken);
+```
 
 Read `backend/SmartTask.Application/Auth/IAuthService.cs` (or wherever the interface lives — grep for `interface IAuthService` if the filename differs) and add this method signature:
 ```csharp
     Task UpdateLanguageAsync(Guid userId, string language, CancellationToken cancellationToken);
 ```
-Read `backend/SmartTask.Application/Auth/AuthService.cs` again and implement it, following the same pattern the file already uses to look up a `User` by id (check how `IUserRepository` is used elsewhere in this file — likely a `GetByIdAsync`/similar method; use the exact same repository call). Example shape (adapt the repository method name to whatever `IUserRepository` actually exposes, found by reading `backend/SmartTask.Application/Users/IUserRepository.cs`):
+
+Read `backend/SmartTask.Application/Auth/AuthService.cs` again and implement it:
 ```csharp
     public async Task UpdateLanguageAsync(Guid userId, string language, CancellationToken cancellationToken)
     {
         var user = await userRepository.GetByIdAsync(userId, cancellationToken)
             ?? throw new InvalidOperationException("User not found.");
         user.Language = language;
-        await userRepository.UpdateAsync(user, cancellationToken);
+        await userRepository.SaveChangesAsync(cancellationToken);
     }
 ```
-If `IUserRepository` has no `UpdateAsync` (EF Core change-tracking might make an explicit update call unnecessary — check how other services in this codebase persist entity mutations, e.g. `TaskService`/`ProjectService`, for the established pattern), follow whatever pattern those already use instead of inventing a new one.
+(`userRepository` here is whatever the existing constructor-injected field/parameter name in this file already is for `IUserRepository` — read the file's current constructor to use the exact same name, do not introduce a second name for the same dependency.)
 
 - [ ] **Step 8: Build and verify**
 
