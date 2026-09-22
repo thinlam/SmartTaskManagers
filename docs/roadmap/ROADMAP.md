@@ -989,5 +989,70 @@ cho `packages/ui/src`.
    đầy đủ Steps 1–6 của task brief này (click-test thật Login/Dashboard/Tasks/Projects trên
    `apps/web`) — chưa làm được trong phiên này.
 
+i18n (VI/EN) đã thực hiện — cho toàn bộ ứng dụng, 8 task tuần tự.
+
+**Task 1 — backend, cột `Language` + endpoint đổi ngôn ngữ.** Thêm cột `Language` (`varchar`, mặc
+định `"vi"`) vào entity `User`/bảng tương ứng qua migration EF Core mới, cùng
+`PATCH /api/auth/language` (yêu cầu JWT hợp lệ, body `{ language: "vi" | "en" }`) để client lưu lựa
+chọn ngôn ngữ của user vào DB thay vì chỉ giữ ở localStorage — mục đích là ngôn ngữ theo user, đăng
+nhập máy khác vẫn giữ đúng lựa chọn.
+
+**Task 2 — bootstrap `react-i18next` trong `packages/app-core`.** Thêm `i18next` +
+`react-i18next`, cấu hình 2 namespace ngôn ngữ `vi`/`en`, `vi` làm mặc định (đúng đối tượng người
+dùng chính của app), khởi tạo ở entrypoint `App.tsx` để toàn bộ cây component dùng chung 1 instance
+`t()`.
+
+**Task 3 — Settings language switcher nối thật vào i18n + backend.** Trường ngôn ngữ ở trang
+Settings (trước đó đã có UI nhưng chưa làm gì thật) giờ gọi `i18n.changeLanguage()` (đổi UI ngay lập
+tức, không cần reload) song song với gọi `PATCH /api/auth/language` (lưu xuống DB qua Task 1) —
+đổi ngôn ngữ là 1 hành động, không phải 2 bước rời nhau.
+
+**Tasks 4–7 — dịch toàn bộ page/component dưới `packages/app-core/src`.** Tuần tự theo nhóm:
+Dashboard/Today/Inbox (Task 4); Tasks/Projects/Goals/Habits + các drawer chi tiết tương ứng (Task
+5); Calendar/Kanban/Analytics/Smart Assistant/trang placeholder (Task 6); Settings (nốt phần còn
+lại chưa dịch ở Task 3) (Task 7). Mỗi string UI tĩnh thay bằng `t('...')`, thêm key tương ứng vào
+2 file namespace `vi`/`en`.
+
+**2 loại trừ phạm vi có chủ đích, phát hiện trong lúc rollout (không phải thiếu sót bỏ quên):**
+
+1. Các lệnh format ngày (`toLocaleDateString`/tương tự) trong `TodayPage.tsx` và `HabitRow.tsx` vẫn
+   hard-code locale `'en-US'` — **chưa dịch, để lại có chủ đích** (deferred), không phải lỗi string
+   bị bỏ sót; đây là vấn đề định dạng ngày theo locale, khác bản chất với dịch string UI.
+2. Các mảng enum hiển thị (task status/priority, area của Goals, frequency/weekday của Habits) chỉ
+   dịch **giá trị hiển thị** (label) sang tiếng Việt/Anh, còn **giá trị lưu trữ/so sánh** (dùng để
+   filter, persist xuống DB, so sánh logic) vẫn giữ nguyên tiếng Anh — có chủ đích, để không phá vỡ
+   filter/logic đang dựa vào giá trị enum cố định.
+
+**Task 8 (task này) — verify end-to-end, ghi rõ đã test gì / chưa test được gì:**
+
+- **Step 0** — 2 file doc tiền nhiệm (`docs/superpowers/plans/2026-09-22-i18n-implementation.md`,
+  `docs/superpowers/specs/2026-09-22-i18n-design.md`) chưa từng qua Prettier từ trước, không liên
+  quan tới các task dịch — chạy `prettier --write` sửa riêng, commit riêng trước khi chạy
+  `npm run format` ở Step 1 để không lẫn nợ định dạng cũ vào phạm vi task này.
+- `npm run typecheck`, `npm run lint`, `npm run format`, `npm run build --workspace=apps/desktop`,
+  `npm run build --workspace=apps/web` — cả 5 lệnh chạy sạch, exit 0.
+- `dotnet build -c Release` (từ `backend/`) — `Build succeeded. 0 Warning(s). 0 Error(s).`
+- Grep heuristic tìm text JSX tiếng Anh hard-code còn sót (`>[A-Z][a-z]* [a-z]` trong
+  `packages/app-core/src/pages`/`components`, loại trừ `t('...')`) — **0 kết quả**, kể cả khi nới
+  pattern rộng hơn (`[A-Z][a-zA-Z]* [a-zA-Z]`) để giảm rủi ro bỏ sót — không có gì cần sửa thêm ở
+  bước này.
+- **Click-test thật trong browser — không thực hiện được, nêu rõ lý do thay vì nhận đã test:**
+  `claude-in-chrome` tool nạp được (`tabs_context_mcp` gọi thành công) nhưng trả về "Browser
+  extension is not connected" — không có browser tool điều khiển được trong phiên này. Về phía
+  backend, khác với Task 1/3 (không có MySQL local reachable), lần này `Test-NetConnection -Port
+3306` xác nhận cổng MySQL cục bộ **có** mở, nhưng `dotnet user-secrets list` cho `SmartTask.Api`
+  chỉ có `Jwt:Secret`, không có `ConnectionStrings:DefaultConnection` — tức là không có credential
+  nào được biết để kết nối DB thật. Không tự bịa connection string/mật khẩu để né việc này (đã có
+  sibling task từng làm vậy và phải dọn lại). Do thiếu browser tool (điều kiện bắt buộc để click-test
+  UI), toàn bộ Step 4 (login VI mặc định → đổi English không reload → đổi lại VI → logout/login lại
+  xác nhận backend round-trip) **chưa được verify bằng trải nghiệm thật**, chỉ verify được ở mức
+  build/lint/typecheck/grep như trên. Đây là cùng dạng giới hạn môi trường đã ghi nhận trung thực ở
+  các Phase 15–19, 30–33.
+- **Việc còn lại khi có đủ công cụ (browser control tool + MySQL local reachable với credential
+  hợp lệ) trong phiên sau:** chạy lại Step 4 đầy đủ — xác nhận UI mặc định tiếng Việt, chuyển tiếng
+  Anh cập nhật toàn bộ nav/trang hiện tại/Settings ngay lập tức không reload, chuyển lại tiếng Việt,
+  đăng xuất/đăng nhập lại xác nhận lựa chọn ngôn ngữ persist đúng qua `PATCH /api/auth/language`
+  (Task 1).
+
 Mỗi Phase kế tiếp sẽ được trình bày riêng theo format: Mục tiêu → File tạo/sửa → Full code →
 Command → Cách chạy → Cách test → Expected Result → Checklist → Git commit đề xuất.
