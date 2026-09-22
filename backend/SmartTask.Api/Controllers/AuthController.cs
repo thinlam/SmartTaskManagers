@@ -65,7 +65,20 @@ public sealed class AuthController(IAuthService authService) : ControllerBase
         }
 
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
-        await authService.UpdateLanguageAsync(Guid.Parse(userId!), request.Language, cancellationToken);
+        if (!Guid.TryParse(userId, out var parsedUserId))
+        {
+            return Unauthorized();
+        }
+
+        try
+        {
+            await authService.UpdateLanguageAsync(parsedUserId, request.Language, cancellationToken);
+        }
+        catch (InvalidOperationException)
+        {
+            return NotFound();
+        }
+
         return NoContent();
     }
 

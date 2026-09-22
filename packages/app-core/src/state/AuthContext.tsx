@@ -62,6 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   function persist(next: StoredAuth) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    localStorage.setItem('stm.language', next.language);
     setAuthToken(next.token);
     setAuth(next);
     void i18n.changeLanguage(next.language);
@@ -94,7 +95,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   async function setLanguage(language: 'vi' | 'en') {
-    await authApi.updateLanguage(language);
+    try {
+      await authApi.updateLanguage(language);
+    } catch (error) {
+      console.error('Failed to persist language preference:', error);
+      throw error;
+    }
     void i18n.changeLanguage(language);
     if (auth) {
       persist({ ...auth, language });

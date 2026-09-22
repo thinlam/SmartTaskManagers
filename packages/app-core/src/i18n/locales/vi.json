@@ -172,7 +172,7 @@
     "fieldStartDate": "Ngày bắt đầu",
     "fieldDueDate": "Ngày đến hạn",
     "fieldTags": "Thẻ",
-    "tagsPlaceholder": "các thẻ, cách nhau, bằng dấu phẩy",
+    "tagsPlaceholder": "các thẻ, cách nhau bằng dấu phẩy",
     "saveError": "Không thể lưu công việc này.",
     "deleteError": "Không thể xóa công việc này."
   },

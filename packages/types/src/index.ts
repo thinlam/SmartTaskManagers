@@ -192,6 +192,7 @@ export interface AppNotification {
 
 export interface Settings {
   workspaceName: string;
+  /** Superseded by the backend `User.Language` column / AuthContext's real language state; no longer read by any UI. */
   language: string;
   weekStart: string;
   dateFormat: string;
