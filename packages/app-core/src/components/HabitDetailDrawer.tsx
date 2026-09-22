@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import type { Habit, HabitFrequency } from '@stm/types';
 import { ApiError } from '@stm/api-client';
+import { useTranslation } from 'react-i18next';
 import { Button, Drawer } from '@stm/ui';
 import { useHabitsContext } from '../state/HabitsContext';
 
@@ -38,6 +39,7 @@ function formFromHabit(habit: Habit): FormState {
  * either (`createHabit_()` only ever sets them to their zero defaults).
  */
 export function HabitDetailDrawer() {
+  const { t } = useTranslation();
   const { isDrawerOpen, editingHabit, closeDrawer, addHabit, updateHabit, deleteHabit } =
     useHabitsContext();
   const [form, setForm] = useState<FormState>(emptyForm());
@@ -71,7 +73,7 @@ export function HabitDetailDrawer() {
       }
       closeDrawer();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not save this habit.');
+      setError(err instanceof ApiError ? err.message : t('habits.saveError'));
     } finally {
       setIsSubmitting(false);
     }
@@ -85,7 +87,7 @@ export function HabitDetailDrawer() {
       await deleteHabit(editingHabit.id);
       closeDrawer();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not delete this habit.');
+      setError(err instanceof ApiError ? err.message : t('habits.deleteError'));
     } finally {
       setIsSubmitting(false);
     }
@@ -95,19 +97,19 @@ export function HabitDetailDrawer() {
     <Drawer
       open={isDrawerOpen}
       onClose={closeDrawer}
-      title={editingHabit ? 'Edit Habit' : 'New Habit'}
+      title={editingHabit ? t('habits.editHabitTitle') : t('habits.newHabitTitle')}
       footer={
         <div className="flex items-center justify-between gap-2">
           {editingHabit ? (
             <Button type="button" variant="ghost" onClick={handleDelete} disabled={isSubmitting}>
-              Delete
+              {t('habits.deleteButton')}
             </Button>
           ) : (
             <span />
           )}
           <div className="flex items-center gap-2">
             <Button type="button" variant="secondary" onClick={closeDrawer} disabled={isSubmitting}>
-              Cancel
+              {t('habits.cancelButton')}
             </Button>
             <Button
               type="submit"
@@ -115,7 +117,7 @@ export function HabitDetailDrawer() {
               variant="primary"
               disabled={isSubmitting}
             >
-              {editingHabit ? 'Save changes' : 'Add habit'}
+              {editingHabit ? t('habits.saveChangesButton') : t('habits.addHabitButton')}
             </Button>
           </div>
         </div>
@@ -125,7 +127,7 @@ export function HabitDetailDrawer() {
         {error && <p className="text-sm text-danger">{error}</p>}
         <div className="flex flex-col gap-1">
           <label htmlFor="habit-name" className={labelClasses}>
-            Name
+            {t('habits.fieldName')}
           </label>
           <input
             id="habit-name"
@@ -140,7 +142,7 @@ export function HabitDetailDrawer() {
         <div className="grid grid-cols-2 gap-3">
           <div className="flex flex-col gap-1">
             <label htmlFor="habit-frequency" className={labelClasses}>
-              Frequency
+              {t('habits.fieldFrequency')}
             </label>
             <select
               id="habit-frequency"
@@ -159,13 +161,13 @@ export function HabitDetailDrawer() {
           </div>
           <div className="flex flex-col gap-1">
             <label htmlFor="habit-target" className={labelClasses}>
-              Target count
+              {t('habits.fieldTargetCount')}
             </label>
             <input
               id="habit-target"
               type="number"
               min={0}
-              placeholder="No target"
+              placeholder={t('habits.targetCountPlaceholder')}
               value={form.targetCount}
               onChange={(event) => setForm((f) => ({ ...f, targetCount: event.target.value }))}
               className={fieldClasses}

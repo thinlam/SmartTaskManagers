@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { EmptyState, StatCard } from '@stm/ui';
 import { useHabitsContext } from '../../state/HabitsContext';
 import { QuickCaptureInput } from '../../components/QuickCaptureInput';
@@ -17,6 +18,7 @@ import { HabitRow } from './HabitRow';
  * (still Phase 09's static mock), left for a future phase.
  */
 export function HabitsPage() {
+  const { t } = useTranslation();
   const { habits, isLoading, addHabit, deleteHabit, openEditDrawer } = useHabitsContext();
 
   const summary = useMemo(() => {
@@ -43,52 +45,49 @@ export function HabitsPage() {
   }
 
   if (isLoading) {
-    return <div className="p-8 text-sm text-ink-muted">Loading habits…</div>;
+    return <div className="p-8 text-sm text-ink-muted">{t('habits.loading')}</div>;
   }
 
   return (
     <div className="flex flex-col gap-6 p-8">
       <header className="flex flex-col gap-1">
-        <h1 className="text-[28px] font-bold leading-[34px] text-ink-primary">Habits</h1>
-        <p className="text-sm text-ink-secondary">
-          Build consistency — check in daily and watch your streaks grow.
-        </p>
+        <h1 className="text-[28px] font-bold leading-[34px] text-ink-primary">
+          {t('habits.title')}
+        </h1>
+        <p className="text-sm text-ink-secondary">{t('habits.subtitle')}</p>
       </header>
 
       <section className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <StatCard
-          label="Total Habits"
+          label={t('habits.statTotal')}
           value={String(summary.total)}
-          sub="Personal habits"
+          sub={t('habits.statTotalSub')}
           tone="primary"
         />
         <StatCard
-          label="Checked In Today"
+          label={t('habits.statCheckedIn')}
           value={String(summary.checkedInToday)}
-          sub={`Of ${summary.total}`}
+          sub={t('habits.statCheckedInSub', { total: summary.total })}
           tone="success"
         />
         <StatCard
-          label="Best Streak"
+          label={t('habits.statBestStreak')}
           value={String(summary.bestStreak)}
-          sub="In a row"
+          sub={t('habits.statBestStreakSub')}
           tone="warning"
         />
         <StatCard
-          label="Total Check-ins"
+          label={t('habits.statTotalCheckIns')}
           value={String(summary.totalCheckIns)}
-          sub="All time"
+          sub={t('habits.statTotalCheckInsSub')}
           tone="info"
         />
       </section>
 
-      <QuickCaptureInput
-        onAdd={handleAdd}
-        placeholder="Add a habit… e.g. Drink 8 glasses of water"
-      />
+      <QuickCaptureInput onAdd={handleAdd} placeholder={t('habits.quickCapturePlaceholder')} />
 
       {habits.length === 0 ? (
-        <EmptyState message="No habits yet. Add one above to get started." />
+        <EmptyState message={t('habits.emptyNoHabits')} />
       ) : (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           {habits.map((habit) => (

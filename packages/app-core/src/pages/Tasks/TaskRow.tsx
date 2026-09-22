@@ -1,6 +1,7 @@
 import type { Task } from '@stm/types';
 import { formatDueLabel } from '@stm/shared';
 import { Check, Pencil, Trash2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { IconButton, TaskCard } from '@stm/ui';
 
 interface TaskRowProps {
@@ -11,6 +12,7 @@ interface TaskRowProps {
 }
 
 export function TaskRow({ task, onComplete, onDelete, onEdit }: TaskRowProps) {
+  const { t } = useTranslation();
   return (
     <div className="flex items-center gap-2">
       <div className="min-w-0 flex-1">
@@ -27,19 +29,19 @@ export function TaskRow({ task, onComplete, onDelete, onEdit }: TaskRowProps) {
       </div>
       <IconButton
         icon={<Pencil className="h-4 w-4" aria-hidden="true" />}
-        aria-label={`Edit "${task.title}"`}
+        aria-label={t('tasks.editAriaLabel', { title: task.title })}
         onClick={() => onEdit(task)}
       />
       {task.status !== 'Completed' && (
         <IconButton
           icon={<Check className="h-4 w-4" aria-hidden="true" />}
-          aria-label={`Mark "${task.title}" complete`}
+          aria-label={t('tasks.completeAriaLabel', { title: task.title })}
           onClick={() => onComplete(task.id)}
         />
       )}
       <IconButton
         icon={<Trash2 className="h-4 w-4" aria-hidden="true" />}
-        aria-label={`Delete "${task.title}"`}
+        aria-label={t('tasks.deleteAriaLabel', { title: task.title })}
         variant="danger"
         onClick={() => onDelete(task.id)}
       />

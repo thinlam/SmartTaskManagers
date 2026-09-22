@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import type { Area, Priority, Task, TaskStatus } from '@stm/types';
 import { ApiError } from '@stm/api-client';
+import { useTranslation } from 'react-i18next';
 import { Button, Drawer } from '@stm/ui';
 import { useTasksContext } from '../state/TasksContext';
 import { useProjectsContext } from '../state/ProjectsContext';
@@ -74,6 +75,7 @@ function formFromTask(task: Task): FormState {
  * without the contexts needing to know about each other.
  */
 export function TaskDetailDrawer() {
+  const { t } = useTranslation();
   const { isDrawerOpen, editingTask, closeDrawer, addTask, updateTask, deleteTask } =
     useTasksContext();
   const { projects } = useProjectsContext();
@@ -122,7 +124,7 @@ export function TaskDetailDrawer() {
       }
       closeDrawer();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not save this task.');
+      setError(err instanceof ApiError ? err.message : t('tasks.saveError'));
     } finally {
       setIsSubmitting(false);
     }
@@ -136,7 +138,7 @@ export function TaskDetailDrawer() {
       await deleteTask(editingTask.id);
       closeDrawer();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not delete this task.');
+      setError(err instanceof ApiError ? err.message : t('tasks.deleteError'));
     } finally {
       setIsSubmitting(false);
     }
@@ -146,22 +148,22 @@ export function TaskDetailDrawer() {
     <Drawer
       open={isDrawerOpen}
       onClose={closeDrawer}
-      title={editingTask ? 'Edit Task' : 'New Task'}
+      title={editingTask ? t('tasks.editTaskTitle') : t('tasks.newTaskTitle')}
       footer={
         <div className="flex items-center justify-between gap-2">
           {editingTask ? (
             <Button type="button" variant="ghost" onClick={handleDelete} disabled={isSubmitting}>
-              Delete
+              {t('tasks.deleteButton')}
             </Button>
           ) : (
             <span />
           )}
           <div className="flex items-center gap-2">
             <Button type="button" variant="secondary" onClick={closeDrawer} disabled={isSubmitting}>
-              Cancel
+              {t('tasks.cancelButton')}
             </Button>
             <Button type="submit" form="task-detail-form" variant="primary" disabled={isSubmitting}>
-              {editingTask ? 'Save changes' : 'Add task'}
+              {editingTask ? t('tasks.saveChangesButton') : t('tasks.addTaskButton')}
             </Button>
           </div>
         </div>
@@ -171,7 +173,7 @@ export function TaskDetailDrawer() {
         {error && <p className="text-sm text-danger">{error}</p>}
         <div className="flex flex-col gap-1">
           <label htmlFor="task-title" className={labelClasses}>
-            Title
+            {t('tasks.fieldTitle')}
           </label>
           <input
             id="task-title"
@@ -185,7 +187,7 @@ export function TaskDetailDrawer() {
 
         <div className="flex flex-col gap-1">
           <label htmlFor="task-description" className={labelClasses}>
-            Description
+            {t('tasks.fieldDescription')}
           </label>
           <textarea
             id="task-description"
@@ -199,7 +201,7 @@ export function TaskDetailDrawer() {
         <div className="grid grid-cols-2 gap-3">
           <div className="flex flex-col gap-1">
             <label htmlFor="task-area" className={labelClasses}>
-              Area
+              {t('tasks.fieldArea')}
             </label>
             <select
               id="task-area"
@@ -216,7 +218,7 @@ export function TaskDetailDrawer() {
           </div>
           <div className="flex flex-col gap-1">
             <label htmlFor="task-project" className={labelClasses}>
-              Project
+              {t('tasks.fieldProject')}
             </label>
             <select
               id="task-project"
@@ -224,7 +226,7 @@ export function TaskDetailDrawer() {
               onChange={(event) => setForm((f) => ({ ...f, projectId: event.target.value }))}
               className={fieldClasses}
             >
-              <option value="">No project</option>
+              <option value="">{t('tasks.noProjectOption')}</option>
               {projects.map((project) => (
                 <option key={project.id} value={project.id}>
                   {project.name}
@@ -237,7 +239,7 @@ export function TaskDetailDrawer() {
         <div className="grid grid-cols-2 gap-3">
           <div className="flex flex-col gap-1">
             <label htmlFor="task-goal" className={labelClasses}>
-              Goal
+              {t('tasks.fieldGoal')}
             </label>
             <select
               id="task-goal"
@@ -245,7 +247,7 @@ export function TaskDetailDrawer() {
               onChange={(event) => setForm((f) => ({ ...f, goalId: event.target.value }))}
               className={fieldClasses}
             >
-              <option value="">No goal</option>
+              <option value="">{t('tasks.noGoalOption')}</option>
               {goals.map((goal) => (
                 <option key={goal.id} value={goal.id}>
                   {goal.name}
@@ -255,7 +257,7 @@ export function TaskDetailDrawer() {
           </div>
           <div className="flex flex-col gap-1">
             <label htmlFor="task-priority" className={labelClasses}>
-              Priority
+              {t('tasks.fieldPriority')}
             </label>
             <select
               id="task-priority"
@@ -276,7 +278,7 @@ export function TaskDetailDrawer() {
 
         <div className="flex flex-col gap-1">
           <label htmlFor="task-status" className={labelClasses}>
-            Status
+            {t('tasks.fieldStatus')}
           </label>
           <select
             id="task-status"
@@ -296,7 +298,7 @@ export function TaskDetailDrawer() {
 
         <div className="flex flex-col gap-1">
           <label htmlFor="task-progress" className={labelClasses}>
-            Progress ({form.progress}%)
+            {t('tasks.fieldProgress', { progress: form.progress })}
           </label>
           <input
             id="task-progress"
@@ -313,7 +315,7 @@ export function TaskDetailDrawer() {
         <div className="grid grid-cols-2 gap-3">
           <div className="flex flex-col gap-1">
             <label htmlFor="task-start-date" className={labelClasses}>
-              Start Date
+              {t('tasks.fieldStartDate')}
             </label>
             <input
               id="task-start-date"
@@ -325,7 +327,7 @@ export function TaskDetailDrawer() {
           </div>
           <div className="flex flex-col gap-1">
             <label htmlFor="task-due-date" className={labelClasses}>
-              Due Date
+              {t('tasks.fieldDueDate')}
             </label>
             <input
               id="task-due-date"
@@ -339,12 +341,12 @@ export function TaskDetailDrawer() {
 
         <div className="flex flex-col gap-1">
           <label htmlFor="task-tags" className={labelClasses}>
-            Tags
+            {t('tasks.fieldTags')}
           </label>
           <input
             id="task-tags"
             type="text"
-            placeholder="comma, separated, tags"
+            placeholder={t('tasks.tagsPlaceholder')}
             value={form.tags}
             onChange={(event) => setForm((f) => ({ ...f, tags: event.target.value }))}
             className={fieldClasses}

@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { computeProjectMetrics, computeProjectHealth } from '@stm/shared';
 import { EmptyState, StatCard } from '@stm/ui';
 import { useProjectsContext } from '../../state/ProjectsContext';
@@ -15,6 +16,7 @@ import { ProjectRow } from './ProjectRow';
  * live from tasks via @stm/shared — never stored or entered by hand.
  */
 export function ProjectsPage() {
+  const { t } = useTranslation();
   const { projects, isLoading, addProject, deleteProject, openEditDrawer } = useProjectsContext();
   const { tasks } = useTasksContext();
 
@@ -48,36 +50,43 @@ export function ProjectsPage() {
   }
 
   if (isLoading) {
-    return <div className="p-8 text-sm text-ink-muted">Loading projects…</div>;
+    return <div className="p-8 text-sm text-ink-muted">{t('projects.loading')}</div>;
   }
 
   return (
     <div className="flex flex-col gap-6 p-8">
       <header className="flex flex-col gap-1">
-        <h1 className="text-[28px] font-bold leading-[34px] text-ink-primary">Projects</h1>
-        <p className="text-sm text-ink-secondary">
-          Monitor project progress, health, workload and deadline risk.
-        </p>
+        <h1 className="text-[28px] font-bold leading-[34px] text-ink-primary">
+          {t('projects.title')}
+        </h1>
+        <p className="text-sm text-ink-secondary">{t('projects.subtitle')}</p>
       </header>
 
       <section className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <StatCard
-          label="Total Projects"
+          label={t('projects.statTotal')}
           value={String(summary.total)}
-          sub="Personal projects"
+          sub={t('projects.statTotalSub')}
           tone="primary"
         />
-        <StatCard label="Active" value={String(summary.active)} sub="With open tasks" tone="info" />
         <StatCard
-          label="At Risk"
+          label={t('projects.statActive')}
+          value={String(summary.active)}
+          sub={t('projects.statActiveSub')}
+          tone="info"
+        />
+        <StatCard
+          label={t('projects.statAtRisk')}
           value={String(summary.atRisk)}
-          sub={summary.atRisk > 0 ? 'Needs attention' : 'No critical risks'}
+          sub={
+            summary.atRisk > 0 ? t('projects.statAtRiskSubDanger') : t('projects.statAtRiskSubOk')
+          }
           tone={summary.atRisk > 0 ? 'danger' : 'success'}
         />
         <StatCard
-          label="Avg Progress"
+          label={t('projects.statAvgProgress')}
           value={`${summary.avgProgress}%`}
-          sub="Across all projects"
+          sub={t('projects.statAvgProgressSub')}
           tone={
             summary.avgProgress >= 75
               ? 'success'
@@ -88,10 +97,10 @@ export function ProjectsPage() {
         />
       </section>
 
-      <QuickCaptureInput onAdd={handleAdd} placeholder="Add a project… e.g. Home Renovation" />
+      <QuickCaptureInput onAdd={handleAdd} placeholder={t('projects.quickCapturePlaceholder')} />
 
       {projects.length === 0 ? (
-        <EmptyState message="No projects yet. Add one above to get started." />
+        <EmptyState message={t('projects.emptyNoProjects')} />
       ) : (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           {projects.map((project) => (

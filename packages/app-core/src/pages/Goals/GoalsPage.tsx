@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { EmptyState, StatCard } from '@stm/ui';
 import { useGoalsContext } from '../../state/GoalsContext';
 import { useTasksContext } from '../../state/TasksContext';
@@ -15,6 +16,7 @@ import { GoalRow } from './GoalRow';
  * rollup of the stored Status/Progress fields — no fabricated scoring.
  */
 export function GoalsPage() {
+  const { t } = useTranslation();
   const { goals, isLoading, addGoal, deleteGoal, openEditDrawer } = useGoalsContext();
   const { tasks } = useTasksContext();
 
@@ -46,36 +48,41 @@ export function GoalsPage() {
   }
 
   if (isLoading) {
-    return <div className="p-8 text-sm text-ink-muted">Loading goals…</div>;
+    return <div className="p-8 text-sm text-ink-muted">{t('goals.loading')}</div>;
   }
 
   return (
     <div className="flex flex-col gap-6 p-8">
       <header className="flex flex-col gap-1">
-        <h1 className="text-[28px] font-bold leading-[34px] text-ink-primary">Goals</h1>
-        <p className="text-sm text-ink-secondary">
-          Track personal goals and the progress you're making toward them.
-        </p>
+        <h1 className="text-[28px] font-bold leading-[34px] text-ink-primary">
+          {t('goals.title')}
+        </h1>
+        <p className="text-sm text-ink-secondary">{t('goals.subtitle')}</p>
       </header>
 
       <section className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <StatCard
-          label="Total Goals"
+          label={t('goals.statTotal')}
           value={String(summary.total)}
-          sub="Personal goals"
+          sub={t('goals.statTotalSub')}
           tone="primary"
         />
-        <StatCard label="On Track" value={String(summary.onTrack)} sub="Going well" tone="info" />
         <StatCard
-          label="At Risk"
+          label={t('goals.statOnTrack')}
+          value={String(summary.onTrack)}
+          sub={t('goals.statOnTrackSub')}
+          tone="info"
+        />
+        <StatCard
+          label={t('goals.statAtRisk')}
           value={String(summary.atRisk)}
-          sub={summary.atRisk > 0 ? 'Needs attention' : 'No goals at risk'}
+          sub={summary.atRisk > 0 ? t('goals.statAtRiskSubDanger') : t('goals.statAtRiskSubOk')}
           tone={summary.atRisk > 0 ? 'danger' : 'success'}
         />
         <StatCard
-          label="Avg Progress"
+          label={t('goals.statAvgProgress')}
           value={`${summary.avgProgress}%`}
-          sub="Across all goals"
+          sub={t('goals.statAvgProgressSub')}
           tone={
             summary.avgProgress >= 75
               ? 'success'
@@ -86,10 +93,10 @@ export function GoalsPage() {
         />
       </section>
 
-      <QuickCaptureInput onAdd={handleAdd} placeholder="Add a goal… e.g. Read 12 books this year" />
+      <QuickCaptureInput onAdd={handleAdd} placeholder={t('goals.quickCapturePlaceholder')} />
 
       {goals.length === 0 ? (
-        <EmptyState message="No goals yet. Add one above to get started." />
+        <EmptyState message={t('goals.emptyNoGoals')} />
       ) : (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
           {goals.map((goal) => (

@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import type { Area, Project } from '@stm/types';
 import { ApiError } from '@stm/api-client';
+import { useTranslation } from 'react-i18next';
 import { Button, Drawer } from '@stm/ui';
 import { useProjectsContext } from '../state/ProjectsContext';
 
@@ -37,6 +38,7 @@ function formFromProject(project: Project): FormState {
  * tasks (packages/shared's computeProjectHealth), never entered by hand.
  */
 export function ProjectDetailDrawer() {
+  const { t } = useTranslation();
   const { isDrawerOpen, editingProject, closeDrawer, addProject, updateProject, deleteProject } =
     useProjectsContext();
   const [form, setForm] = useState<FormState>(emptyForm());
@@ -71,7 +73,7 @@ export function ProjectDetailDrawer() {
       }
       closeDrawer();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not save this project.');
+      setError(err instanceof ApiError ? err.message : t('projects.saveError'));
     } finally {
       setIsSubmitting(false);
     }
@@ -85,7 +87,7 @@ export function ProjectDetailDrawer() {
       await deleteProject(editingProject.id);
       closeDrawer();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not delete this project.');
+      setError(err instanceof ApiError ? err.message : t('projects.deleteError'));
     } finally {
       setIsSubmitting(false);
     }
@@ -95,19 +97,19 @@ export function ProjectDetailDrawer() {
     <Drawer
       open={isDrawerOpen}
       onClose={closeDrawer}
-      title={editingProject ? 'Edit Project' : 'New Project'}
+      title={editingProject ? t('projects.editProjectTitle') : t('projects.newProjectTitle')}
       footer={
         <div className="flex items-center justify-between gap-2">
           {editingProject ? (
             <Button type="button" variant="ghost" onClick={handleDelete} disabled={isSubmitting}>
-              Delete
+              {t('projects.deleteButton')}
             </Button>
           ) : (
             <span />
           )}
           <div className="flex items-center gap-2">
             <Button type="button" variant="secondary" onClick={closeDrawer} disabled={isSubmitting}>
-              Cancel
+              {t('projects.cancelButton')}
             </Button>
             <Button
               type="submit"
@@ -115,7 +117,7 @@ export function ProjectDetailDrawer() {
               variant="primary"
               disabled={isSubmitting}
             >
-              {editingProject ? 'Save changes' : 'Add project'}
+              {editingProject ? t('projects.saveChangesButton') : t('projects.addProjectButton')}
             </Button>
           </div>
         </div>
@@ -125,7 +127,7 @@ export function ProjectDetailDrawer() {
         {error && <p className="text-sm text-danger">{error}</p>}
         <div className="flex flex-col gap-1">
           <label htmlFor="project-name" className={labelClasses}>
-            Name
+            {t('projects.fieldName')}
           </label>
           <input
             id="project-name"
@@ -140,7 +142,7 @@ export function ProjectDetailDrawer() {
         <div className="grid grid-cols-2 gap-3">
           <div className="flex flex-col gap-1">
             <label htmlFor="project-area" className={labelClasses}>
-              Area
+              {t('projects.fieldArea')}
             </label>
             <select
               id="project-area"
@@ -157,7 +159,7 @@ export function ProjectDetailDrawer() {
           </div>
           <div className="flex flex-col gap-1">
             <label htmlFor="project-target-date" className={labelClasses}>
-              Target Date
+              {t('projects.fieldTargetDate')}
             </label>
             <input
               id="project-target-date"
@@ -171,7 +173,7 @@ export function ProjectDetailDrawer() {
 
         <div className="flex flex-col gap-1">
           <label htmlFor="project-description" className={labelClasses}>
-            Description
+            {t('projects.fieldDescription')}
           </label>
           <textarea
             id="project-description"

@@ -1,5 +1,7 @@
 import type { Habit } from '@stm/types';
 import { Pencil, Trash2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { HabitCard, IconButton } from '@stm/ui';
 import { useHabitsContext } from '../../state/HabitsContext';
 import { reportError } from '../../lib/reportError';
@@ -10,18 +12,19 @@ interface HabitRowProps {
   onDelete: (id: string) => void;
 }
 
-function formatLastDoneLabel(lastCompletedDate: string | null): string {
-  if (!lastCompletedDate) return 'Not checked in yet';
+function formatLastDoneLabel(lastCompletedDate: string | null, t: TFunction): string {
+  if (!lastCompletedDate) return t('habits.notCheckedInYet');
 
   const today = new Date().toISOString().slice(0, 10);
-  if (lastCompletedDate === today) return 'Done today';
+  if (lastCompletedDate === today) return t('habits.doneToday');
 
   const date = new Date(`${lastCompletedDate}T00:00:00`);
   const formatted = date.toLocaleDateString('en-US', { day: '2-digit', month: 'short' });
-  return `Last done ${formatted}`;
+  return t('habits.lastDone', { date: formatted });
 }
 
 export function HabitRow({ habit, onEdit, onDelete }: HabitRowProps) {
+  const { t } = useTranslation();
   const { checkInHabit } = useHabitsContext();
   const today = new Date().toISOString().slice(0, 10);
   const checkedInToday = habit.lastCompletedDate === today;
@@ -31,13 +34,13 @@ export function HabitRow({ habit, onEdit, onDelete }: HabitRowProps) {
       <div className="flex justify-end gap-1">
         <IconButton
           icon={<Pencil className="h-4 w-4" aria-hidden="true" />}
-          aria-label={`Edit "${habit.name}"`}
+          aria-label={t('habits.editAriaLabel', { name: habit.name })}
           size="sm"
           onClick={() => onEdit(habit)}
         />
         <IconButton
           icon={<Trash2 className="h-4 w-4" aria-hidden="true" />}
-          aria-label={`Delete "${habit.name}"`}
+          aria-label={t('habits.deleteAriaLabel', { name: habit.name })}
           variant="danger"
           size="sm"
           onClick={() => onDelete(habit.id)}
@@ -49,7 +52,7 @@ export function HabitRow({ habit, onEdit, onDelete }: HabitRowProps) {
         streak={habit.streak}
         completedCount={habit.completedCount}
         targetCount={habit.targetCount}
-        lastDoneLabel={formatLastDoneLabel(habit.lastCompletedDate)}
+        lastDoneLabel={formatLastDoneLabel(habit.lastCompletedDate, t)}
         checkedInToday={checkedInToday}
         onCheckIn={() => checkInHabit(habit.id).catch(reportError)}
       />

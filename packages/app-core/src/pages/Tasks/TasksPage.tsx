@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { EmptyState, StatCard } from '@stm/ui';
 import { useTasksContext } from '../../state/TasksContext';
 import { QuickCaptureInput } from '../../components/QuickCaptureInput';
@@ -21,6 +22,7 @@ import { TaskRow } from './TaskRow';
  * dates/tags form).
  */
 export function TasksPage() {
+  const { t } = useTranslation();
   const { tasks, isLoading, deleteTask, completeTask, addTask, openEditDrawer } = useTasksContext();
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<StatusFilter>('All');
@@ -66,36 +68,46 @@ export function TasksPage() {
   }
 
   if (isLoading) {
-    return <div className="p-8 text-sm text-ink-muted">Loading tasks…</div>;
+    return <div className="p-8 text-sm text-ink-muted">{t('tasks.loading')}</div>;
   }
 
   return (
     <div className="flex flex-col gap-6 p-8">
       <header className="flex flex-col gap-1">
-        <h1 className="text-[28px] font-bold leading-[34px] text-ink-primary">Tasks</h1>
-        <p className="text-sm text-ink-secondary">
-          Manage, prioritize and track every task from one place.
-        </p>
+        <h1 className="text-[28px] font-bold leading-[34px] text-ink-primary">
+          {t('tasks.title')}
+        </h1>
+        <p className="text-sm text-ink-secondary">{t('tasks.subtitle')}</p>
       </header>
 
       <section className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <StatCard label="Inbox" value={String(counts.inbox)} sub="Not yet triaged" tone="primary" />
-        <StatCard label="Active" value={String(counts.active)} sub="In flight" tone="info" />
         <StatCard
-          label="Overdue"
+          label={t('tasks.statInbox')}
+          value={String(counts.inbox)}
+          sub={t('tasks.statInboxSub')}
+          tone="primary"
+        />
+        <StatCard
+          label={t('tasks.statActive')}
+          value={String(counts.active)}
+          sub={t('tasks.statActiveSub')}
+          tone="info"
+        />
+        <StatCard
+          label={t('tasks.statOverdue')}
           value={String(counts.overdue)}
-          sub="Needs attention"
+          sub={t('tasks.statOverdueSub')}
           tone="danger"
         />
         <StatCard
-          label="Completed"
+          label={t('tasks.statCompleted')}
           value={String(counts.completed)}
-          sub="All time"
+          sub={t('tasks.statCompletedSub')}
           tone="success"
         />
       </section>
 
-      <QuickCaptureInput onAdd={handleAdd} placeholder="Add a task… e.g. Draft quarterly review" />
+      <QuickCaptureInput onAdd={handleAdd} placeholder={t('tasks.quickCapturePlaceholder')} />
 
       <TaskFilters
         search={search}
@@ -108,11 +120,7 @@ export function TasksPage() {
 
       {filteredTasks.length === 0 ? (
         <EmptyState
-          message={
-            tasks.length === 0
-              ? 'No tasks yet. Add one above to get started.'
-              : 'No tasks match the current search/filters.'
-          }
+          message={tasks.length === 0 ? t('tasks.emptyNoTasks') : t('tasks.emptyNoMatch')}
         />
       ) : (
         <div className="flex flex-col gap-2">

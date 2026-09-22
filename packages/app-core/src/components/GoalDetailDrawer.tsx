@@ -1,6 +1,7 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import type { Area, Goal, GoalStatus } from '@stm/types';
 import { ApiError } from '@stm/api-client';
+import { useTranslation } from 'react-i18next';
 import { Button, Drawer } from '@stm/ui';
 import { useGoalsContext } from '../state/GoalsContext';
 
@@ -42,6 +43,7 @@ function formFromGoal(goal: Goal): FormState {
  * plain user input, not derived values.
  */
 export function GoalDetailDrawer() {
+  const { t } = useTranslation();
   const { isDrawerOpen, editingGoal, closeDrawer, addGoal, updateGoal, deleteGoal } =
     useGoalsContext();
   const [form, setForm] = useState<FormState>(emptyForm());
@@ -77,7 +79,7 @@ export function GoalDetailDrawer() {
       }
       closeDrawer();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not save this goal.');
+      setError(err instanceof ApiError ? err.message : t('goals.saveError'));
     } finally {
       setIsSubmitting(false);
     }
@@ -91,7 +93,7 @@ export function GoalDetailDrawer() {
       await deleteGoal(editingGoal.id);
       closeDrawer();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : 'Could not delete this goal.');
+      setError(err instanceof ApiError ? err.message : t('goals.deleteError'));
     } finally {
       setIsSubmitting(false);
     }
@@ -101,22 +103,22 @@ export function GoalDetailDrawer() {
     <Drawer
       open={isDrawerOpen}
       onClose={closeDrawer}
-      title={editingGoal ? 'Edit Goal' : 'New Goal'}
+      title={editingGoal ? t('goals.editGoalTitle') : t('goals.newGoalTitle')}
       footer={
         <div className="flex items-center justify-between gap-2">
           {editingGoal ? (
             <Button type="button" variant="ghost" onClick={handleDelete} disabled={isSubmitting}>
-              Delete
+              {t('goals.deleteButton')}
             </Button>
           ) : (
             <span />
           )}
           <div className="flex items-center gap-2">
             <Button type="button" variant="secondary" onClick={closeDrawer} disabled={isSubmitting}>
-              Cancel
+              {t('goals.cancelButton')}
             </Button>
             <Button type="submit" form="goal-detail-form" variant="primary" disabled={isSubmitting}>
-              {editingGoal ? 'Save changes' : 'Add goal'}
+              {editingGoal ? t('goals.saveChangesButton') : t('goals.addGoalButton')}
             </Button>
           </div>
         </div>
@@ -126,7 +128,7 @@ export function GoalDetailDrawer() {
         {error && <p className="text-sm text-danger">{error}</p>}
         <div className="flex flex-col gap-1">
           <label htmlFor="goal-name" className={labelClasses}>
-            Name
+            {t('goals.fieldName')}
           </label>
           <input
             id="goal-name"
@@ -141,7 +143,7 @@ export function GoalDetailDrawer() {
         <div className="grid grid-cols-2 gap-3">
           <div className="flex flex-col gap-1">
             <label htmlFor="goal-area" className={labelClasses}>
-              Area
+              {t('goals.fieldArea')}
             </label>
             <select
               id="goal-area"
@@ -158,7 +160,7 @@ export function GoalDetailDrawer() {
           </div>
           <div className="flex flex-col gap-1">
             <label htmlFor="goal-target-date" className={labelClasses}>
-              Target Date
+              {t('goals.fieldTargetDate')}
             </label>
             <input
               id="goal-target-date"
@@ -172,7 +174,7 @@ export function GoalDetailDrawer() {
 
         <div className="flex flex-col gap-1">
           <label htmlFor="goal-status" className={labelClasses}>
-            Status
+            {t('goals.fieldStatus')}
           </label>
           <select
             id="goal-status"
@@ -192,7 +194,7 @@ export function GoalDetailDrawer() {
 
         <div className="flex flex-col gap-1">
           <label htmlFor="goal-progress" className={labelClasses}>
-            Progress ({form.progress}%)
+            {t('goals.fieldProgress', { progress: form.progress })}
           </label>
           <input
             id="goal-progress"

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import type { Priority, TaskStatus } from '@stm/types';
 
 export type StatusFilter = TaskStatus | 'All';
@@ -26,23 +27,24 @@ export function TaskFilters({
   priority,
   onPriorityChange,
 }: TaskFiltersProps) {
+  const { t } = useTranslation();
   return (
     <div className="flex flex-wrap items-center gap-2">
       <input
         type="search"
         value={search}
         onChange={(event) => onSearchChange(event.target.value)}
-        placeholder="Search tasks by name…"
-        aria-label="Search tasks"
+        placeholder={t('tasks.searchPlaceholder')}
+        aria-label={t('tasks.searchAriaLabel')}
         className={`${controlClasses} min-w-[220px] flex-1`}
       />
       <select
         value={status}
         onChange={(event) => onStatusChange(event.target.value as StatusFilter)}
-        aria-label="Filter by status"
+        aria-label={t('tasks.statusFilterAriaLabel')}
         className={controlClasses}
       >
-        <option value="All">All statuses</option>
+        <option value="All">{t('tasks.allStatuses')}</option>
         {STATUSES.map((value) => (
           <option key={value} value={value}>
             {value}
@@ -52,10 +54,10 @@ export function TaskFilters({
       <select
         value={priority}
         onChange={(event) => onPriorityChange(event.target.value as PriorityFilter)}
-        aria-label="Filter by priority"
+        aria-label={t('tasks.priorityFilterAriaLabel')}
         className={controlClasses}
       >
-        <option value="All">All priorities</option>
+        <option value="All">{t('tasks.allPriorities')}</option>
         {PRIORITIES.map((value) => (
           <option key={value} value={value}>
             {value}

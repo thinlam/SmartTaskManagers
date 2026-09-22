@@ -7,6 +7,7 @@ import {
   formatTargetLabel,
 } from '@stm/shared';
 import { Pencil, Trash2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { IconButton, ProjectCard, type ProjectCardMetricChip } from '@stm/ui';
 
 interface ProjectRowProps {
@@ -17,19 +18,20 @@ interface ProjectRowProps {
 }
 
 export function ProjectRow({ project, allTasks, onEdit, onDelete }: ProjectRowProps) {
+  const { t } = useTranslation();
   const metrics = computeProjectMetrics(project, allTasks);
   const health = computeProjectHealth(metrics);
 
   const chips: ProjectCardMetricChip[] = [
-    { label: 'Open', value: metrics.openCount, tone: 'info' },
-    { label: 'Done', value: metrics.completedCount, tone: 'success' },
+    { label: t('projects.chipOpen'), value: metrics.openCount, tone: 'info' },
+    { label: t('projects.chipDone'), value: metrics.completedCount, tone: 'success' },
     {
-      label: 'Overdue',
+      label: t('projects.chipOverdue'),
       value: metrics.overdueCount,
       tone: metrics.overdueCount > 0 ? 'danger' : 'neutral',
     },
     {
-      label: 'Waiting',
+      label: t('projects.chipWaiting'),
       value: metrics.blockedCount,
       tone: metrics.blockedCount > 0 ? 'warning' : 'neutral',
     },
@@ -40,13 +42,13 @@ export function ProjectRow({ project, allTasks, onEdit, onDelete }: ProjectRowPr
       <div className="flex justify-end gap-1">
         <IconButton
           icon={<Pencil className="h-4 w-4" aria-hidden="true" />}
-          aria-label={`Edit "${project.name}"`}
+          aria-label={t('projects.editAriaLabel', { name: project.name })}
           size="sm"
           onClick={() => onEdit(project)}
         />
         <IconButton
           icon={<Trash2 className="h-4 w-4" aria-hidden="true" />}
-          aria-label={`Delete "${project.name}"`}
+          aria-label={t('projects.deleteAriaLabel', { name: project.name })}
           variant="danger"
           size="sm"
           onClick={() => onDelete(project.id)}

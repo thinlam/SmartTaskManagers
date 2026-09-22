@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { Plus } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@stm/ui';
 
 interface QuickCaptureInputProps {
@@ -14,10 +15,8 @@ interface QuickCaptureInputProps {
  * not this. Shared by Inbox and Tasks (Phase 12) — both just need a
  * title and a place to put it.
  */
-export function QuickCaptureInput({
-  onAdd,
-  placeholder = 'Capture a task… e.g. Renew passport',
-}: QuickCaptureInputProps) {
+export function QuickCaptureInput({ onAdd, placeholder }: QuickCaptureInputProps) {
+  const { t } = useTranslation();
   const [value, setValue] = useState('');
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -38,12 +37,12 @@ export function QuickCaptureInput({
         type="text"
         value={value}
         onChange={(event) => setValue(event.target.value)}
-        placeholder={placeholder}
-        aria-label="Capture a task"
+        placeholder={placeholder ?? t('quickCapture.defaultPlaceholder')}
+        aria-label={t('quickCapture.ariaLabel')}
         className="w-full bg-transparent text-sm text-ink-primary outline-none placeholder:text-ink-muted"
       />
       <Button type="submit" variant="primary" size="sm">
-        Add
+        {t('quickCapture.addButton')}
       </Button>
     </form>
   );
