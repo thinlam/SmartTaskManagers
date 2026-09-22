@@ -9,6 +9,7 @@
  * that consumes @stm/ui needs this same line.
  */
 @source '../../../packages/ui/src';
+@source '../../../packages/app-core/src';
 
 body {
   background-color: var(--color-background);

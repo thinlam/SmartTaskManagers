@@ -1,0 +1,11 @@
+@import 'tailwindcss';
+@import '@stm/ui/theme.css';
+
+@source '../../../packages/ui/src';
+@source '../../../packages/app-core/src';
+
+body {
+  background-color: var(--color-background);
+  color: var(--color-ink-primary);
+  font-family: var(--font-sans);
+}
