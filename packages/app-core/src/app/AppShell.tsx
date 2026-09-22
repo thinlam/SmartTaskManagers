@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import type { AppNotification } from '@stm/types';
 import { useNotifications } from '@stm/hooks';
 import { Sidebar, Topbar, type SidebarGroup } from '@stm/ui';
@@ -19,6 +20,21 @@ const ENTITY_TYPE_PATH: Record<NonNullable<AppNotification['entityType']>, strin
   Goal: '/goals',
 };
 
+const NAV_LABEL_KEYS: Record<string, string> = {
+  '/': 'nav.dashboard',
+  '/today': 'nav.today',
+  '/inbox': 'nav.inbox',
+  '/tasks': 'nav.tasks',
+  '/projects': 'nav.projects',
+  '/calendar': 'nav.calendar',
+  '/kanban': 'nav.kanban',
+  '/goals': 'nav.goals',
+  '/habits': 'nav.habits',
+  '/analytics': 'nav.analytics',
+  '/assistant': 'nav.assistant',
+  '/settings': 'nav.settings',
+};
+
 /**
  * Real Sidebar + Topbar (Phase 08), replacing Phase 07's temporary <nav>.
  * Both components are presentational and router-agnostic (live in
@@ -33,6 +49,7 @@ const ENTITY_TYPE_PATH: Record<NonNullable<AppNotification['entityType']>, strin
 export function AppShell() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [collapsed, setCollapsed] = useState(false);
   const { openCreateDrawer } = useTasksContext();
   const { email, logout } = useAuthContext();
@@ -59,7 +76,7 @@ export function AppShell() {
       const isRoot = route.path === '/';
       return {
         key: route.path,
-        label: route.label,
+        label: t(NAV_LABEL_KEYS[route.path] ?? route.label),
         href: `#${route.path}`,
         icon: <Icon className="h-4 w-4" aria-hidden="true" />,
         active: isRoot ? location.pathname === '/' : location.pathname.startsWith(route.path),

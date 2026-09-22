@@ -1,0 +1,42 @@
+{
+  "common": {
+    "save": "Lưu",
+    "cancel": "Hủy",
+    "delete": "Xóa",
+    "edit": "Sửa",
+    "close": "Đóng",
+    "loading": "Đang tải…"
+  },
+  "nav": {
+    "dashboard": "Tổng quan",
+    "today": "Hôm nay",
+    "inbox": "Hộp thư",
+    "tasks": "Công việc",
+    "projects": "Dự án",
+    "calendar": "Lịch",
+    "kanban": "Kanban",
+    "goals": "Mục tiêu",
+    "habits": "Thói quen",
+    "analytics": "Phân tích",
+    "assistant": "Trợ lý thông minh",
+    "settings": "Cài đặt"
+  },
+  "auth": {
+    "appName": "Smart Task",
+    "signInSubtitle": "Đăng nhập vào không gian làm việc của bạn.",
+    "registerSubtitle": "Tạo không gian làm việc của bạn.",
+    "showServerField": "Kết nối tới server dùng chung?",
+    "hideServerField": "Ẩn địa chỉ server",
+    "serverUrlLabel": "Địa chỉ Server",
+    "serverUrlHint": "Giữ nguyên nếu backend chạy trên máy này.",
+    "displayNameLabel": "Tên (tùy chọn)",
+    "emailLabel": "Email",
+    "passwordLabel": "Mật khẩu",
+    "signInButton": "Đăng nhập",
+    "registerButton": "Tạo tài khoản",
+    "submitting": "Đang xử lý…",
+    "switchToRegister": "Chưa có tài khoản? Tạo ngay",
+    "switchToLogin": "Đã có tài khoản? Đăng nhập",
+    "genericError": "Không thể kết nối tới server. Backend có đang chạy không?"
+  }
+}

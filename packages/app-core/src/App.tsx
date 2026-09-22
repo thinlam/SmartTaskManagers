@@ -1,3 +1,4 @@
+import './i18n';
 import { RouterProvider } from 'react-router-dom';
 import { router } from './app/router';
 import { AuthProvider, useAuthContext } from './state/AuthContext';

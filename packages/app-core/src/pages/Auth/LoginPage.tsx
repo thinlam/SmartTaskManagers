@@ -1,8 +1,10 @@
-import { useState, type FormEvent } from 'react';
+import { useEffect, useState, type FormEvent } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '@stm/ui';
 import { ApiError, configureApiClient } from '@stm/api-client';
 import { useAuthContext } from '../../state/AuthContext';
 import { getStoredServerUrl, setStoredServerUrl } from '../../lib/serverUrl';
+import i18n from '../../i18n';
 
 const fieldClasses =
   'w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-ink-primary outline-none focus-visible:ring-2 focus-visible:ring-primary';
@@ -17,6 +19,7 @@ const labelClasses = 'text-xs font-semibold uppercase tracking-wide text-ink-mut
  */
 export function LoginPage() {
   const { login, register } = useAuthContext();
+  const { t } = useTranslation();
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -25,6 +28,13 @@ export function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [serverUrl, setServerUrl] = useState(() => getStoredServerUrl());
   const [showServerField, setShowServerField] = useState(false);
+
+  useEffect(() => {
+    const stored = localStorage.getItem('stm.language');
+    if (stored === 'vi' || stored === 'en') {
+      void i18n.changeLanguage(stored);
+    }
+  }, []);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -40,11 +50,7 @@ export function LoginPage() {
         await register(email, password, displayName || undefined);
       }
     } catch (err) {
-      setError(
-        err instanceof ApiError
-          ? err.message
-          : 'Could not reach the server. Is the backend running?',
-      );
+      setError(err instanceof ApiError ? err.message : t('auth.genericError'));
     } finally {
       setIsSubmitting(false);
     }
@@ -54,9 +60,9 @@ export function LoginPage() {
     <div className="flex min-h-screen items-center justify-center bg-background p-8">
       <div className="flex w-full max-w-sm flex-col gap-6 rounded-lg border border-border bg-surface p-8">
         <div className="flex flex-col gap-1">
-          <h1 className="text-xl font-bold text-ink-primary">Smart Task</h1>
+          <h1 className="text-xl font-bold text-ink-primary">{t('auth.appName')}</h1>
           <p className="text-sm text-ink-secondary">
-            {mode === 'login' ? 'Sign in to your workspace.' : 'Create your workspace.'}
+            {mode === 'login' ? t('auth.signInSubtitle') : t('auth.registerSubtitle')}
           </p>
         </div>
 
@@ -67,12 +73,12 @@ export function LoginPage() {
               onClick={() => setShowServerField((current) => !current)}
               className="self-start text-xs font-medium text-ink-muted hover:text-ink-secondary hover:underline"
             >
-              {showServerField ? 'Hide server address' : 'Connecting to a shared server?'}
+              {showServerField ? t('auth.hideServerField') : t('auth.showServerField')}
             </button>
             {showServerField && (
               <div className="flex flex-col gap-1">
                 <label htmlFor="login-server-url" className={labelClasses}>
-                  Server URL
+                  {t('auth.serverUrlLabel')}
                 </label>
                 <input
                   id="login-server-url"
@@ -82,9 +88,7 @@ export function LoginPage() {
                   onChange={(event) => setServerUrl(event.target.value)}
                   className={fieldClasses}
                 />
-                <p className="text-xs text-ink-muted">
-                  Leave as-is if the backend runs on this same computer.
-                </p>
+                <p className="text-xs text-ink-muted">{t('auth.serverUrlHint')}</p>
               </div>
             )}
           </div>
@@ -92,7 +96,7 @@ export function LoginPage() {
           {mode === 'register' && (
             <div className="flex flex-col gap-1">
               <label htmlFor="login-display-name" className={labelClasses}>
-                Name (optional)
+                {t('auth.displayNameLabel')}
               </label>
               <input
                 id="login-display-name"
@@ -106,7 +110,7 @@ export function LoginPage() {
 
           <div className="flex flex-col gap-1">
             <label htmlFor="login-email" className={labelClasses}>
-              Email
+              {t('auth.emailLabel')}
             </label>
             <input
               id="login-email"
@@ -121,7 +125,7 @@ export function LoginPage() {
 
           <div className="flex flex-col gap-1">
             <label htmlFor="login-password" className={labelClasses}>
-              Password
+              {t('auth.passwordLabel')}
             </label>
             <input
               id="login-password"
@@ -137,7 +141,11 @@ export function LoginPage() {
           {error && <p className="text-sm text-danger">{error}</p>}
 
           <Button type="submit" variant="primary" disabled={isSubmitting}>
-            {isSubmitting ? 'Please wait…' : mode === 'login' ? 'Sign in' : 'Create account'}
+            {isSubmitting
+              ? t('auth.submitting')
+              : mode === 'login'
+                ? t('auth.signInButton')
+                : t('auth.registerButton')}
           </Button>
         </form>
 
@@ -149,9 +157,7 @@ export function LoginPage() {
           }}
           className="text-sm text-primary hover:underline"
         >
-          {mode === 'login'
-            ? "Don't have an account? Create one"
-            : 'Already have an account? Sign in'}
+          {mode === 'login' ? t('auth.switchToRegister') : t('auth.switchToLogin')}
         </button>
       </div>
     </div>

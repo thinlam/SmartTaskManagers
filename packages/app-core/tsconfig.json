@@ -3,9 +3,11 @@
   "compilerOptions": {
     "rootDir": "src",
     "outDir": "dist",
-    "types": ["vite/client"]
+    "types": ["vite/client"],
+    "resolveJsonModule": true
   },
-  "include": ["src"],
+  "include": ["src/**/*"],
+  "files": ["src/i18n/locales/en.json", "src/i18n/locales/vi.json"],
   "references": [
     { "path": "../ui" },
     { "path": "../types" },

@@ -1,0 +1,42 @@
+{
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close",
+    "loading": "Loading…"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "today": "Today",
+    "inbox": "Inbox",
+    "tasks": "Tasks",
+    "projects": "Projects",
+    "calendar": "Calendar",
+    "kanban": "Kanban",
+    "goals": "Goals",
+    "habits": "Habits",
+    "analytics": "Analytics",
+    "assistant": "Smart Assistant",
+    "settings": "Settings"
+  },
+  "auth": {
+    "appName": "Smart Task",
+    "signInSubtitle": "Sign in to your workspace.",
+    "registerSubtitle": "Create your workspace.",
+    "showServerField": "Connecting to a shared server?",
+    "hideServerField": "Hide server address",
+    "serverUrlLabel": "Server URL",
+    "serverUrlHint": "Leave as-is if the backend runs on this same computer.",
+    "displayNameLabel": "Name (optional)",
+    "emailLabel": "Email",
+    "passwordLabel": "Password",
+    "signInButton": "Sign in",
+    "registerButton": "Create account",
+    "submitting": "Please wait…",
+    "switchToRegister": "Don't have an account? Create one",
+    "switchToLogin": "Already have an account? Sign in",
+    "genericError": "Could not reach the server. Is the backend running?"
+  }
+}

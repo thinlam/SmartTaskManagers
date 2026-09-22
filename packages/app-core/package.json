@@ -14,9 +14,11 @@
     "@stm/shared": "*",
     "@stm/types": "*",
     "@stm/ui": "*",
+    "i18next": "^24.2.0",
     "lucide-react": "^1.47.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
+    "react-i18next": "^15.4.0",
     "react-router-dom": "^7.18.4"
   },
   "devDependencies": {

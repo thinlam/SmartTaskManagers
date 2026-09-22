@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { authApi, setAuthToken } from '@stm/api-client';
+import i18n from '../i18n';
 
 const STORAGE_KEY = 'stm.auth';
 
@@ -7,6 +8,7 @@ interface StoredAuth {
   token: string;
   email: string;
   expiresAt: string;
+  language: string;
 }
 
 interface AuthContextValue {
@@ -17,6 +19,7 @@ interface AuthContextValue {
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, displayName?: string) => Promise<void>;
   logout: () => void;
+  setLanguage: (language: 'vi' | 'en') => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -52,6 +55,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (stored) {
       setAuthToken(stored.token);
       setAuth(stored);
+      void i18n.changeLanguage(stored.language);
     }
     setIsHydrating(false);
   }, []);
@@ -60,22 +64,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
     setAuthToken(next.token);
     setAuth(next);
+    void i18n.changeLanguage(next.language);
   }
 
   async function login(email: string, password: string) {
     const result = await authApi.login(email, password);
-    persist({ token: result.token, email: result.email, expiresAt: result.expiresAt });
+    persist({
+      token: result.token,
+      email: result.email,
+      expiresAt: result.expiresAt,
+      language: result.language,
+    });
   }
 
   async function register(email: string, password: string, displayName?: string) {
     const result = await authApi.register(email, password, displayName);
-    persist({ token: result.token, email: result.email, expiresAt: result.expiresAt });
+    persist({
+      token: result.token,
+      email: result.email,
+      expiresAt: result.expiresAt,
+      language: result.language,
+    });
   }
 
   function logout() {
     localStorage.removeItem(STORAGE_KEY);
     setAuthToken(null);
     setAuth(null);
+  }
+
+  async function setLanguage(language: 'vi' | 'en') {
+    await authApi.updateLanguage(language);
+    void i18n.changeLanguage(language);
+    if (auth) {
+      persist({ ...auth, language });
+    }
   }
 
   return (
@@ -87,6 +110,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         login,
         register,
         logout,
+        setLanguage,
       }}
     >
       {children}
