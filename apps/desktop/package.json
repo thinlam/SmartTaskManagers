@@ -11,6 +11,7 @@
     "tauri": "tauri"
   },
   "dependencies": {
+    "@stm/app-core": "*",
     "@stm/hooks": "*",
     "@stm/shared": "*",
     "@stm/types": "*",

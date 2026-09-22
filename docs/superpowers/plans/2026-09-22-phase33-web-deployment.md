@@ -24,6 +24,7 @@
 ### Task 1: Extract shared code into `packages/app-core`
 
 **Files:**
+
 - Create: `packages/app-core/package.json`
 - Create: `packages/app-core/tsconfig.json`
 - Create: `packages/app-core/src/index.ts`
@@ -39,6 +40,7 @@
 - Modify: root `tsconfig.json` (add `packages/app-core` reference, mirroring how `packages/ui`/`packages/shared` are already referenced)
 
 **Interfaces:**
+
 - Consumes: `@stm/ui`, `@stm/types`, `@stm/hooks`, `@stm/shared`, `@stm/api-client` (all already-published workspace packages, unchanged).
 - Produces: `@stm/app-core` package exporting `App` (default export of `App.tsx`, re-exported named from `src/index.ts`) — this is what Task 2 and Task 4 both import.
 
@@ -160,11 +162,13 @@ EOF
 ### Task 2: Update `apps/desktop` to consume `@stm/app-core`
 
 **Files:**
+
 - Modify: `apps/desktop/src/main.tsx`
 - Modify: `apps/desktop/package.json`
 - Modify: `apps/desktop/tsconfig.json`
 
 **Interfaces:**
+
 - Consumes: `App` from `@stm/app-core` (produced by Task 1).
 - Produces: nothing new — this task only rewires an existing consumer.
 
@@ -175,17 +179,23 @@ Run: read the file to get its exact current content. It imports `App` from `./Ap
 - [ ] **Step 2: Fix both dangling imports in `apps/desktop/src/main.tsx`**
 
 Change:
+
 ```typescript
 import App from './App';
 ```
+
 and
+
 ```typescript
 import { getStoredServerUrl } from './lib/serverUrl';
 ```
+
 to a single combined import:
+
 ```typescript
 import { App, getStoredServerUrl } from '@stm/app-core';
 ```
+
 (`App` is a named import now, since `packages/app-core/src/index.ts` re-exports it as a named export, not a default export — this matches Task 1 Step 5 exactly. Both symbols come from the same package, so this replaces two import lines with one.)
 
 - [ ] **Step 3: Add `@stm/app-core` as a dependency in `apps/desktop/package.json`**
@@ -233,16 +243,19 @@ EOF
 ### Task 3: Make backend CORS origins config-driven
 
 **Files:**
+
 - Modify: `backend/SmartTask.Api/Program.cs`
 - Modify: `backend/SmartTask.Api/appsettings.Development.json`
 
 **Interfaces:**
+
 - Consumes: `builder.Configuration` (already available in `Program.cs`).
 - Produces: nothing consumed by other tasks — this task is backend-only and independent of Tasks 1/2/4.
 
 - [ ] **Step 1: Read the current CORS block in `backend/SmartTask.Api/Program.cs`**
 
 It currently reads (see the `DesktopCorsPolicy` block, around line 122):
+
 ```csharp
 const string DesktopCorsPolicy = "DesktopClient";
 builder.Services.AddCors(options =>
@@ -277,6 +290,7 @@ Update the doc comment immediately above this block (currently explaining why a 
 - [ ] **Step 3: Add the default origins to `appsettings.Development.json`**
 
 Read the file first, then add:
+
 ```json
 "Cors": {
   "AllowedOrigins": [
@@ -287,6 +301,7 @@ Read the file first, then add:
   ]
 }
 ```
+
 (`5174` is added pre-emptively for `apps/web`'s dev server, which Vite will pick if `5173` is already taken by a running `apps/desktop` dev session — see Task 4.)
 
 - [ ] **Step 4: Build the backend**
@@ -308,6 +323,7 @@ curl -s -i -X OPTIONS http://localhost:8080/api/auth/login \
   -H "Access-Control-Request-Method: POST" | grep -i "access-control-allow-origin"
 kill %1
 ```
+
 Expected: the first `curl` prints `Access-Control-Allow-Origin: http://localhost:5173`; the second prints nothing (origin not in the allowed list, header omitted). Note: this requires a real `ConnectionStrings__DefaultConnection` to be set in the shell environment for the app to start — reuse whatever local MySQL connection string is already configured for `dotnet run` in this repo (see `backend/README.md`); if unavailable, run against the deployed Railway URL instead of a local instance and adjust the `curl` target accordingly, but the header check must be against a real running instance either way, not skipped.
 
 - [ ] **Step 6: Commit**
@@ -340,6 +356,7 @@ EOF
 ### Task 4: Scaffold `apps/web`
 
 **Files:**
+
 - Create: `apps/web/package.json`
 - Create: `apps/web/vite.config.ts`
 - Create: `apps/web/index.html`
@@ -354,16 +371,19 @@ EOF
 - Modify: root `package.json` (add to `workspaces`, add `dev:web`/`build:web` scripts)
 
 **Interfaces:**
+
 - Consumes: `App` and `getStoredServerUrl` from `@stm/app-core` (both already exported by Task 1 Step 5 — see the controller ruling recorded there).
 - Produces: nothing consumed by other tasks — this is the final app.
 
 - [ ] **Step 1: Confirm `@stm/app-core` already exports both symbols**
 
 Read `packages/app-core/src/index.ts`. It should already contain both lines (written in Task 1 Step 5, per the controller ruling recorded there — the original plan draft deferred this to here, but the export was moved earlier to keep Task 2's typecheck passing):
+
 ```typescript
 export { default as App } from './App';
 export { getStoredServerUrl } from './lib/serverUrl';
 ```
+
 If for any reason it doesn't (e.g. Task 1 was executed against an older copy of this plan), add the missing line now and re-run `npm run typecheck` from the repo root before proceeding — but this should be a no-op confirmation, not new work.
 
 - [ ] **Step 2: Write `apps/web/package.json`**
@@ -545,6 +565,7 @@ npm run build --workspace=apps/web
 - [ ] **Step 14: Add `apps/web` to root `package.json`**
 
 Read `E:\SmartTaskManager\package.json` first, then:
+
 - Add `"apps/web"` to the `workspaces` array.
 - Add scripts: `"dev:web": "npm run dev --workspace=apps/web"` and `"build:web": "npm run build --workspace=apps/web"` (placed next to the existing `dev:desktop`/`build:desktop` entries).
 
@@ -606,9 +627,11 @@ EOF
 ### Task 5: End-to-end verification and documentation
 
 **Files:**
+
 - Modify: `docs/roadmap/ROADMAP.md` (append Phase 33 entry)
 
 **Interfaces:**
+
 - Consumes: everything from Tasks 1–4 (this task only verifies and documents; it produces no code other consumers depend on).
 
 - [ ] **Step 1: Start the backend for real**
@@ -619,6 +642,7 @@ dotnet run &
 sleep 5
 curl -s http://localhost:5277/health
 ```
+
 Expected: `{"status":"Healthy"}`. Keep this running for the rest of this task.
 
 - [ ] **Step 2: Start `apps/web`'s dev server for real**
@@ -628,6 +652,7 @@ cd /e/SmartTaskManager && npm run dev --workspace=apps/web &
 sleep 3
 curl -s -o /dev/null -w "%{http_code}" http://localhost:5173
 ```
+
 Expected: `200` (or, if `apps/desktop` happened to also be running on `5173`, Vite will have bound `apps/web` to `5174` instead — check the `npm run dev` output for the actual port it printed and use that for the rest of this task).
 
 - [ ] **Step 3: Check whether `claude-in-chrome` is available**
@@ -643,6 +668,7 @@ Using the `claude-in-chrome` tools: navigate to `http://localhost:5173` (or what
 ```bash
 cd /e/SmartTaskManager && npm run build --workspace=apps/desktop
 ```
+
 Expected: exits 0 (re-confirms Task 4 Step 19, run once more after all changes are in place).
 
 - [ ] **Step 6: Stop background processes**
@@ -650,6 +676,7 @@ Expected: exits 0 (re-confirms Task 4 Step 19, run once more after all changes a
 ```bash
 kill %1 %2 2>/dev/null
 ```
+
 (Adjust job numbers to match whatever `dotnet run` and `npm run dev` actually landed on — check with `jobs` first.)
 
 - [ ] **Step 7: Append the Phase 33 entry to `docs/roadmap/ROADMAP.md`**

@@ -108,9 +108,11 @@ browser gọi, không phải lỗi khởi động nghiêm trọng như thiếu c
 string/JWT secret).
 
 `appsettings.Development.json` thêm:
+
 ```json
 "Cors": { "AllowedOrigins": ["http://localhost:5173", "tauri://localhost", "http://tauri.localhost", "http://localhost:5174"] }
 ```
+
 (`localhost:5174` dự phòng cho `apps/web`'s dev server nếu Vite chọn port
 khác do desktop đã chiếm 5173 khi chạy song song.)
 
@@ -122,6 +124,7 @@ trên Railway dashboard, không cần sửa code hay redeploy lại từ session
 ### D. Deploy + Verify
 
 **Verify tự làm được trong phiên này (thật, không giả định):**
+
 - `npm run typecheck` / `npm run lint` / `npm run format` — toàn repo, sau
   khi tách `app-core` và thêm `apps/web`.
 - `npm run build --workspace=apps/web` — production Vite build sạch.
@@ -138,6 +141,7 @@ trên Railway dashboard, không cần sửa code hay redeploy lại từ session
   `npm run build --workspace=apps/desktop`.
 
 **Việc thuộc về người dùng (ngoài khả năng truy cập của phiên này):**
+
 - Tạo project Vercel thật, kết nối repo GitHub, set Root Directory =
   `apps/web`, set biến môi trường `VITE_API_BASE_URL` trên Vercel dashboard.
 - Sau khi có domain Vercel thật: thêm vào `Cors__AllowedOrigins` trên

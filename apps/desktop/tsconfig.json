@@ -8,6 +8,7 @@
   },
   "include": ["src", "vite.config.ts"],
   "references": [
+    { "path": "../../packages/app-core" },
     { "path": "../../packages/ui" },
     { "path": "../../packages/types" },
     { "path": "../../packages/hooks" },
