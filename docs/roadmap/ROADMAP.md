@@ -1062,7 +1062,8 @@ lại chưa dịch ở Task 3) (Task 7). Mỗi string UI tĩnh thay bằng `t('.
   các Phase 15–19, 30–33.
 - **Việc còn lại khi có đủ công cụ (browser control tool + MySQL local reachable với credential
   hợp lệ) trong phiên sau:** chạy lại Step 4 đầy đủ — xác nhận UI mặc định tiếng Việt, chuyển tiếng
-  Anh cập nhật toàn bộ nav/trang hiện tại/Settings ngay lập tức không reload, chuyển lại tiếng Việt,
+  Anh áp dụng ngay sau khi PATCH thành công, không cần reload trang, trên toàn bộ nav/trang hiện
+  tại/Settings, chuyển lại tiếng Việt,
   đăng xuất/đăng nhập lại xác nhận lựa chọn ngôn ngữ persist đúng qua `PATCH /api/auth/language`
   (Task 1).
 
@@ -1087,9 +1088,10 @@ toàn app) giữ giá trị `theme` hiện tại, áp `class="dark"` lên phần
 và gọi `authApi` để đồng bộ lựa chọn với `PATCH /api/auth/theme` (Task 1).
 
 **Task 3 — Settings toggle nối thật vào theme state + backend.** Thêm Dark Mode toggle ở trang
-Settings (`SettingsPage.tsx`), gọi hàm đổi theme trong `AuthContext` (đổi UI ngay lập tức, không
-cần reload) song song với gọi `PATCH /api/auth/theme` (lưu xuống DB qua Task 1) — đổi giao diện là
-1 hành động, không phải 2 bước rời nhau, cùng mẫu hình với language switcher.
+Settings (`SettingsPage.tsx`), gọi hàm đổi theme trong `AuthContext` — hàm này `await` gọi
+`PATCH /api/auth/theme` (lưu xuống DB qua Task 1) trước, chỉ áp dụng UI ngay sau khi PATCH thành
+công, không cần reload trang; nếu PATCH lỗi thì giao diện không đổi — cùng mẫu hình với language
+switcher.
 
 **Task 4 (task này) — verify end-to-end, ghi rõ đã test gì / chưa test được gì:**
 

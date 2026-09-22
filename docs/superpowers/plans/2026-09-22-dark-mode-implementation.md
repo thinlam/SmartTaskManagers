@@ -27,6 +27,7 @@
 ### Task 1: Backend — `Theme` on `User` + `PATCH /api/auth/theme`
 
 **Files:**
+
 - Modify: `backend/SmartTask.Domain/Users/User.cs`
 - Modify: `backend/SmartTask.Persistence/Configurations/UserConfiguration.cs`
 - Create: `backend/SmartTask.Persistence/Migrations/<timestamp>_AddUserTheme.cs` (via `dotnet ef migrations add`, not hand-written)
@@ -36,12 +37,14 @@
 - Modify: `backend/SmartTask.Api/Controllers/AuthController.cs`
 
 **Interfaces:**
+
 - Produces: `User.Theme: string` (`"light"`/`"dark"`, default `"light"`); `AuthResult` gains a `Theme` field (last positional parameter, after `Language`); `AuthResponse` gains a `Theme` field (last positional parameter, after `Language`); new endpoint `PATCH /api/auth/theme` with body `{ "theme": "light" | "dark" }`, `[Authorize]`, returns `204 No Content` on success, `400` if `theme` isn't exactly `"light"` or `"dark"`, `401` if the JWT claim is malformed, `404` if the user row is gone.
 - These are what Task 2 (frontend `AuthContext`) reads and calls.
 
 **Reference — the current (post-i18n) shape of every file this task touches, read directly from the repo so no guessing is needed:**
 
 `backend/SmartTask.Domain/Users/User.cs` currently:
+
 ```csharp
 using SmartTask.Domain.Common;
 
@@ -58,6 +61,7 @@ public sealed class User : Entity
 ```
 
 `backend/SmartTask.Persistence/Configurations/UserConfiguration.cs` currently:
+
 ```csharp
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -82,6 +86,7 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
 ```
 
 `backend/SmartTask.Application/Auth/AuthContracts.cs` currently:
+
 ```csharp
 namespace SmartTask.Application.Auth;
 
@@ -93,6 +98,7 @@ public sealed record AuthResult(Guid UserId, string Email, string Token, DateTim
 ```
 
 `backend/SmartTask.Application/Auth/IAuthService.cs` currently:
+
 ```csharp
 namespace SmartTask.Application.Auth;
 
@@ -105,6 +111,7 @@ public interface IAuthService
 ```
 
 `backend/SmartTask.Application/Auth/AuthService.cs` currently:
+
 ```csharp
 using SmartTask.Application.Abstractions;
 using SmartTask.Application.Users;
@@ -173,6 +180,7 @@ public sealed class AuthService(
 ```
 
 `backend/SmartTask.Api/Controllers/AuthController.cs` currently:
+
 ```csharp
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
@@ -268,6 +276,7 @@ public sealed class AuthController(IAuthService authService) : ControllerBase
 - [ ] **Step 1: Add `Theme` to `User.cs`**
 
 Add this property after `Language`:
+
 ```csharp
     public string Theme { get; set; } = "light";
 ```
@@ -275,6 +284,7 @@ Add this property after `Language`:
 - [ ] **Step 2: Configure the column in `UserConfiguration.cs`**
 
 Add this line after the `Language` configuration line:
+
 ```csharp
         builder.Property(u => u.Theme).HasMaxLength(5).IsRequired().HasDefaultValue("light");
 ```
@@ -282,18 +292,23 @@ Add this line after the `Language` configuration line:
 - [ ] **Step 3: Generate the migration**
 
 Run (from `backend/SmartTask.Persistence`):
+
 ```bash
 dotnet ef migrations add AddUserTheme --startup-project ../SmartTask.Api
 ```
+
 Expected: creates a migration adding a `Theme` column to `Users`, non-nullable, `varchar(5)`, with `defaultValue: "light"` (verify by reading the generated migration file — the `.HasDefaultValue("light")` from Step 2 should make this automatic this time, since the equivalent step for `Language` already established that EF Core needs the explicit `.HasDefaultValue(...)` call, not just the C# property initializer, to emit a migration-level default).
 
 - [ ] **Step 4: Add `Theme` to `AuthResult` in `AuthContracts.cs`**
 
 Change:
+
 ```csharp
 public sealed record AuthResult(Guid UserId, string Email, string Token, DateTimeOffset ExpiresAt, string Language);
 ```
+
 to:
+
 ```csharp
 public sealed record AuthResult(Guid UserId, string Email, string Token, DateTimeOffset ExpiresAt, string Language, string Theme);
 ```
@@ -301,6 +316,7 @@ public sealed record AuthResult(Guid UserId, string Email, string Token, DateTim
 - [ ] **Step 5: Add `Theme` to `IAuthService.cs`**
 
 Add this method signature, after `UpdateLanguageAsync`:
+
 ```csharp
     Task UpdateThemeAsync(Guid userId, string theme, CancellationToken cancellationToken);
 ```
@@ -308,6 +324,7 @@ Add this method signature, after `UpdateLanguageAsync`:
 - [ ] **Step 6: Update `AuthService.cs`**
 
 Change `BuildAuthResult` to pass `user.Theme` as the final argument:
+
 ```csharp
     private AuthResult BuildAuthResult(User user)
     {
@@ -315,7 +332,9 @@ Change `BuildAuthResult` to pass `user.Theme` as the final argument:
         return new AuthResult(user.Id, user.Email, token.Value, token.ExpiresAt, user.Language, user.Theme);
     }
 ```
+
 Add a new method, following `UpdateLanguageAsync`'s exact pattern:
+
 ```csharp
     public async Task UpdateThemeAsync(Guid userId, string theme, CancellationToken cancellationToken)
     {
@@ -325,19 +344,25 @@ Add a new method, following `UpdateLanguageAsync`'s exact pattern:
         await userRepository.SaveChangesAsync(cancellationToken);
     }
 ```
+
 (`GetByIdAsync` already exists on `IUserRepository` from the i18n work — no repository changes needed this time.)
 
 - [ ] **Step 7: Update `AuthController.cs`**
 
 Change `AuthResponse` to:
+
 ```csharp
 public sealed record AuthResponse(Guid UserId, string Email, string Token, DateTimeOffset ExpiresAt, string Language, string Theme);
 ```
+
 Add a new request record, alongside `UpdateLanguageRequest`:
+
 ```csharp
 public sealed record UpdateThemeRequest(string Theme);
 ```
+
 Add a new action, after `UpdateLanguage`, following its exact pattern:
+
 ```csharp
     [Authorize]
     [HttpPatch("theme")]
@@ -369,11 +394,14 @@ Add a new action, after `UpdateLanguage`, following its exact pattern:
         return NoContent();
     }
 ```
+
 Update `ToResponse` to pass `result.Theme` as the final argument:
+
 ```csharp
     private static AuthResponse ToResponse(AuthResult result) =>
         new(result.UserId, result.Email, result.Token, result.ExpiresAt, result.Language, result.Theme);
 ```
+
 Leave `Me()` unchanged (same reasoning as `Language` — it reads JWT claims only, no DB lookup, out of scope).
 
 - [ ] **Step 8: Build and verify**
@@ -384,18 +412,22 @@ Expected: `Build succeeded. 0 Warning(s). 0 Error(s).`
 - [ ] **Step 9: Apply the migration and verify with a real running server**
 
 If a local MySQL instance is reachable, run `dotnet ef database update --startup-project ../SmartTask.Api` from `backend/SmartTask.Persistence`, then start the API (`dotnet run` from `backend/SmartTask.Api`) and:
+
 ```bash
 curl -s -X POST http://localhost:5277/api/auth/register \
   -H "Content-Type: application/json" \
   -d '{"email":"darkmode-test@example.com","password":"Test1234!","displayName":"Dark Mode Test"}'
 ```
+
 Expected: JSON response includes `"theme":"light"`. Then:
+
 ```bash
 curl -s -X PATCH http://localhost:5277/api/auth/theme \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <token from register response>" \
   -d '{"theme":"dark"}'
 ```
+
 Expected: `204` (empty body). Delete the test user afterward per this repo's established test-data-cleanup convention (see `backend/README.md`).
 
 If no local MySQL is reachable, report this honestly instead of skipping: state clearly in your task report that runtime verification wasn't possible, and that only `dotnet build` was verified. Do NOT invent a fake `ConnectionStrings:DefaultConnection` secret.
@@ -427,18 +459,21 @@ EOF
 ### Task 2: Frontend — dark color tokens + `AuthContext`/`authApi` wiring
 
 **Files:**
+
 - Modify: `packages/ui/src/styles/theme.css`
 - Modify: `packages/api-client/src/authApi.ts`
 - Modify: `packages/app-core/src/state/AuthContext.tsx`
 - Modify: `packages/app-core/src/pages/Auth/LoginPage.tsx`
 
 **Interfaces:**
+
 - Consumes: `AuthResult.Theme`/`AuthResponse.Theme` from Task 1's API responses (serializes to JSON `theme`, camelCase, same convention as `language`).
 - Produces: `AuthContext`'s `theme: string | null` (readable state, not just a setter — Task 3's Settings toggle needs to know the current value to render correctly) and `setTheme(theme: 'light' | 'dark'): Promise<void>`.
 
 **Reference — the current (post-i18n) shape of every file this task touches:**
 
 `packages/ui/src/styles/theme.css` currently:
+
 ```css
 /**
  * Tailwind v4 theme mapping — the CSS-facing counterpart of
@@ -511,6 +546,7 @@ EOF
 ```
 
 `packages/api-client/src/authApi.ts` currently:
+
 ```typescript
 import { httpClient } from './httpClient';
 
@@ -534,6 +570,7 @@ export const authApi = {
 ```
 
 `packages/app-core/src/state/AuthContext.tsx` currently:
+
 ```typescript
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { authApi, setAuthToken } from '@stm/api-client';
@@ -660,6 +697,7 @@ export function useAuthContext(): AuthContextValue {
 ```
 
 `packages/app-core/src/pages/Auth/LoginPage.tsx`'s relevant top section currently:
+
 ```typescript
 import { useEffect, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -696,12 +734,14 @@ export function LoginPage() {
 - [ ] **Step 1: Add `@custom-variant dark` and the `.dark` token block to `theme.css`**
 
 Add this line as the very first line of the file (before the doc comment, or right after it — either is fine, just before the `@theme` block):
+
 ```css
 @custom-variant dark (&:where(.dark, .dark *));
 ```
-Then, after the closing `}` of the `@theme` block, add:
-```css
 
+Then, after the closing `}` of the `@theme` block, add:
+
+```css
 .dark {
   --color-background: #0f172a;
   --color-surface: #1e293b;
@@ -713,11 +753,13 @@ Then, after the closing `}` of the `@theme` block, add:
   --color-border-strong: #475569;
 }
 ```
+
 Do not touch any other token (`primary`/`success`/`warning`/`danger`/`info`/`status-*`/`priority-*`/`risk-*`/`radius-*`/`shadow-*`/`font-sans`/`color-dark-header`) — only these 8 foundational tokens get dark values, per the spec's explicit scope.
 
 - [ ] **Step 2: Add `theme` to `AuthResponse` and add `updateTheme` in `authApi.ts`**
 
 Change:
+
 ```typescript
 export interface AuthResponse {
   userId: string;
@@ -737,7 +779,9 @@ export const authApi = {
     httpClient.patch<void>('/api/auth/language', { language }),
 };
 ```
+
 to:
+
 ```typescript
 export interface AuthResponse {
   userId: string;
@@ -764,6 +808,7 @@ export const authApi = {
 - [ ] **Step 3: Update `AuthContext.tsx`**
 
 Replace the file's full content with (changes from the current version: `StoredAuth` gains `theme`; `AuthContextValue` gains a readable `theme` field and `setTheme`; a new `applyTheme` helper toggles the DOM class; `persist()` and the hydrate `useEffect` both call it and write `stm.theme` to localStorage; `setTheme` mirrors `setLanguage`'s try/catch-and-rethrow pattern exactly):
+
 ```typescript
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { authApi, setAuthToken } from '@stm/api-client';
@@ -919,27 +964,31 @@ export function useAuthContext(): AuthContextValue {
 - [ ] **Step 4: Add the pre-login theme fallback to `LoginPage.tsx`**
 
 Read the file's current `useEffect` (shown in the reference section above). Change it from:
+
 ```typescript
-  useEffect(() => {
-    const stored = localStorage.getItem('stm.language');
-    if (stored === 'vi' || stored === 'en') {
-      void i18n.changeLanguage(stored);
-    }
-  }, []);
+useEffect(() => {
+  const stored = localStorage.getItem('stm.language');
+  if (stored === 'vi' || stored === 'en') {
+    void i18n.changeLanguage(stored);
+  }
+}, []);
 ```
+
 to:
+
 ```typescript
-  useEffect(() => {
-    const storedLanguage = localStorage.getItem('stm.language');
-    if (storedLanguage === 'vi' || storedLanguage === 'en') {
-      void i18n.changeLanguage(storedLanguage);
-    }
-    const storedTheme = localStorage.getItem('stm.theme');
-    if (storedTheme === 'light' || storedTheme === 'dark') {
-      document.documentElement.classList.toggle('dark', storedTheme === 'dark');
-    }
-  }, []);
+useEffect(() => {
+  const storedLanguage = localStorage.getItem('stm.language');
+  if (storedLanguage === 'vi' || storedLanguage === 'en') {
+    void i18n.changeLanguage(storedLanguage);
+  }
+  const storedTheme = localStorage.getItem('stm.theme');
+  if (storedTheme === 'light' || storedTheme === 'dark') {
+    document.documentElement.classList.toggle('dark', storedTheme === 'dark');
+  }
+}, []);
 ```
+
 (Renamed the local `stored` variable to `storedLanguage` to make room for `storedTheme` — this is the only change to this `useEffect`; do not touch anything else in this file.)
 
 - [ ] **Step 5: Install, typecheck, build**
@@ -979,14 +1028,17 @@ EOF
 ### Task 3: Settings — Dark Mode toggle
 
 **Files:**
+
 - Modify: `packages/app-core/src/pages/Settings/SettingsPage.tsx`
 - Modify: `packages/app-core/src/i18n/locales/en.json`
 - Modify: `packages/app-core/src/i18n/locales/vi.json`
 
 **Interfaces:**
+
 - Consumes: `theme`/`setTheme` from `useAuthContext()` (Task 2).
 
 **Reference:** the file's current Language field block (inside the "General" section's grid) is:
+
 ```tsx
           <div className="flex flex-col gap-1">
             <label htmlFor="settings-language" className={labelClasses}>
@@ -1005,49 +1057,57 @@ EOF
           <div className="flex flex-col gap-1">
             <label htmlFor="settings-week-start" className={labelClasses}>
 ```
+
 (The `settings-week-start` field immediately follows — this is the exact insertion point.)
 
 - [ ] **Step 1: Add `Switch` and `useAuthContext`'s `theme`/`setTheme` to the component**
 
 Read `packages/app-core/src/pages/Settings/SettingsPage.tsx` in full. `Switch` is already imported from `@stm/ui` (used by the Smart Engine toggle rows further down) and `useAuthContext` is already imported (used for `setLanguage`) — no new imports needed. Change:
+
 ```typescript
-  const { setLanguage } = useAuthContext();
+const { setLanguage } = useAuthContext();
 ```
+
 to:
+
 ```typescript
-  const { theme, setTheme } = useAuthContext();
+const { theme, setTheme } = useAuthContext();
 ```
 
 - [ ] **Step 2: Insert the Dark Mode field into the "General" section's grid**
 
 Insert this new field block immediately after the Language field's closing `</div>` and before the Week Start field's opening `<div>` (matching the reference section above exactly):
+
 ```tsx
-          <div className="flex flex-col gap-1">
-            <label htmlFor="settings-dark-mode" className={labelClasses}>
-              {t('settings.darkMode')}
-            </label>
-            <div className="flex items-center gap-2 pt-1">
-              <Switch
-                checked={theme === 'dark'}
-                onCheckedChange={(checked) => void setTheme(checked ? 'dark' : 'light')}
-                aria-label={t('settings.darkMode')}
-              />
-              <span className="text-sm text-ink-secondary">
-                {theme === 'dark' ? t('settings.darkModeOn') : t('settings.darkModeOff')}
-              </span>
-            </div>
-          </div>
+<div className="flex flex-col gap-1">
+  <label htmlFor="settings-dark-mode" className={labelClasses}>
+    {t('settings.darkMode')}
+  </label>
+  <div className="flex items-center gap-2 pt-1">
+    <Switch
+      checked={theme === 'dark'}
+      onCheckedChange={(checked) => void setTheme(checked ? 'dark' : 'light')}
+      aria-label={t('settings.darkMode')}
+    />
+    <span className="text-sm text-ink-secondary">
+      {theme === 'dark' ? t('settings.darkModeOn') : t('settings.darkModeOff')}
+    </span>
+  </div>
+</div>
 ```
 
 - [ ] **Step 3: Add the 3 new keys to both locale files**
 
 Read `packages/app-core/src/i18n/locales/en.json` and add these 3 keys to the existing `"settings"` object (alongside `language`/`languageVi`/`languageEn`):
+
 ```json
     "darkMode": "Dark Mode",
     "darkModeOn": "On",
     "darkModeOff": "Off"
 ```
+
 Read `packages/app-core/src/i18n/locales/vi.json` and add the equivalent:
+
 ```json
     "darkMode": "Chế độ tối",
     "darkModeOn": "Bật",
@@ -1087,6 +1147,7 @@ EOF
 - [ ] **Step 1: Full repo verification**
 
 Run (from repo root):
+
 ```bash
 npm run typecheck
 npm run lint
@@ -1094,6 +1155,7 @@ npm run format
 npm run build --workspace=apps/desktop
 npm run build --workspace=apps/web
 ```
+
 Expected: all exit 0.
 
 - [ ] **Step 2: Backend verification**

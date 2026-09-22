@@ -101,6 +101,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   function logout() {
+    // Deliberately leaves the `dark` class / stm.theme in place — the
+    // login screen keeps the last-used theme (LoginPage's own fallback
+    // reads stm.theme), and persist() re-applies the next user's real
+    // theme on their next login.
     localStorage.removeItem(STORAGE_KEY);
     setAuthToken(null);
     setAuth(null);
