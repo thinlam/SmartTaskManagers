@@ -1,3 +1,5 @@
+@custom-variant dark (&:where(.dark, .dark *));
+
 /**
  * Tailwind v4 theme mapping — the CSS-facing counterpart of
  * packages/ui/src/tokens/*.ts. Tailwind v4 is CSS-native (no JS
@@ -67,4 +69,15 @@
   --shadow-sm: 0 1px 2px 0 rgb(15 23 42 / 0.04);
   --shadow-md: 0 2px 8px 0 rgb(15 23 42 / 0.06);
   --shadow-lg: 0 8px 24px -4px rgb(15 23 42 / 0.1);
+}
+
+.dark {
+  --color-background: #0f172a;
+  --color-surface: #1e293b;
+  --color-surface-secondary: #334155;
+  --color-ink-primary: #f1f5f9;
+  --color-ink-secondary: #cbd5e1;
+  --color-ink-muted: #64748b;
+  --color-border: #334155;
+  --color-border-strong: #475569;
 }
