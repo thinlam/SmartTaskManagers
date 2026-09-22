@@ -210,9 +210,10 @@ EOF
 - Modify: `packages/app-core/src/state/AuthContext.tsx`
 - Modify: `packages/app-core/src/pages/Auth/LoginPage.tsx`
 - Modify: `packages/app-core/src/index.ts`
+- Modify: `packages/api-client/src/authApi.ts`
 
 **Interfaces:**
-- Consumes: `AuthResult.Language`/`AuthResponse.Language` from Task 1's API responses.
+- Consumes: `AuthResult.Language`/`AuthResponse.Language` from Task 1's API responses (which serialize to JSON `language`, camelCase — confirmed by the controller's preflight scan against `Program.cs`'s ASP.NET Core MVC default JSON casing).
 - Produces: `i18n` instance (default export from `packages/app-core/src/i18n/index.ts`), `useTranslation()` available anywhere in this package; `AuthContext`'s `setLanguage(language: 'vi' | 'en'): Promise<void>` — this is what Task 3 (Settings) calls.
 - This task establishes the **exact pattern** every later page-translation task (Tasks 4-9) must follow: JSON key naming, `t()` call style, namespace-per-page.
 
@@ -411,28 +412,269 @@ useEffect(() => {
 ```
 Add `import i18n from '../../i18n';` to this file's imports.
 
-- [ ] **Step 9: Wire `AuthContext` to change language on login/register/hydrate, and expose `setLanguage`**
+- [ ] **Step 9: Add `authApi.updateLanguage`, then wire `AuthContext` to change language on login/register/hydrate and expose `setLanguage`**
 
-Read `packages/app-core/src/state/AuthContext.tsx` in full. Find the functions that handle `login`, `register`, and hydration-from-`localStorage` (the existing session-restore logic — read the file to find its exact current shape; do not guess function names, use what's actually there). Add `import i18n from '../i18n';` to this file's imports.
+**Controller preflight note:** `packages/app-core/src/state/AuthContext.tsx` and `packages/api-client/src/authApi.ts`/`httpClient.ts` were read in full while writing this plan — the exact current shape of every file this step touches is reproduced below, so no guessing is needed.
 
-Wherever the context currently stores the result of a successful login/register response (the object with `userId`/`email`/`token`/`expiresAt` — now also carrying `language` per Task 1), add:
+**9a. Add `language` to `AuthResponse` and add `updateLanguage` in `packages/api-client/src/authApi.ts`.** Its current full content is:
 ```typescript
-void i18n.changeLanguage(result.language);
-localStorage.setItem('stm.language', result.language);
+import { httpClient } from './httpClient';
+
+export interface AuthResponse {
+  userId: string;
+  email: string;
+  token: string;
+  expiresAt: string;
+}
+
+/** Matches SmartTask.Api's AuthController (Phase 22) exactly — POST /api/auth/register, /login. */
+export const authApi = {
+  register: (email: string, password: string, displayName?: string): Promise<AuthResponse> =>
+    httpClient.post<AuthResponse>('/api/auth/register', { email, password, displayName }),
+  login: (email: string, password: string): Promise<AuthResponse> =>
+    httpClient.post<AuthResponse>('/api/auth/login', { email, password }),
+};
 ```
-(adapt `result` to whatever the actual local variable name is in this file).
-
-Add a new function to the context's value object, alongside `login`/`register`/`logout`:
+Change it to:
 ```typescript
-async function setLanguage(language: 'vi' | 'en') {
-  await httpClient.patch('/api/auth/language', { language }); // adapt to this file's actual HTTP call convention — see how login/register call @stm/api-client
-  void i18n.changeLanguage(language);
-  localStorage.setItem('stm.language', language);
+import { httpClient } from './httpClient';
+
+export interface AuthResponse {
+  userId: string;
+  email: string;
+  token: string;
+  expiresAt: string;
+  language: string;
+}
+
+/** Matches SmartTask.Api's AuthController (Phase 22) exactly — POST /api/auth/register, /login, PATCH /language. */
+export const authApi = {
+  register: (email: string, password: string, displayName?: string): Promise<AuthResponse> =>
+    httpClient.post<AuthResponse>('/api/auth/register', { email, password, displayName }),
+  login: (email: string, password: string): Promise<AuthResponse> =>
+    httpClient.post<AuthResponse>('/api/auth/login', { email, password }),
+  updateLanguage: (language: 'vi' | 'en'): Promise<void> =>
+    httpClient.patch<void>('/api/auth/language', { language }),
+};
+```
+(`httpClient.patch` already exists in `packages/api-client/src/httpClient.ts` — no change needed there.)
+
+**9b. Update `AuthContext.tsx`.** Its current full content is:
+```typescript
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { authApi, setAuthToken } from '@stm/api-client';
+
+const STORAGE_KEY = 'stm.auth';
+
+interface StoredAuth {
+  token: string;
+  email: string;
+  expiresAt: string;
+}
+
+interface AuthContextValue {
+  isAuthenticated: boolean;
+  email: string | null;
+  isHydrating: boolean;
+  login: (email: string, password: string) => Promise<void>;
+  register: (email: string, password: string, displayName?: string) => Promise<void>;
+  logout: () => void;
+}
+
+const AuthContext = createContext<AuthContextValue | null>(null);
+
+function readStoredAuth(): StoredAuth | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as StoredAuth;
+    if (new Date(parsed.expiresAt).getTime() <= Date.now()) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [auth, setAuth] = useState<StoredAuth | null>(null);
+  const [isHydrating, setIsHydrating] = useState(true);
+
+  useEffect(() => {
+    const stored = readStoredAuth();
+    if (stored) {
+      setAuthToken(stored.token);
+      setAuth(stored);
+    }
+    setIsHydrating(false);
+  }, []);
+
+  function persist(next: StoredAuth) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    setAuthToken(next.token);
+    setAuth(next);
+  }
+
+  async function login(email: string, password: string) {
+    const result = await authApi.login(email, password);
+    persist({ token: result.token, email: result.email, expiresAt: result.expiresAt });
+  }
+
+  async function register(email: string, password: string, displayName?: string) {
+    const result = await authApi.register(email, password, displayName);
+    persist({ token: result.token, email: result.email, expiresAt: result.expiresAt });
+  }
+
+  function logout() {
+    localStorage.removeItem(STORAGE_KEY);
+    setAuthToken(null);
+    setAuth(null);
+  }
+
+  return (
+    <AuthContext.Provider
+      value={{
+        isAuthenticated: auth !== null,
+        email: auth?.email ?? null,
+        isHydrating,
+        login,
+        register,
+        logout,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+export function useAuthContext(): AuthContextValue {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuthContext must be used within an AuthProvider');
+  }
+  return context;
 }
 ```
-Read how `login`/`register` in this same file actually call the backend (they use `@stm/api-client` — check the exact import and function names used, e.g. `authApi.login(...)` or similar) and use that exact same calling convention for `setLanguage`'s API call instead of inventing a generic `httpClient.patch` — match this file's established pattern precisely. If `@stm/api-client` doesn't yet have a method for `PATCH /api/auth/language`, add one there first (read `packages/api-client/src/` to find where `login`/`register`/similar auth calls live, and add a sibling function following the exact same pattern — same file, same error-handling style).
 
-Export `setLanguage` from the context's `AuthContextValue` type/interface and from whatever the provider returns.
+Replace it with (note: `StoredAuth` gains `language`, `persist()` now also drives `i18n.changeLanguage()`, the hydrate `useEffect` calls `i18n.changeLanguage(stored.language)` too — so a page reload keeps the right language without waiting for a new API call — and `setLanguage` is a new exported function):
+```typescript
+import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { authApi, setAuthToken } from '@stm/api-client';
+import i18n from '../i18n';
+
+const STORAGE_KEY = 'stm.auth';
+
+interface StoredAuth {
+  token: string;
+  email: string;
+  expiresAt: string;
+  language: string;
+}
+
+interface AuthContextValue {
+  isAuthenticated: boolean;
+  email: string | null;
+  isHydrating: boolean;
+  login: (email: string, password: string) => Promise<void>;
+  register: (email: string, password: string, displayName?: string) => Promise<void>;
+  logout: () => void;
+  setLanguage: (language: 'vi' | 'en') => Promise<void>;
+}
+
+const AuthContext = createContext<AuthContextValue | null>(null);
+
+function readStoredAuth(): StoredAuth | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as StoredAuth;
+    if (new Date(parsed.expiresAt).getTime() <= Date.now()) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [auth, setAuth] = useState<StoredAuth | null>(null);
+  const [isHydrating, setIsHydrating] = useState(true);
+
+  useEffect(() => {
+    const stored = readStoredAuth();
+    if (stored) {
+      setAuthToken(stored.token);
+      setAuth(stored);
+      void i18n.changeLanguage(stored.language);
+    }
+    setIsHydrating(false);
+  }, []);
+
+  function persist(next: StoredAuth) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    setAuthToken(next.token);
+    setAuth(next);
+    void i18n.changeLanguage(next.language);
+  }
+
+  async function login(email: string, password: string) {
+    const result = await authApi.login(email, password);
+    persist({
+      token: result.token,
+      email: result.email,
+      expiresAt: result.expiresAt,
+      language: result.language,
+    });
+  }
+
+  async function register(email: string, password: string, displayName?: string) {
+    const result = await authApi.register(email, password, displayName);
+    persist({
+      token: result.token,
+      email: result.email,
+      expiresAt: result.expiresAt,
+      language: result.language,
+    });
+  }
+
+  function logout() {
+    localStorage.removeItem(STORAGE_KEY);
+    setAuthToken(null);
+    setAuth(null);
+  }
+
+  async function setLanguage(language: 'vi' | 'en') {
+    await authApi.updateLanguage(language);
+    void i18n.changeLanguage(language);
+    if (auth) {
+      persist({ ...auth, language });
+    }
+  }
+
+  return (
+    <AuthContext.Provider
+      value={{
+        isAuthenticated: auth !== null,
+        email: auth?.email ?? null,
+        isHydrating,
+        login,
+        register,
+        logout,
+        setLanguage,
+      }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+export function useAuthContext(): AuthContextValue {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuthContext must be used within an AuthProvider');
+  }
+  return context;
+}
+```
+(`setLanguage` calling `persist({ ...auth, language })` again after `authApi.updateLanguage` succeeds re-triggers `i18n.changeLanguage` redundantly with the explicit call above it — harmless, `i18next` no-ops on setting the same language twice — but it's what keeps `localStorage`'s cached `language` in sync for the next hydrate. Keep both calls, don't remove either.)
 
 - [ ] **Step 10: Install, typecheck, build**
 
