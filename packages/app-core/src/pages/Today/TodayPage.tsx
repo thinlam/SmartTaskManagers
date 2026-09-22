@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { StatCard } from '@stm/ui';
 import { computeTodayData } from '@stm/shared';
 import { useTasksContext } from '../../state/TasksContext';
@@ -16,6 +17,7 @@ import { EndOfDayReview } from './EndOfDayReview';
  * recommendedAction are the real Smart Engine output (Phase 29).
  */
 export function TodayPage() {
+  const { t } = useTranslation();
   const { tasks, isLoading } = useTasksContext();
   const data = useMemo(() => computeTodayData(tasks), [tasks]);
 
@@ -27,13 +29,15 @@ export function TodayPage() {
   });
 
   if (isLoading) {
-    return <div className="p-8 text-sm text-ink-muted">Loading today…</div>;
+    return <div className="p-8 text-sm text-ink-muted">{t('today.loading')}</div>;
   }
 
   return (
     <div className="flex flex-col gap-6 p-8">
       <header className="flex flex-col gap-1">
-        <h1 className="text-[28px] font-bold leading-[34px] text-ink-primary">Today</h1>
+        <h1 className="text-[28px] font-bold leading-[34px] text-ink-primary">
+          {t('today.title')}
+        </h1>
         <p className="text-sm text-ink-secondary">
           {dateLabel} · {data.subtitle}
         </p>
@@ -54,21 +58,21 @@ export function TodayPage() {
       <BestNextActionCard task={data.bestNext} />
 
       <TaskListSection
-        title="Do Now"
+        title={t('today.doNow')}
         subtitle={data.doNow.subtitle}
         tasks={data.doNow.tasks}
         emptyText={data.doNow.emptyText}
         accent="danger"
       />
       <TaskListSection
-        title="Scheduled"
+        title={t('today.scheduled')}
         subtitle={data.scheduled.subtitle}
         tasks={data.scheduled.tasks}
         emptyText={data.scheduled.emptyText}
         accent="info"
       />
       <TaskListSection
-        title="Quick Wins"
+        title={t('today.quickWins')}
         subtitle={data.quickWins.subtitle}
         tasks={data.quickWins.tasks}
         emptyText={data.quickWins.emptyText}

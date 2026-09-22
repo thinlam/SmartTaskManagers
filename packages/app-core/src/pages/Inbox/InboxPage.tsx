@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { EmptyState } from '@stm/ui';
 import { useTasksContext } from '../../state/TasksContext';
 import { QuickCaptureInput } from '../../components/QuickCaptureInput';
@@ -21,6 +22,7 @@ import { InboxTaskRow } from './InboxTaskRow';
  * TasksContext's now-backend-backed useTasks().
  */
 export function InboxPage() {
+  const { t } = useTranslation();
   const { tasks, isLoading, addTask, completeTask, deleteTask, openEditDrawer } = useTasksContext();
   const inboxTasks = tasks.filter((task) => task.status === 'Inbox');
 
@@ -29,22 +31,22 @@ export function InboxPage() {
   }
 
   if (isLoading) {
-    return <div className="p-8 text-sm text-ink-muted">Loading inbox…</div>;
+    return <div className="p-8 text-sm text-ink-muted">{t('inbox.loading')}</div>;
   }
 
   return (
     <div className="flex flex-col gap-6 p-8">
       <header className="flex flex-col gap-1">
-        <h1 className="text-[28px] font-bold leading-[34px] text-ink-primary">Inbox</h1>
-        <p className="text-sm text-ink-secondary">
-          Quick-captured tasks waiting to be organized into an area or project.
-        </p>
+        <h1 className="text-[28px] font-bold leading-[34px] text-ink-primary">
+          {t('inbox.title')}
+        </h1>
+        <p className="text-sm text-ink-secondary">{t('inbox.subtitle')}</p>
       </header>
 
       <QuickCaptureInput onAdd={handleAdd} />
 
       {inboxTasks.length === 0 ? (
-        <EmptyState message="Your inbox is empty. Capture a task above to get started." />
+        <EmptyState message={t('inbox.emptyState')} />
       ) : (
         <div className="flex flex-col gap-2">
           {inboxTasks.map((task) => (

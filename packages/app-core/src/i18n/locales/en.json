@@ -43,5 +43,40 @@
     "language": "Language",
     "languageVi": "Vietnamese",
     "languageEn": "English"
+  },
+  "dashboard": {
+    "loading": "Loading dashboard…",
+    "title": "Dashboard",
+    "focusNow": "Focus Now",
+    "focusNowEmpty": "No open tasks — you're all caught up.",
+    "myAreas": "My Areas",
+    "myAreasEmpty": "No tasks yet — areas will appear once you add some.",
+    "areaStats": "{{completed}} completed · {{open}} open · {{total}} total",
+    "smartInsights": "Smart Insights",
+    "smartInsightsEmpty": "No insights yet — check back once you have some tasks in motion."
+  },
+  "today": {
+    "loading": "Loading today…",
+    "title": "Today",
+    "doNow": "Do Now",
+    "scheduled": "Scheduled",
+    "quickWins": "Quick Wins",
+    "bestNextAction": "Best Next Action",
+    "allClear": "You are clear. No open tasks need your attention right now.",
+    "endOfDayReview": "End-of-Day Review",
+    "todaysProgress": "Today's Progress",
+    "completedCount": "{{count}} completed",
+    "completionRatePlanned": "{{rate}}% of today's planned work",
+    "noPlannedTasks": "No planned tasks today",
+    "completion": "Completion"
+  },
+  "inbox": {
+    "title": "Inbox",
+    "subtitle": "Quick-captured tasks waiting to be organized into an area or project.",
+    "loading": "Loading inbox…",
+    "emptyState": "Your inbox is empty. Capture a task above to get started.",
+    "editAriaLabel": "Edit \"{{title}}\"",
+    "completeAriaLabel": "Mark \"{{title}}\" complete",
+    "deleteAriaLabel": "Delete \"{{title}}\""
   }
 }

@@ -1,4 +1,5 @@
 import type { TaskSummary } from '@stm/types';
+import { useTranslation } from 'react-i18next';
 import { TaskCard } from '@stm/ui';
 
 interface BestNextActionCardProps {
@@ -11,10 +12,12 @@ interface BestNextActionCardProps {
  * writeBestNextAction_() in apps/google-sheets/src/07_Today.gs.
  */
 export function BestNextActionCard({ task }: BestNextActionCardProps) {
+  const { t } = useTranslation();
+
   if (!task) {
     return (
       <div className="rounded-lg border border-success/30 bg-success-soft p-4 text-center text-sm font-semibold text-success">
-        You are clear. No open tasks need your attention right now.
+        {t('today.allClear')}
       </div>
     );
   }
@@ -22,7 +25,7 @@ export function BestNextActionCard({ task }: BestNextActionCardProps) {
   return (
     <div className="flex flex-col gap-2 rounded-lg border-2 border-primary/20 bg-primary-light/40 p-4">
       <span className="text-xs font-semibold uppercase tracking-wide text-primary">
-        Best Next Action
+        {t('today.bestNextAction')}
       </span>
       <TaskCard
         title={task.title}

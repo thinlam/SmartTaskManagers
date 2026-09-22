@@ -43,5 +43,40 @@
     "language": "Ngôn ngữ",
     "languageVi": "Tiếng Việt",
     "languageEn": "English"
+  },
+  "dashboard": {
+    "loading": "Đang tải bảng tổng quan…",
+    "title": "Tổng quan",
+    "focusNow": "Tập trung ngay",
+    "focusNowEmpty": "Không có công việc nào đang mở — bạn đã hoàn thành hết.",
+    "myAreas": "Lĩnh vực của tôi",
+    "myAreasEmpty": "Chưa có công việc nào — các lĩnh vực sẽ xuất hiện khi bạn thêm công việc.",
+    "areaStats": "{{completed}} hoàn thành · {{open}} đang mở · {{total}} tổng cộng",
+    "smartInsights": "Thông tin thông minh",
+    "smartInsightsEmpty": "Chưa có thông tin nào — hãy quay lại khi bạn có công việc đang thực hiện."
+  },
+  "today": {
+    "loading": "Đang tải hôm nay…",
+    "title": "Hôm nay",
+    "doNow": "Làm ngay",
+    "scheduled": "Đã lên lịch",
+    "quickWins": "Việc dễ hoàn thành",
+    "bestNextAction": "Việc nên làm tiếp theo",
+    "allClear": "Bạn đã xong hết. Không có công việc nào cần chú ý ngay bây giờ.",
+    "endOfDayReview": "Tổng kết cuối ngày",
+    "todaysProgress": "Tiến độ hôm nay",
+    "completedCount": "{{count}} đã hoàn thành",
+    "completionRatePlanned": "{{rate}}% khối lượng công việc đã lên kế hoạch hôm nay",
+    "noPlannedTasks": "Không có công việc nào được lên kế hoạch hôm nay",
+    "completion": "Hoàn thành"
+  },
+  "inbox": {
+    "title": "Hộp thư",
+    "subtitle": "Các công việc đã ghi nhanh đang chờ được sắp xếp vào một lĩnh vực hoặc dự án.",
+    "loading": "Đang tải hộp thư…",
+    "emptyState": "Hộp thư của bạn đang trống. Ghi nhanh một công việc ở trên để bắt đầu.",
+    "editAriaLabel": "Sửa \"{{title}}\"",
+    "completeAriaLabel": "Đánh dấu \"{{title}}\" đã hoàn thành",
+    "deleteAriaLabel": "Xóa \"{{title}}\""
   }
 }

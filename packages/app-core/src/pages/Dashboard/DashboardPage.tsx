@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { EmptyState, Progress, SmartInsightCard, StatCard, TaskCard } from '@stm/ui';
 import { computeDashboardData } from '@stm/shared';
 import { useTasksContext } from '../../state/TasksContext';
@@ -16,19 +17,22 @@ import { useHabitsContext } from '../../state/HabitsContext';
  * (Phase 29), not fabricated.
  */
 export function DashboardPage() {
+  const { t } = useTranslation();
   const { tasks, isLoading: tasksLoading } = useTasksContext();
   const { habits, isLoading: habitsLoading } = useHabitsContext();
 
   const data = useMemo(() => computeDashboardData(tasks, habits), [tasks, habits]);
 
   if (tasksLoading || habitsLoading) {
-    return <div className="p-8 text-sm text-ink-muted">Loading dashboard…</div>;
+    return <div className="p-8 text-sm text-ink-muted">{t('dashboard.loading')}</div>;
   }
 
   return (
     <div className="flex flex-col gap-6 p-8">
       <header className="flex flex-col gap-1">
-        <h1 className="text-[28px] font-bold leading-[34px] text-ink-primary">Dashboard</h1>
+        <h1 className="text-[28px] font-bold leading-[34px] text-ink-primary">
+          {t('dashboard.title')}
+        </h1>
         <p className="text-sm text-ink-secondary">{data.greeting}</p>
         <p className="text-xs text-ink-muted">{data.summary}</p>
       </header>
@@ -46,9 +50,9 @@ export function DashboardPage() {
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-semibold text-ink-primary">Focus Now</h2>
+        <h2 className="text-lg font-semibold text-ink-primary">{t('dashboard.focusNow')}</h2>
         {data.focusNow.length === 0 ? (
-          <EmptyState message="No open tasks — you're all caught up." />
+          <EmptyState message={t('dashboard.focusNowEmpty')} />
         ) : (
           <div className="flex flex-col gap-2">
             {data.focusNow.map((task) => (
@@ -68,9 +72,9 @@ export function DashboardPage() {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <section className="flex flex-col gap-3">
-          <h2 className="text-lg font-semibold text-ink-primary">My Areas</h2>
+          <h2 className="text-lg font-semibold text-ink-primary">{t('dashboard.myAreas')}</h2>
           {data.areas.length === 0 ? (
-            <EmptyState message="No tasks yet — areas will appear once you add some." />
+            <EmptyState message={t('dashboard.myAreasEmpty')} />
           ) : (
             <div className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-4">
               {data.areas.map((area) => (
@@ -81,7 +85,11 @@ export function DashboardPage() {
                   </div>
                   <Progress value={area.progress} />
                   <span className="text-xs text-ink-muted">
-                    {area.completed} completed · {area.open} open · {area.total} total
+                    {t('dashboard.areaStats', {
+                      completed: area.completed,
+                      open: area.open,
+                      total: area.total,
+                    })}
                   </span>
                 </div>
               ))}
@@ -90,9 +98,9 @@ export function DashboardPage() {
         </section>
 
         <section className="flex flex-col gap-3">
-          <h2 className="text-lg font-semibold text-ink-primary">Smart Insights</h2>
+          <h2 className="text-lg font-semibold text-ink-primary">{t('dashboard.smartInsights')}</h2>
           {data.insights.length === 0 ? (
-            <EmptyState message="No insights yet — check back once you have some tasks in motion." />
+            <EmptyState message={t('dashboard.smartInsightsEmpty')} />
           ) : (
             <div className="flex flex-col gap-2">
               {data.insights.map((insight) => (
