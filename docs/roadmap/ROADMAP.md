@@ -34,7 +34,7 @@ PHASE 29  Smart Engine (port apps/google-sheets/src/05_SmartEngine.gs → C#)
 PHASE 30  Notifications
 PHASE 31  Windows build
 PHASE 32  Installer (.exe / .msi qua Tauri bundler)
-PHASE 33  Web deployment (apps/web, dùng chung packages/*)
+PHASE 33  Web deployment (apps/web, dùng chung packages/*)                    ✅ DONE (build+typecheck+lint sạch — chưa test tương tác thật do không có MySQL local, xem ghi chú)
 PHASE 34  Mobile research (Capacitor — chỉ nghiên cứu, không code)
 ```
 
@@ -918,6 +918,73 @@ True` → gỡ (`uninstall.exe /S`) → xác nhận sạch hoàn toàn. **MSI** 
 → verify file/registry đúng cả 2 chiều, exit code `0`. **Chưa test:** click tương tác thật bên
 trong app sau khi cài — không có công cụ điều khiển GUI trong phiên này, chỉ verify được mức
 process/window/file-system.
+
+Phase 33 đã thực hiện — Web deployment (`apps/web`), dùng chung 100% code với `apps/desktop`.
+
+**Task 1 — trích xuất `packages/app-core`.** Toàn bộ `app/`, `components/`, `pages/`, `state/`,
+`config/`, `lib/`, `mock/`, và `App.tsx` được `git mv` từ `apps/desktop/src` sang
+`packages/app-core/src` (không sửa import nào — toàn bộ import trong cây đã moved đều là relative
+nội bộ, không đổi đường dẫn). Lý do: `apps/web` (Task 4) và `apps/desktop` cần dùng chung một bản
+UI/business logic thay vì copy-paste hoặc duy trì 2 bản lệch nhau theo thời gian — đúng tinh thần
+`packages/*` đã theo từ Phase 02.
+
+**Task 2 — `apps/desktop` dùng `@stm/app-core`.** `apps/desktop/src` giờ chỉ còn `main.tsx` +
+`index.css`, import `App` từ `@stm/app-core` thay vì file cục bộ.
+
+**Task 3 — CORS config-driven.** `Program.cs` đổi từ `WithOrigins(...)` cứng trong code sang đọc
+`Cors:AllowedOrigins` từ configuration. Lý do: domain Vercel thật cho `apps/web` chưa tồn tại tại
+thời điểm này (chưa tạo project Vercel) — origins giờ cấu hình được qua biến môi trường
+`Cors__AllowedOrigins__0` trên Railway, thêm domain Vercel thật sau này **không cần sửa code hay
+deploy lại backend**. `appsettings.Development.json` khai 3 origin cũ + `:5174` (cổng dự phòng của
+`apps/web` khi `apps/desktop` đã chiếm `:5173`) để hành vi dev local không đổi.
+
+**Task 4 — scaffold `apps/web`.** App Vite + React 19 + Tailwind v4 mới, cùng stack với
+`apps/desktop`, entry point chỉ có `main.tsx` + `index.css` riêng, còn lại toàn bộ page/component/
+state đều import từ `@stm/app-core` — **không có page hay component nào bị duplicate** giữa 2 app.
+`apps/web/README.md` ghi sẵn hướng dẫn deploy Vercel.
+
+**Lỗi CSS `@source` thật phát hiện khi verify Task 1→4:** sau khi di chuyển code sang
+`packages/app-core`, Tailwind v4 (dùng `@source` để quét class thay vì `content` config cũ) không
+còn tìm thấy class nào trong `packages/app-core/src` vì `index.css` của cả `apps/desktop` lẫn
+`apps/web` mới chỉ khai `@source` cho `packages/ui/src` chứ chưa khai cho `packages/app-core/src`
+— toàn bộ UI sẽ mất style dù build/lint/typecheck vẫn xanh (Tailwind không báo lỗi, chỉ lặng lẽ bỏ
+qua class không match). Sửa bằng cách thêm dòng `@source '../../../packages/app-core/src';` vào cả
+2 file (`apps/desktop/src/index.css` và `apps/web/src/index.css`), đứng cạnh dòng `@source` có sẵn
+cho `packages/ui/src`.
+
+**Task 5 (task này) — verify thật những gì làm được, ghi rõ giới hạn phần còn lại:**
+
+- `npm run build --workspace=apps/desktop` chạy sạch, exit 0 (tsc -b + vite build) — xác nhận Task
+  1/2's tái cấu trúc `@stm/app-core` không làm hỏng build `apps/desktop`. Build/typecheck/lint sạch
+  toàn repo (bao gồm `apps/web`) đã được Task 1/2/4 tự verify khi implement, task này không chạy
+  lại từ đầu.
+- **Backend không khởi động được cục bộ** — máy này không có MySQL local reachable (đã xác nhận lại
+  từ ghi chú của Task 3): `dotnet user-secrets list` cho `SmartTask.Api` chỉ có `Jwt:Secret`, không
+  có `ConnectionStrings:DefaultConnection`. Chạy thật `dotnet run` xác nhận crash ngay khi khởi động
+  với `InvalidOperationException: Missing 'ConnectionStrings:DefaultConnection'` (ném từ
+  `SmartTask.Persistence.DependencyInjection.AddPersistence`) — không phải giả định, mà lỗi thật
+  quan sát được. Không tạo connection string giả để né lỗi này (đã có sibling task từng làm vậy rồi
+  phải dọn lại).
+- **`claude-in-chrome` cũng không khả dụng** trong phiên này — `tabs_context_mcp` trả về "Browser
+  extension is not connected". Vậy cả 2 điều kiện cần cho Step 4 (backend sống + browser tool có
+  sẵn) đều thiếu, không chỉ một.
+- Do đó **Steps 1/2/4/5(dev server)/6 của brief bị bỏ qua theo đúng nhánh "known environment
+  constraint"**: không dựng được `dotnet run` local, không dựng dev server `apps/web` để click-test
+  qua backend thật, không có browser click-test thật (Login → Dashboard → ít nhất 2 trang khác) như
+  các Phase trước (12/13/14) đã từng làm được khi có công cụ. Đây là cùng dạng giới hạn môi trường
+  đã ghi nhận trung thực ở Phase 15–19, 30, 31, 32 — không nhận đã test những gì chưa test được.
+
+**Việc còn lại người dùng tự làm** (theo `apps/web/README.md`'s phần "Deploy lên Vercel"):
+
+1. Tạo project Vercel mới, trỏ **Root Directory** = `apps/web`.
+2. Đặt Build Command thủ công (`cd ../.. && npm install && npm run build --workspace=apps/web`,
+   Output Directory `dist`) vì đây là npm workspaces monorepo, Vercel không tự đoán đúng.
+3. Thêm biến môi trường `VITE_API_BASE_URL` trỏ tới backend Railway thật.
+4. Sau khi có domain Vercel thật, thêm domain đó vào `Cors__AllowedOrigins__0` trên Railway (service
+   `SmartTaskManagers`) — không cần sửa code hay deploy lại backend, đúng mục đích Task 3's thay đổi.
+5. Khi có MySQL local reachable hoặc công cụ điều khiển trình duyệt trong phiên sau, nên chạy lại
+   đầy đủ Steps 1–6 của task brief này (click-test thật Login/Dashboard/Tasks/Projects trên
+   `apps/web`) — chưa làm được trong phiên này.
 
 Mỗi Phase kế tiếp sẽ được trình bày riêng theo format: Mục tiêu → File tạo/sửa → Full code →
 Command → Cách chạy → Cách test → Expected Result → Checklist → Git commit đề xuất.
