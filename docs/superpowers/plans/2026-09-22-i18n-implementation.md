@@ -25,6 +25,7 @@
 ### Task 1: Backend — `Language` on `User` + `PATCH /api/auth/language`
 
 **Files:**
+
 - Modify: `backend/SmartTask.Domain/Users/User.cs`
 - Modify: `backend/SmartTask.Persistence/Configurations/UserConfiguration.cs`
 - Create: `backend/SmartTask.Persistence/Migrations/<timestamp>_AddUserLanguage.cs` (via `dotnet ef migrations add`, not hand-written)
@@ -35,6 +36,7 @@
 - Modify: `backend/SmartTask.Api/Controllers/AuthController.cs`
 
 **Interfaces:**
+
 - Produces: `User.Language: string` (`"vi"`/`"en"`, default `"vi"`); `AuthResult` gains a `Language` field (last positional parameter); `AuthResponse` gains a `Language` field (last positional parameter); new endpoint `PATCH /api/auth/language` with body `{ "language": "vi" | "en" }`, `[Authorize]`, returns `204 No Content` on success, `400` if `language` isn't exactly `"vi"` or `"en"`.
 - These are what Task 2 (frontend `AuthContext`) reads and calls.
 
@@ -57,18 +59,23 @@ Read `backend/SmartTask.Persistence/Configurations/UserConfiguration.cs` first. 
 - [ ] **Step 3: Generate the migration**
 
 Run (from `backend/SmartTask.Persistence`):
+
 ```bash
 dotnet ef migrations add AddUserLanguage --startup-project ../SmartTask.Api
 ```
+
 Expected: creates a new migration file adding a `Language` column to `Users`, non-nullable, with the EF Core default-value convention applying `"vi"` for existing rows (EF Core applies the C# default via a migration default constraint automatically for a non-nullable `string` property with an initializer — verify the generated migration file actually contains an `AddColumn` for `Language` with a default value; if it doesn't, add `.HasDefaultValue("vi")` to the `Configure` line from Step 2 and regenerate).
 
 - [ ] **Step 4: Add `Language` to `AuthResult`**
 
 Read `backend/SmartTask.Application/Auth/AuthContracts.cs` first. Change:
+
 ```csharp
 public sealed record AuthResult(Guid UserId, string Email, string Token, DateTimeOffset ExpiresAt);
 ```
+
 to:
+
 ```csharp
 public sealed record AuthResult(Guid UserId, string Email, string Token, DateTimeOffset ExpiresAt, string Language);
 ```
@@ -80,23 +87,29 @@ Read `backend/SmartTask.Application/Auth/AuthService.cs` in full. Find every pla
 - [ ] **Step 6: Add `Language` to `AuthResponse` and wire the new endpoint**
 
 Read `backend/SmartTask.Api/Controllers/AuthController.cs` in full. Change:
+
 ```csharp
 public sealed record AuthResponse(Guid UserId, string Email, string Token, DateTimeOffset ExpiresAt);
 ```
+
 to:
+
 ```csharp
 public sealed record AuthResponse(Guid UserId, string Email, string Token, DateTimeOffset ExpiresAt, string Language);
 ```
+
 Find the private `ToResponse(result)` helper (or inline mapping — read the file to see its exact current shape) and add `result.Language` as the final argument wherever `AuthResponse` is constructed from an `AuthResult`.
 
 Update the `Me()` action — it currently returns an anonymous object with `userId`/`email`. This endpoint has no access to a full `User`/`AuthResult`, only JWT claims, so `Language` isn't available there today. Leave `Me()` unchanged for this plan (frontend doesn't call `/me` for language — `AuthContext` gets `Language` from the login/register response directly, per Task 2). Do not add a database lookup to `Me()` — out of scope.
 
 Add a request record near the top of the file, alongside `AuthResponse`:
+
 ```csharp
 public sealed record UpdateLanguageRequest(string Language);
 ```
 
 Add this new action inside `AuthController`, after `Login`:
+
 ```csharp
     [Authorize]
     [HttpPatch("language")]
@@ -121,22 +134,26 @@ Add this new action inside `AuthController`, after `Login`:
 **Ruling (preflight scan, controller):** `backend/SmartTask.Application/Users/IUserRepository.cs` was checked directly — it currently only has `GetByEmailAsync`, `AddAsync`, `SaveChangesAsync`. There is no `GetByIdAsync` and no `UpdateAsync`. The plan draft's original Step 7 assumed both existed — they don't. Fixed here: add `GetByIdAsync` to the interface (a genuinely new capability this task needs), and rely on EF Core's change-tracking for the update (no `UpdateAsync` method needed — mutating a tracked entity then calling the existing `SaveChangesAsync()` persists it, the same way `RegisterAsync` already does after `AddAsync`).
 
 Read `backend/SmartTask.Application/Users/IUserRepository.cs` first, then add this method to the interface:
+
 ```csharp
     Task<User?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
 ```
 
 Read `backend/SmartTask.Persistence/Repositories/UserRepository.cs` and implement it there, following the exact same style as `GetByEmailAsync`:
+
 ```csharp
     public Task<User?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
         dbContext.Users.FirstOrDefaultAsync(u => u.Id == id, cancellationToken);
 ```
 
 Read `backend/SmartTask.Application/Auth/IAuthService.cs` (or wherever the interface lives — grep for `interface IAuthService` if the filename differs) and add this method signature:
+
 ```csharp
     Task UpdateLanguageAsync(Guid userId, string language, CancellationToken cancellationToken);
 ```
 
 Read `backend/SmartTask.Application/Auth/AuthService.cs` again and implement it:
+
 ```csharp
     public async Task UpdateLanguageAsync(Guid userId, string language, CancellationToken cancellationToken)
     {
@@ -146,6 +163,7 @@ Read `backend/SmartTask.Application/Auth/AuthService.cs` again and implement it:
         await userRepository.SaveChangesAsync(cancellationToken);
     }
 ```
+
 (`userRepository` here is whatever the existing constructor-injected field/parameter name in this file already is for `IUserRepository` — read the file's current constructor to use the exact same name, do not introduce a second name for the same dependency.)
 
 - [ ] **Step 8: Build and verify**
@@ -156,18 +174,22 @@ Expected: `Build succeeded. 0 Warning(s). 0 Error(s).`
 - [ ] **Step 9: Apply the migration and verify with a real running server**
 
 If a local MySQL instance is reachable, run `dotnet ef database update --startup-project ../SmartTask.Api` from `backend/SmartTask.Persistence`, then start the API (`dotnet run` from `backend/SmartTask.Api`) and:
+
 ```bash
 curl -s -X POST http://localhost:5277/api/auth/register \
   -H "Content-Type: application/json" \
   -d '{"email":"i18n-test@example.com","password":"Test1234!","displayName":"I18n Test"}'
 ```
+
 Expected: JSON response includes `"language":"vi"`. Then:
+
 ```bash
 curl -s -X PATCH http://localhost:5277/api/auth/language \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <token from register response>" \
   -d '{"language":"en"}'
 ```
+
 Expected: `204` (empty body). Delete the test user afterward via whatever mechanism this repo's README documents for cleaning up test data (check `backend/README.md`'s existing "Dữ liệu test đã xoá" convention).
 
 If no local MySQL is reachable (a known constraint in this environment — see this repo's own `docs/roadmap/ROADMAP.md` Phase 33 entry for precedent), report this honestly instead of skipping: state clearly in your task report that runtime verification wasn't possible, and that only `dotnet build` was verified.
@@ -201,6 +223,7 @@ EOF
 ### Task 2: Frontend — i18n bootstrap + navigation + Login/Register (worked pattern)
 
 **Files:**
+
 - Modify: `packages/app-core/package.json`
 - Create: `packages/app-core/src/i18n/index.ts`
 - Create: `packages/app-core/src/i18n/locales/vi.json`
@@ -213,6 +236,7 @@ EOF
 - Modify: `packages/api-client/src/authApi.ts`
 
 **Interfaces:**
+
 - Consumes: `AuthResult.Language`/`AuthResponse.Language` from Task 1's API responses (which serialize to JSON `language`, camelCase — confirmed by the controller's preflight scan against `Program.cs`'s ASP.NET Core MVC default JSON casing).
 - Produces: `i18n` instance (default export from `packages/app-core/src/i18n/index.ts`), `useTranslation()` available anywhere in this package; `AuthContext`'s `setLanguage(language: 'vi' | 'en'): Promise<void>` — this is what Task 3 (Settings) calls.
 - This task establishes the **exact pattern** every later page-translation task (Tasks 4-9) must follow: JSON key naming, `t()` call style, namespace-per-page.
@@ -220,10 +244,12 @@ EOF
 - [ ] **Step 1: Add dependencies**
 
 Read `packages/app-core/package.json` first. Add to `dependencies`:
+
 ```json
     "i18next": "^24.2.0",
     "react-i18next": "^15.4.0",
 ```
+
 (alphabetical position among the existing entries, matching the file's current style).
 
 - [ ] **Step 2: Write `packages/app-core/src/i18n/locales/en.json`**
@@ -354,6 +380,7 @@ Read `packages/app-core/src/App.tsx` first. Add `import '../i18n';` as the first
 - [ ] **Step 6: Export i18n utilities from the package's public surface**
 
 Read `packages/app-core/src/index.ts` (written in an earlier phase — currently exports `App` and `getStoredServerUrl`). Add:
+
 ```typescript
 export { default as i18n } from './i18n';
 ```
@@ -362,7 +389,8 @@ export { default as i18n } from './i18n';
 
 Read `packages/app-core/src/app/AppShell.tsx` in full — it builds `SidebarGroup[]` from `APP_ROUTES` (imported from `../app/routes.ts`). `routes.ts` itself is a plain data module (not a component), so it cannot call `useTranslation()` — the translation must happen where `AppShell` maps over `APP_ROUTES` to build the Sidebar's `label` prop.
 
-Find where `AppShell` currently uses `route.label` to build the Sidebar props. Add `import { useTranslation } from 'react-i18next';` and `const { t } = useTranslation();` inside the `AppShell` component (or wherever the mapping happens), then replace `route.label` with `t(\`nav.${navKeyForPath(route.path)}\`)` — but simpler and less error-prone: since each route's `path` already uniquely identifies it, replace `label: route.label` with a direct lookup using a small local map instead of deriving a key from the path string. Add this map near the top of `AppShell.tsx`, after the imports:
+Find where `AppShell` currently uses `route.label` to build the Sidebar props. Add `import { useTranslation } from 'react-i18next';` and `const { t } = useTranslation();` inside the `AppShell` component (or wherever the mapping happens), then replace `route.label` with `t(\`nav.${navKeyForPath(route.path)}\`)`— but simpler and less error-prone: since each route's`path`already uniquely identifies it, replace`label: route.label`with a direct lookup using a small local map instead of deriving a key from the path string. Add this map near the top of`AppShell.tsx`, after the imports:
+
 ```typescript
 const NAV_LABEL_KEYS: Record<string, string> = {
   '/': 'nav.dashboard',
@@ -379,29 +407,31 @@ const NAV_LABEL_KEYS: Record<string, string> = {
   '/settings': 'nav.settings',
 };
 ```
+
 Then wherever the code currently reads `route.label`, replace it with `t(NAV_LABEL_KEYS[route.path] ?? route.label)` (falls back to the English literal from `routes.ts` if a path is ever missing from the map — defensive, not expected to trigger).
 
 - [ ] **Step 8: Translate `LoginPage.tsx` — the worked pattern**
 
 Read `packages/app-core/src/pages/Auth/LoginPage.tsx` in full (shown above in this plan's Global Constraints exploration — reproduced here for the exact starting point). Add `import { useTranslation } from 'react-i18next';` and, inside the `LoginPage` function, `const { t } = useTranslation();`. Then replace every hard-coded English string with a `t()` call using the `auth.*` keys from Step 2/3:
 
-| Original string | Replace with |
-|---|---|
-| `'Smart Task'` (h1) | `{t('auth.appName')}` |
-| `mode === 'login' ? 'Sign in to your workspace.' : 'Create your workspace.'` | `mode === 'login' ? t('auth.signInSubtitle') : t('auth.registerSubtitle')` |
-| `showServerField ? 'Hide server address' : 'Connecting to a shared server?'` | `showServerField ? t('auth.hideServerField') : t('auth.showServerField')` |
-| `'Server URL'` (label) | `{t('auth.serverUrlLabel')}` |
-| `'Leave as-is if the backend runs on this same computer.'` | `{t('auth.serverUrlHint')}` |
-| `'Name (optional)'` (label) | `{t('auth.displayNameLabel')}` |
-| `'Email'` (label) | `{t('auth.emailLabel')}` |
-| `'Password'` (label) | `{t('auth.passwordLabel')}` |
-| `'Could not reach the server. Is the backend running?'` | `t('auth.genericError')` |
-| `isSubmitting ? 'Please wait…' : mode === 'login' ? 'Sign in' : 'Create account'` | `isSubmitting ? t('auth.submitting') : mode === 'login' ? t('auth.signInButton') : t('auth.registerButton')` |
-| `mode === 'login' ? "Don't have an account? Create one" : 'Already have an account? Sign in'` | `mode === 'login' ? t('auth.switchToRegister') : t('auth.switchToLogin')` |
+| Original string                                                                               | Replace with                                                                                                 |
+| --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| `'Smart Task'` (h1)                                                                           | `{t('auth.appName')}`                                                                                        |
+| `mode === 'login' ? 'Sign in to your workspace.' : 'Create your workspace.'`                  | `mode === 'login' ? t('auth.signInSubtitle') : t('auth.registerSubtitle')`                                   |
+| `showServerField ? 'Hide server address' : 'Connecting to a shared server?'`                  | `showServerField ? t('auth.hideServerField') : t('auth.showServerField')`                                    |
+| `'Server URL'` (label)                                                                        | `{t('auth.serverUrlLabel')}`                                                                                 |
+| `'Leave as-is if the backend runs on this same computer.'`                                    | `{t('auth.serverUrlHint')}`                                                                                  |
+| `'Name (optional)'` (label)                                                                   | `{t('auth.displayNameLabel')}`                                                                               |
+| `'Email'` (label)                                                                             | `{t('auth.emailLabel')}`                                                                                     |
+| `'Password'` (label)                                                                          | `{t('auth.passwordLabel')}`                                                                                  |
+| `'Could not reach the server. Is the backend running?'`                                       | `t('auth.genericError')`                                                                                     |
+| `isSubmitting ? 'Please wait…' : mode === 'login' ? 'Sign in' : 'Create account'`             | `isSubmitting ? t('auth.submitting') : mode === 'login' ? t('auth.signInButton') : t('auth.registerButton')` |
+| `mode === 'login' ? "Don't have an account? Create one" : 'Already have an account? Sign in'` | `mode === 'login' ? t('auth.switchToRegister') : t('auth.switchToLogin')`                                    |
 
 Do not change any logic, state, or JSX structure — only replace the literal string content with the `t()` calls listed above, in place.
 
 Also, before login/register succeeds, this page needs a language to render in. Add near the top of the component, using a `useEffect` (import `useEffect` from `react` alongside the existing `useState`):
+
 ```typescript
 useEffect(() => {
   const stored = localStorage.getItem('stm.language');
@@ -410,6 +440,7 @@ useEffect(() => {
   }
 }, []);
 ```
+
 Add `import i18n from '../../i18n';` to this file's imports.
 
 - [ ] **Step 9: Add `authApi.updateLanguage`, then wire `AuthContext` to change language on login/register/hydrate and expose `setLanguage`**
@@ -417,6 +448,7 @@ Add `import i18n from '../../i18n';` to this file's imports.
 **Controller preflight note:** `packages/app-core/src/state/AuthContext.tsx` and `packages/api-client/src/authApi.ts`/`httpClient.ts` were read in full while writing this plan — the exact current shape of every file this step touches is reproduced below, so no guessing is needed.
 
 **9a. Add `language` to `AuthResponse` and add `updateLanguage` in `packages/api-client/src/authApi.ts`.** Its current full content is:
+
 ```typescript
 import { httpClient } from './httpClient';
 
@@ -435,7 +467,9 @@ export const authApi = {
     httpClient.post<AuthResponse>('/api/auth/login', { email, password }),
 };
 ```
+
 Change it to:
+
 ```typescript
 import { httpClient } from './httpClient';
 
@@ -457,9 +491,11 @@ export const authApi = {
     httpClient.patch<void>('/api/auth/language', { language }),
 };
 ```
+
 (`httpClient.patch` already exists in `packages/api-client/src/httpClient.ts` — no change needed there.)
 
 **9b. Update `AuthContext.tsx`.** Its current full content is:
+
 ```typescript
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { authApi, setAuthToken } from '@stm/api-client';
@@ -556,6 +592,7 @@ export function useAuthContext(): AuthContextValue {
 ```
 
 Replace it with (note: `StoredAuth` gains `language`, `persist()` now also drives `i18n.changeLanguage()`, the hydrate `useEffect` calls `i18n.changeLanguage(stored.language)` too — so a page reload keeps the right language without waiting for a new API call — and `setLanguage` is a new exported function):
+
 ```typescript
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
 import { authApi, setAuthToken } from '@stm/api-client';
@@ -674,6 +711,7 @@ export function useAuthContext(): AuthContextValue {
   return context;
 }
 ```
+
 (`setLanguage` calling `persist({ ...auth, language })` again after `authApi.updateLanguage` succeeds re-triggers `i18n.changeLanguage` redundantly with the explicit call above it — harmless, `i18next` no-ops on setting the same language twice — but it's what keeps `localStorage`'s cached `language` in sync for the next hydrate. Keep both calls, don't remove either.)
 
 - [ ] **Step 10: Install, typecheck, build**
@@ -711,9 +749,11 @@ EOF
 ### Task 3: Settings — real language switcher
 
 **Files:**
+
 - Modify: `packages/app-core/src/pages/Settings/SettingsPage.tsx`
 
 **Interfaces:**
+
 - Consumes: `setLanguage` from `useAuthContext()` (Task 2, Step 9).
 
 - [ ] **Step 1: Read the current Language field**
@@ -723,11 +763,14 @@ Read `packages/app-core/src/pages/Settings/SettingsPage.tsx` in full (reproduced
 - [ ] **Step 2: Replace it with a real VI/EN select**
 
 Add `import { useTranslation } from 'react-i18next';` and `import { useAuthContext } from '../../state/AuthContext';` to this file's imports. Inside `SettingsPage`, add:
+
 ```typescript
 const { t, i18n } = useTranslation();
 const { setLanguage } = useAuthContext();
 ```
+
 Replace the entire Language `<input>` block with:
+
 ```tsx
 <div className="flex flex-col gap-1">
   <label htmlFor="settings-language" className={labelClasses}>
@@ -744,11 +787,13 @@ Replace the entire Language `<input>` block with:
   </select>
 </div>
 ```
+
 Leave every other field in this file untouched — this task only touches the Language field (full page translation is a later task, not this one; the spec only requires this field to become functional, not the whole page pretty — that's hạng mục D, out of scope here).
 
 - [ ] **Step 3: Add the 3 new keys to both locale files**
 
 Read `packages/app-core/src/i18n/locales/en.json` and add to the `common` object's sibling level (create a new top-level `"settings"` object if none exists yet from Task 2 — it doesn't, Task 2 only added `common`/`nav`/`auth`):
+
 ```json
   "settings": {
     "language": "Language",
@@ -756,7 +801,9 @@ Read `packages/app-core/src/i18n/locales/en.json` and add to the `common` object
     "languageEn": "English"
   }
 ```
+
 Read `packages/app-core/src/i18n/locales/vi.json` and add the equivalent:
+
 ```json
   "settings": {
     "language": "Ngôn ngữ",
@@ -764,6 +811,7 @@ Read `packages/app-core/src/i18n/locales/vi.json` and add the equivalent:
     "languageEn": "English"
   }
 ```
+
 (Insert as a new top-level key in each JSON file, alongside the existing `common`/`nav`/`auth` keys — valid JSON, comma-separated.)
 
 - [ ] **Step 4: Typecheck and build**
@@ -793,6 +841,7 @@ EOF
 ### Task 4: Translate Dashboard, Today, Inbox
 
 **Files:**
+
 - Modify: `packages/app-core/src/pages/Dashboard/DashboardPage.tsx`
 - Modify: `packages/app-core/src/pages/Today/TodayPage.tsx`
 - Modify: `packages/app-core/src/pages/Today/BestNextActionCard.tsx`
@@ -804,6 +853,7 @@ EOF
 - Modify: `packages/app-core/src/i18n/locales/vi.json`
 
 **Interfaces:**
+
 - Consumes: the `t()`/`useTranslation()` pattern established in Task 2 Step 8 — same import, same call style, no new APIs.
 
 - [ ] **Step 1: Read all 7 files listed above in full**
@@ -850,6 +900,7 @@ EOF
 ### Task 5: Translate Tasks, Projects, Goals, Habits
 
 **Files:**
+
 - Modify: `packages/app-core/src/pages/Tasks/TasksPage.tsx`
 - Modify: `packages/app-core/src/pages/Tasks/TaskRow.tsx`
 - Modify: `packages/app-core/src/pages/Tasks/TaskFilters.tsx`
@@ -868,6 +919,7 @@ EOF
 - Modify: `packages/app-core/src/i18n/locales/vi.json`
 
 **Interfaces:**
+
 - Consumes: same `t()`/`useTranslation()` pattern as Task 2/4.
 
 - [ ] **Step 1: Read all 14 files listed above in full**
@@ -902,6 +954,7 @@ EOF
 ### Task 6: Translate Calendar, Kanban, Analytics, Smart Assistant, Placeholder
 
 **Files:**
+
 - Modify: `packages/app-core/src/pages/Calendar/CalendarPage.tsx`
 - Modify: `packages/app-core/src/pages/Calendar/CalendarGrid.tsx`
 - Modify: `packages/app-core/src/pages/Calendar/CalendarDayCell.tsx`
@@ -917,6 +970,7 @@ EOF
 - Modify: `packages/app-core/src/i18n/locales/vi.json`
 
 **Interfaces:**
+
 - Consumes: same `t()`/`useTranslation()` pattern as Task 2/4/5.
 
 - [ ] **Step 1: Read all 11 files listed above in full**
@@ -951,18 +1005,21 @@ EOF
 ### Task 7: Translate remaining Settings page content
 
 **Files:**
+
 - Modify: `packages/app-core/src/pages/Settings/SettingsPage.tsx`
 - Modify: `packages/app-core/src/i18n/locales/en.json`
 - Modify: `packages/app-core/src/i18n/locales/vi.json`
 
 **Interfaces:**
+
 - Consumes: same `t()`/`useTranslation()` pattern as Task 2/4/5/6; `settings` namespace already exists from Task 3 (extends it, doesn't replace it).
 
 - [ ] **Step 1: Read the current `SettingsPage.tsx` in full**
 
 (It was partially touched in Task 3 — only the Language field. This task translates everything else: page header, section headings — "General"/"Task Defaults"/"Focus & Schedule"/"Smart Engine" — all field labels, all `WEEKDAYS`/`STATUSES`/`PRIORITIES` option labels shown in `<select>` dropdowns, toggle row labels/descriptions, and the "these control the Smart Engine..." helper text.)
 
-Note: `STATUSES`/`PRIORITIES` come from `@stm/types` (`TaskStatus`/`Priority` union types) and are used elsewhere in the app as literal data values (e.g. a task's actual status) — do NOT change what value is stored/sent to the backend (still the English enum string like `"In Progress"`), only translate what's *displayed* to the user in the `<option>` text, keeping `value={status}` as the untranslated enum. Add a small local lookup map for this purpose, e.g.:
+Note: `STATUSES`/`PRIORITIES` come from `@stm/types` (`TaskStatus`/`Priority` union types) and are used elsewhere in the app as literal data values (e.g. a task's actual status) — do NOT change what value is stored/sent to the backend (still the English enum string like `"In Progress"`), only translate what's _displayed_ to the user in the `<option>` text, keeping `value={status}` as the untranslated enum. Add a small local lookup map for this purpose, e.g.:
+
 ```typescript
 const STATUS_LABELS: Record<TaskStatus, string> = {
   Inbox: t('settings.statusInbox'),
@@ -972,6 +1029,7 @@ const STATUS_LABELS: Record<TaskStatus, string> = {
   Completed: t('settings.statusCompleted'),
 };
 ```
+
 (defined inside the component body, after `const { t } = useTranslation();`, so it re-renders on language change), then render `<option key={status} value={status}>{STATUS_LABELS[status]}</option>` instead of `{status}`. Same pattern for `PRIORITIES` and `WEEKDAYS`.
 
 - [ ] **Step 2: Add the remaining `settings.*` keys to both locale files**
@@ -1008,6 +1066,7 @@ EOF
 - [ ] **Step 1: Full repo verification**
 
 Run (from repo root):
+
 ```bash
 npm run typecheck
 npm run lint
@@ -1015,6 +1074,7 @@ npm run format
 npm run build --workspace=apps/desktop
 npm run build --workspace=apps/web
 ```
+
 Expected: all exit 0.
 
 - [ ] **Step 2: Backend verification**
@@ -1027,6 +1087,7 @@ Expected: `Build succeeded. 0 Warning(s). 0 Error(s).`
 ```bash
 grep -rn ">[A-Z][a-z]* [a-z]" packages/app-core/src/pages packages/app-core/src/components --include="*.tsx" | grep -v "t('" | grep -v "t(\`" | head -40
 ```
+
 This is a heuristic, not a perfect check — review any hits manually and fix genuine misses (a literal UI string that should have been translated in Tasks 4-7 but wasn't). Data-bound JSX (e.g. `{task.title}`) won't match this pattern and is correctly not a finding.
 
 - [ ] **Step 4: Real browser click-test if available**
