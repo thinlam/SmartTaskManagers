@@ -1,6 +1,7 @@
 import type { Task } from '@stm/types';
 import { formatDueLabel } from '@stm/shared';
 import { Pencil } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { EmptyState, IconButton, TaskCard } from '@stm/ui';
 
 interface CalendarAgendaProps {
@@ -18,8 +19,10 @@ interface CalendarAgendaProps {
  * TaskCard's existing badges.
  */
 export function CalendarAgenda({ tasks, onSelectTask }: CalendarAgendaProps) {
+  const { t } = useTranslation();
+
   if (tasks.length === 0) {
-    return <EmptyState message="Nothing overdue or coming up in this view." />;
+    return <EmptyState message={t('calendar.agendaEmpty')} />;
   }
 
   return (
@@ -39,7 +42,7 @@ export function CalendarAgenda({ tasks, onSelectTask }: CalendarAgendaProps) {
           </div>
           <IconButton
             icon={<Pencil className="h-4 w-4" aria-hidden="true" />}
-            aria-label={`Edit "${task.title}"`}
+            aria-label={t('calendar.editAriaLabel', { title: task.title })}
             onClick={() => onSelectTask(task)}
           />
         </div>

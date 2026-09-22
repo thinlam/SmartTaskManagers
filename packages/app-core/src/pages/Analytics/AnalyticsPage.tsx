@@ -8,6 +8,7 @@ import {
   getWeeklyCompletionTrend,
 } from '@stm/shared';
 import { EmptyState, PriorityBadge, Progress, SmartInsightCard, StatCard } from '@stm/ui';
+import { useTranslation } from 'react-i18next';
 import { useTasksContext } from '../../state/TasksContext';
 import { useProjectsContext } from '../../state/ProjectsContext';
 import { WeeklyTrendChart } from './WeeklyTrendChart';
@@ -23,6 +24,7 @@ import { WeeklyTrendChart } from './WeeklyTrendChart';
  * nothing scored or inferred like Smart Engine (Phase 29).
  */
 export function AnalyticsPage() {
+  const { t } = useTranslation();
   const { tasks } = useTasksContext();
   const { projects } = useProjectsContext();
 
@@ -40,12 +42,12 @@ export function AnalyticsPage() {
     return (
       <div className="flex flex-col gap-6 p-8">
         <header className="flex flex-col gap-1">
-          <h1 className="text-[28px] font-bold leading-[34px] text-ink-primary">Analytics</h1>
-          <p className="text-sm text-ink-secondary">
-            Personal productivity insights, built from your real tasks.
-          </p>
+          <h1 className="text-[28px] font-bold leading-[34px] text-ink-primary">
+            {t('analytics.title')}
+          </h1>
+          <p className="text-sm text-ink-secondary">{t('analytics.subtitle')}</p>
         </header>
-        <EmptyState message="No tasks yet — analytics will appear once you have some." />
+        <EmptyState message={t('analytics.emptyState')} />
       </div>
     );
   }
@@ -53,42 +55,50 @@ export function AnalyticsPage() {
   return (
     <div className="flex flex-col gap-6 p-8">
       <header className="flex flex-col gap-1">
-        <h1 className="text-[28px] font-bold leading-[34px] text-ink-primary">Analytics</h1>
-        <p className="text-sm text-ink-secondary">
-          Personal productivity insights, built from your real tasks.
-        </p>
+        <h1 className="text-[28px] font-bold leading-[34px] text-ink-primary">
+          {t('analytics.title')}
+        </h1>
+        <p className="text-sm text-ink-secondary">{t('analytics.subtitle')}</p>
       </header>
 
       <section className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <StatCard
-          label="Completion Rate"
+          label={t('analytics.statCompletionRate')}
           value={`${summary.completionRate}%`}
-          sub={`${summary.completedTasks} of ${summary.totalTasks} tasks`}
+          sub={t('analytics.statCompletionRateSub', {
+            completed: summary.completedTasks,
+            total: summary.totalTasks,
+          })}
           tone={summary.completionRate >= 50 ? 'success' : 'primary'}
         />
         <StatCard
-          label="Completed Tasks"
+          label={t('analytics.statCompletedTasks')}
           value={String(summary.completedTasks)}
-          sub="All time"
+          sub={t('analytics.statCompletedTasksSub')}
           tone="success"
         />
         <StatCard
-          label="Overdue Rate"
+          label={t('analytics.statOverdueRate')}
           value={`${summary.overdueRate}%`}
-          sub={`${summary.overdueTasks} of ${summary.openTasks} open`}
+          sub={t('analytics.statOverdueRateSub', {
+            overdue: summary.overdueTasks,
+            open: summary.openTasks,
+          })}
           tone={summary.overdueTasks > 0 ? 'danger' : 'success'}
         />
         <StatCard
-          label="Total Tasks"
+          label={t('analytics.statTotalTasks')}
           value={String(summary.totalTasks)}
-          sub="All statuses"
+          sub={t('analytics.statTotalTasksSub')}
           tone="primary"
         />
       </section>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <section className="flex flex-col gap-3">
-          <h2 className="text-lg font-semibold text-ink-primary">Priority Distribution</h2>
+          <h2 className="text-lg font-semibold text-ink-primary">
+            {t('analytics.priorityDistribution')}
+          </h2>
           <div className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-4">
             {priorityDistribution.map((item) => (
               <div key={item.priority} className="flex flex-col gap-1">
@@ -105,10 +115,12 @@ export function AnalyticsPage() {
         </section>
 
         <section className="flex flex-col gap-3">
-          <h2 className="text-lg font-semibold text-ink-primary">Area Distribution</h2>
+          <h2 className="text-lg font-semibold text-ink-primary">
+            {t('analytics.areaDistribution')}
+          </h2>
           <div className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-4">
             {areaProgress.length === 0 ? (
-              <p className="text-sm text-ink-muted">No tasks with an area yet.</p>
+              <p className="text-sm text-ink-muted">{t('analytics.areaEmpty')}</p>
             ) : (
               areaProgress.map((item) => (
                 <div key={item.area} className="flex flex-col gap-1">
@@ -118,7 +130,11 @@ export function AnalyticsPage() {
                   </div>
                   <Progress value={item.progress} />
                   <span className="text-xs text-ink-muted">
-                    {item.completed} completed · {item.open} open · {item.total} total
+                    {t('analytics.areaStats', {
+                      completed: item.completed,
+                      open: item.open,
+                      total: item.total,
+                    })}
                   </span>
                 </div>
               ))
@@ -129,16 +145,18 @@ export function AnalyticsPage() {
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <section className="flex flex-col gap-3">
-          <h2 className="text-lg font-semibold text-ink-primary">Weekly Trend</h2>
-          <p className="text-xs text-ink-muted">Tasks completed each of the last 7 days.</p>
+          <h2 className="text-lg font-semibold text-ink-primary">{t('analytics.weeklyTrend')}</h2>
+          <p className="text-xs text-ink-muted">{t('analytics.weeklyTrendSub')}</p>
           <WeeklyTrendChart days={weeklyTrend} />
         </section>
 
         <section className="flex flex-col gap-3">
-          <h2 className="text-lg font-semibold text-ink-primary">Project Progress</h2>
+          <h2 className="text-lg font-semibold text-ink-primary">
+            {t('analytics.projectProgress')}
+          </h2>
           <div className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-4">
             {projectProgress.length === 0 ? (
-              <p className="text-sm text-ink-muted">No projects yet.</p>
+              <p className="text-sm text-ink-muted">{t('analytics.projectEmpty')}</p>
             ) : (
               projectProgress.map((item) => (
                 <div key={item.projectId} className="flex flex-col gap-1">
@@ -147,7 +165,9 @@ export function AnalyticsPage() {
                     <span className="text-ink-secondary">{item.progress}%</span>
                   </div>
                   <Progress value={item.progress} />
-                  <span className="text-xs text-ink-muted">{item.taskCount} linked tasks</span>
+                  <span className="text-xs text-ink-muted">
+                    {t('analytics.linkedTasks', { count: item.taskCount })}
+                  </span>
                 </div>
               ))
             )}
@@ -156,7 +176,7 @@ export function AnalyticsPage() {
       </div>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-semibold text-ink-primary">Insights</h2>
+        <h2 className="text-lg font-semibold text-ink-primary">{t('analytics.insights')}</h2>
         <div className="flex flex-col gap-2">
           {insights.map((insight) => (
             <SmartInsightCard key={insight.text} tone={insight.tone}>

@@ -3,6 +3,7 @@ import type { Task } from '@stm/types';
 import { computeKanbanBoardData } from '@stm/shared';
 import { StatCard } from '@stm/ui';
 import { Sparkles } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useTasksContext } from '../../state/TasksContext';
 import { useProjectsContext } from '../../state/ProjectsContext';
 import { KanbanLane } from './KanbanLane';
@@ -18,6 +19,7 @@ import { KanbanLane } from './KanbanLane';
  * read Projects/Goals already established).
  */
 export function KanbanPage() {
+  const { t } = useTranslation();
   const { tasks, openEditDrawer } = useTasksContext();
   const { projects } = useProjectsContext();
 
@@ -30,35 +32,43 @@ export function KanbanPage() {
   return (
     <div className="flex flex-col gap-6 p-8">
       <header className="flex flex-col gap-1">
-        <h1 className="text-[28px] font-bold leading-[34px] text-ink-primary">Kanban</h1>
-        <p className="text-sm text-ink-secondary">
-          Move intentionally. Keep active work small and finish before starting more.
-        </p>
+        <h1 className="text-[28px] font-bold leading-[34px] text-ink-primary">
+          {t('kanban.title')}
+        </h1>
+        <p className="text-sm text-ink-secondary">{t('kanban.subtitle')}</p>
       </header>
 
       <section className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <StatCard
-          label="Open Tasks"
+          label={t('kanban.statOpenTasks')}
           value={String(data.openCount)}
-          sub="Across active workflow"
+          sub={t('kanban.statOpenTasksSub')}
           tone="primary"
         />
         <StatCard
-          label="Due Today"
+          label={t('kanban.statDueToday')}
           value={String(data.dueTodayCount)}
-          sub={data.dueTodayCount > 0 ? 'Needs your attention' : 'Nothing due today'}
+          sub={
+            data.dueTodayCount > 0
+              ? t('kanban.statDueTodaySubAttention')
+              : t('kanban.statDueTodaySubNone')
+          }
           tone={data.dueTodayCount > 0 ? 'warning' : 'success'}
         />
         <StatCard
-          label="Overdue"
+          label={t('kanban.statOverdue')}
           value={String(data.overdueCount)}
-          sub={data.overdueCount > 0 ? 'Clean these up first' : 'All clear'}
+          sub={
+            data.overdueCount > 0
+              ? t('kanban.statOverdueSubResolve')
+              : t('kanban.statOverdueSubClear')
+          }
           tone={data.overdueCount > 0 ? 'danger' : 'success'}
         />
         <StatCard
-          label="Completed"
+          label={t('kanban.statCompleted')}
           value={String(data.completedCount)}
-          sub="Total finished tasks"
+          sub={t('kanban.statCompletedSub')}
           tone="success"
         />
       </section>
@@ -73,11 +83,12 @@ export function KanbanPage() {
         <Sparkles className="h-4 w-4 shrink-0" aria-hidden="true" />
         {data.focusTask ? (
           <span>
-            TOP FOCUS • {data.focusTask.title} • Score {data.focusTask.smartScore ?? 0}
+            {t('kanban.topFocus')} • {data.focusTask.title} •{' '}
+            {t('kanban.scoreLabel', { score: data.focusTask.smartScore ?? 0 })}
             {data.focusTask.recommendedAction ? `  •  ${data.focusTask.recommendedAction}` : ''}
           </span>
         ) : (
-          <span>No open tasks right now.</span>
+          <span>{t('kanban.noFocusTask')}</span>
         )}
       </div>
 

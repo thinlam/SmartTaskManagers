@@ -8,6 +8,8 @@ import {
   type KanbanLaneData,
 } from '@stm/shared';
 import { Badge, cn } from '@stm/ui';
+import type { TFunction } from 'i18next';
+import { useTranslation } from 'react-i18next';
 import { KanbanCard } from './KanbanCard';
 
 interface KanbanLaneProps {
@@ -24,10 +26,10 @@ function buildMeta(task: Task, projects: Project[]): string {
   return parts.join('  •  ');
 }
 
-function buildAction(task: Task): string {
+function buildAction(task: Task, t: TFunction): string {
   if (task.recommendedAction) return task.recommendedAction;
   if (task.description) return task.description;
-  return task.status === 'Completed' ? 'Completed' : 'Continue with the next clear step';
+  return task.status === 'Completed' ? t('kanban.actionCompleted') : t('kanban.continueNextStep');
 }
 
 /**
@@ -37,6 +39,7 @@ function buildAction(task: Task): string {
  * footer when truncated, or the lane's empty-state text.
  */
 export function KanbanLane({ lane, today, projects, onSelectTask }: KanbanLaneProps) {
+  const { t } = useTranslation();
   const visibleTasks = lane.tasks.slice(0, KANBAN_MAX_CARDS_PER_LANE);
   const hiddenCount = Math.max(0, lane.tasks.length - visibleTasks.length);
 
@@ -65,7 +68,7 @@ export function KanbanLane({ lane, today, projects, onSelectTask }: KanbanLanePr
               key={task.id}
               task={task}
               meta={buildMeta(task, projects)}
-              action={buildAction(task)}
+              action={buildAction(task, t)}
               dueLabel={getKanbanDueLabel(task.dueDate, task.status, today)}
               dueTone={getKanbanDueTone(task.dueDate, task.status, today)}
               progressTone={getKanbanProgressTone(task.progress)}
@@ -77,7 +80,7 @@ export function KanbanLane({ lane, today, projects, onSelectTask }: KanbanLanePr
 
         {hiddenCount > 0 && (
           <span className="rounded-md bg-surface-secondary px-2 py-1 text-center text-xs font-semibold text-ink-secondary">
-            +{hiddenCount} more
+            {t('kanban.moreCount', { count: hiddenCount })}
           </span>
         )}
       </div>

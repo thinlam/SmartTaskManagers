@@ -6,6 +6,7 @@ import {
   type CalendarTaskTone,
 } from '@stm/shared';
 import { Check, Circle, Diamond, TriangleAlert } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '@stm/ui';
 
 const TONE_CLASSES: Record<CalendarTaskTone, string> = {
@@ -39,13 +40,14 @@ interface CalendarDayCellProps {
  * tasks", "+N more" when truncated).
  */
 export function CalendarDayCell({ day, today, onSelectTask }: CalendarDayCellProps) {
+  const { t } = useTranslation();
   const visibleTasks = day.tasks.slice(0, CALENDAR_MAX_TASKS_PER_DAY);
   const hiddenCount = Math.max(0, day.tasks.length - visibleTasks.length);
 
-  let footerText = 'No tasks';
-  if (day.tasks.length === 1) footerText = '1 task';
-  else if (day.tasks.length > 1) footerText = `${day.tasks.length} tasks`;
-  if (hiddenCount > 0) footerText += `  •  +${hiddenCount} more`;
+  let footerText = t('calendar.noTasks');
+  if (day.tasks.length === 1) footerText = t('calendar.oneTask');
+  else if (day.tasks.length > 1) footerText = t('calendar.tasksCount', { count: day.tasks.length });
+  if (hiddenCount > 0) footerText += `  •  ${t('calendar.moreCount', { count: hiddenCount })}`;
 
   return (
     <div
@@ -67,7 +69,9 @@ export function CalendarDayCell({ day, today, onSelectTask }: CalendarDayCellPro
         )}
       >
         <span>{day.date.getDate()}</span>
-        {day.isToday && <span className="text-[10px] tracking-wide">TODAY</span>}
+        {day.isToday && (
+          <span className="text-[10px] tracking-wide">{t('calendar.todayBadge')}</span>
+        )}
       </div>
 
       <div className="flex flex-1 flex-col gap-0.5">

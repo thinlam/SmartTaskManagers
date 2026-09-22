@@ -1,6 +1,7 @@
 import type { Task } from '@stm/types';
 import type { KanbanTone } from '@stm/shared';
 import { PriorityBadge, cn } from '@stm/ui';
+import { useTranslation } from 'react-i18next';
 
 const TONE_CLASSES: Record<KanbanTone, string> = {
   success: 'bg-success-soft text-success',
@@ -41,6 +42,7 @@ export function KanbanCard({
   scoreTone,
   onClick,
 }: KanbanCardProps) {
+  const { t } = useTranslation();
   const isCompleted = task.status === 'Completed';
 
   return (
@@ -71,7 +73,9 @@ export function KanbanCard({
           {task.progress}%
         </span>
         <span className={cn('rounded px-1.5 py-0.5', TONE_CLASSES[scoreTone])}>
-          {task.smartScore ? `S ${task.smartScore}` : 'S —'}
+          {task.smartScore
+            ? t('kanban.scoreChip', { score: task.smartScore })
+            : t('kanban.scoreChipEmpty')}
         </span>
       </div>
     </button>

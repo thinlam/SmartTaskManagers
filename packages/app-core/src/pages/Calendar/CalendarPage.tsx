@@ -3,6 +3,7 @@ import type { Task } from '@stm/types';
 import { computeCalendarMonthData } from '@stm/shared';
 import { Button, IconButton, StatCard } from '@stm/ui';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { useTasksContext } from '../../state/TasksContext';
 import { CalendarGrid } from './CalendarGrid';
 import { CalendarAgenda } from './CalendarAgenda';
@@ -22,6 +23,7 @@ function addMonths(date: Date, count: number): Date {
  * viewed.
  */
 export function CalendarPage() {
+  const { t } = useTranslation();
   const { tasks, openEditDrawer } = useTasksContext();
   const [anchor, setAnchor] = useState(() => new Date());
 
@@ -39,23 +41,23 @@ export function CalendarPage() {
     <div className="flex flex-col gap-6 p-8">
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex flex-col gap-1">
-          <h1 className="text-[28px] font-bold leading-[34px] text-ink-primary">Calendar</h1>
-          <p className="text-sm text-ink-secondary">
-            See deadlines clearly, protect your focus and keep your month realistic.
-          </p>
+          <h1 className="text-[28px] font-bold leading-[34px] text-ink-primary">
+            {t('calendar.title')}
+          </h1>
+          <p className="text-sm text-ink-secondary">{t('calendar.subtitle')}</p>
         </div>
         <div className="flex items-center gap-2">
           <IconButton
             icon={<ChevronLeft className="h-4 w-4" aria-hidden="true" />}
-            aria-label="Previous month"
+            aria-label={t('calendar.prevMonthAriaLabel')}
             onClick={() => setAnchor((current) => addMonths(current, -1))}
           />
           <Button type="button" variant="secondary" size="sm" onClick={() => setAnchor(new Date())}>
-            Today
+            {t('calendar.todayButton')}
           </Button>
           <IconButton
             icon={<ChevronRight className="h-4 w-4" aria-hidden="true" />}
-            aria-label="Next month"
+            aria-label={t('calendar.nextMonthAriaLabel')}
             onClick={() => setAnchor((current) => addMonths(current, 1))}
           />
           <span className="ml-2 text-sm font-bold text-primary">{monthLabel}</span>
@@ -64,27 +66,35 @@ export function CalendarPage() {
 
       <section className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <StatCard
-          label="Scheduled"
+          label={t('calendar.statScheduled')}
           value={String(data.scheduledThisMonth.length)}
-          sub="Open tasks this month"
+          sub={t('calendar.statScheduledSub')}
           tone="primary"
         />
         <StatCard
-          label="Due Today"
+          label={t('calendar.statDueToday')}
           value={String(data.dueToday.length)}
-          sub={data.dueToday.length > 0 ? 'Needs attention today' : 'Nothing due today'}
+          sub={
+            data.dueToday.length > 0
+              ? t('calendar.statDueTodaySubAttention')
+              : t('calendar.statDueTodaySubNone')
+          }
           tone={data.dueToday.length > 0 ? 'warning' : 'success'}
         />
         <StatCard
-          label="Overdue"
+          label={t('calendar.statOverdue')}
           value={String(data.overdue.length)}
-          sub={data.overdue.length > 0 ? 'Resolve these first' : 'All clear'}
+          sub={
+            data.overdue.length > 0
+              ? t('calendar.statOverdueSubResolve')
+              : t('calendar.statOverdueSubClear')
+          }
           tone={data.overdue.length > 0 ? 'danger' : 'success'}
         />
         <StatCard
-          label="Completed"
+          label={t('calendar.statCompleted')}
           value={String(data.completedThisMonth.length)}
-          sub="Finished this month"
+          sub={t('calendar.statCompletedSub')}
           tone="success"
         />
       </section>
@@ -92,7 +102,7 @@ export function CalendarPage() {
       <CalendarGrid data={data} onSelectTask={handleSelectTask} />
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-semibold text-ink-primary">Agenda</h2>
+        <h2 className="text-lg font-semibold text-ink-primary">{t('calendar.agenda')}</h2>
         <CalendarAgenda tasks={data.agenda} onSelectTask={handleSelectTask} />
       </section>
     </div>

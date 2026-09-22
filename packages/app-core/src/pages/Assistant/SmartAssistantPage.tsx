@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { computeSmartAssistantData } from '@stm/shared';
 import { EmptyState, ProjectHealthBadge, RiskBadge, StatCard, TaskCard } from '@stm/ui';
+import { useTranslation } from 'react-i18next';
 import { useTasksContext } from '../../state/TasksContext';
 import { useProjectsContext } from '../../state/ProjectsContext';
 import { useGoalsContext } from '../../state/GoalsContext';
@@ -16,6 +17,7 @@ import { useHabitsContext } from '../../state/HabitsContext';
  * Goal/Habit data — see that file's doc comment for the exact rules.
  */
 export function SmartAssistantPage() {
+  const { t } = useTranslation();
   const { tasks, isLoading: tasksLoading } = useTasksContext();
   const { projects, isLoading: projectsLoading } = useProjectsContext();
   const { goals, isLoading: goalsLoading } = useGoalsContext();
@@ -29,7 +31,7 @@ export function SmartAssistantPage() {
   const isLoading = tasksLoading || projectsLoading || goalsLoading || habitsLoading;
 
   if (isLoading) {
-    return <div className="p-8 text-sm text-ink-muted">Loading assistant…</div>;
+    return <div className="p-8 text-sm text-ink-muted">{t('assistant.loading')}</div>;
   }
 
   const hasNothing =
@@ -42,44 +44,48 @@ export function SmartAssistantPage() {
   return (
     <div className="flex flex-col gap-6 p-8">
       <header className="flex flex-col gap-1">
-        <h1 className="text-[28px] font-bold leading-[34px] text-ink-primary">Smart Assistant</h1>
+        <h1 className="text-[28px] font-bold leading-[34px] text-ink-primary">
+          {t('assistant.title')}
+        </h1>
         <p className="text-sm text-ink-secondary">{data.summary}</p>
       </header>
 
       {hasNothing ? (
-        <EmptyState message="Nothing needs attention right now. Add some tasks to get recommendations." />
+        <EmptyState message={t('assistant.emptyNothing')} />
       ) : (
         <>
           <section className="grid grid-cols-2 gap-4 sm:grid-cols-4">
             <StatCard
-              label="Critical Risk"
+              label={t('assistant.statCriticalRisk')}
               value={String(data.riskCounts.Critical)}
-              sub="Open tasks"
+              sub={t('assistant.statOpenTasksSub')}
               tone="danger"
             />
             <StatCard
-              label="High Risk"
+              label={t('assistant.statHighRisk')}
               value={String(data.riskCounts.High)}
-              sub="Open tasks"
+              sub={t('assistant.statOpenTasksSub')}
               tone="warning"
             />
             <StatCard
-              label="Medium Risk"
+              label={t('assistant.statMediumRisk')}
               value={String(data.riskCounts.Medium)}
-              sub="Open tasks"
+              sub={t('assistant.statOpenTasksSub')}
               tone="info"
             />
             <StatCard
-              label="Low Risk"
+              label={t('assistant.statLowRisk')}
               value={String(data.riskCounts.Low)}
-              sub="Open tasks"
+              sub={t('assistant.statOpenTasksSub')}
               tone="success"
             />
           </section>
 
           {data.criticalTasks.length > 0 && (
             <section className="flex flex-col gap-3">
-              <h2 className="text-lg font-semibold text-ink-primary">Needs Attention</h2>
+              <h2 className="text-lg font-semibold text-ink-primary">
+                {t('assistant.needsAttention')}
+              </h2>
               <div className="flex flex-col gap-2">
                 {data.criticalTasks.map((task) => (
                   <div key={task.id} className="flex items-center gap-3">
@@ -101,7 +107,9 @@ export function SmartAssistantPage() {
 
           {data.actionGroups.length > 0 && (
             <section className="flex flex-col gap-4">
-              <h2 className="text-lg font-semibold text-ink-primary">Recommended Actions</h2>
+              <h2 className="text-lg font-semibold text-ink-primary">
+                {t('assistant.recommendedActions')}
+              </h2>
               {data.actionGroups.map((group) => (
                 <div key={group.action} className="flex flex-col gap-2">
                   <h3 className="text-sm font-semibold uppercase tracking-wide text-ink-muted">
@@ -126,9 +134,9 @@ export function SmartAssistantPage() {
 
           <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
             <section className="flex flex-col gap-3">
-              <h2 className="text-lg font-semibold text-ink-primary">Projects</h2>
+              <h2 className="text-lg font-semibold text-ink-primary">{t('assistant.projects')}</h2>
               {data.projectAlerts.length === 0 ? (
-                <EmptyState message="No projects need attention." />
+                <EmptyState message={t('assistant.projectsEmpty')} />
               ) : (
                 <div className="flex flex-col gap-3">
                   {data.projectAlerts.map((alert) => (
@@ -148,9 +156,9 @@ export function SmartAssistantPage() {
             </section>
 
             <section className="flex flex-col gap-3">
-              <h2 className="text-lg font-semibold text-ink-primary">Goals</h2>
+              <h2 className="text-lg font-semibold text-ink-primary">{t('assistant.goals')}</h2>
               {data.goalAlerts.length === 0 ? (
-                <EmptyState message="No goals at risk." />
+                <EmptyState message={t('assistant.goalsEmpty')} />
               ) : (
                 <div className="flex flex-col gap-3">
                   {data.goalAlerts.map((alert) => (
@@ -159,7 +167,9 @@ export function SmartAssistantPage() {
                       className="flex items-center justify-between rounded-lg border border-border bg-surface p-3"
                     >
                       <span className="text-sm font-medium text-ink-primary">{alert.name}</span>
-                      <span className="text-xs text-ink-secondary">{alert.progress}% progress</span>
+                      <span className="text-xs text-ink-secondary">
+                        {t('assistant.goalProgress', { progress: alert.progress })}
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -167,9 +177,9 @@ export function SmartAssistantPage() {
             </section>
 
             <section className="flex flex-col gap-3">
-              <h2 className="text-lg font-semibold text-ink-primary">Habits</h2>
+              <h2 className="text-lg font-semibold text-ink-primary">{t('assistant.habits')}</h2>
               {data.habitAlerts.length === 0 ? (
-                <EmptyState message="No streaks at risk." />
+                <EmptyState message={t('assistant.habitsEmpty')} />
               ) : (
                 <div className="flex flex-col gap-3">
                   {data.habitAlerts.map((alert) => (
@@ -178,7 +188,9 @@ export function SmartAssistantPage() {
                       className="flex items-center justify-between rounded-lg border border-border bg-surface p-3"
                     >
                       <span className="text-sm font-medium text-ink-primary">{alert.name}</span>
-                      <span className="text-xs text-ink-secondary">{alert.streak}-day streak</span>
+                      <span className="text-xs text-ink-secondary">
+                        {t('assistant.habitStreak', { streak: alert.streak })}
+                      </span>
                     </div>
                   ))}
                 </div>
