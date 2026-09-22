@@ -178,7 +178,9 @@ If no local MySQL is reachable (a known constraint in this environment — see t
 git add backend/SmartTask.Domain/Users/User.cs \
   backend/SmartTask.Persistence/Configurations/UserConfiguration.cs \
   backend/SmartTask.Persistence/Migrations \
+  backend/SmartTask.Persistence/Repositories/UserRepository.cs \
   backend/SmartTask.Application/Auth \
+  backend/SmartTask.Application/Users/IUserRepository.cs \
   backend/SmartTask.Api/Controllers/AuthController.cs
 git commit -m "$(cat <<'EOF'
 feat(backend): add per-user Language preference + PATCH /api/auth/language
