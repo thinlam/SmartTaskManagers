@@ -5,7 +5,9 @@ using SmartTask.Application.Auth;
 
 namespace SmartTask.Api.Controllers;
 
-public sealed record AuthResponse(Guid UserId, string Email, string Token, DateTimeOffset ExpiresAt);
+public sealed record AuthResponse(Guid UserId, string Email, string Token, DateTimeOffset ExpiresAt, string Language);
+
+public sealed record UpdateLanguageRequest(string Language);
 
 /// <summary>
 /// The real vertical slice for Phase 22, same idea as HealthController in
@@ -50,6 +52,23 @@ public sealed class AuthController(IAuthService authService) : ControllerBase
         return Ok(ToResponse(result));
     }
 
+    [Authorize]
+    [HttpPatch("language")]
+    public async Task<IActionResult> UpdateLanguage(
+        UpdateLanguageRequest request,
+        CancellationToken cancellationToken
+    )
+    {
+        if (request.Language is not ("vi" or "en"))
+        {
+            return BadRequest(new { message = "Language must be 'vi' or 'en'." });
+        }
+
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        await authService.UpdateLanguageAsync(Guid.Parse(userId!), request.Language, cancellationToken);
+        return NoContent();
+    }
+
     /// <summary>Requires a valid Bearer token — proves [Authorize] + the JwtBearer middleware configured in Program.cs actually validate a real token, not just that one gets issued.</summary>
     [Authorize]
     [HttpGet("me")]
@@ -61,5 +80,5 @@ public sealed class AuthController(IAuthService authService) : ControllerBase
     }
 
     private static AuthResponse ToResponse(AuthResult result) =>
-        new(result.UserId, result.Email, result.Token, result.ExpiresAt);
+        new(result.UserId, result.Email, result.Token, result.ExpiresAt, result.Language);
 }
