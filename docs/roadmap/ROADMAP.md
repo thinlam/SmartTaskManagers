@@ -1062,9 +1062,64 @@ lại chưa dịch ở Task 3) (Task 7). Mỗi string UI tĩnh thay bằng `t('.
   các Phase 15–19, 30–33.
 - **Việc còn lại khi có đủ công cụ (browser control tool + MySQL local reachable với credential
   hợp lệ) trong phiên sau:** chạy lại Step 4 đầy đủ — xác nhận UI mặc định tiếng Việt, chuyển tiếng
-  Anh cập nhật toàn bộ nav/trang hiện tại/Settings ngay lập tức không reload, chuyển lại tiếng Việt,
+  Anh áp dụng ngay sau khi PATCH thành công, không cần reload trang, trên toàn bộ nav/trang hiện
+  tại/Settings, chuyển lại tiếng Việt,
   đăng xuất/đăng nhập lại xác nhận lựa chọn ngôn ngữ persist đúng qua `PATCH /api/auth/language`
   (Task 1).
 
 Mỗi Phase kế tiếp sẽ được trình bày riêng theo format: Mục tiêu → File tạo/sửa → Full code →
 Command → Cách chạy → Cách test → Expected Result → Checklist → Git commit đề xuất.
+
+Dark mode đã thực hiện — 4 task tuần tự, phạm vi toàn app (backend + `apps/desktop`/`apps/web` qua
+`packages/app-core`).
+
+**Task 1 — backend, cột `Theme` + endpoint đổi giao diện.** Thêm cột `Theme` (`varchar(5)`, mặc
+định `"light"`) vào entity `User`/bảng tương ứng qua migration EF Core mới
+(`AddUserTheme`), cùng `PATCH /api/auth/theme` (yêu cầu JWT hợp lệ, body `{ theme: "light" | "dark" }`,
+validate chỉ nhận 2 giá trị này) để client lưu lựa chọn giao diện của user vào DB thay vì chỉ giữ ở
+localStorage — cùng mẫu hình với cột `Language`/`PATCH /api/auth/language` đã làm ở rollout i18n:
+giao diện theo user, đăng nhập máy khác vẫn giữ đúng lựa chọn. `AuthResponse` trả thêm field
+`Theme` để client biết giá trị hiện tại ngay sau login.
+
+**Task 2 — dark color tokens + `AuthContext` wiring trong `packages/app-core`.** Thêm khối token
+màu `.dark` (CSS custom properties) song song với bộ token sáng hiện có, để mọi component dùng
+biến CSS chứ không hard-code màu là đổi theo ngay khi đổi theme. `AuthContext` (state chung của
+toàn app) giữ giá trị `theme` hiện tại, áp `class="dark"` lên phần tử gốc khi `theme === "dark"`,
+và gọi `authApi` để đồng bộ lựa chọn với `PATCH /api/auth/theme` (Task 1).
+
+**Task 3 — Settings toggle nối thật vào theme state + backend.** Thêm Dark Mode toggle ở trang
+Settings (`SettingsPage.tsx`), gọi hàm đổi theme trong `AuthContext` — hàm này `await` gọi
+`PATCH /api/auth/theme` (lưu xuống DB qua Task 1) trước, chỉ áp dụng UI ngay sau khi PATCH thành
+công, không cần reload trang; nếu PATCH lỗi thì giao diện không đổi — cùng mẫu hình với language
+switcher.
+
+**Task 4 (task này) — verify end-to-end, ghi rõ đã test gì / chưa test được gì:**
+
+- `npm run typecheck`, `npm run lint`, `npm run build --workspace=apps/desktop`,
+  `npm run build --workspace=apps/web` — cả 4 lệnh chạy sạch, exit 0.
+- `npm run format` — thất bại ban đầu, nhưng lỗi nằm ở 2 file doc tiền nhiệm ngoài phạm vi task
+  này (`docs/superpowers/plans/2026-09-22-dark-mode-implementation.md`,
+  `docs/superpowers/specs/2026-09-22-dark-mode-design.md`, thêm ở commit trước, chưa từng qua
+  Prettier) — không liên quan tới code của Task 1–3. Không sửa/commit 2 file đó trong task này (nằm
+  ngoài phạm vi `docs/roadmap/ROADMAP.md` của Task 4); nêu rõ ở đây để không nhận nhầm là `format`
+  sạch cho toàn repo.
+- `dotnet build -c Release` (từ `backend/`) — `Build succeeded. 0 Warning(s). 0 Error(s).`
+- **Click-test thật trong browser — không thực hiện được, nêu rõ lý do thay vì nhận đã test:**
+  `claude-in-chrome` tool nạp được nhưng gọi `tabs_context_mcp` trả về "Browser extension is not
+  connected" — không có browser tool điều khiển được trong phiên này. Về phía backend,
+  `Test-NetConnection`-tương đương xác nhận cổng MySQL cục bộ (3306) **có** mở, nhưng
+  `dotnet user-secrets list` cho `SmartTask.Api` không có `ConnectionStrings:DefaultConnection` —
+  không có credential nào được biết để kết nối DB thật (cùng phát hiện với Task 1 của rollout này).
+  Không tự bịa connection string/mật khẩu để né việc này. Do cả 2 điều kiện (browser tool kết nối
+  được + backend chạy được với DB thật) đều không có trong phiên này, toàn bộ kịch bản click-test
+  UI thật (login → Settings → bật Dark Mode → xác nhận toàn app đổi màu tức thì, tương phản đọc
+  được ở Dashboard/Sidebar/1 detail drawer → tắt lại → reload → xác nhận theme persist) **chưa
+  được verify bằng trải nghiệm thật**, chỉ verify được ở mức build/lint/typecheck/backend build như
+  trên. Đây là cùng dạng giới hạn môi trường đã ghi nhận trung thực ở các Phase 15–19, 30–33 và ở
+  Task 8 của rollout i18n.
+- **Việc còn lại khi có đủ công cụ (browser control tool kết nối được + MySQL local reachable với
+  credential hợp lệ) trong phiên sau:** chạy `npm run dev --workspace=apps/web`, login, vào
+  Settings, bật Dark Mode, xác nhận toàn app (background, surface, text, border) đổi màu ngay lập
+  tức với tương phản đọc được ở mọi khu vực nhìn thấy (Dashboard, Sidebar, ít nhất 1 detail drawer),
+  tắt lại, reload trang, xác nhận theme vừa chọn được giữ nguyên qua `PATCH /api/auth/theme`
+  (Task 1).

@@ -5,9 +5,11 @@ using SmartTask.Application.Auth;
 
 namespace SmartTask.Api.Controllers;
 
-public sealed record AuthResponse(Guid UserId, string Email, string Token, DateTimeOffset ExpiresAt, string Language);
+public sealed record AuthResponse(Guid UserId, string Email, string Token, DateTimeOffset ExpiresAt, string Language, string Theme);
 
 public sealed record UpdateLanguageRequest(string Language);
+
+public sealed record UpdateThemeRequest(string Theme);
 
 /// <summary>
 /// The real vertical slice for Phase 22, same idea as HealthController in
@@ -82,6 +84,36 @@ public sealed class AuthController(IAuthService authService) : ControllerBase
         return NoContent();
     }
 
+    [Authorize]
+    [HttpPatch("theme")]
+    public async Task<IActionResult> UpdateTheme(
+        UpdateThemeRequest request,
+        CancellationToken cancellationToken
+    )
+    {
+        if (request.Theme is not ("light" or "dark"))
+        {
+            return BadRequest(new { message = "Theme must be 'light' or 'dark'." });
+        }
+
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!Guid.TryParse(userId, out var parsedUserId))
+        {
+            return Unauthorized();
+        }
+
+        try
+        {
+            await authService.UpdateThemeAsync(parsedUserId, request.Theme, cancellationToken);
+        }
+        catch (InvalidOperationException)
+        {
+            return NotFound();
+        }
+
+        return NoContent();
+    }
+
     /// <summary>Requires a valid Bearer token — proves [Authorize] + the JwtBearer middleware configured in Program.cs actually validate a real token, not just that one gets issued.</summary>
     [Authorize]
     [HttpGet("me")]
@@ -93,5 +125,5 @@ public sealed class AuthController(IAuthService authService) : ControllerBase
     }
 
     private static AuthResponse ToResponse(AuthResult result) =>
-        new(result.UserId, result.Email, result.Token, result.ExpiresAt, result.Language);
+        new(result.UserId, result.Email, result.Token, result.ExpiresAt, result.Language, result.Theme);
 }

@@ -9,17 +9,20 @@ interface StoredAuth {
   email: string;
   expiresAt: string;
   language: string;
+  theme: string;
 }
 
 interface AuthContextValue {
   isAuthenticated: boolean;
   email: string | null;
+  theme: string | null;
   /** True only while reading localStorage on first mount — not for login/register's own in-flight state, that's each form's own concern. */
   isHydrating: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, displayName?: string) => Promise<void>;
   logout: () => void;
   setLanguage: (language: 'vi' | 'en') => Promise<void>;
+  setTheme: (theme: 'light' | 'dark') => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -34,6 +37,10 @@ function readStoredAuth(): StoredAuth | null {
   } catch {
     return null;
   }
+}
+
+function applyTheme(theme: string) {
+  document.documentElement.classList.toggle('dark', theme === 'dark');
 }
 
 /**
@@ -56,6 +63,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setAuthToken(stored.token);
       setAuth(stored);
       void i18n.changeLanguage(stored.language);
+      applyTheme(stored.theme);
     }
     setIsHydrating(false);
   }, []);
@@ -63,9 +71,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   function persist(next: StoredAuth) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
     localStorage.setItem('stm.language', next.language);
+    localStorage.setItem('stm.theme', next.theme);
     setAuthToken(next.token);
     setAuth(next);
     void i18n.changeLanguage(next.language);
+    applyTheme(next.theme);
   }
 
   async function login(email: string, password: string) {
@@ -75,6 +85,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email: result.email,
       expiresAt: result.expiresAt,
       language: result.language,
+      theme: result.theme,
     });
   }
 
@@ -85,10 +96,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       email: result.email,
       expiresAt: result.expiresAt,
       language: result.language,
+      theme: result.theme,
     });
   }
 
   function logout() {
+    // Deliberately leaves the `dark` class / stm.theme in place — the
+    // login screen keeps the last-used theme (LoginPage's own fallback
+    // reads stm.theme), and persist() re-applies the next user's real
+    // theme on their next login.
     localStorage.removeItem(STORAGE_KEY);
     setAuthToken(null);
     setAuth(null);
@@ -107,16 +123,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  async function setTheme(theme: 'light' | 'dark') {
+    try {
+      await authApi.updateTheme(theme);
+    } catch (error) {
+      console.error('Failed to persist theme preference:', error);
+      throw error;
+    }
+    applyTheme(theme);
+    if (auth) {
+      persist({ ...auth, theme });
+    }
+  }
+
   return (
     <AuthContext.Provider
       value={{
         isAuthenticated: auth !== null,
         email: auth?.email ?? null,
+        theme: auth?.theme ?? null,
         isHydrating,
         login,
         register,
         logout,
         setLanguage,
+        setTheme,
       }}
     >
       {children}

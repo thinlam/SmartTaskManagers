@@ -8,6 +8,7 @@ Hạng mục B trong 4 hạng mục được yêu cầu (A. i18n ✅ đã xong �
 → C. Redesign Login/Register → D. Redesign Settings).
 
 Khảo sát hiện trạng:
+
 - `packages/ui/src/styles/theme.css` định nghĩa toàn bộ token màu qua
   Tailwind v4 `@theme` — chưa có palette dark nào (chỉ có 1 biến
   `--color-dark-header` sót lại, không liên quan).
@@ -51,6 +52,7 @@ Khảo sát hiện trạng:
 ### B1. Backend — lưu `Theme` trên `User`
 
 Y hệt pattern `Language` (Task 1 của hạng mục A), áp dụng cho field mới:
+
 - `User.cs` thêm `public string Theme { get; set; } = "light";`
   (`"light"`/`"dark"`).
 - `UserConfiguration.cs` thêm
@@ -72,6 +74,7 @@ Y hệt pattern `Language` (Task 1 của hạng mục A), áp dụng cho field m
 ### B2. Frontend — theme system
 
 **`packages/ui/src/styles/theme.css`:**
+
 - Thêm `@custom-variant dark (&:where(.dark, .dark *));` ở đầu file
   (trước khối `@theme`) — bật class-based dark mode cho Tailwind v4 thay
   vì mặc định theo `prefers-color-scheme`.
@@ -97,6 +100,7 @@ Y hệt pattern `Language` (Task 1 của hạng mục A), áp dụng cho field m
 `language` đã làm ở hạng mục A, rút kinh nghiệm bug đã sửa — viết
 `persist()` ghi `stm.theme` vào localStorage ngay từ đầu, không để sót
 như `stm.language` ban đầu):
+
 - `StoredAuth` thêm field `theme`.
 - `persist()` thêm `document.documentElement.classList.toggle('dark', next.theme === 'dark')`
   và `localStorage.setItem('stm.theme', next.theme)`.
@@ -109,11 +113,13 @@ như `stm.language` ban đầu):
   như `setLanguage` ban đầu).
 
 **`packages/app-core/src/pages/Auth/LoginPage.tsx`:**
+
 - `useEffect` đọc `localStorage.getItem('stm.theme')` trước khi có
   token, áp `document.documentElement.classList.toggle('dark', ...)` —
   cùng cơ chế fallback tạm như `stm.language`.
 
 **`packages/app-core/src/pages/Settings/SettingsPage.tsx`:**
+
 - Thêm 1 row `Switch` mới trong section "General", ngay dưới field
   Language: label "Dark Mode" (dịch qua i18n, namespace `settings` đã
   có sẵn từ hạng mục A), `checked={i18n... }` — thực ra đọc từ

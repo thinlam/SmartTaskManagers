@@ -10,4 +10,7 @@ public interface IAuthService
 
     /// <summary>Throws InvalidOperationException if the user does not exist.</summary>
     Task UpdateLanguageAsync(Guid userId, string language, CancellationToken cancellationToken);
+
+    /// <summary>Throws InvalidOperationException if the user does not exist.</summary>
+    Task UpdateThemeAsync(Guid userId, string theme, CancellationToken cancellationToken);
 }

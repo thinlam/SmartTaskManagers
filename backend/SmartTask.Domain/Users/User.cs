@@ -15,5 +15,6 @@ public sealed class User : Entity
     public required string PasswordHash { get; set; }
     public string? DisplayName { get; set; }
     public string Language { get; set; } = "vi";
+    public string Theme { get; set; } = "light";
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
 }

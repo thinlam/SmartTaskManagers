@@ -23,7 +23,7 @@ const labelClasses = 'text-xs font-semibold uppercase tracking-wide text-ink-mut
 export function SettingsPage() {
   const { settings, updateSettings } = useSettingsContext();
   const { t, i18n } = useTranslation();
-  const { setLanguage } = useAuthContext();
+  const { setLanguage, theme, setTheme } = useAuthContext();
 
   const STATUS_LABELS: Record<TaskStatus, string> = {
     Inbox: t('settings.statusInbox'),
@@ -86,6 +86,21 @@ export function SettingsPage() {
               <option value="vi">{t('settings.languageVi')}</option>
               <option value="en">{t('settings.languageEn')}</option>
             </select>
+          </div>
+          <div className="flex flex-col gap-1">
+            <label htmlFor="settings-dark-mode" className={labelClasses}>
+              {t('settings.darkMode')}
+            </label>
+            <div className="flex items-center gap-2 pt-1">
+              <Switch
+                checked={theme === 'dark'}
+                onCheckedChange={(checked) => void setTheme(checked ? 'dark' : 'light')}
+                aria-label={t('settings.darkMode')}
+              />
+              <span className="text-sm text-ink-secondary">
+                {theme === 'dark' ? t('settings.darkModeOn') : t('settings.darkModeOff')}
+              </span>
+            </div>
           </div>
           <div className="flex flex-col gap-1">
             <label htmlFor="settings-week-start" className={labelClasses}>

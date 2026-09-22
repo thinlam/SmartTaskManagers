@@ -30,9 +30,13 @@ export function LoginPage() {
   const [showServerField, setShowServerField] = useState(false);
 
   useEffect(() => {
-    const stored = localStorage.getItem('stm.language');
-    if (stored === 'vi' || stored === 'en') {
-      void i18n.changeLanguage(stored);
+    const storedLanguage = localStorage.getItem('stm.language');
+    if (storedLanguage === 'vi' || storedLanguage === 'en') {
+      void i18n.changeLanguage(storedLanguage);
+    }
+    const storedTheme = localStorage.getItem('stm.theme');
+    if (storedTheme === 'light' || storedTheme === 'dark') {
+      document.documentElement.classList.toggle('dark', storedTheme === 'dark');
     }
   }, []);
 
