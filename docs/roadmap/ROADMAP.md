@@ -989,7 +989,13 @@ cho `packages/ui/src`.
    đầy đủ Steps 1–6 của task brief này (click-test thật Login/Dashboard/Tasks/Projects trên
    `apps/web`) — chưa làm được trong phiên này.
 
-i18n (VI/EN) đã thực hiện — cho toàn bộ ứng dụng, 8 task tuần tự.
+i18n (VI/EN) đã thực hiện — phạm vi là `packages/app-core` (toàn bộ page/component dưới
+`packages/app-core/src`), 8 task tuần tự. **Chưa bao phủ toàn bộ ứng dụng**: `packages/ui` (tiêu đề
+nhóm Sidebar, "New Task"/"Sign out"/"Signed in as…" của Topbar, "Mark all read" của
+NotificationPanel, chuỗi trong HabitCard/GoalCard/ProjectCard) và `packages/shared` (nhãn/subtitle
+KPI của Dashboard/Today, tiêu đề lane Kanban, `formatDueLabel`'s "Due today"/"Overdue N days" — hiển
+thị trên mọi task row toàn app) vẫn còn chuỗi tiếng Anh hard-code, chưa dịch — ghi nhận là việc còn
+lại (follow-up), không thuộc phạm vi 8 task đã làm.
 
 **Task 1 — backend, cột `Language` + endpoint đổi ngôn ngữ.** Thêm cột `Language` (`varchar`, mặc
 định `"vi"`) vào entity `User`/bảng tương ứng qua migration EF Core mới, cùng
@@ -1018,10 +1024,16 @@ lại chưa dịch ở Task 3) (Task 7). Mỗi string UI tĩnh thay bằng `t('.
 1. Các lệnh format ngày (`toLocaleDateString`/tương tự) trong `TodayPage.tsx` và `HabitRow.tsx` vẫn
    hard-code locale `'en-US'` — **chưa dịch, để lại có chủ đích** (deferred), không phải lỗi string
    bị bỏ sót; đây là vấn đề định dạng ngày theo locale, khác bản chất với dịch string UI.
-2. Các mảng enum hiển thị (task status/priority, area của Goals, frequency/weekday của Habits) chỉ
-   dịch **giá trị hiển thị** (label) sang tiếng Việt/Anh, còn **giá trị lưu trữ/so sánh** (dùng để
-   filter, persist xuống DB, so sánh logic) vẫn giữ nguyên tiếng Anh — có chủ đích, để không phá vỡ
-   filter/logic đang dựa vào giá trị enum cố định.
+2. Mẫu hình dịch **giá trị hiển thị** (label) tách khỏi **giá trị lưu trữ/so sánh** (giữ nguyên
+   tiếng Anh, dùng để filter/persist/so sánh logic) cho các mảng enum hiển thị (task status/priority,
+   area của Goals, frequency/weekday của Habits) **mới chỉ áp dụng ở `SettingsPage.tsx` (Task 7)**.
+   `TaskDetailDrawer.tsx`, `TaskFilters.tsx`, `GoalDetailDrawer.tsx`, `HabitDetailDrawer.tsx`, và
+   `ProjectDetailDrawer.tsx` vẫn render nguyên giá trị enum tiếng Anh chưa dịch (ví dụ cùng status
+   "In Progress" hiển thị tiếng Việt ở Settings nhưng tiếng Anh ở Task detail drawer, trong cùng
+   phiên) — có chủ đích để không phá vỡ filter/logic đang dựa vào giá trị enum cố định, nhưng việc mở
+   rộng mẫu hình này sang các drawer/filter còn lại vẫn là việc còn lại (follow-up); các key dịch
+   `settings.status*`/`settings.priority*` đã có sẵn và có thể promote sang namespace dùng chung cho
+   follow-up đó.
 
 **Task 8 (task này) — verify end-to-end, ghi rõ đã test gì / chưa test được gì:**
 
@@ -1039,8 +1051,8 @@ lại chưa dịch ở Task 3) (Task 7). Mỗi string UI tĩnh thay bằng `t('.
 - **Click-test thật trong browser — không thực hiện được, nêu rõ lý do thay vì nhận đã test:**
   `claude-in-chrome` tool nạp được (`tabs_context_mcp` gọi thành công) nhưng trả về "Browser
   extension is not connected" — không có browser tool điều khiển được trong phiên này. Về phía
-  backend, khác với Task 1/3 (không có MySQL local reachable), lần này `Test-NetConnection -Port
-3306` xác nhận cổng MySQL cục bộ **có** mở, nhưng `dotnet user-secrets list` cho `SmartTask.Api`
+  backend, khác với Task 1/3 (không có MySQL local reachable), lần này
+  `Test-NetConnection -Port 3306` xác nhận cổng MySQL cục bộ **có** mở, nhưng `dotnet user-secrets list` cho `SmartTask.Api`
   chỉ có `Jwt:Secret`, không có `ConnectionStrings:DefaultConnection` — tức là không có credential
   nào được biết để kết nối DB thật. Không tự bịa connection string/mật khẩu để né việc này (đã có
   sibling task từng làm vậy và phải dọn lại). Do thiếu browser tool (điều kiện bắt buộc để click-test
