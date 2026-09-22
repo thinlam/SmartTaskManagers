@@ -122,7 +122,10 @@ This is what makes `import.meta.env.VITE_API_BASE_URL` in the moved `config/api.
 
 ```typescript
 export { default as App } from './App';
+export { getStoredServerUrl } from './lib/serverUrl';
 ```
+
+**Ruling (preflight scan, controller):** the original plan draft deferred this `getStoredServerUrl` re-export to Task 4 Step 1, but `apps/desktop/src/main.tsx` imports it directly from `./lib/serverUrl` — a path Step 1 of this task just `git mv`'d away. Leaving the re-export out until Task 4 means Task 2's own `npm run typecheck` verification step (Task 2 Step 5) would fail on a dangling import before Task 4 ever runs. Both exports are added here, in Task 1, so Task 2 can fix both imports at once and its typecheck step actually passes. Task 4 Step 1 below is a no-op check now (the export already exists) — keep it only as a re-confirmation, not a new addition.
 
 - [ ] **Step 6: Add `packages/app-core` to the root `tsconfig.json`'s references**
 
@@ -167,19 +170,23 @@ EOF
 
 - [ ] **Step 1: Read the current `apps/desktop/src/main.tsx`**
 
-Run: read the file to get its exact current content (it imports `App` from `./App`, which Task 1 just moved away).
+Run: read the file to get its exact current content. It imports `App` from `./App` (Task 1 moved this to `@stm/app-core`) AND `getStoredServerUrl` from `./lib/serverUrl` (Task 1 moved this too, to the same package) — both imports are currently dangling and must both be fixed in the next step.
 
-- [ ] **Step 2: Edit the import in `apps/desktop/src/main.tsx`**
+- [ ] **Step 2: Fix both dangling imports in `apps/desktop/src/main.tsx`**
 
 Change:
 ```typescript
 import App from './App';
 ```
-to:
+and
 ```typescript
-import { App } from '@stm/app-core';
+import { getStoredServerUrl } from './lib/serverUrl';
 ```
-(Named import now, since `packages/app-core/src/index.ts` re-exports it as a named export, not a default export — this matches Task 1 Step 5 exactly.)
+to a single combined import:
+```typescript
+import { App, getStoredServerUrl } from '@stm/app-core';
+```
+(`App` is a named import now, since `packages/app-core/src/index.ts` re-exports it as a named export, not a default export — this matches Task 1 Step 5 exactly. Both symbols come from the same package, so this replaces two import lines with one.)
 
 - [ ] **Step 3: Add `@stm/app-core` as a dependency in `apps/desktop/package.json`**
 
@@ -347,23 +354,17 @@ EOF
 - Modify: root `package.json` (add to `workspaces`, add `dev:web`/`build:web` scripts)
 
 **Interfaces:**
-- Consumes: `App` from `@stm/app-core` (Task 1), `configureApiClient` from `@stm/api-client`, `getStoredServerUrl` from `@stm/app-core` (re-export needed — see Step 1 below).
+- Consumes: `App` and `getStoredServerUrl` from `@stm/app-core` (both already exported by Task 1 Step 5 — see the controller ruling recorded there).
 - Produces: nothing consumed by other tasks — this is the final app.
 
-- [ ] **Step 1: Re-export `getStoredServerUrl` from `@stm/app-core`'s index**
+- [ ] **Step 1: Confirm `@stm/app-core` already exports both symbols**
 
-`apps/desktop/src/main.tsx` currently imports `getStoredServerUrl` directly from `./lib/serverUrl` — a relative path that no longer exists in `apps/desktop`. Since `apps/web`'s `main.tsx` needs the same function and both apps should get it the same way, add it to the package's public surface. Read `packages/app-core/src/index.ts` (written in Task 1) and change it to:
-
+Read `packages/app-core/src/index.ts`. It should already contain both lines (written in Task 1 Step 5, per the controller ruling recorded there — the original plan draft deferred this to here, but the export was moved earlier to keep Task 2's typecheck passing):
 ```typescript
 export { default as App } from './App';
 export { getStoredServerUrl } from './lib/serverUrl';
 ```
-
-Then re-check `apps/desktop/src/main.tsx` (Task 2): update its import from `getStoredServerUrl` (previously from `./lib/serverUrl`) to also come from `@stm/app-core`:
-```typescript
-import { App, getStoredServerUrl } from '@stm/app-core';
-```
-removing the separate `import { getStoredServerUrl } from './lib/serverUrl';` line it had before Task 1 (if Task 2 already changed only the `App` import, finish the job here — `apps/desktop/src/lib/` no longer exists after Task 1's `git mv`, so this import must already have been broken; this step is the fix). Re-run `npm run typecheck` from `/e/SmartTaskManager` to confirm `apps/desktop` is clean before moving on.
+If for any reason it doesn't (e.g. Task 1 was executed against an older copy of this plan), add the missing line now and re-run `npm run typecheck` from the repo root before proceeding — but this should be a no-op confirmation, not new work.
 
 - [ ] **Step 2: Write `apps/web/package.json`**
 
