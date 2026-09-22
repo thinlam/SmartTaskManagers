@@ -1,6 +1,7 @@
 {
   "files": [],
   "references": [
+    { "path": "packages/app-core" },
     { "path": "packages/types" },
     { "path": "packages/shared" },
     { "path": "packages/api-client" },

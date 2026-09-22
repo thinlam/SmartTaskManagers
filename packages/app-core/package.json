@@ -1,0 +1,25 @@
+{
+  "name": "@stm/app-core",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "typecheck": "tsc -b --pretty"
+  },
+  "dependencies": {
+    "@stm/api-client": "*",
+    "@stm/hooks": "*",
+    "@stm/shared": "*",
+    "@stm/types": "*",
+    "@stm/ui": "*",
+    "lucide-react": "^1.47.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-router-dom": "^7.18.4"
+  },
+  "devDependencies": {
+    "vite": "^6.0.0"
+  }
+}

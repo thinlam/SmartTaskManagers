@@ -1,0 +1,16 @@
+{
+  "extends": "../config/tsconfig.base.json",
+  "compilerOptions": {
+    "rootDir": "src",
+    "outDir": "dist",
+    "types": ["vite/client"]
+  },
+  "include": ["src"],
+  "references": [
+    { "path": "../ui" },
+    { "path": "../types" },
+    { "path": "../hooks" },
+    { "path": "../shared" },
+    { "path": "../api-client" }
+  ]
+}
