@@ -22,49 +22,78 @@ using SmartTask.Persistence;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// ============================================================
+// CONTROLLERS + JSON
+// ============================================================
 
 builder
     .Services.AddControllers()
-    // Enums serialize/bind as strings ("Critical"), not ints — matches
-    // the string storage decision Phase 21 already made in Persistence's
-    // EntityTypeConfiguration classes, so the API and the database agree
-    // on what a lookup value looks like.
     .AddJsonOptions(options =>
-        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter())
-    );
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
+    {
+        // Serialize/bind enum dưới dạng string:
+        // "Critical", "Completed", ...
+        options.JsonSerializerOptions.Converters.Add(
+            new JsonStringEnumConverter()
+        );
+    });
+
+// ============================================================
+// OPENAPI / SWAGGER
+// ============================================================
+
 builder.Services.AddOpenApi(options =>
 {
-    // Lets Swagger UI's "Authorize" button send a Bearer token on every
-    // [Authorize] endpoint — without this, the OpenAPI doc has no
-    // security scheme and Swagger UI has no way to attach the header.
     options.AddDocumentTransformer(
         (document, _, _) =>
         {
             document.Components ??= new OpenApiComponents();
-            document.Components.SecuritySchemes ??= new Dictionary<string, IOpenApiSecurityScheme>();
-            document.Components.SecuritySchemes["Bearer"] = new OpenApiSecurityScheme
-            {
-                Type = SecuritySchemeType.Http,
-                Scheme = "bearer",
-                BearerFormat = "JWT",
-                Description = "Paste the token from POST /api/auth/login or /api/auth/register — no \"Bearer \" prefix needed here.",
-            };
-            document.Security ??= new List<OpenApiSecurityRequirement>();
+
+            document.Components.SecuritySchemes ??=
+                new Dictionary<string, IOpenApiSecurityScheme>();
+
+            document.Components.SecuritySchemes["Bearer"] =
+                new OpenApiSecurityScheme
+                {
+                    Type = SecuritySchemeType.Http,
+                    Scheme = "bearer",
+                    BearerFormat = "JWT",
+                    Description =
+                        "Paste token from POST /api/auth/login " +
+                        "or /api/auth/register. " +
+                        "Không cần thêm prefix \"Bearer \".",
+                };
+
+            document.Security ??=
+                new List<OpenApiSecurityRequirement>();
+
             document.Security.Add(
                 new OpenApiSecurityRequirement
                 {
-                    [new OpenApiSecuritySchemeReference("Bearer", document)] = [],
+                    [
+                        new OpenApiSecuritySchemeReference(
+                            "Bearer",
+                            document
+                        )
+                    ] = [],
                 }
             );
+
             return Task.CompletedTask;
         }
     );
 });
 
+// ============================================================
+// APPLICATION / INFRASTRUCTURE / PERSISTENCE
+// ============================================================
+
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddPersistence(builder.Configuration);
+
+// ============================================================
+// APPLICATION SERVICES
+// ============================================================
+
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<ITaskService, TaskService>();
 builder.Services.AddScoped<IProjectService, ProjectService>();
@@ -73,183 +102,365 @@ builder.Services.AddScoped<IHabitService, HabitService>();
 builder.Services.AddScoped<ISyncService, SyncService>();
 builder.Services.AddScoped<ISmartEngineService, SmartEngineService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
+
+// ============================================================
+// BACKGROUND SERVICES
+// ============================================================
+
 builder.Services.AddHostedService<DailySmartRecalcHostedService>();
 builder.Services.AddHostedService<NotificationGenerationHostedService>();
 
-// GET /health (liveness — is the process up at all) and GET /health/db
-// (readiness — can it actually reach the database) — see HealthChecks/.
-// Neither requires a JWT: MapHealthChecks endpoints aren't covered by
-// [Authorize] (that's only ever applied per-controller in this app, see
-// TasksController's own doc comment), and a health probe that itself
-// needs auth defeats the point of a health probe.
-builder.Services.AddHealthChecks().AddCheck<DatabaseHealthCheck>("database", tags: ["db"]);
+// ============================================================
+// HEALTH CHECK
+// ============================================================
 
-// JWT validation (incoming requests) — token *issuance* is
-// SmartTask.Infrastructure.Security.JwtTokenGenerator; this is the
-// other half, checking a Bearer token on [Authorize] endpoints.
-var jwtSection = builder.Configuration.GetSection(JwtOptions.SectionName);
+builder.Services
+    .AddHealthChecks()
+    .AddCheck<DatabaseHealthCheck>(
+        "database",
+        tags: ["db"]
+    );
+
+// ============================================================
+// JWT AUTHENTICATION
+// ============================================================
+
+var jwtSection =
+    builder.Configuration.GetSection(JwtOptions.SectionName);
+
 var jwtSecret =
     jwtSection["Secret"]
     ?? throw new InvalidOperationException(
-        "Missing 'Jwt:Secret'. Set it with `dotnet user-secrets set \"Jwt:Secret\" \"<value>\"` "
-            + "inside SmartTask.Api — never put a real signing secret in appsettings.json."
+        "Missing 'Jwt:Secret'. " +
+        "Set Jwt__Secret in Railway Variables or use user-secrets locally."
     );
 
 builder
-    .Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .Services.AddAuthentication(
+        JwtBearerDefaults.AuthenticationScheme
+    )
     .AddJwtBearer(options =>
     {
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuer = true,
-            ValidIssuer = jwtSection["Issuer"],
-            ValidateAudience = true,
-            ValidAudience = jwtSection["Audience"],
-            ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret)),
-            ValidateLifetime = true,
-            ClockSkew = TimeSpan.Zero,
-        };
+        options.TokenValidationParameters =
+            new TokenValidationParameters
+            {
+                ValidateIssuer = true,
+                ValidIssuer = jwtSection["Issuer"],
+
+                ValidateAudience = true,
+                ValidAudience = jwtSection["Audience"],
+
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey =
+                    new SymmetricSecurityKey(
+                        Encoding.UTF8.GetBytes(jwtSecret)
+                    ),
+
+                ValidateLifetime = true,
+
+                // Token hết hạn là hết hạn ngay,
+                // không cộng thêm mặc định 5 phút.
+                ClockSkew = TimeSpan.Zero,
+            };
     });
+
 builder.Services.AddAuthorization();
 
-// Phase 27 — apps/desktop's Vite dev server (localhost:5173) and the
-// packaged Tauri window both call this API from the browser/webview, so
-// it needs an explicit CORS policy; without one, every request from
-// the desktop app fails at the browser level before it even reaches a
-// controller. Named, not AllowAnyOrigin — this API isn't meant to be
-// called from an arbitrary website.
+// ============================================================
+// CORS
+// ============================================================
+
+const string FrontendCorsPolicy = "FrontendClient";
+
+var allowedOrigins =
+    builder.Configuration
+        .GetSection("Cors:AllowedOrigins")
+        .Get<string[]>()
+    ?? [];
+
+// Local development fallback.
 //
-// Origins are now read from Cors:AllowedOrigins config instead of being
-// hard-coded, so a production frontend domain (e.g., a Vercel deployment)
-// can be added via the Cors__AllowedOrigins__0 environment variable on
-// Railway without a code change or redeploy.
-const string DesktopCorsPolicy = "DesktopClient";
-var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
+// Production KHÔNG tự động AllowAnyOrigin.
+// Railway phải khai báo:
+// Cors__AllowedOrigins__0=https://domain.vercel.app
+if (builder.Environment.IsDevelopment() &&
+    allowedOrigins.Length == 0)
+{
+    allowedOrigins =
+    [
+        "http://localhost:5173",
+        "http://127.0.0.1:5173"
+    ];
+}
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy(
-        DesktopCorsPolicy,
-        policy => policy.WithOrigins(allowedOrigins).AllowAnyHeader().AllowAnyMethod()
+        FrontendCorsPolicy,
+        policy =>
+        {
+            if (allowedOrigins.Length > 0)
+            {
+                policy
+                    .WithOrigins(allowedOrigins)
+                    .AllowAnyHeader()
+                    .AllowAnyMethod();
+            }
+        }
     );
 });
 
+// ============================================================
+// BUILD APP
+// ============================================================
+
 var app = builder.Build();
+
+// ============================================================
+// STARTUP INFORMATION
+// ============================================================
+
+app.Logger.LogInformation(
+    "Environment: {Environment}",
+    app.Environment.EnvironmentName
+);
 
 if (allowedOrigins.Length == 0)
 {
     app.Logger.LogWarning(
-        "Cors:AllowedOrigins is empty — all cross-origin browser requests will be rejected."
+        "Cors:AllowedOrigins is empty. " +
+        "Cross-origin browser requests will be rejected. " +
+        "Set Cors__AllowedOrigins__0 in Railway Variables."
     );
 }
+else
+{
+    foreach (var origin in allowedOrigins)
+    {
+        app.Logger.LogInformation(
+            "CORS allowed origin: {Origin}",
+            origin
+        );
+    }
+}
 
-// Applies pending EF Core migrations on every startup — safe to run
-// unconditionally because MigrateAsync() only ever applies migrations
-// not yet recorded in __EFMigrationsHistory (idempotent: a no-op on a
-// database that's already current, which is every local dev run today).
-// Chosen over a separate manual-migration step because every migration
-// in this project so far (InitialSchema/AddUsers/AddSyncExternalId/
-// AddNotifications) is purely additive — no destructive migration has
-// ever been authored here.
+// ============================================================
+// DATABASE MIGRATION
+// ============================================================
 //
-// Retried a few times with backoff rather than failing on the very
-// first attempt — verified for real that a plain single-shot
-// MigrateAsync() crashes the whole process immediately if the database
-// isn't reachable *yet* (MySqlException, unhandled, process exits). On
-// Railway, the API and MySQL are separate services with no
-// guaranteed startup ordering, so the DB being a few seconds slow to
-// accept connections is a real, recoverable race, not a real
-// misconfiguration — worth a few retries before giving up. Still fails
-// fast and loud (crashes) once retries are exhausted, rather than
-// accepting traffic against a stale/missing schema.
+// Railway:
+// API và MySQL có thể start không cùng thời điểm.
+// Retry migration trước khi coi startup thất bại.
+//
+
 {
     const int maxAttempts = 5;
+
     for (var attempt = 1; ; attempt++)
     {
         try
         {
-            using var migrationScope = app.Services.CreateScope();
-            var dbContext = migrationScope.ServiceProvider.GetRequiredService<AppDbContext>();
+            using var migrationScope =
+                app.Services.CreateScope();
+
+            var dbContext =
+                migrationScope.ServiceProvider
+                    .GetRequiredService<AppDbContext>();
+
+            app.Logger.LogInformation(
+                "Running database migrations..."
+            );
+
             await dbContext.Database.MigrateAsync();
+
+            app.Logger.LogInformation(
+                "Database migrations completed successfully."
+            );
+
             break;
         }
-        catch (Exception ex) when (attempt < maxAttempts)
+        catch (Exception ex)
+            when (attempt < maxAttempts)
         {
+            var delaySeconds = attempt * 3;
+
             app.Logger.LogWarning(
                 ex,
-                "Migration attempt {Attempt}/{MaxAttempts} failed — retrying in {DelaySeconds}s.",
+                "Migration attempt {Attempt}/{MaxAttempts} failed. " +
+                "Retrying in {DelaySeconds} seconds.",
                 attempt,
                 maxAttempts,
-                attempt * 3
+                delaySeconds
             );
-            await Task.Delay(TimeSpan.FromSeconds(attempt * 3));
+
+            await Task.Delay(
+                TimeSpan.FromSeconds(delaySeconds)
+            );
         }
     }
 }
 
-// Configure the HTTP request pipeline.
+// ============================================================
+// EXCEPTION HANDLING
+// ============================================================
+
 if (app.Environment.IsDevelopment())
 {
+    // OpenAPI JSON
     app.MapOpenApi();
-    // Swagger UI only — the doc itself is Microsoft.AspNetCore.OpenApi's
-    // (MapOpenApi above), not Swashbuckle's own generator. Browse
-    // http://localhost:5277/swagger, click "Authorize", paste a token
-    // from /api/auth/login to try [Authorize] endpoints interactively.
+
+    // Swagger UI
     app.UseSwaggerUI(options =>
     {
-        options.SwaggerEndpoint("/openapi/v1.json", "SmartTask.Api v1");
+        options.SwaggerEndpoint(
+            "/openapi/v1.json",
+            "SmartTask.Api v1"
+        );
+
         options.RoutePrefix = "swagger";
     });
 }
 else
 {
-    // Production only — an unhandled exception must never reach the
-    // client as a raw stack trace or a connection-reset (which
-    // apps/desktop's httpClient.ts would misreport as "could not reach
-    // the server", hiding a real server-side failure behind a networking
-    // message). Logs the real exception server-side only; the response
-    // body never contains it.
     app.UseExceptionHandler(errorApp =>
     {
         errorApp.Run(async context =>
         {
-            context.Response.StatusCode = StatusCodes.Status500InternalServerError;
-            context.Response.ContentType = "application/json";
+            var exception =
+                context.Features
+                    .Get<IExceptionHandlerFeature>()
+                    ?.Error;
 
-            var exception = context.Features.Get<IExceptionHandlerFeature>()?.Error;
             context
-                .RequestServices.GetRequiredService<ILogger<Program>>()
-                .LogError(exception, "Unhandled exception processing {Path}", context.Request.Path);
+                .RequestServices
+                .GetRequiredService<ILogger<Program>>()
+                .LogError(
+                    exception,
+                    "Unhandled exception processing {Method} {Path}",
+                    context.Request.Method,
+                    context.Request.Path
+                );
 
-            await context.Response.WriteAsJsonAsync(new { message = "An unexpected error occurred." });
+            context.Response.StatusCode =
+                StatusCodes.Status500InternalServerError;
+
+            context.Response.ContentType =
+                "application/json";
+
+            await context.Response.WriteAsJsonAsync(
+                new
+                {
+                    message =
+                        "An unexpected error occurred."
+                }
+            );
         });
     });
 }
 
+// ============================================================
+// HTTPS
+// ============================================================
+//
+// Railway xử lý HTTPS ở reverse proxy.
+//
+// Browser
+//    ↓ HTTPS
+// Railway
+//    ↓ HTTP :8080
+// ASP.NET Core
+//
+// Vì vậy Production không cần UseHttpsRedirection().
+//
+// Local Development vẫn dùng được HTTPS.
+//
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseHttpsRedirection();
+}
+
+// ============================================================
+// CORS
+// ============================================================
+//
+// CORS phải đứng trước Authentication / Authorization.
+// Preflight OPTIONS không gửi JWT.
+//
+
+app.UseCors(FrontendCorsPolicy);
+
+// ============================================================
+// AUTHENTICATION / AUTHORIZATION
+// ============================================================
+
+app.UseAuthentication();
+app.UseAuthorization();
+
+// ============================================================
+// ROOT ENDPOINT
+// ============================================================
+//
+// Dùng để test Railway:
+// https://smarttaskmanagers-production.up.railway.app/
+//
+
+app.MapGet(
+    "/",
+    () =>
+        Results.Ok(
+            new
+            {
+                service = "SmartTask API",
+                status = "running",
+                environment =
+                    app.Environment.EnvironmentName,
+                timestamp =
+                    DateTimeOffset.UtcNow
+            }
+        )
+);
+
+// ============================================================
+// HEALTH CHECK ENDPOINTS
+// ============================================================
+
+// Chỉ kiểm tra API process.
+//
+// GET /health
 app.MapHealthChecks(
     "/health",
-    new HealthCheckOptions { Predicate = _ => false, ResponseWriter = HealthCheckJsonWriter.Write }
+    new HealthCheckOptions
+    {
+        Predicate = _ => false,
+        ResponseWriter =
+            HealthCheckJsonWriter.Write
+    }
 );
+
+// Kiểm tra database.
+//
+// GET /health/db
 app.MapHealthChecks(
     "/health/db",
     new HealthCheckOptions
     {
-        Predicate = check => check.Tags.Contains("db"),
-        ResponseWriter = HealthCheckJsonWriter.Write,
+        Predicate =
+            check => check.Tags.Contains("db"),
+
+        ResponseWriter =
+            HealthCheckJsonWriter.Write,
     }
 );
 
-app.UseHttpsRedirection();
-
-// Before Authentication — the browser's preflight OPTIONS request carries
-// no Authorization header, so CORS has to be resolved before the auth
-// middleware would otherwise reject it.
-app.UseCors(DesktopCorsPolicy);
-
-// Authentication before Authorization — order matters, ASP.NET Core won't warn you if it's backwards.
-app.UseAuthentication();
-app.UseAuthorization();
+// ============================================================
+// CONTROLLERS
+// ============================================================
 
 app.MapControllers();
+
+// ============================================================
+// RUN
+// ============================================================
 
 app.Run();
