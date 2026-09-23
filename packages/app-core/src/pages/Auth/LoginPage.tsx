@@ -1,5 +1,6 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Eye, EyeOff, ListChecks } from 'lucide-react';
 import { Button } from '@stm/ui';
 import { ApiError, configureApiClient } from '@stm/api-client';
 import { useAuthContext } from '../../state/AuthContext';
@@ -7,8 +8,24 @@ import { getStoredServerUrl, setStoredServerUrl } from '../../lib/serverUrl';
 import i18n from '../../i18n';
 
 const fieldClasses =
+  'w-full rounded-md border border-border bg-surface px-3 py-2 pr-10 text-sm text-ink-primary outline-none focus-visible:ring-2 focus-visible:ring-primary';
+const plainFieldClasses =
   'w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-ink-primary outline-none focus-visible:ring-2 focus-visible:ring-primary';
 const labelClasses = 'text-xs font-semibold uppercase tracking-wide text-ink-muted';
+
+interface PasswordRule {
+  key: string;
+  labelKey: string;
+  test: (password: string) => boolean;
+}
+
+/** Mirrors the backend's PasswordPolicy regex in AuthController.cs exactly — keep both in sync. */
+const PASSWORD_RULES: PasswordRule[] = [
+  { key: 'length', labelKey: 'auth.passwordRuleLength', test: (p) => p.length >= 8 },
+  { key: 'uppercase', labelKey: 'auth.passwordRuleUppercase', test: (p) => /[A-Z]/.test(p) },
+  { key: 'lowercase', labelKey: 'auth.passwordRuleLowercase', test: (p) => /[a-z]/.test(p) },
+  { key: 'number', labelKey: 'auth.passwordRuleNumber', test: (p) => /\d/.test(p) },
+];
 
 /**
  * The one screen that exists outside AppShell entirely (Phase 27) — App.tsx
@@ -23,11 +40,14 @@ export function LoginPage() {
   const [mode, setMode] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [displayName, setDisplayName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [serverUrl, setServerUrl] = useState(() => getStoredServerUrl());
   const [showServerField, setShowServerField] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   useEffect(() => {
     const storedLanguage = localStorage.getItem('stm.language');
@@ -39,6 +59,14 @@ export function LoginPage() {
       document.documentElement.classList.toggle('dark', storedTheme === 'dark');
     }
   }, []);
+
+  const passwordRuleResults = useMemo(
+    () => PASSWORD_RULES.map((rule) => ({ ...rule, met: rule.test(password) })),
+    [password],
+  );
+  const isPasswordValid = passwordRuleResults.every((rule) => rule.met);
+  const passwordsMatch = password === confirmPassword;
+  const isRegisterValid = mode === 'login' || (isPasswordValid && passwordsMatch);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -61,13 +89,18 @@ export function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-background p-8">
-      <div className="flex w-full max-w-sm flex-col gap-6 rounded-lg border border-border bg-surface p-8">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-xl font-bold text-ink-primary">{t('auth.appName')}</h1>
-          <p className="text-sm text-ink-secondary">
-            {mode === 'login' ? t('auth.signInSubtitle') : t('auth.registerSubtitle')}
-          </p>
+    <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-background to-primary-light/40 p-8">
+      <div className="flex w-full max-w-sm flex-col gap-6 rounded-xl border border-border bg-surface p-8 shadow-lg">
+        <div className="flex flex-col items-center gap-3 text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-white">
+            <ListChecks className="h-6 w-6" aria-hidden="true" />
+          </div>
+          <div className="flex flex-col gap-1">
+            <h1 className="text-xl font-bold text-ink-primary">{t('auth.appName')}</h1>
+            <p className="text-sm text-ink-secondary">
+              {mode === 'login' ? t('auth.signInSubtitle') : t('auth.registerSubtitle')}
+            </p>
+          </div>
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -90,7 +123,7 @@ export function LoginPage() {
                   placeholder="http://192.168.1.10:5277"
                   value={serverUrl}
                   onChange={(event) => setServerUrl(event.target.value)}
-                  className={fieldClasses}
+                  className={plainFieldClasses}
                 />
                 <p className="text-xs text-ink-muted">{t('auth.serverUrlHint')}</p>
               </div>
@@ -107,7 +140,7 @@ export function LoginPage() {
                 type="text"
                 value={displayName}
                 onChange={(event) => setDisplayName(event.target.value)}
-                className={fieldClasses}
+                className={plainFieldClasses}
               />
             </div>
           )}
@@ -123,7 +156,7 @@ export function LoginPage() {
               autoComplete="email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
-              className={fieldClasses}
+              className={plainFieldClasses}
             />
           </div>
 
@@ -131,20 +164,83 @@ export function LoginPage() {
             <label htmlFor="login-password" className={labelClasses}>
               {t('auth.passwordLabel')}
             </label>
-            <input
-              id="login-password"
-              type="password"
-              required
-              autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              className={fieldClasses}
-            />
+            <div className="relative">
+              <input
+                id="login-password"
+                type={showPassword ? 'text' : 'password'}
+                required
+                autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                className={fieldClasses}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((current) => !current)}
+                aria-label={showPassword ? t('auth.hidePassword') : t('auth.showPassword')}
+                className="absolute inset-y-0 right-0 flex items-center px-3 text-ink-muted hover:text-ink-secondary"
+              >
+                {showPassword ? (
+                  <EyeOff className="h-4 w-4" aria-hidden="true" />
+                ) : (
+                  <Eye className="h-4 w-4" aria-hidden="true" />
+                )}
+              </button>
+            </div>
           </div>
+
+          {mode === 'register' && (
+            <>
+              <ul className="flex flex-col gap-1 rounded-md bg-surface-secondary p-3">
+                {passwordRuleResults.map((rule) => (
+                  <li
+                    key={rule.key}
+                    className={'text-xs ' + (rule.met ? 'text-success' : 'text-ink-muted')}
+                  >
+                    {rule.met ? '✓' : '○'} {t(rule.labelKey)}
+                  </li>
+                ))}
+              </ul>
+
+              <div className="flex flex-col gap-1">
+                <label htmlFor="login-confirm-password" className={labelClasses}>
+                  {t('auth.confirmPasswordLabel')}
+                </label>
+                <div className="relative">
+                  <input
+                    id="login-confirm-password"
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    required
+                    autoComplete="new-password"
+                    value={confirmPassword}
+                    onChange={(event) => setConfirmPassword(event.target.value)}
+                    className={fieldClasses}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword((current) => !current)}
+                    aria-label={
+                      showConfirmPassword ? t('auth.hidePassword') : t('auth.showPassword')
+                    }
+                    className="absolute inset-y-0 right-0 flex items-center px-3 text-ink-muted hover:text-ink-secondary"
+                  >
+                    {showConfirmPassword ? (
+                      <EyeOff className="h-4 w-4" aria-hidden="true" />
+                    ) : (
+                      <Eye className="h-4 w-4" aria-hidden="true" />
+                    )}
+                  </button>
+                </div>
+                {confirmPassword.length > 0 && !passwordsMatch && (
+                  <p className="text-xs text-danger">{t('auth.passwordMismatch')}</p>
+                )}
+              </div>
+            </>
+          )}
 
           {error && <p className="text-sm text-danger">{error}</p>}
 
-          <Button type="submit" variant="primary" disabled={isSubmitting}>
+          <Button type="submit" variant="primary" disabled={isSubmitting || !isRegisterValid}>
             {isSubmitting
               ? t('auth.submitting')
               : mode === 'login'

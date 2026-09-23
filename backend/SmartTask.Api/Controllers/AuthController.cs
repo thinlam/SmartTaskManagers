@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SmartTask.Application.Auth;
@@ -22,12 +23,34 @@ public sealed record UpdateThemeRequest(string Theme);
 [Route("api/auth")]
 public sealed class AuthController(IAuthService authService) : ControllerBase
 {
+    /// <summary>
+    /// Min 8 chars, at least one lowercase, one uppercase, one digit — matches
+    /// the client-side rules shown on the Register form's live checklist.
+    /// Checked here (not in AuthService) to match this controller's existing
+    /// pattern of validating request shape before calling the service, same
+    /// as UpdateLanguage/UpdateTheme's allowed-value checks below.
+    /// </summary>
+    private static readonly Regex PasswordPolicy = new(
+        @"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$",
+        RegexOptions.Compiled
+    );
+
     [HttpPost("register")]
     public async Task<ActionResult<AuthResponse>> Register(
         RegisterRequest request,
         CancellationToken cancellationToken
     )
     {
+        if (!PasswordPolicy.IsMatch(request.Password))
+        {
+            return BadRequest(
+                new
+                {
+                    message = "Password must be at least 8 characters and include an uppercase letter, a lowercase letter, and a number.",
+                }
+            );
+        }
+
         try
         {
             var result = await authService.RegisterAsync(request, cancellationToken);

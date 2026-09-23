@@ -1123,3 +1123,40 @@ switcher.
   tức với tương phản đọc được ở mọi khu vực nhìn thấy (Dashboard, Sidebar, ít nhất 1 detail drawer),
   tắt lại, reload trang, xác nhận theme vừa chọn được giữ nguyên qua `PATCH /api/auth/theme`
   (Task 1).
+
+## Redesign Login/Register + ràng buộc mật khẩu đã thực hiện
+
+Hạng mục C trong 4 hạng mục được yêu cầu (A. i18n ✅, B. Dark mode ✅, C. Redesign
+Login/Register, D. Redesign Settings — chưa làm). Thực hiện theo quy trình bounded (flow
+`LoginPage.tsx` đã tồn tại sẵn, chỉ nâng cấp — không cần spec/plan file riêng).
+
+**Backend — validate password khi đăng ký (`backend/SmartTask.Api/Controllers/AuthController.cs`):**
+trước đây `POST /api/auth/register` không kiểm tra độ mạnh mật khẩu ở bất kỳ đâu — chấp nhận bất kỳ
+chuỗi nào miễn không rỗng (chỉ chặn bởi thuộc tính `required` phía client, có thể bypass bằng gọi
+API trực tiếp). Thêm `PasswordPolicy` (regex `^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$`) kiểm tra ngay
+trong action `Register`, trả `400 Bad Request` nếu không đạt — theo đúng pattern validate-trong-
+controller đã dùng cho `UpdateLanguage`/`UpdateTheme`, không đổi `RegisterRequest`/`AuthService`.
+
+**Frontend — redesign `LoginPage.tsx` (giữ nguyên layout card giữa màn hình):**
+
+- Visual: thêm icon tròn (`ListChecks` từ `lucide-react`) phía trên tiêu đề, card đổi từ
+  `rounded-lg` sang `rounded-xl` + `shadow-lg`, nền có gradient nhẹ
+  (`bg-gradient-to-b from-background to-primary-light/40`) thay vì màu phẳng.
+- Thêm field **Confirm Password** (chỉ hiện khi `mode === 'register'`), validate khớp bằng JS thời
+  gian thực, hiện lỗi ngay khi gõ nếu không khớp (`auth.passwordMismatch`).
+- Thêm **checklist độ mạnh mật khẩu** thời gian thực (4 điều kiện: ≥8 ký tự, có chữ hoa, chữ
+  thường, số) — dấu ✓ xanh/○ xám cập nhật theo từng ký tự gõ, mirror đúng regex phía backend (ghi
+  chú rõ trong code để giữ đồng bộ nếu backend đổi rule sau này).
+- Thêm nút **show/hide password** (icon `Eye`/`EyeOff`) cho cả Password và Confirm Password.
+- Nút Submit tự động disable ở chế độ đăng ký nếu password chưa đạt đủ 4 điều kiện hoặc confirm
+  chưa khớp — không đợi submit mới báo lỗi.
+- 8 key i18n mới trong namespace `auth` (cả `en.json`/`vi.json`): `confirmPasswordLabel`,
+  `passwordMismatch`, `showPassword`, `hidePassword`, 4 `passwordRule*`.
+
+**Verify thật:** `npm run typecheck`/`lint`/`format` sạch toàn repo; `npm run build --workspace=apps/desktop`
+và `--workspace=apps/web` đều build production sạch; `dotnet build -c Release` backend
+`0 Warning(s), 0 Error(s)`. **Chưa click-test thật trong browser** — `claude-in-chrome` tool nạp
+được lần này nhưng `tabs_context_mcp` báo "Browser extension is not connected", cùng giới hạn môi
+trường đã ghi nhận ở các phase/rollout trước; khuyến nghị người dùng tự kiểm tra bằng mắt luồng
+đăng ký (checklist password, confirm password, show/hide, disable submit) trước khi coi hạng mục
+này là hoàn thiện 100%.

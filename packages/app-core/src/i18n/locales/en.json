@@ -37,7 +37,15 @@
     "submitting": "Please wait…",
     "switchToRegister": "Don't have an account? Create one",
     "switchToLogin": "Already have an account? Sign in",
-    "genericError": "Could not reach the server. Is the backend running?"
+    "genericError": "Could not reach the server. Is the backend running?",
+    "confirmPasswordLabel": "Confirm password",
+    "passwordMismatch": "Passwords don't match",
+    "showPassword": "Show password",
+    "hidePassword": "Hide password",
+    "passwordRuleLength": "At least 8 characters",
+    "passwordRuleUppercase": "One uppercase letter",
+    "passwordRuleLowercase": "One lowercase letter",
+    "passwordRuleNumber": "One number"
   },
   "settings": {
     "language": "Language",
