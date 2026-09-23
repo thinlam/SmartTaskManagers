@@ -1160,3 +1160,35 @@ và `--workspace=apps/web` đều build production sạch; `dotnet build -c Rele
 trường đã ghi nhận ở các phase/rollout trước; khuyến nghị người dùng tự kiểm tra bằng mắt luồng
 đăng ký (checklist password, confirm password, show/hide, disable submit) trước khi coi hạng mục
 này là hoàn thiện 100%.
+
+## Redesign Settings đã thực hiện
+
+Hạng mục D — hạng mục cuối trong 4 hạng mục được yêu cầu (A. i18n ✅, B. Dark mode ✅, C. Redesign
+Login/Register ✅, D. Redesign Settings). Bounded task (trang `SettingsPage.tsx` đã tồn tại sẵn,
+chỉ nâng cấp visual, không đổi cấu trúc/logic/data binding nào).
+
+**Thay đổi:** giữ nguyên 4 section xếp dọc (General/Task Defaults/Focus & Schedule/Smart Engine)
+và toàn bộ field/logic hiện có. Thêm:
+
+- Icon (`lucide-react`) cạnh mỗi tiêu đề section: `SlidersHorizontal` (General), `ListChecks`
+  (Task Defaults), `Clock` (Focus & Schedule), `Sparkles` (Smart Engine) — component `SectionHeading`
+  dùng chung.
+- Icon `Settings` lớn trong vòng tròn màu primary cạnh tiêu đề trang, cùng phong cách với icon
+  logo đã thêm ở `LoginPage.tsx` (hạng mục C).
+- Giới hạn `max-w-3xl` cho toàn trang (căn giữa bằng `mx-auto`) — tránh field bị kéo dài quá mức
+  trên màn hình rộng.
+- Card mỗi section: `rounded-lg` → `rounded-xl`, thêm `shadow-sm`.
+- Các hàng toggle Smart Engine: thêm hiệu ứng nền hover nhẹ (`hover:bg-surface-secondary`) khi rê
+  chuột.
+
+**Verify thật:** `npm run typecheck`/`lint`/`format` sạch toàn repo (1 lần format lệch ban đầu do
+import `lucide-react` nhiều dòng, đã tự sửa bằng `prettier --write`); `npm run build
+--workspace=apps/desktop` và `--workspace=apps/web` đều build production sạch. **Chưa click-test
+thật trong browser** — cùng giới hạn môi trường đã ghi nhận ở hạng mục C ngay phía trên
+(`claude-in-chrome` không kết nối được); khuyến nghị người dùng tự kiểm tra bằng mắt bố cục mới
+(spacing, icon, max-width trên màn hình rộng, hover state) trước khi coi hạng mục này hoàn thiện
+100%.
+
+**Cả 4 hạng mục A–D đã hoàn thành.** Việc còn lại thuộc về người dùng: tự click-test thật trên
+trình duyệt cho cả 4 hạng mục (đăng nhập/đăng ký, đổi ngôn ngữ, bật/tắt dark mode, xem Settings) khi
+có công cụ điều khiển browser kết nối được trong phiên sau.

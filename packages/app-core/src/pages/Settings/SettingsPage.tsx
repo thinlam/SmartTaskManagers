@@ -1,6 +1,13 @@
 import type { Priority, TaskStatus } from '@stm/types';
 import { Switch } from '@stm/ui';
 import { useTranslation } from 'react-i18next';
+import {
+  Clock,
+  ListChecks,
+  Settings as SettingsIcon,
+  Sparkles,
+  SlidersHorizontal,
+} from 'lucide-react';
 import { useSettingsContext } from '../../state/SettingsContext';
 import { useAuthContext } from '../../state/AuthContext';
 
@@ -11,6 +18,8 @@ const PRIORITIES: Priority[] = ['Critical', 'Urgent', 'High', 'Medium', 'Low'];
 const fieldClasses =
   'w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-ink-primary outline-none focus-visible:ring-2 focus-visible:ring-primary';
 const labelClasses = 'text-xs font-semibold uppercase tracking-wide text-ink-muted';
+const sectionCardClasses =
+  'grid grid-cols-1 gap-4 rounded-xl border border-border bg-surface p-4 shadow-sm sm:grid-cols-2';
 
 /**
  * A 1:1 typed form over DEFAULT_SETTINGS (apps/google-sheets/src/
@@ -50,17 +59,22 @@ export function SettingsPage() {
   };
 
   return (
-    <div className="flex flex-col gap-6 p-8">
-      <header className="flex flex-col gap-1">
-        <h1 className="text-[28px] font-bold leading-[34px] text-ink-primary">
-          {t('settings.title')}
-        </h1>
-        <p className="text-sm text-ink-secondary">{t('settings.subtitle')}</p>
+    <div className="mx-auto flex max-w-3xl flex-col gap-6 p-8">
+      <header className="flex items-center gap-3">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-white">
+          <SettingsIcon className="h-5 w-5" aria-hidden="true" />
+        </div>
+        <div className="flex flex-col gap-1">
+          <h1 className="text-[28px] font-bold leading-[34px] text-ink-primary">
+            {t('settings.title')}
+          </h1>
+          <p className="text-sm text-ink-secondary">{t('settings.subtitle')}</p>
+        </div>
       </header>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-semibold text-ink-primary">{t('settings.sectionGeneral')}</h2>
-        <div className="grid grid-cols-1 gap-4 rounded-lg border border-border bg-surface p-4 sm:grid-cols-2">
+        <SectionHeading icon={SlidersHorizontal} title={t('settings.sectionGeneral')} />
+        <div className={sectionCardClasses}>
           <div className="flex flex-col gap-1">
             <label htmlFor="settings-workspace-name" className={labelClasses}>
               {t('settings.fieldWorkspaceName')}
@@ -135,10 +149,8 @@ export function SettingsPage() {
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-semibold text-ink-primary">
-          {t('settings.sectionTaskDefaults')}
-        </h2>
-        <div className="grid grid-cols-1 gap-4 rounded-lg border border-border bg-surface p-4 sm:grid-cols-2">
+        <SectionHeading icon={ListChecks} title={t('settings.sectionTaskDefaults')} />
+        <div className={sectionCardClasses}>
           <div className="flex flex-col gap-1">
             <label htmlFor="settings-default-status" className={labelClasses}>
               {t('settings.fieldDefaultStatus')}
@@ -209,10 +221,8 @@ export function SettingsPage() {
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-semibold text-ink-primary">
-          {t('settings.sectionFocusSchedule')}
-        </h2>
-        <div className="grid grid-cols-1 gap-4 rounded-lg border border-border bg-surface p-4 sm:grid-cols-2">
+        <SectionHeading icon={Clock} title={t('settings.sectionFocusSchedule')} />
+        <div className={sectionCardClasses}>
           <div className="flex flex-col gap-1">
             <label htmlFor="settings-focus-days-start" className={labelClasses}>
               {t('settings.fieldFocusDaysStart')}
@@ -307,10 +317,8 @@ export function SettingsPage() {
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-lg font-semibold text-ink-primary">
-          {t('settings.sectionSmartEngine')}
-        </h2>
-        <div className="flex flex-col divide-y divide-border rounded-lg border border-border bg-surface">
+        <SectionHeading icon={Sparkles} title={t('settings.sectionSmartEngine')} />
+        <div className="flex flex-col divide-y divide-border rounded-xl border border-border bg-surface shadow-sm">
           <SettingsToggleRow
             label={t('settings.toggleSmartScoreLabel')}
             description={t('settings.toggleSmartScoreDescription')}
@@ -342,6 +350,20 @@ export function SettingsPage() {
   );
 }
 
+interface SectionHeadingProps {
+  icon: typeof SlidersHorizontal;
+  title: string;
+}
+
+function SectionHeading({ icon: Icon, title }: SectionHeadingProps) {
+  return (
+    <h2 className="flex items-center gap-2 text-lg font-semibold text-ink-primary">
+      <Icon className="h-5 w-5 text-ink-muted" aria-hidden="true" />
+      {title}
+    </h2>
+  );
+}
+
 interface SettingsToggleRowProps {
   label: string;
   description: string;
@@ -356,7 +378,7 @@ function SettingsToggleRow({
   onCheckedChange,
 }: SettingsToggleRowProps) {
   return (
-    <div className="flex items-center justify-between gap-4 p-4">
+    <div className="flex items-center justify-between gap-4 p-4 transition-colors hover:bg-surface-secondary">
       <div className="flex flex-col gap-0.5">
         <span className="text-sm font-medium text-ink-primary">{label}</span>
         <span className="text-xs text-ink-muted">{description}</span>
