@@ -15,6 +15,7 @@ public static class DependencyInjection
     )
     {
         services.AddSingleton<IDateTimeProvider, SystemDateTimeProvider>();
+        services.AddScoped<ICurrentUserContext, CurrentUserContext>();
 
         services.Configure<JwtOptions>(configuration.GetSection(JwtOptions.SectionName));
         services.AddSingleton<IPasswordHasher, PasswordHasherAdapter>();
