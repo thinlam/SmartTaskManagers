@@ -12,6 +12,9 @@ namespace SmartTask.Domain.Habits;
 /// </summary>
 public sealed class Habit : SyncableEntity
 {
+    /// <summary>The account that owns this habit. Set automatically by AppDbContext.SaveChangesAsync on insert — never set this directly.</summary>
+    public Guid UserId { get; set; }
+
     public required string Name { get; set; }
     public HabitFrequencyType Frequency { get; set; } = HabitFrequencyType.Daily;
     public int Streak { get; set; }
