@@ -1227,27 +1227,49 @@ tất cả user bị lẫn lộn.
   và `smart-task-manager_0.1.0_x64-setup.exe` ✓
 - `npm run build:web` — build production thành công, generate `dist/` với 0 error ✓
 
-**Verify KHÔNG thực hiện (code chưa deploy, không thể test trên production):**
+**Final review (whole-branch, model mạnh nhất) phát hiện 2 lỗi Important trước khi merge, đã fix
+trong 1 fix wave + re-review sạch:**
 
-Theo scope change, branch này chưa merge vào `main` và chưa redeploy lên Railway production —
-mà những bước này là điều kiện để chạy curl checks. Vì thế:
-- `POST /api/auth/login` rồi `GET /api/tasks` trên existing account — **chưa verify** (code phải
-  live trên production rails mới có thể test).
-- `POST /api/auth/register` account mới rồi `GET /api/tasks` (expect `[]`) — **chưa verify**.
-- Cross-account isolation (new account không nhìn thấy task của existing account, và ngược lại) —
-  **chưa verify** end-to-end (xác nhận này là trách nhiệm của coordinator sau khi merge/deploy).
-- Backfill migrations chạy trên production DB thật — **chưa verify**, sẽ verify sau khi deploy.
+- `ExternalId` unique index (Tasks/Projects/Goals/Habits) vẫn global, không theo user — Sheets sync
+  dùng ID tuần tự theo từng spreadsheet (`TASK-0001`...) nên 2 account khác nhau sẽ đụng ID giống
+  nhau, sync sẽ lỗi cho mọi account trừ account đầu tiên. Fix: đổi thành composite unique index
+  `(UserId, ExternalId)`, migration được tạo lại (vì chưa apply lần nào nên an toàn để sửa trực tiếp).
+- Hai hosted service (`DailySmartRecalcHostedService`, `NotificationGenerationHostedService`) bọc
+  try/catch quanh TOÀN BỘ vòng lặp user — 1 user lỗi sẽ khiến mọi user sau đó trong danh sách bị bỏ
+  qua cho tới lần chạy tiếp theo. Fix: try/catch chuyển vào bên trong từng vòng lặp, mỗi user độc
+  lập với nhau.
 
-Việc xác thực cuối cùng (confirm existing account giữ nguyên data, new account bắt đầu rỗng,
-isolation holds) sẽ diễn ra sau merge/redeploy, và là trách nhiệm của coordinator để report.
+**Merge vào `main` + deploy Railway + verify thật trên production (do coordinator thực hiện sau merge):**
+
+- Merge local vào `main`, build lại (`dotnet build -c Release` — 0 Warning/0 Error), push lên
+  `origin/main`.
+- Railway tự động build + deploy (mất khoảng 2 phút để container mới thay thế container cũ —
+  xác nhận bằng cách polling `/api/tasks` với account mới liên tục tới khi thấy `[]` thay vì thấy
+  dữ liệu cũ, chứng tỏ container cũ đã bị thay).
+- **Verify thật bằng curl với account thật trên production, đã PASS:**
+  - Tạo 2 account mới (`verify-final-a-*@example.com`, `verify-final-b-*@example.com`) — cả hai
+    `GET /api/tasks`/`projects`/`goals`/`habits` đều trả `[]` ngay sau khi đăng ký.
+  - Tạo task trên account A → account A thấy 1 task, account B vẫn `[]` — không rò rỉ.
+  - `GET /api/tasks/{id}` của task thuộc account A, gọi bằng token account B → `404`, không phải
+    `200` với dữ liệu của A.
+  - **Xác nhận migration + backfill chạy đúng trên DB thật**: trong lúc container cũ còn chạy (trước
+    khi Railway thay xong), 2 account mới tạo lúc đó đều nhìn thấy đúng 1 task cũ tên "test 1" —
+    xác nhận dữ liệu cũ (trước khi có cột `UserId`) đã được backfill thành công, không mất, dù
+    lúc đó filter theo user chưa có hiệu lực (code cũ). Sau khi container mới lên, filter hoạt động
+    đúng như trên.
+- **Chưa verify riêng**: đăng nhập account gốc thật của bạn (không có mật khẩu account đó trong
+  session này) để xác nhận trực tiếp task/project/goal/habit cũ vẫn còn — nhưng vì backfill gán cho
+  "account được tạo sớm nhất", và dữ liệu cũ xác nhận không mất (thấy được qua account test ở trên
+  trước khi filter có hiệu lực), nên rủi ro mất dữ liệu coi như đã loại trừ. Đề nghị bạn tự đăng
+  nhập lại app để xác nhận lần cuối.
 
 **Test/debug account còn tồn tại trong production (không có delete endpoint):**
 
 - `debugtest2026@example.com` — từ diagnostic CORS session trước đó, chưa xoá.
-- Một account xác nhận (verify-isolation-*@example.com, hoặc tương tự) sẽ được tạo khi coordinator
-  chạy kiểm tra post-deploy ở step 6 của verification, rồi để lại trong DB vì không có `DELETE
-  /api/users/{id}` endpoint để dọn — có chủ đích ghi nhận rõ, không im lặng.
+- `verify-iso-a/b/c-*@example.com`, `verify-final-a/b-*@example.com` — các account throwaway tạo
+  trong lúc verify isolation ở trên, đều dùng domain `@example.com` (không thể nhận email thật),
+  chưa xoá vì không có `DELETE /api/users/{id}` endpoint.
 
 **Git commit thực hiện:**
-- 7 commit từ Tasks 1–7, đã push vào worktree
-- Tasks 8 (task này) commit `docs: record per-user data isolation rollout in ROADMAP.md`
+- 9 commit từ Tasks 1–8 + final-review fix wave, merge vào `main` (commit `cdceca2`), push lên
+  `origin/main` → Railway deploy tự động.
