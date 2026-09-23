@@ -1,4 +1,7 @@
+using Microsoft.EntityFrameworkCore;
+using SmartTask.Application.Abstractions;
 using SmartTask.Application.Notifications;
+using SmartTask.Persistence;
 
 namespace SmartTask.Api.BackgroundServices;
 
@@ -26,12 +29,23 @@ public sealed class NotificationGenerationHostedService(
         {
             try
             {
-                using var scope = scopeFactory.CreateScope();
-                var notificationService = scope.ServiceProvider.GetRequiredService<INotificationService>();
-                var count = await notificationService.GenerateAsync(stoppingToken);
-                if (count > 0)
+                using var userListScope = scopeFactory.CreateScope();
+                var dbContext = userListScope.ServiceProvider.GetRequiredService<AppDbContext>();
+                var userIds = await dbContext.Users.Select(u => u.Id).ToListAsync(stoppingToken);
+
+                var totalCount = 0;
+                foreach (var userId in userIds)
                 {
-                    logger.LogInformation("Notification generation created {Count} notification(s).", count);
+                    using var userScope = scopeFactory.CreateScope();
+                    userScope.ServiceProvider.GetRequiredService<ICurrentUserContext>().UserId = userId;
+
+                    var notificationService = userScope.ServiceProvider.GetRequiredService<INotificationService>();
+                    totalCount += await notificationService.GenerateAsync(stoppingToken);
+                }
+
+                if (totalCount > 0)
+                {
+                    logger.LogInformation("Notification generation created {Count} notification(s) across {UserCount} account(s).", totalCount, userIds.Count);
                 }
             }
             catch (Exception ex) when (ex is not OperationCanceledException)

@@ -1,4 +1,7 @@
+using Microsoft.EntityFrameworkCore;
+using SmartTask.Application.Abstractions;
 using SmartTask.Application.SmartEngine;
+using SmartTask.Persistence;
 
 namespace SmartTask.Api.BackgroundServices;
 
@@ -35,10 +38,21 @@ public sealed class DailySmartRecalcHostedService(
 
             try
             {
-                using var scope = scopeFactory.CreateScope();
-                var smartEngineService = scope.ServiceProvider.GetRequiredService<ISmartEngineService>();
-                var count = await smartEngineService.RecalculateAllAsync(stoppingToken);
-                logger.LogInformation("Daily Smart Engine recalculation updated {Count} task(s).", count);
+                using var userListScope = scopeFactory.CreateScope();
+                var dbContext = userListScope.ServiceProvider.GetRequiredService<AppDbContext>();
+                var userIds = await dbContext.Users.Select(u => u.Id).ToListAsync(stoppingToken);
+
+                var totalCount = 0;
+                foreach (var userId in userIds)
+                {
+                    using var userScope = scopeFactory.CreateScope();
+                    userScope.ServiceProvider.GetRequiredService<ICurrentUserContext>().UserId = userId;
+
+                    var smartEngineService = userScope.ServiceProvider.GetRequiredService<ISmartEngineService>();
+                    totalCount += await smartEngineService.RecalculateAllAsync(stoppingToken);
+                }
+
+                logger.LogInformation("Daily Smart Engine recalculation updated {Count} task(s) across {UserCount} account(s).", totalCount, userIds.Count);
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
