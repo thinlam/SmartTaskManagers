@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
+using SmartTask.Application.Abstractions;
 
 namespace SmartTask.Persistence;
 
@@ -27,6 +28,20 @@ public sealed class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbConte
             .UseMySql(connectionString, ServerVersion.Parse("8.0.0-mysql"))
             .Options;
 
-        return new AppDbContext(options);
+        // Provide a stub CurrentUserContext for design-time use (migrations).
+        // At runtime, this factory is never used — the app's DI container
+        // provides the real context via AddPersistence.
+        var stubContext = new StubCurrentUserContext();
+        return new AppDbContext(options, stubContext);
+    }
+
+    /// <summary>
+    /// Stub implementation of ICurrentUserContext for design-time use.
+    /// Since migrations don't run queries with per-user filters, UserId
+    /// can remain null without affecting schema generation.
+    /// </summary>
+    private sealed class StubCurrentUserContext : ICurrentUserContext
+    {
+        public Guid? UserId { get; set; }
     }
 }
