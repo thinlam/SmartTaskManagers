@@ -1,3 +1,4 @@
+using System.Security.Claims;
 using System.Text;
 using System.Text.Json.Serialization;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -8,6 +9,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using SmartTask.Api.BackgroundServices;
 using SmartTask.Api.HealthChecks;
+using SmartTask.Application.Abstractions;
 using SmartTask.Application.Auth;
 using SmartTask.Application.Goals;
 using SmartTask.Application.Habits;
@@ -410,6 +412,32 @@ app.UseCors(FrontendCorsPolicy);
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+// ============================================================
+// CURRENT USER CONTEXT
+// ============================================================
+//
+// Must run after UseAuthentication/UseAuthorization — that's what
+// populates HttpContext.User's claims. AppDbContext's query filter
+// (see SmartTask.Persistence/AppDbContext.cs) reads this per request
+// to scope every Task/Project/Goal/Habit/Notification query to the
+// caller. Left null (never set) for unauthenticated requests — the
+// filter then matches nothing, not everything.
+//
+
+app.Use(
+    async (context, next) =>
+    {
+        var userIdClaim = context.User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (Guid.TryParse(userIdClaim, out var userId))
+        {
+            var currentUserContext = context.RequestServices.GetRequiredService<ICurrentUserContext>();
+            currentUserContext.UserId = userId;
+        }
+
+        await next(context);
+    }
+);
 
 // ============================================================
 // ROOT ENDPOINT
