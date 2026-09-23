@@ -172,7 +172,15 @@ builder.Services.AddAuthorization();
 
 const string FrontendCorsPolicy = "FrontendClient";
 
-var allowedOrigins =
+// Tauri desktop app origins are fixed in code, not config — Railway's
+// index-based array env vars (Cors__AllowedOrigins__0, __1, ...)
+// overwrite appsettings.json entries by position, which previously
+// wiped out "tauri://localhost" whenever an extra web origin was
+// configured on Railway. Keeping these hardcoded makes them immune
+// to that overwrite.
+var fixedOrigins = new[] { "tauri://localhost", "http://tauri.localhost" };
+
+var configuredOrigins =
     builder.Configuration
         .GetSection("Cors:AllowedOrigins")
         .Get<string[]>()
@@ -184,14 +192,20 @@ var allowedOrigins =
 // Railway phải khai báo:
 // Cors__AllowedOrigins__0=https://domain.vercel.app
 if (builder.Environment.IsDevelopment() &&
-    allowedOrigins.Length == 0)
+    configuredOrigins.Length == 0)
 {
-    allowedOrigins =
+    configuredOrigins =
     [
         "http://localhost:5173",
         "http://127.0.0.1:5173"
     ];
 }
+
+var allowedOrigins =
+    fixedOrigins
+        .Concat(configuredOrigins)
+        .Distinct()
+        .ToArray();
 
 builder.Services.AddCors(options =>
 {
