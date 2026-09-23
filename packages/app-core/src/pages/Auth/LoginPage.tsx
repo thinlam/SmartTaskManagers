@@ -4,7 +4,7 @@ import { Eye, EyeOff, ListChecks } from 'lucide-react';
 import { Button } from '@stm/ui';
 import { ApiError, configureApiClient } from '@stm/api-client';
 import { useAuthContext } from '../../state/AuthContext';
-import { getStoredServerUrl, setStoredServerUrl } from '../../lib/serverUrl';
+import { getStoredServerUrl } from '../../lib/serverUrl';
 import i18n from '../../i18n';
 
 const fieldClasses =
@@ -44,8 +44,7 @@ export function LoginPage() {
   const [displayName, setDisplayName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [serverUrl, setServerUrl] = useState(() => getStoredServerUrl());
-  const [showServerField, setShowServerField] = useState(false);
+  const [serverUrl] = useState(() => getStoredServerUrl());
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -75,7 +74,6 @@ export function LoginPage() {
     try {
       const trimmedUrl = serverUrl.trim().replace(/\/+$/, '');
       configureApiClient({ baseUrl: trimmedUrl });
-      setStoredServerUrl(trimmedUrl);
       if (mode === 'login') {
         await login(email, password);
       } else {
@@ -104,32 +102,6 @@ export function LoginPage() {
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <div className="flex flex-col gap-1">
-            <button
-              type="button"
-              onClick={() => setShowServerField((current) => !current)}
-              className="self-start text-xs font-medium text-ink-muted hover:text-ink-secondary hover:underline"
-            >
-              {showServerField ? t('auth.hideServerField') : t('auth.showServerField')}
-            </button>
-            {showServerField && (
-              <div className="flex flex-col gap-1">
-                <label htmlFor="login-server-url" className={labelClasses}>
-                  {t('auth.serverUrlLabel')}
-                </label>
-                <input
-                  id="login-server-url"
-                  type="text"
-                  placeholder="http://192.168.1.10:5277"
-                  value={serverUrl}
-                  onChange={(event) => setServerUrl(event.target.value)}
-                  className={plainFieldClasses}
-                />
-                <p className="text-xs text-ink-muted">{t('auth.serverUrlHint')}</p>
-              </div>
-            )}
-          </div>
-
           {mode === 'register' && (
             <div className="flex flex-col gap-1">
               <label htmlFor="login-display-name" className={labelClasses}>
