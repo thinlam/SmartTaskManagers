@@ -94,8 +94,11 @@ export function AppShell() {
       <div className="flex flex-1 flex-col overflow-hidden">
         <Topbar
           onNewTask={openCreateDrawer}
-          onAccountClick={logout}
+          onSettingsClick={() => navigate('/settings')}
+          onSignOutClick={logout}
           accountLabel={email ?? undefined}
+          settingsLabel={t('nav.settings')}
+          signOutLabel={t('auth.signOut')}
           notifications={notifications}
           notificationsLoading={notificationsLoading}
           onNotificationClick={handleNotificationClick}

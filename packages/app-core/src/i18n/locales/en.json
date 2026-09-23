@@ -45,7 +45,8 @@
     "passwordRuleLength": "At least 8 characters",
     "passwordRuleUppercase": "One uppercase letter",
     "passwordRuleLowercase": "One lowercase letter",
-    "passwordRuleNumber": "One number"
+    "passwordRuleNumber": "One number",
+    "signOut": "Sign out"
   },
   "settings": {
     "language": "Language",

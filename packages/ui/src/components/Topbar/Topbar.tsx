@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Bell, CircleUserRound, Plus, Search } from 'lucide-react';
+import { Bell, CircleUserRound, LogOut, Plus, Search, Settings } from 'lucide-react';
 import type { AppNotification } from '@stm/types';
 import { Button } from '../Button';
 import { NotificationPanel } from '../NotificationPanel';
@@ -15,13 +15,15 @@ export interface TopbarProps {
   onNotificationClick?: (notification: AppNotification) => void;
   onMarkAllNotificationsRead?: () => void;
   /**
-   * Phase 27 — the account button now does something: signs out of the
-   * real session. `accountLabel` (usually the signed-in email) shows as
-   * a native tooltip on hover; there's no account menu/settings page
-   * behind this yet, just the one real action available.
+   * The account button opens a small menu (signed-in email, Settings,
+   * Sign out) instead of signing out on click directly — a single
+   * misclick used to end the session with no confirmation.
    */
-  onAccountClick?: () => void;
+  onSettingsClick?: () => void;
+  onSignOutClick?: () => void;
   accountLabel?: string;
+  settingsLabel?: string;
+  signOutLabel?: string;
 }
 
 /**
@@ -38,11 +40,16 @@ export function Topbar({
   notificationsLoading = false,
   onNotificationClick,
   onMarkAllNotificationsRead,
-  onAccountClick,
+  onSettingsClick,
+  onSignOutClick,
   accountLabel,
+  settingsLabel = 'Settings',
+  signOutLabel = 'Sign out',
 }: TopbarProps) {
   const [isPanelOpen, setIsPanelOpen] = useState(false);
+  const [isAccountMenuOpen, setIsAccountMenuOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+  const accountMenuRef = useRef<HTMLDivElement>(null);
   const unreadCount = notifications.filter((n) => !n.isRead).length;
 
   useEffect(() => {
@@ -55,6 +62,17 @@ export function Topbar({
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [isPanelOpen]);
+
+  useEffect(() => {
+    if (!isAccountMenuOpen) return;
+    function handleClickOutside(event: MouseEvent) {
+      if (accountMenuRef.current && !accountMenuRef.current.contains(event.target as Node)) {
+        setIsAccountMenuOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isAccountMenuOpen]);
 
   return (
     <header className="flex h-16 shrink-0 items-center gap-3 border-b border-border bg-surface px-6">
@@ -113,18 +131,56 @@ export function Topbar({
         New Task
       </Button>
 
-      <button
-        type="button"
-        aria-label={accountLabel ? `Sign out (${accountLabel})` : 'Sign out'}
-        title={accountLabel ? `Signed in as ${accountLabel} — click to sign out` : 'Sign out'}
-        onClick={onAccountClick}
-        className={cn(
-          'flex h-9 w-9 items-center justify-center rounded-full bg-surface-secondary text-ink-secondary transition-colors hover:text-ink-primary',
-          'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+      <div className="relative" ref={accountMenuRef}>
+        <button
+          type="button"
+          aria-label={accountLabel ? `Account menu (${accountLabel})` : 'Account menu'}
+          title={accountLabel ?? undefined}
+          onClick={() => setIsAccountMenuOpen((open) => !open)}
+          className={cn(
+            'flex h-9 w-9 items-center justify-center rounded-full bg-surface-secondary text-ink-secondary transition-colors hover:text-ink-primary',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+          )}
+        >
+          <CircleUserRound className="h-5 w-5" aria-hidden="true" />
+        </button>
+
+        {isAccountMenuOpen && (
+          <div
+            className={cn(
+              'absolute right-0 top-full z-20 mt-2 w-56 overflow-hidden rounded-md border border-border bg-surface shadow-lg',
+            )}
+          >
+            {accountLabel && (
+              <div className="truncate border-b border-border px-3 py-2 text-xs text-ink-muted">
+                {accountLabel}
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={() => {
+                setIsAccountMenuOpen(false);
+                onSettingsClick?.();
+              }}
+              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-ink-primary transition-colors hover:bg-surface-secondary"
+            >
+              <Settings className="h-4 w-4 shrink-0" aria-hidden="true" />
+              {settingsLabel}
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setIsAccountMenuOpen(false);
+                onSignOutClick?.();
+              }}
+              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-danger transition-colors hover:bg-surface-secondary"
+            >
+              <LogOut className="h-4 w-4 shrink-0" aria-hidden="true" />
+              {signOutLabel}
+            </button>
+          </div>
         )}
-      >
-        <CircleUserRound className="h-5 w-5" aria-hidden="true" />
-      </button>
+      </div>
     </header>
   );
 }
