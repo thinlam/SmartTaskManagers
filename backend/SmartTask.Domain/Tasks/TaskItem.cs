@@ -19,6 +19,9 @@ namespace SmartTask.Domain.Tasks;
 /// </summary>
 public sealed class TaskItem : SyncableEntity
 {
+    /// <summary>The account that owns this task. Set automatically by AppDbContext.SaveChangesAsync on insert — never set this directly.</summary>
+    public Guid UserId { get; set; }
+
     public required string Name { get; set; }
     public string? Description { get; set; }
     public AreaType Area { get; set; }

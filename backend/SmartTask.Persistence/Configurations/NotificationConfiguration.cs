@@ -15,6 +15,14 @@ public sealed class NotificationConfiguration : IEntityTypeConfiguration<Notific
         builder.Property(n => n.EntityType).HasMaxLength(20);
         builder.Property(n => n.Type).HasConversion<string>().HasMaxLength(30);
 
+        builder
+            .HasOne<SmartTask.Domain.Users.User>()
+            .WithMany()
+            .HasForeignKey(n => n.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasIndex(n => n.UserId);
+
         builder.HasIndex(n => n.IsRead);
         builder.HasIndex(n => n.CreatedAt);
 

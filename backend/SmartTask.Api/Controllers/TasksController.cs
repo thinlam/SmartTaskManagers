@@ -7,12 +7,10 @@ namespace SmartTask.Api.Controllers;
 
 /// <summary>
 /// First real CRUD API on top of Phase 21's schema, gated by Phase 22's
-/// JWT auth. [Authorize] here only proves "you have a valid token" — the
-/// Tasks table isn't partitioned per-user (no OwnerId column; TASK_HEADERS
-/// itself has no Owner field either, matching Personal Mode's "no Team/
-/// Member/Owner" rule everywhere else in this app). Every authenticated
-/// caller sees the same task list — correct for a single-user personal
-/// instance, not a multi-tenant assumption.
+/// JWT auth. [Authorize] proves "you have a valid token"; AppDbContext's
+/// global query filter (see AppDbContext.cs) is what scopes every query
+/// here to the caller's own UserId, so each account sees only its own
+/// tasks.
 /// </summary>
 [ApiController]
 [Authorize]

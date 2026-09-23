@@ -50,6 +50,14 @@ public sealed class TaskItemConfiguration : IEntityTypeConfiguration<TaskItem>
             .HasForeignKey(t => t.DependencyTaskId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        builder
+            .HasOne<SmartTask.Domain.Users.User>()
+            .WithMany()
+            .HasForeignKey(t => t.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasIndex(t => t.UserId);
+
         builder.HasIndex(t => t.Status);
         builder.HasIndex(t => t.DueDate);
 
@@ -60,6 +68,6 @@ public sealed class TaskItemConfiguration : IEntityTypeConfiguration<TaskItem>
         // so any number of API/Desktop-only tasks (ExternalId = null) can
         // coexist without tripping the uniqueness constraint — identical
         // behavior to the SQL Server filtered index.
-        builder.HasIndex(t => t.ExternalId).IsUnique();
+        builder.HasIndex(t => new { t.UserId, t.ExternalId }).IsUnique();
     }
 }

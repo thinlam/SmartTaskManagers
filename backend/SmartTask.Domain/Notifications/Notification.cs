@@ -25,6 +25,9 @@ public enum NotificationType
 
 public sealed class Notification : Entity
 {
+    /// <summary>The account this notification is for. Set automatically by AppDbContext.SaveChangesAsync on insert — never set this directly.</summary>
+    public Guid UserId { get; set; }
+
     public required NotificationType Type { get; set; }
     public required string Title { get; set; }
     public required string Message { get; set; }

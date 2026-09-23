@@ -1,4 +1,7 @@
+using Microsoft.EntityFrameworkCore;
+using SmartTask.Application.Abstractions;
 using SmartTask.Application.Notifications;
+using SmartTask.Persistence;
 
 namespace SmartTask.Api.BackgroundServices;
 
@@ -26,19 +29,39 @@ public sealed class NotificationGenerationHostedService(
         {
             try
             {
-                using var scope = scopeFactory.CreateScope();
-                var notificationService = scope.ServiceProvider.GetRequiredService<INotificationService>();
-                var count = await notificationService.GenerateAsync(stoppingToken);
-                if (count > 0)
+                using var userListScope = scopeFactory.CreateScope();
+                var dbContext = userListScope.ServiceProvider.GetRequiredService<AppDbContext>();
+                var userIds = await dbContext.Users.Select(u => u.Id).ToListAsync(stoppingToken);
+
+                var totalCount = 0;
+                foreach (var userId in userIds)
                 {
-                    logger.LogInformation("Notification generation created {Count} notification(s).", count);
+                    try
+                    {
+                        using var userScope = scopeFactory.CreateScope();
+                        userScope.ServiceProvider.GetRequiredService<ICurrentUserContext>().UserId = userId;
+
+                        var notificationService = userScope.ServiceProvider.GetRequiredService<INotificationService>();
+                        totalCount += await notificationService.GenerateAsync(stoppingToken);
+                    }
+                    catch (Exception ex) when (ex is not OperationCanceledException)
+                    {
+                        // A single account's failure must not stop
+                        // generation for the accounts still left in the list.
+                        logger.LogError(ex, "Notification generation failed for user {UserId}.", userId);
+                    }
+                }
+
+                if (totalCount > 0)
+                {
+                    logger.LogInformation("Notification generation created {Count} notification(s) across {UserCount} account(s).", totalCount, userIds.Count);
                 }
             }
             catch (Exception ex) when (ex is not OperationCanceledException)
             {
                 // A single failed run must not crash the loop — log it
                 // and try again at the next interval instead.
-                logger.LogError(ex, "Notification generation failed.");
+                logger.LogError(ex, "Notification generation failed to list accounts.");
             }
         } while (await timer.WaitForNextTickAsync(stoppingToken));
     }

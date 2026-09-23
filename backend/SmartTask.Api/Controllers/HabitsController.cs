@@ -6,7 +6,8 @@ namespace SmartTask.Api.Controllers;
 
 /// <summary>
 /// Same shape as Phase 23-25's controllers — [Authorize] means "has a
-/// valid token," not per-user partitioning. Habits stand alone: there's
+/// valid token"; AppDbContext's global query filter is what scopes
+/// results to the caller's own UserId. Habits stand alone: there's
 /// no Habits.ProjectId/GoalId-style FK on Tasks to cascade-clear on
 /// delete (grepping apps/google-sheets/src confirmed no HabitId column
 /// on TASK_HEADERS either), so unlike Phase 24/25 there's no cross-

@@ -1192,3 +1192,62 @@ thật trong browser** — cùng giới hạn môi trường đã ghi nhận ở
 **Cả 4 hạng mục A–D đã hoàn thành.** Việc còn lại thuộc về người dùng: tự click-test thật trên
 trình duyệt cho cả 4 hạng mục (đăng nhập/đăng ký, đổi ngôn ngữ, bật/tắt dark mode, xem Settings) khi
 có công cụ điều khiển browser kết nối được trong phiên sau.
+
+## Per-user data isolation đã thực hiện
+
+**Bug:** Các entity `Tasks`, `Projects`, `Goals`, `Habits`, `Notifications` không có cột `UserId` —
+mọi account chia sẻ một dataset toàn cục duy nhất. Người dùng đã báo cáo: sau khi đăng ký account
+mới, họ nhìn thấy task của account khác. Đây là lỗi bảo mật nghiêm trọng — dữ liệu cá nhân của
+tất cả user bị lẫn lộn.
+
+**Fix (Tasks 1–7 của 8-task plan):**
+
+- **Task 1: Migration thêm cột** — `AddUserIdOwnership` migration tạo cột `UserId` foreign key →
+  `Users` trên tất cả 5 bảng, ngoài khoá chính, lập index. Backfill toàn bộ row hiện tại sang
+  account được tạo sớm nhất (gọi `EarliestUser`, một `User` không bị xoá trong hệ thống) để
+  không mất dữ liệu — mọi task cũ vẫn thuộc account đầu tiên, không bỏ.
+- **Tasks 2–3: EF Core global query filter** — `AppDbContext.OnModelCreating()` thêm `.HasQueryFilter()`
+  cho cả 5 entity, chỉ lấy row `where UserId == _currentUserContext.UserId`. Filter tự động áp
+  dụng vào mọi query LINQ, kể cả vào `Include()`, `Any()`, delete cascade — không cần sửa từng
+  endpoint.
+- **Task 4: ICurrentUserContext scoped service** — DI scoped scope mới lưu `UserId` hiện tại,
+  setup lần đầu từ JWT claim trong `User.Identity.FindFirst("sub")`. Middleware trong `Program.cs`
+  (`UseUserContext`) set `_currentUserContext.UserId` trước khi controller chạy.
+- **Task 5: Backfill dữ liệu** — migration chạy và backfill xong ngay.
+- **Tasks 6–7: Background services** — Hai hosted services (`DailySmartRecalcHostedService`,
+  `NotificationGenerationHostedService`) từng chạy 1 lần global trên toàn bộ data — giờ loop qua
+  mọi `User` trong DB, mỗi vòng lặp set `_currentUserContext.UserId` của user đó rồi chạy
+  logic (Smart Engine recalc, sinh notification). Global filter tự động chỉ xử lý task/project/goal/
+  habit/notification của user đang xét, không cần sửa logic trong service.
+
+**Verify thực hiện:**
+
+- `dotnet build -c Release` (từ `backend/`) — `Build succeeded. 0 Warning(s) 0 Error(s)` ✓
+- `npm run build:tauri` — build production thành công, sinh bundle `smart-task-manager_0.1.0_x64_en-US.msi`
+  và `smart-task-manager_0.1.0_x64-setup.exe` ✓
+- `npm run build:web` — build production thành công, generate `dist/` với 0 error ✓
+
+**Verify KHÔNG thực hiện (code chưa deploy, không thể test trên production):**
+
+Theo scope change, branch này chưa merge vào `main` và chưa redeploy lên Railway production —
+mà những bước này là điều kiện để chạy curl checks. Vì thế:
+- `POST /api/auth/login` rồi `GET /api/tasks` trên existing account — **chưa verify** (code phải
+  live trên production rails mới có thể test).
+- `POST /api/auth/register` account mới rồi `GET /api/tasks` (expect `[]`) — **chưa verify**.
+- Cross-account isolation (new account không nhìn thấy task của existing account, và ngược lại) —
+  **chưa verify** end-to-end (xác nhận này là trách nhiệm của coordinator sau khi merge/deploy).
+- Backfill migrations chạy trên production DB thật — **chưa verify**, sẽ verify sau khi deploy.
+
+Việc xác thực cuối cùng (confirm existing account giữ nguyên data, new account bắt đầu rỗng,
+isolation holds) sẽ diễn ra sau merge/redeploy, và là trách nhiệm của coordinator để report.
+
+**Test/debug account còn tồn tại trong production (không có delete endpoint):**
+
+- `debugtest2026@example.com` — từ diagnostic CORS session trước đó, chưa xoá.
+- Một account xác nhận (verify-isolation-*@example.com, hoặc tương tự) sẽ được tạo khi coordinator
+  chạy kiểm tra post-deploy ở step 6 của verification, rồi để lại trong DB vì không có `DELETE
+  /api/users/{id}` endpoint để dọn — có chủ đích ghi nhận rõ, không im lặng.
+
+**Git commit thực hiện:**
+- 7 commit từ Tasks 1–7, đã push vào worktree
+- Tasks 8 (task này) commit `docs: record per-user data isolation rollout in ROADMAP.md`
