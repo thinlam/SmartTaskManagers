@@ -50,6 +50,14 @@ public sealed class TaskItemConfiguration : IEntityTypeConfiguration<TaskItem>
             .HasForeignKey(t => t.DependencyTaskId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        builder
+            .HasOne<SmartTask.Domain.Users.User>()
+            .WithMany()
+            .HasForeignKey(t => t.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasIndex(t => t.UserId);
+
         builder.HasIndex(t => t.Status);
         builder.HasIndex(t => t.DueDate);
 

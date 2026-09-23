@@ -16,6 +16,14 @@ public sealed class GoalConfiguration : IEntityTypeConfiguration<Goal>
         builder.Property(g => g.Area).HasConversion<string>().HasMaxLength(20);
         builder.Property(g => g.Status).HasConversion<string>().HasMaxLength(20);
 
+        builder
+            .HasOne<SmartTask.Domain.Users.User>()
+            .WithMany()
+            .HasForeignKey(g => g.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.HasIndex(g => g.UserId);
+
         // Phase 28 — see TaskItemConfiguration's identical index for why a plain
         // UNIQUE index (no HasFilter) is the MySQL-compatible equivalent of
         // SQL Server's filtered index: MySQL UNIQUE allows multiple NULLs.
