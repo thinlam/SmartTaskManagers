@@ -11,6 +11,22 @@ namespace SmartTask.Persistence.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropIndex(
+                name: "IX_Tasks_ExternalId",
+                table: "Tasks");
+
+            migrationBuilder.DropIndex(
+                name: "IX_Projects_ExternalId",
+                table: "Projects");
+
+            migrationBuilder.DropIndex(
+                name: "IX_Habits_ExternalId",
+                table: "Habits");
+
+            migrationBuilder.DropIndex(
+                name: "IX_Goals_ExternalId",
+                table: "Goals");
+
             migrationBuilder.AddColumn<Guid>(
                 name: "UserId",
                 table: "Tasks",
@@ -46,25 +62,23 @@ namespace SmartTask.Persistence.Migrations
                 nullable: true,
                 collation: "ascii_general_ci");
 
-            migrationBuilder.Sql(
-                """
+            migrationBuilder.Sql(@"
                 UPDATE Tasks SET UserId = (SELECT Id FROM Users ORDER BY CreatedAt LIMIT 1) WHERE UserId IS NULL;
                 UPDATE Projects SET UserId = (SELECT Id FROM Users ORDER BY CreatedAt LIMIT 1) WHERE UserId IS NULL;
                 UPDATE Goals SET UserId = (SELECT Id FROM Users ORDER BY CreatedAt LIMIT 1) WHERE UserId IS NULL;
                 UPDATE Habits SET UserId = (SELECT Id FROM Users ORDER BY CreatedAt LIMIT 1) WHERE UserId IS NULL;
                 UPDATE Notifications SET UserId = (SELECT Id FROM Users ORDER BY CreatedAt LIMIT 1) WHERE UserId IS NULL;
-                """
-            );
+            ");
 
             migrationBuilder.AlterColumn<Guid>(
                 name: "UserId",
                 table: "Tasks",
                 type: "char(36)",
                 nullable: false,
-                collation: "ascii_general_ci",
                 oldClrType: typeof(Guid),
                 oldType: "char(36)",
                 oldNullable: true,
+                collation: "ascii_general_ci",
                 oldCollation: "ascii_general_ci");
 
             migrationBuilder.AlterColumn<Guid>(
@@ -72,10 +86,10 @@ namespace SmartTask.Persistence.Migrations
                 table: "Projects",
                 type: "char(36)",
                 nullable: false,
-                collation: "ascii_general_ci",
                 oldClrType: typeof(Guid),
                 oldType: "char(36)",
                 oldNullable: true,
+                collation: "ascii_general_ci",
                 oldCollation: "ascii_general_ci");
 
             migrationBuilder.AlterColumn<Guid>(
@@ -83,10 +97,10 @@ namespace SmartTask.Persistence.Migrations
                 table: "Notifications",
                 type: "char(36)",
                 nullable: false,
-                collation: "ascii_general_ci",
                 oldClrType: typeof(Guid),
                 oldType: "char(36)",
                 oldNullable: true,
+                collation: "ascii_general_ci",
                 oldCollation: "ascii_general_ci");
 
             migrationBuilder.AlterColumn<Guid>(
@@ -94,10 +108,10 @@ namespace SmartTask.Persistence.Migrations
                 table: "Habits",
                 type: "char(36)",
                 nullable: false,
-                collation: "ascii_general_ci",
                 oldClrType: typeof(Guid),
                 oldType: "char(36)",
                 oldNullable: true,
+                collation: "ascii_general_ci",
                 oldCollation: "ascii_general_ci");
 
             migrationBuilder.AlterColumn<Guid>(
@@ -105,10 +119,10 @@ namespace SmartTask.Persistence.Migrations
                 table: "Goals",
                 type: "char(36)",
                 nullable: false,
-                collation: "ascii_general_ci",
                 oldClrType: typeof(Guid),
                 oldType: "char(36)",
                 oldNullable: true,
+                collation: "ascii_general_ci",
                 oldCollation: "ascii_general_ci");
 
             migrationBuilder.CreateIndex(
@@ -117,9 +131,21 @@ namespace SmartTask.Persistence.Migrations
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Tasks_UserId_ExternalId",
+                table: "Tasks",
+                columns: new[] { "UserId", "ExternalId" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Projects_UserId",
                 table: "Projects",
                 column: "UserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Projects_UserId_ExternalId",
+                table: "Projects",
+                columns: new[] { "UserId", "ExternalId" },
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_Notifications_UserId",
@@ -132,9 +158,21 @@ namespace SmartTask.Persistence.Migrations
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Habits_UserId_ExternalId",
+                table: "Habits",
+                columns: new[] { "UserId", "ExternalId" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Goals_UserId",
                 table: "Goals",
                 column: "UserId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Goals_UserId_ExternalId",
+                table: "Goals",
+                columns: new[] { "UserId", "ExternalId" },
+                unique: true);
 
             migrationBuilder.AddForeignKey(
                 name: "FK_Goals_Users_UserId",
@@ -205,7 +243,15 @@ namespace SmartTask.Persistence.Migrations
                 table: "Tasks");
 
             migrationBuilder.DropIndex(
+                name: "IX_Tasks_UserId_ExternalId",
+                table: "Tasks");
+
+            migrationBuilder.DropIndex(
                 name: "IX_Projects_UserId",
+                table: "Projects");
+
+            migrationBuilder.DropIndex(
+                name: "IX_Projects_UserId_ExternalId",
                 table: "Projects");
 
             migrationBuilder.DropIndex(
@@ -217,7 +263,15 @@ namespace SmartTask.Persistence.Migrations
                 table: "Habits");
 
             migrationBuilder.DropIndex(
+                name: "IX_Habits_UserId_ExternalId",
+                table: "Habits");
+
+            migrationBuilder.DropIndex(
                 name: "IX_Goals_UserId",
+                table: "Goals");
+
+            migrationBuilder.DropIndex(
+                name: "IX_Goals_UserId_ExternalId",
                 table: "Goals");
 
             migrationBuilder.DropColumn(
@@ -239,6 +293,30 @@ namespace SmartTask.Persistence.Migrations
             migrationBuilder.DropColumn(
                 name: "UserId",
                 table: "Goals");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Tasks_ExternalId",
+                table: "Tasks",
+                column: "ExternalId",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Projects_ExternalId",
+                table: "Projects",
+                column: "ExternalId",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Habits_ExternalId",
+                table: "Habits",
+                column: "ExternalId",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Goals_ExternalId",
+                table: "Goals",
+                column: "ExternalId",
+                unique: true);
         }
     }
 }

@@ -36,11 +36,20 @@ public sealed class NotificationGenerationHostedService(
                 var totalCount = 0;
                 foreach (var userId in userIds)
                 {
-                    using var userScope = scopeFactory.CreateScope();
-                    userScope.ServiceProvider.GetRequiredService<ICurrentUserContext>().UserId = userId;
+                    try
+                    {
+                        using var userScope = scopeFactory.CreateScope();
+                        userScope.ServiceProvider.GetRequiredService<ICurrentUserContext>().UserId = userId;
 
-                    var notificationService = userScope.ServiceProvider.GetRequiredService<INotificationService>();
-                    totalCount += await notificationService.GenerateAsync(stoppingToken);
+                        var notificationService = userScope.ServiceProvider.GetRequiredService<INotificationService>();
+                        totalCount += await notificationService.GenerateAsync(stoppingToken);
+                    }
+                    catch (Exception ex) when (ex is not OperationCanceledException)
+                    {
+                        // A single account's failure must not stop
+                        // generation for the accounts still left in the list.
+                        logger.LogError(ex, "Notification generation failed for user {UserId}.", userId);
+                    }
                 }
 
                 if (totalCount > 0)
@@ -52,7 +61,7 @@ public sealed class NotificationGenerationHostedService(
             {
                 // A single failed run must not crash the loop — log it
                 // and try again at the next interval instead.
-                logger.LogError(ex, "Notification generation failed.");
+                logger.LogError(ex, "Notification generation failed to list accounts.");
             }
         } while (await timer.WaitForNextTickAsync(stoppingToken));
     }

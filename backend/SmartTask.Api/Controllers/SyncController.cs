@@ -7,7 +7,8 @@ namespace SmartTask.Api.Controllers;
 /// <summary>
 /// Phase 28 — see SyncContracts.cs's doc comment for the push/pull design
 /// and the last-write-wins conflict rule. [Authorize] only, same as every
-/// other controller — no per-caller partitioning, one shared dataset.
+/// other controller — AppDbContext's global query filter scopes push/pull
+/// to the caller's own UserId, so each account syncs only its own data.
 /// </summary>
 [ApiController]
 [Authorize]

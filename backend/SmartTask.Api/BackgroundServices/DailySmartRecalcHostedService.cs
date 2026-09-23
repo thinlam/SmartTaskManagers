@@ -45,11 +45,21 @@ public sealed class DailySmartRecalcHostedService(
                 var totalCount = 0;
                 foreach (var userId in userIds)
                 {
-                    using var userScope = scopeFactory.CreateScope();
-                    userScope.ServiceProvider.GetRequiredService<ICurrentUserContext>().UserId = userId;
+                    try
+                    {
+                        using var userScope = scopeFactory.CreateScope();
+                        userScope.ServiceProvider.GetRequiredService<ICurrentUserContext>().UserId = userId;
 
-                    var smartEngineService = userScope.ServiceProvider.GetRequiredService<ISmartEngineService>();
-                    totalCount += await smartEngineService.RecalculateAllAsync(stoppingToken);
+                        var smartEngineService = userScope.ServiceProvider.GetRequiredService<ISmartEngineService>();
+                        totalCount += await smartEngineService.RecalculateAllAsync(stoppingToken);
+                    }
+                    catch (Exception ex) when (ex is not OperationCanceledException)
+                    {
+                        // A single account's failure (e.g. a transient DB
+                        // hiccup) must not stop recalculation for the
+                        // accounts still left in the list.
+                        logger.LogError(ex, "Daily Smart Engine recalculation failed for user {UserId}.", userId);
+                    }
                 }
 
                 logger.LogInformation("Daily Smart Engine recalculation updated {Count} task(s) across {UserCount} account(s).", totalCount, userIds.Count);
@@ -59,7 +69,7 @@ public sealed class DailySmartRecalcHostedService(
                 // A single failed run (e.g. a transient DB hiccup) must
                 // not crash the hosted service loop — log it and try
                 // again at the next scheduled time instead.
-                logger.LogError(ex, "Daily Smart Engine recalculation failed.");
+                logger.LogError(ex, "Daily Smart Engine recalculation failed to list accounts.");
             }
         }
     }

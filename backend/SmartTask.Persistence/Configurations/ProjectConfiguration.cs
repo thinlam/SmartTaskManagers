@@ -28,6 +28,6 @@ public sealed class ProjectConfiguration : IEntityTypeConfiguration<Project>
         // Phase 28 — see TaskItemConfiguration's identical index for why a plain
         // UNIQUE index (no HasFilter) is the MySQL-compatible equivalent of
         // SQL Server's filtered index: MySQL UNIQUE allows multiple NULLs.
-        builder.HasIndex(p => p.ExternalId).IsUnique();
+        builder.HasIndex(p => new { p.UserId, p.ExternalId }).IsUnique();
     }
 }

@@ -7,8 +7,8 @@ namespace SmartTask.Api.Controllers;
 /// <summary>
 /// Phase 30 — see Notification.cs's doc comment for the 4 trigger rules
 /// and why this is a persisted table, not a live-computed list.
-/// [Authorize] only, same as every other controller — one shared
-/// notification feed, not partitioned per caller.
+/// [Authorize] only, same as every other controller — AppDbContext's
+/// global query filter scopes the feed to the caller's own UserId.
 /// </summary>
 [ApiController]
 [Authorize]

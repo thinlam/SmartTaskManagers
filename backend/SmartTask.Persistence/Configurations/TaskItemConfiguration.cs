@@ -68,6 +68,6 @@ public sealed class TaskItemConfiguration : IEntityTypeConfiguration<TaskItem>
         // so any number of API/Desktop-only tasks (ExternalId = null) can
         // coexist without tripping the uniqueness constraint — identical
         // behavior to the SQL Server filtered index.
-        builder.HasIndex(t => t.ExternalId).IsUnique();
+        builder.HasIndex(t => new { t.UserId, t.ExternalId }).IsUnique();
     }
 }

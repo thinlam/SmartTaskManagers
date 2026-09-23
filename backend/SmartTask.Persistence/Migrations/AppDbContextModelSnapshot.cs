@@ -73,10 +73,10 @@ namespace SmartTask.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ExternalId")
-                        .IsUnique();
-
                     b.HasIndex("UserId");
+
+                    b.HasIndex("UserId", "ExternalId")
+                        .IsUnique();
 
                     b.ToTable("Goals", (string)null);
                 });
@@ -133,10 +133,10 @@ namespace SmartTask.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ExternalId")
-                        .IsUnique();
-
                     b.HasIndex("UserId");
+
+                    b.HasIndex("UserId", "ExternalId")
+                        .IsUnique();
 
                     b.ToTable("Habits", (string)null);
                 });
@@ -243,10 +243,10 @@ namespace SmartTask.Persistence.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ExternalId")
-                        .IsUnique();
-
                     b.HasIndex("UserId");
+
+                    b.HasIndex("UserId", "ExternalId")
+                        .IsUnique();
 
                     b.ToTable("Projects", (string)null);
                 });
@@ -374,9 +374,6 @@ namespace SmartTask.Persistence.Migrations
 
                     b.HasIndex("DueDate");
 
-                    b.HasIndex("ExternalId")
-                        .IsUnique();
-
                     b.HasIndex("GoalId");
 
                     b.HasIndex("ProjectId");
@@ -384,6 +381,9 @@ namespace SmartTask.Persistence.Migrations
                     b.HasIndex("Status");
 
                     b.HasIndex("UserId");
+
+                    b.HasIndex("UserId", "ExternalId")
+                        .IsUnique();
 
                     b.ToTable("Tasks", (string)null);
                 });

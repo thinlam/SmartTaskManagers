@@ -4,7 +4,7 @@ using SmartTask.Application.Goals;
 
 namespace SmartTask.Api.Controllers;
 
-/// <summary>Same shape as Phase 23/24's controllers — [Authorize] means "has a valid token," not per-user partitioning (see TasksController's doc comment for why).</summary>
+/// <summary>Same shape as Phase 23/24's controllers — [Authorize] means "has a valid token"; AppDbContext's global query filter is what scopes results to the caller's own UserId (see TasksController's doc comment for why).</summary>
 [ApiController]
 [Authorize]
 [Route("api/goals")]

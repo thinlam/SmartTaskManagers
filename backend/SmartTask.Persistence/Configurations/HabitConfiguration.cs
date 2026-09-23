@@ -25,6 +25,6 @@ public sealed class HabitConfiguration : IEntityTypeConfiguration<Habit>
         // Phase 28 — see TaskItemConfiguration's identical index for why a plain
         // UNIQUE index (no HasFilter) is the MySQL-compatible equivalent of
         // SQL Server's filtered index: MySQL UNIQUE allows multiple NULLs.
-        builder.HasIndex(h => h.ExternalId).IsUnique();
+        builder.HasIndex(h => new { h.UserId, h.ExternalId }).IsUnique();
     }
 }
