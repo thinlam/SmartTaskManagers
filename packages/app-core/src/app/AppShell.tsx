@@ -3,7 +3,7 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type { AppNotification } from '@stm/types';
 import { useNotifications } from '@stm/hooks';
-import { Sidebar, Topbar, type SidebarGroup } from '@stm/ui';
+import { Sidebar, Topbar, cn, type SidebarGroup } from '@stm/ui';
 import { APP_ROUTES, NAV_GROUP_ORDER } from './routes';
 import { useTasksContext } from '../state/TasksContext';
 import { useAuthContext } from '../state/AuthContext';
@@ -92,7 +92,17 @@ export function AppShell() {
   }));
 
   return (
-    <div className="flex h-screen bg-background">
+    <div
+      className={cn(
+        'flex h-screen bg-background',
+        // Keeps the whole shell clear of a notch/punch-hole camera and the
+        // status bar in the Capacitor Android/iOS apps (Phase 34) —
+        // `env(safe-area-inset-*)` only reports real values with
+        // `viewport-fit=cover` set in index.html; it's 0 everywhere else
+        // (desktop, normal mobile browser), so this is a no-op there.
+        'pt-[env(safe-area-inset-top)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]',
+      )}
+    >
       <Sidebar
         groups={groups}
         collapsed={collapsed}
@@ -122,7 +132,7 @@ export function AppShell() {
           notificationsLoadingLabel={t('common.loading')}
           noNotificationsLabel={t('notifications.empty')}
         />
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto pb-[env(safe-area-inset-bottom)]">
           <Outlet />
         </main>
       </div>

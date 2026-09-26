@@ -152,7 +152,9 @@ export function Sidebar({
             onClick={onMobileClose}
             aria-hidden="true"
           />
-          <aside className="relative flex h-full w-64 max-w-[80vw] flex-col bg-surface shadow-xl">
+          <aside
+            className="relative flex h-full w-64 max-w-[80vw] flex-col bg-surface shadow-xl pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)] pl-[env(safe-area-inset-left)]"
+          >
             {content}
           </aside>
         </div>
