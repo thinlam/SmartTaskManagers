@@ -3,6 +3,7 @@ import { formatDueLabel } from '@stm/shared';
 import { Check, Pencil, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { IconButton, TaskCard } from '@stm/ui';
+import { translatePriority, translateTaskStatus } from '../../lib/enumLabels';
 
 interface TaskRowProps {
   task: Task;
@@ -21,7 +22,9 @@ export function TaskRow({ task, onComplete, onDelete, onEdit }: TaskRowProps) {
           meta={task.area}
           dueLabel={formatDueLabel(task.dueDate)}
           priority={task.priority}
+          priorityLabel={translatePriority(t, task.priority)}
           status={task.status}
+          statusLabel={translateTaskStatus(t, task.status)}
           progress={task.progress}
           smartScore={task.smartScore}
           recommendedAction={task.recommendedAction}

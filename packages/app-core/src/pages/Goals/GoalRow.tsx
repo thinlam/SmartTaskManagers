@@ -3,6 +3,7 @@ import { formatTargetLabel } from '@stm/shared';
 import { Pencil, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { GoalCard, IconButton } from '@stm/ui';
+import { translateGoalStatus } from '../../lib/enumLabels';
 
 interface GoalRowProps {
   goal: Goal;
@@ -37,8 +38,15 @@ export function GoalRow({ goal, allTasks, onEdit, onDelete }: GoalRowProps) {
         area={goal.area}
         targetLabel={formatTargetLabel(goal.targetDate)}
         status={goal.status}
+        statusLabel={translateGoalStatus(t, goal.status)}
         progress={goal.progress}
+        progressLabel={t('common.percentComplete', { progress: goal.progress })}
         linkedTaskCount={linkedTaskCount}
+        linkedTaskCountLabel={
+          linkedTaskCount === 0
+            ? t('common.noTasksLinked')
+            : t('common.tasksLinked', { count: linkedTaskCount })
+        }
       />
     </div>
   );

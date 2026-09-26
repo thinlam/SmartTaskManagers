@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type { AppNotification } from '@stm/types';
@@ -51,14 +51,21 @@ export function AppShell() {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const { openCreateDrawer } = useTasksContext();
-  const { email, logout } = useAuthContext();
+  const { email, avatarDataUrl, logout } = useAuthContext();
   const {
     notifications,
     isLoading: notificationsLoading,
     markRead,
     markAllRead,
   } = useNotifications();
+
+  // Close the mobile drawer automatically after navigating to a new page —
+  // otherwise it stays open over the newly-loaded page's content.
+  useEffect(() => {
+    setMobileNavOpen(false);
+  }, [location.pathname]);
 
   function handleNotificationClick(notification: AppNotification) {
     if (!notification.isRead) {
@@ -90,19 +97,30 @@ export function AppShell() {
         groups={groups}
         collapsed={collapsed}
         onToggleCollapse={() => setCollapsed((c) => !c)}
+        mobileOpen={mobileNavOpen}
+        onMobileClose={() => setMobileNavOpen(false)}
+        closeLabel={t('common.close')}
       />
       <div className="flex flex-1 flex-col overflow-hidden">
         <Topbar
           onNewTask={openCreateDrawer}
+          newTaskLabel={t('common.newTask')}
+          onMenuClick={() => setMobileNavOpen(true)}
+          searchPlaceholder={t('common.searchPlaceholder')}
           onAccountSettingsClick={() => navigate('/account-settings')}
           onSignOutClick={logout}
           accountLabel={email ?? undefined}
+          avatarUrl={avatarDataUrl}
           accountSettingsLabel={t('auth.accountSettings')}
           signOutLabel={t('auth.signOut')}
           notifications={notifications}
           notificationsLoading={notificationsLoading}
           onNotificationClick={handleNotificationClick}
           onMarkAllNotificationsRead={() => markAllRead().catch(reportError)}
+          notificationsTitle={t('notifications.title')}
+          markAllNotificationsReadLabel={t('notifications.markAllRead')}
+          notificationsLoadingLabel={t('common.loading')}
+          noNotificationsLabel={t('notifications.empty')}
         />
         <main className="flex-1 overflow-y-auto">
           <Outlet />

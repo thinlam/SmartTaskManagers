@@ -3,6 +3,7 @@ import { formatDueLabel } from '@stm/shared';
 import { Pencil } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { EmptyState, IconButton, TaskCard } from '@stm/ui';
+import { translatePriority, translateTaskStatus } from '../../lib/enumLabels';
 
 interface CalendarAgendaProps {
   tasks: Task[];
@@ -35,7 +36,9 @@ export function CalendarAgenda({ tasks, onSelectTask }: CalendarAgendaProps) {
               meta={task.area}
               dueLabel={formatDueLabel(task.dueDate)}
               priority={task.priority}
+              priorityLabel={translatePriority(t, task.priority)}
               status={task.status}
+              statusLabel={translateTaskStatus(t, task.status)}
               smartScore={task.smartScore}
               recommendedAction={task.recommendedAction}
             />

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { PanelLeftClose, PanelLeftOpen, Zap } from 'lucide-react';
+import { PanelLeftClose, PanelLeftOpen, X, Zap } from 'lucide-react';
 import { cn } from '../../lib/cn';
 
 export interface SidebarNavItem {
@@ -27,21 +27,33 @@ export interface SidebarProps {
   groups: SidebarGroup[];
   collapsed?: boolean;
   onToggleCollapse?: () => void;
+  /** Mobile drawer state (below the `md` breakpoint) — the collapse/expand toggle above is a separate, desktop-only affordance. */
+  mobileOpen?: boolean;
+  onMobileClose?: () => void;
+  closeLabel?: string;
 }
 
 /**
  * Personal Mode navigation (Frame 03–15 sidebar, minus "Members" — see
  * docs/design-system/design-tokens.md). Grouping/order comes entirely
  * from `groups`; this component only renders.
+ *
+ * Responsive: below `md`, this renders as a fixed slide-in drawer over a
+ * backdrop instead of the always-visible desktop rail — a phone screen
+ * has no room for a permanent 240px sidebar next to real content.
+ * `mobileOpen`/`onMobileClose` are controlled by the parent (AppShell),
+ * toggled by Topbar's hamburger button.
  */
-export function Sidebar({ groups, collapsed = false, onToggleCollapse }: SidebarProps) {
-  return (
-    <aside
-      className={cn(
-        'flex h-screen shrink-0 flex-col border-r border-border bg-surface transition-[width] duration-150',
-        collapsed ? 'w-16' : 'w-60',
-      )}
-    >
+export function Sidebar({
+  groups,
+  collapsed = false,
+  onToggleCollapse,
+  mobileOpen = false,
+  onMobileClose,
+  closeLabel = 'Close menu',
+}: SidebarProps) {
+  const content = (
+    <>
       <div className="flex h-16 items-center justify-between px-4">
         {!collapsed && (
           <div className="flex items-center gap-2">
@@ -49,13 +61,23 @@ export function Sidebar({ groups, collapsed = false, onToggleCollapse }: Sidebar
             <span className="text-sm font-semibold text-ink-primary">Smart Task</span>
           </div>
         )}
+        {onMobileClose && (
+          <button
+            type="button"
+            onClick={onMobileClose}
+            aria-label={closeLabel}
+            className="rounded-md p-1.5 text-ink-muted transition-colors hover:bg-surface-secondary hover:text-ink-primary md:hidden"
+          >
+            <X className="h-5 w-5" aria-hidden="true" />
+          </button>
+        )}
         {onToggleCollapse && (
           <button
             type="button"
             onClick={onToggleCollapse}
             aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             className={cn(
-              'rounded-md p-1.5 text-ink-muted transition-colors hover:bg-surface-secondary hover:text-ink-primary',
+              'hidden rounded-md p-1.5 text-ink-muted transition-colors hover:bg-surface-secondary hover:text-ink-primary md:block',
               'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
               collapsed && 'mx-auto',
             )}
@@ -84,6 +106,7 @@ export function Sidebar({ groups, collapsed = false, onToggleCollapse }: Sidebar
                   href={item.href}
                   title={collapsed ? item.label : undefined}
                   aria-current={item.active ? 'page' : undefined}
+                  onClick={onMobileClose}
                   className={cn(
                     'flex items-center gap-3 rounded-md px-3 py-2 text-sm transition-colors',
                     'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
@@ -106,6 +129,34 @@ export function Sidebar({ groups, collapsed = false, onToggleCollapse }: Sidebar
           </div>
         ))}
       </nav>
-    </aside>
+    </>
+  );
+
+  return (
+    <>
+      {/* Desktop: always-visible rail. */}
+      <aside
+        className={cn(
+          'hidden h-screen shrink-0 flex-col border-r border-border bg-surface transition-[width] duration-150 md:flex',
+          collapsed ? 'w-16' : 'w-60',
+        )}
+      >
+        {content}
+      </aside>
+
+      {/* Mobile: slide-in drawer + backdrop, only mounted while open. */}
+      {mobileOpen && (
+        <div className="fixed inset-0 z-40 md:hidden">
+          <div
+            className="absolute inset-0 bg-black/40"
+            onClick={onMobileClose}
+            aria-hidden="true"
+          />
+          <aside className="relative flex h-full w-64 max-w-[80vw] flex-col bg-surface shadow-xl">
+            {content}
+          </aside>
+        </div>
+      )}
+    </>
   );
 }

@@ -7,6 +7,10 @@ export interface NotificationPanelProps {
   isLoading?: boolean;
   onItemClick?: (notification: AppNotification) => void;
   onMarkAllRead?: () => void;
+  title?: string;
+  markAllReadLabel?: string;
+  loadingLabel?: string;
+  emptyMessage?: string;
 }
 
 /**
@@ -20,29 +24,33 @@ export function NotificationPanel({
   isLoading,
   onItemClick,
   onMarkAllRead,
+  title = 'Notifications',
+  markAllReadLabel = 'Mark all read',
+  loadingLabel = 'Loading…',
+  emptyMessage = 'No notifications yet.',
 }: NotificationPanelProps) {
   const hasUnread = notifications.some((n) => !n.isRead);
 
   return (
-    <div className="flex max-h-[28rem] w-96 flex-col overflow-hidden rounded-lg border border-border bg-surface shadow-lg">
+    <div className="flex max-h-[28rem] w-[calc(100vw-1.5rem)] max-w-96 flex-col overflow-hidden rounded-lg border border-border bg-surface shadow-lg">
       <div className="flex items-center justify-between border-b border-border px-4 py-3">
-        <h2 className="text-sm font-semibold text-ink-primary">Notifications</h2>
+        <h2 className="text-sm font-semibold text-ink-primary">{title}</h2>
         {hasUnread && (
           <button
             type="button"
             onClick={onMarkAllRead}
             className="text-xs font-medium text-primary hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
           >
-            Mark all read
+            {markAllReadLabel}
           </button>
         )}
       </div>
 
       <div className="flex-1 overflow-y-auto">
         {isLoading ? (
-          <p className="p-4 text-sm text-ink-muted">Loading…</p>
+          <p className="p-4 text-sm text-ink-muted">{loadingLabel}</p>
         ) : notifications.length === 0 ? (
-          <EmptyState message="No notifications yet." className="border-none" />
+          <EmptyState message={emptyMessage} className="border-none" />
         ) : (
           <div className="divide-y divide-border">
             {notifications.map((notification) => (

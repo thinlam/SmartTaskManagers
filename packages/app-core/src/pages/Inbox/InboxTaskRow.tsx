@@ -3,6 +3,7 @@ import { formatDueLabel } from '@stm/shared';
 import { Check, Pencil, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { IconButton, TaskCard } from '@stm/ui';
+import { translatePriority } from '../../lib/enumLabels';
 
 interface InboxTaskRowProps {
   task: Task;
@@ -22,6 +23,7 @@ export function InboxTaskRow({ task, onComplete, onDelete, onEdit }: InboxTaskRo
           meta={task.area}
           dueLabel={formatDueLabel(task.dueDate)}
           priority={task.priority}
+          priorityLabel={translatePriority(t, task.priority)}
         />
       </div>
       <IconButton

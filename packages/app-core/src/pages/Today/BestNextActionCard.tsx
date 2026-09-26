@@ -1,6 +1,7 @@
 import type { TaskSummary } from '@stm/types';
 import { useTranslation } from 'react-i18next';
 import { TaskCard } from '@stm/ui';
+import { translatePriority } from '../../lib/enumLabels';
 
 interface BestNextActionCardProps {
   task: TaskSummary | null;
@@ -32,6 +33,7 @@ export function BestNextActionCard({ task }: BestNextActionCardProps) {
         meta={task.area}
         dueLabel={task.dueLabel}
         priority={task.priority}
+        priorityLabel={translatePriority(t, task.priority)}
         smartScore={task.smartScore}
         recommendedAction={task.recommendedAction}
       />

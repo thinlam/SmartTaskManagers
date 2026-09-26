@@ -19,8 +19,10 @@ const PRIORITY_CLASSES: Record<Priority, string> = {
 
 export interface PriorityBadgeProps {
   priority: Priority;
+  /** Translated display text — falls back to the raw enum value when omitted (this package has no i18n access). */
+  label?: string;
 }
 
-export function PriorityBadge({ priority }: PriorityBadgeProps) {
-  return <Badge className={PRIORITY_CLASSES[priority]}>{priority}</Badge>;
+export function PriorityBadge({ priority, label }: PriorityBadgeProps) {
+  return <Badge className={PRIORITY_CLASSES[priority]}>{label ?? priority}</Badge>;
 }

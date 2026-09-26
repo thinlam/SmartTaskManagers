@@ -5,7 +5,41 @@
     "delete": "Xóa",
     "edit": "Sửa",
     "close": "Đóng",
-    "loading": "Đang tải…"
+    "loading": "Đang tải…",
+    "newTask": "Thêm việc mới",
+    "searchPlaceholder": "Tìm kiếm công việc...",
+    "percentComplete": "{{progress}}% hoàn thành",
+    "topFocus": "Trọng tâm",
+    "next": "Tiếp theo",
+    "noTasksLinked": "Chưa liên kết công việc nào",
+    "tasksLinked_one": "{{count}} công việc đã liên kết",
+    "tasksLinked_other": "{{count}} công việc đã liên kết",
+    "streakInARow": "{{streak}} ngày liên tiếp",
+    "completedOfTarget": "{{completed}}/{{target}} hoàn thành",
+    "completedCount": "{{completed}} hoàn thành",
+    "checkInToday": "Điểm danh hôm nay",
+    "checkedInToday": "Đã điểm danh hôm nay"
+  },
+  "notifications": {
+    "title": "Thông báo",
+    "markAllRead": "Đánh dấu đã đọc hết",
+    "empty": "Chưa có thông báo nào."
+  },
+  "enums": {
+    "riskLow": "Thấp",
+    "riskMedium": "Trung bình",
+    "riskHigh": "Cao",
+    "riskCritical": "Khẩn cấp",
+    "healthHealthy": "Tốt",
+    "healthAttention": "Cần chú ý",
+    "healthAtRisk": "Rủi ro",
+    "healthCritical": "Nghiêm trọng",
+    "goalStatusOnTrack": "Đúng tiến độ",
+    "goalStatusAtRisk": "Rủi ro",
+    "goalStatusCompleted": "Hoàn thành",
+    "frequencyDaily": "Hàng ngày",
+    "frequencyWeekly": "Hàng tuần",
+    "frequencyCustom": "Tùy chỉnh"
   },
   "nav": {
     "dashboard": "Tổng quan",

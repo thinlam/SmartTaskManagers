@@ -1,6 +1,7 @@
 import type { Task } from '@stm/types';
 import type { KanbanTone } from '@stm/shared';
 import { PriorityBadge, cn } from '@stm/ui';
+import { translatePriority } from '../../lib/enumLabels';
 import { useTranslation } from 'react-i18next';
 
 const TONE_CLASSES: Record<KanbanTone, string> = {
@@ -61,7 +62,7 @@ export function KanbanCard({
       </span>
 
       <div className="flex flex-wrap items-center gap-1.5">
-        <PriorityBadge priority={task.priority} />
+        <PriorityBadge priority={task.priority} label={translatePriority(t, task.priority)} />
         <span className="truncate text-xs text-ink-secondary">{meta}</span>
       </div>
 

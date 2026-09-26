@@ -14,11 +14,19 @@ export interface ProjectCardProps {
   area: string;
   targetLabel: string;
   health: ProjectHealth;
+  /** Translated health text — falls back to the raw enum value when omitted. */
+  healthLabel?: string;
   progress: number;
+  /** Translated "N% complete" text — falls back to English when omitted. */
+  progressLabel?: string;
   chips: ProjectCardMetricChip[];
   topFocusText: string;
+  /** Translated "Top focus" section label — falls back to English when omitted. */
+  topFocusLabel?: string;
   hasTopTask: boolean;
   nextActionText: string;
+  /** Translated "Next" section label — falls back to English when omitted. */
+  nextLabel?: string;
 }
 
 const STRIPE_CLASSES: Record<ProjectHealth, string> = {
@@ -58,11 +66,15 @@ export function ProjectCard({
   area,
   targetLabel,
   health,
+  healthLabel,
   progress,
+  progressLabel,
   chips,
   topFocusText,
+  topFocusLabel = 'Top focus',
   hasTopTask,
   nextActionText,
+  nextLabel = 'Next',
 }: ProjectCardProps) {
   return (
     <div className="flex overflow-hidden rounded-lg border border-border bg-surface">
@@ -70,14 +82,16 @@ export function ProjectCard({
       <div className="flex flex-1 flex-col gap-3 p-4">
         <div className="flex items-start justify-between gap-3">
           <span className="text-sm font-semibold text-ink-primary">{name}</span>
-          <ProjectHealthBadge health={health} />
+          <ProjectHealthBadge health={health} label={healthLabel} />
         </div>
 
         <div className="flex items-center justify-between gap-3 text-xs">
           <span className="text-ink-secondary">
             {area} · {targetLabel}
           </span>
-          <span className="shrink-0 font-semibold text-ink-primary">{progress}% complete</span>
+          <span className="shrink-0 font-semibold text-ink-primary">
+            {progressLabel ?? `${progress}% complete`}
+          </span>
         </div>
 
         <Progress value={progress} />
@@ -98,7 +112,7 @@ export function ProjectCard({
 
         <div className="flex items-start gap-2 text-xs">
           <span className="shrink-0 rounded-md bg-primary-light px-2 py-0.5 font-semibold uppercase tracking-wide text-primary">
-            Top focus
+            {topFocusLabel}
           </span>
           <span className={hasTopTask ? 'font-medium text-ink-primary' : 'text-ink-muted'}>
             {topFocusText}
@@ -112,7 +126,7 @@ export function ProjectCard({
               NEXT_LABEL_CLASSES[health],
             )}
           >
-            Next
+            {nextLabel}
           </span>
           <span className="text-ink-secondary">{nextActionText}</span>
         </div>

@@ -9,6 +9,7 @@ import {
 import { Pencil, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { IconButton, ProjectCard, type ProjectCardMetricChip } from '@stm/ui';
+import { translateProjectHealth } from '../../lib/enumLabels';
 
 interface ProjectRowProps {
   project: Project;
@@ -59,11 +60,15 @@ export function ProjectRow({ project, allTasks, onEdit, onDelete }: ProjectRowPr
         area={project.area}
         targetLabel={formatTargetLabel(project.targetDate)}
         health={health}
+        healthLabel={translateProjectHealth(t, health)}
         progress={metrics.progress}
+        progressLabel={t('common.percentComplete', { progress: metrics.progress })}
         chips={chips}
         topFocusText={getProjectTopFocusText(metrics)}
+        topFocusLabel={t('common.topFocus')}
         hasTopTask={metrics.topTask !== null}
         nextActionText={getProjectNextAction(metrics)}
+        nextLabel={t('common.next')}
       />
     </div>
   );

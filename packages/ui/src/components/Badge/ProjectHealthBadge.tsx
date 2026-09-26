@@ -17,8 +17,10 @@ const HEALTH_CLASSES: Record<ProjectHealth, string> = {
 
 export interface ProjectHealthBadgeProps {
   health: ProjectHealth;
+  /** Translated display text — falls back to the raw enum value when omitted (this package has no i18n access). */
+  label?: string;
 }
 
-export function ProjectHealthBadge({ health }: ProjectHealthBadgeProps) {
-  return <Badge className={HEALTH_CLASSES[health]}>{health}</Badge>;
+export function ProjectHealthBadge({ health, label }: ProjectHealthBadgeProps) {
+  return <Badge className={HEALTH_CLASSES[health]}>{label ?? health}</Badge>;
 }

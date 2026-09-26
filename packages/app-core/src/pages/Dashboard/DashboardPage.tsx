@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { EmptyState, Progress, SmartInsightCard, StatCard, TaskCard } from '@stm/ui';
 import { computeDashboardData } from '@stm/shared';
+import { translatePriority } from '../../lib/enumLabels';
 import { useTasksContext } from '../../state/TasksContext';
 import { useHabitsContext } from '../../state/HabitsContext';
 
@@ -28,7 +29,7 @@ export function DashboardPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6 p-8">
+    <div className="flex flex-col gap-6 p-4 sm:p-8">
       <header className="flex flex-col gap-1">
         <h1 className="text-[28px] font-bold leading-[34px] text-ink-primary">
           {t('dashboard.title')}
@@ -62,6 +63,7 @@ export function DashboardPage() {
                 meta={task.area}
                 dueLabel={task.dueLabel}
                 priority={task.priority}
+                priorityLabel={translatePriority(t, task.priority)}
                 smartScore={task.smartScore}
                 recommendedAction={task.recommendedAction}
               />

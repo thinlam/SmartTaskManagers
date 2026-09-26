@@ -5,7 +5,41 @@
     "delete": "Delete",
     "edit": "Edit",
     "close": "Close",
-    "loading": "Loading…"
+    "loading": "Loading…",
+    "newTask": "New Task",
+    "searchPlaceholder": "Search tasks...",
+    "percentComplete": "{{progress}}% complete",
+    "topFocus": "Top focus",
+    "next": "Next",
+    "noTasksLinked": "No tasks linked yet",
+    "tasksLinked_one": "{{count}} task linked",
+    "tasksLinked_other": "{{count}} tasks linked",
+    "streakInARow": "{{streak}} in a row",
+    "completedOfTarget": "{{completed}}/{{target}} completed",
+    "completedCount": "{{completed}} completed",
+    "checkInToday": "Check in today",
+    "checkedInToday": "Checked in today"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "markAllRead": "Mark all read",
+    "empty": "No notifications yet."
+  },
+  "enums": {
+    "riskLow": "Low",
+    "riskMedium": "Medium",
+    "riskHigh": "High",
+    "riskCritical": "Critical",
+    "healthHealthy": "Healthy",
+    "healthAttention": "Attention",
+    "healthAtRisk": "At Risk",
+    "healthCritical": "Critical",
+    "goalStatusOnTrack": "On Track",
+    "goalStatusAtRisk": "At Risk",
+    "goalStatusCompleted": "Completed",
+    "frequencyDaily": "Daily",
+    "frequencyWeekly": "Weekly",
+    "frequencyCustom": "Custom"
   },
   "nav": {
     "dashboard": "Dashboard",
