@@ -66,6 +66,7 @@ export function AccountSettingsPage() {
 
   const [sessions, setSessions] = useState<SessionResponse[]>([]);
   const [sessionsLoading, setSessionsLoading] = useState(true);
+  const [sessionsError, setSessionsError] = useState<string | null>(null);
 
   const passwordRuleResults = useMemo(
     () => PASSWORD_RULES.map((rule) => ({ ...rule, met: rule.test(newPassword) })),
@@ -78,9 +79,12 @@ export function AccountSettingsPage() {
 
   async function loadSessions() {
     setSessionsLoading(true);
+    setSessionsError(null);
     try {
       const list = await authApi.listSessions();
       setSessions(list);
+    } catch (error) {
+      setSessionsError(error instanceof ApiError ? error.message : t('auth.genericError'));
     } finally {
       setSessionsLoading(false);
     }
@@ -141,13 +145,21 @@ export function AccountSettingsPage() {
   }
 
   async function handleRevoke(id: string) {
-    await authApi.revokeSession(id);
-    void loadSessions();
+    try {
+      await authApi.revokeSession(id);
+      void loadSessions();
+    } catch (error) {
+      setSessionsError(error instanceof ApiError ? error.message : t('auth.genericError'));
+    }
   }
 
   async function handleRevokeOthers() {
-    await authApi.revokeOtherSessions();
-    void loadSessions();
+    try {
+      await authApi.revokeOtherSessions();
+      void loadSessions();
+    } catch (error) {
+      setSessionsError(error instanceof ApiError ? error.message : t('auth.genericError'));
+    }
   }
 
   return (
@@ -354,6 +366,8 @@ export function AccountSettingsPage() {
           <h2 className="text-lg font-semibold text-ink-primary">{t('accountSettings.sessionsTitle')}</h2>
           <p className="text-sm text-ink-secondary">{t('accountSettings.sessionsSubtitle')}</p>
         </div>
+
+        {sessionsError && <p className="text-sm text-danger">{sessionsError}</p>}
 
         {!sessionsLoading && (
           <div className="flex flex-col divide-y divide-border">

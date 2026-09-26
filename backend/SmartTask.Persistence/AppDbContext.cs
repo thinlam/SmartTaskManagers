@@ -81,7 +81,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options, ICurren
                     case Notification notification:
                         notification.UserId = currentUserId.Value;
                         break;
-                    case Session session:
+                    case Session session when session.UserId == Guid.Empty:
                         session.UserId = currentUserId.Value;
                         break;
                 }

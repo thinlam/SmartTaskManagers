@@ -446,10 +446,13 @@ app.Use(
         var jtiClaim = context.User.FindFirstValue(JwtRegisteredClaimNames.Jti);
         if (!Guid.TryParse(jtiClaim, out var sessionId))
         {
-            // A token with no jti (shouldn't happen for tokens issued
-            // after this change, but a token minted before this feature
-            // existed has none) — treat it as having no active session
-            // rather than throwing.
+            // A token with no jti at all (malformed, or from a JWT
+            // library/flow that never sets one) — treat it as having no
+            // active session rather than throwing. Note: tokens minted
+            // before this feature existed DO have a jti (the old
+            // generator always set one), they just have no matching
+            // Session row — those hit the "session is null" branch
+            // below and get a 401, not this one.
             await next(context);
             return;
         }
@@ -459,6 +462,8 @@ app.Use(
         if (session is null || session.RevokedAt is not null)
         {
             context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            context.Response.ContentType = "application/json";
+            await context.Response.WriteAsJsonAsync(new { code = "session_revoked" }, context.RequestAborted);
             return;
         }
 

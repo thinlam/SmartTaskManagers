@@ -1,5 +1,5 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
-import { authApi, setAuthToken } from '@stm/api-client';
+import { authApi, setAuthToken, setOnSessionRevoked } from '@stm/api-client';
 import i18n from '../i18n';
 
 const STORAGE_KEY = 'stm.auth';
@@ -59,6 +59,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       applyTheme(stored.theme);
     }
     setIsHydrating(false);
+  }, []);
+
+  useEffect(() => {
+    setOnSessionRevoked(() => {
+      localStorage.removeItem(STORAGE_KEY);
+      setAuthToken(null);
+      setAuth(null);
+    });
+    return () => setOnSessionRevoked(null);
   }, []);
 
   function persist(next: StoredAuth) {

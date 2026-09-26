@@ -198,6 +198,11 @@ public sealed class AuthController(IAuthService authService, ICurrentUserContext
             return BadRequest(new { message = $"Avatar must be under {MaxAvatarBytes} bytes." });
         }
 
+        if (!HasValidImageSignature(decoded, request.ContentType))
+        {
+            return BadRequest(new { message = "File content does not match the declared image type." });
+        }
+
         var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
         if (!Guid.TryParse(userId, out var parsedUserId))
         {
@@ -357,9 +362,26 @@ public sealed class AuthController(IAuthService authService, ICurrentUserContext
         var forwardedFor = Request.Headers["X-Forwarded-For"].ToString();
         if (!string.IsNullOrWhiteSpace(forwardedFor))
         {
-            return forwardedFor.Split(',')[0].Trim();
+            var candidate = forwardedFor.Split(',')[0].Trim();
+            if (System.Net.IPAddress.TryParse(candidate, out _))
+            {
+                return candidate;
+            }
         }
         return HttpContext.Connection.RemoteIpAddress?.ToString();
+    }
+
+    private static bool HasValidImageSignature(byte[] bytes, string contentType)
+    {
+        return contentType switch
+        {
+            "image/jpeg" => bytes.Length >= 3 && bytes[0] == 0xFF && bytes[1] == 0xD8 && bytes[2] == 0xFF,
+            "image/png" => bytes.Length >= 4 && bytes[0] == 0x89 && bytes[1] == 0x50 && bytes[2] == 0x4E && bytes[3] == 0x47,
+            "image/webp" => bytes.Length >= 12
+                && bytes[0] == 0x52 && bytes[1] == 0x49 && bytes[2] == 0x46 && bytes[3] == 0x46
+                && bytes[8] == 0x57 && bytes[9] == 0x45 && bytes[10] == 0x42 && bytes[11] == 0x50,
+            _ => false,
+        };
     }
 
     private static AuthResponse ToResponse(AuthResult result) =>

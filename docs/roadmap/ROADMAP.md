@@ -1283,7 +1283,7 @@ trong 1 fix wave + re-review sạch:**
 
 **Kiến trúc:**
 
-JWTs không còn purely stateless — claim `jti` (JWT ID) giờ map 1:1 vào row trong bảng `Sessions`. Mỗi authenticated request kiểm tra session vẫn hợp lệ (chưa revoked), cho phép revoke session trước khi hết 60 phút expiry. `SessionRevocationMiddleware` chạy trước controller, kiểm tra `jti` claim và query bảng `Sessions`.
+JWTs không còn purely stateless — claim `jti` (JWT ID) giờ map 1:1 vào row trong bảng `Sessions`. Mỗi authenticated request kiểm tra session vẫn hợp lệ (chưa revoked), cho phép revoke session trước khi hết 60 phút expiry. Việc kiểm tra này là một inline `app.Use(...)` middleware trong `Program.cs` (không phải class riêng) chạy trước controller, kiểm tra `jti` claim và query bảng `Sessions`.
 
 **Verify thực hiện:**
 
@@ -1294,7 +1294,7 @@ JWTs không còn purely stateless — claim `jti` (JWT ID) giờ map 1:1 vào ro
 
 **Verification NOT completed (deferred to post-merge-deploy):**
 
-- No browser environment available in this build session — UI smoke test (avatar upload visual confirmation, password error/success message display, sessions list rendering) was not performed. Recommend manual verification on deployed instance: navigate to Account Settings via Topbar account menu, upload avatar and confirm visual update in both page and Topbar, attempt password change with wrong current password and confirm inline error, enter valid new password and confirm success message, verify sessions list still shows current session.
+- No browser environment available in this build session — UI smoke test (avatar upload visual confirmation, password error/success message display, sessions list rendering) was not performed. Recommend manual verification on deployed instance: navigate to Account Settings via Topbar account menu, upload avatar and confirm the avatar image renders on the Account Settings page (Topbar's account button only ever shows initials, it does not render the avatar image — nothing to check there), attempt password change with wrong current password and confirm inline error, enter valid new password and confirm success message, verify sessions list still shows current session.
 - Live database checks (avatar BLOB storage, session revocation query) — local environment has no reachable MySQL/database for end-to-end verification. Testing on deployed instance with real database is required, following same pattern as per-user-isolation feature.
 
 **Explicitly out of scope (confirmed with user):**
