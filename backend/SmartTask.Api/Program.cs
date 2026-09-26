@@ -1,3 +1,4 @@
+using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Json.Serialization;
@@ -420,19 +421,53 @@ app.UseAuthorization();
 // Must run after UseAuthentication/UseAuthorization — that's what
 // populates HttpContext.User's claims. AppDbContext's query filter
 // (see SmartTask.Persistence/AppDbContext.cs) reads this per request
-// to scope every Task/Project/Goal/Habit/Notification query to the
-// caller. Left null (never set) for unauthenticated requests — the
-// filter then matches nothing, not everything.
+// to scope every Task/Project/Goal/Habit/Notification/Session query to
+// the caller. Left null (never set) for unauthenticated requests — the
+// filter then matches nothing, not everything. Also validates the
+// request's session (see SmartTask.Domain.Auth.Session) hasn't been
+// revoked — this is what makes Sign Out, changing your password, and
+// revoking a session from Active Sessions actually take effect
+// immediately instead of just updating a database row nobody checks.
 //
 
 app.Use(
     async (context, next) =>
     {
         var userIdClaim = context.User.FindFirstValue(ClaimTypes.NameIdentifier);
-        if (Guid.TryParse(userIdClaim, out var userId))
+        if (!Guid.TryParse(userIdClaim, out var userId))
         {
-            var currentUserContext = context.RequestServices.GetRequiredService<ICurrentUserContext>();
-            currentUserContext.UserId = userId;
+            await next(context);
+            return;
+        }
+
+        var currentUserContext = context.RequestServices.GetRequiredService<ICurrentUserContext>();
+        currentUserContext.UserId = userId;
+
+        var jtiClaim = context.User.FindFirstValue(JwtRegisteredClaimNames.Jti);
+        if (!Guid.TryParse(jtiClaim, out var sessionId))
+        {
+            // A token with no jti (shouldn't happen for tokens issued
+            // after this change, but a token minted before this feature
+            // existed has none) — treat it as having no active session
+            // rather than throwing.
+            await next(context);
+            return;
+        }
+
+        var sessionRepository = context.RequestServices.GetRequiredService<ISessionRepository>();
+        var session = await sessionRepository.GetByIdAsync(sessionId, context.RequestAborted);
+        if (session is null || session.RevokedAt is not null)
+        {
+            context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+            return;
+        }
+
+        currentUserContext.SessionId = sessionId;
+
+        if (DateTimeOffset.UtcNow - session.LastActiveAt > TimeSpan.FromMinutes(1))
+        {
+            session.LastActiveAt = DateTimeOffset.UtcNow;
+            await sessionRepository.SaveChangesAsync(context.RequestAborted);
         }
 
         await next(context);
