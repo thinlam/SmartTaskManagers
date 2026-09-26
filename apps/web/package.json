@@ -10,12 +10,13 @@
     "typecheck": "tsc -b --pretty"
   },
   "dependencies": {
-    "@stm/app-core": "*",
     "@stm/api-client": "*",
+    "@stm/app-core": "*",
     "@stm/hooks": "*",
     "@stm/shared": "*",
     "@stm/types": "*",
     "@stm/ui": "*",
+    "@vercel/speed-insights": "^2.0.0",
     "lucide-react": "^1.47.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
