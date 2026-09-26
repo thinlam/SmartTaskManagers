@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Eye, EyeOff, ListChecks } from 'lucide-react';
-import { Button } from '@stm/ui';
+import { Button, PasswordStrengthChecklist } from '@stm/ui';
 import { ApiError, configureApiClient } from '@stm/api-client';
 import { useAuthContext } from '../../state/AuthContext';
 import { getStoredServerUrl } from '../../lib/serverUrl';
@@ -150,16 +150,13 @@ export function LoginPage() {
 
           {mode === 'register' && (
             <>
-              <ul className="flex flex-col gap-1 rounded-md bg-surface-secondary p-3">
-                {passwordRuleResults.map((rule) => (
-                  <li
-                    key={rule.key}
-                    className={'text-xs ' + (rule.met ? 'text-success' : 'text-ink-muted')}
-                  >
-                    {rule.met ? '✓' : '○'} {t(rule.labelKey)}
-                  </li>
-                ))}
-              </ul>
+              <PasswordStrengthChecklist
+                results={passwordRuleResults.map((rule) => ({
+                  key: rule.key,
+                  label: t(rule.labelKey),
+                  met: rule.met,
+                }))}
+              />
 
               <div className="flex flex-col gap-1">
                 <label htmlFor="login-confirm-password" className={labelClasses}>

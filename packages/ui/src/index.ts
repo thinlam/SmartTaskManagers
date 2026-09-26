@@ -43,3 +43,8 @@ export {
   NotificationItem,
   type NotificationItemProps,
 } from './components/NotificationPanel';
+export {
+  PasswordStrengthChecklist,
+  type PasswordStrengthChecklistProps,
+  type PasswordRuleResult,
+} from './components/PasswordStrengthChecklist';
