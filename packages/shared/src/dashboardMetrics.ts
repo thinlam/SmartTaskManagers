@@ -1,5 +1,5 @@
 import type { Area, Habit, Priority, Task } from '@stm/types';
-import { formatDueLabel } from './formatDueLabel';
+import { formatDueLabel, type DueLabelTranslate } from './formatDueLabel';
 import { getAreaProgress, type AreaProgress } from './analyticsMetrics';
 
 /**
@@ -26,11 +26,28 @@ const FOCUS_MAX_ROWS = 6;
 const INSIGHT_MAX_ITEMS = 3;
 const DAILY_FOCUS_LIMIT_HOURS = 4;
 
+export type DashboardKpiKey = 'dueToday' | 'overdue' | 'focusTime' | 'weeklyProgress' | 'streak';
+
 export interface DashboardKpi {
+  /**
+   * Identifies which of the 5 fixed KPIs this is — `packages/shared` has
+   * no i18n access, so `label`/`sub` below are English fallbacks only;
+   * the real UI (DashboardPage) translates by switching on `key` and the
+   * raw numeric fields below instead of using `label`/`sub` directly.
+   */
+  key: DashboardKpiKey;
   label: string;
   value: string;
   sub: string;
   tone: 'primary' | 'success' | 'warning' | 'danger' | 'info';
+  /** Populated only for the KPI whose key matches — the raw number(s) a translated `sub` needs. */
+  highPriorityCount?: number;
+  overdueCount?: number;
+  focusLoadPercent?: number;
+  weekTaskCount?: number;
+  weekCompletedCount?: number;
+  weeklyPercent?: number;
+  streakCount?: number;
 }
 
 export interface DashboardFocusTask {
@@ -97,13 +114,13 @@ function compareDueDates(a: string | null, b: string | null): number {
   return new Date(a).getTime() - new Date(b).getTime();
 }
 
-function toFocusTask(task: Task, referenceDate: Date): DashboardFocusTask {
+function toFocusTask(task: Task, referenceDate: Date, t?: DueLabelTranslate): DashboardFocusTask {
   return {
     id: task.id,
     title: task.title,
     area: task.area,
     priority: task.priority,
-    dueLabel: formatDueLabel(task.dueDate, referenceDate),
+    dueLabel: formatDueLabel(task.dueDate, referenceDate, t),
     smartScore: task.smartScore,
     recommendedAction: task.recommendedAction,
   };
@@ -119,6 +136,7 @@ export function computeDashboardData(
   tasks: Task[],
   habits: Habit[],
   referenceDate: Date = new Date(),
+  t?: DueLabelTranslate,
 ): DashboardData {
   const today = startOfDay(referenceDate);
   const week = getWeekRange(today);
@@ -149,24 +167,31 @@ export function computeDashboardData(
 
   const kpis: DashboardKpi[] = [
     {
+      key: 'dueToday',
       label: 'Due Today',
       value: String(todayTasks.length),
       sub: `${countHighImpact(todayTasks)} high priority`,
       tone: todayTasks.length > 0 ? 'primary' : 'success',
+      highPriorityCount: countHighImpact(todayTasks),
     },
     {
+      key: 'overdue',
       label: 'Overdue',
       value: String(overdueTasks.length),
       sub: overdueTasks.length > 0 ? 'Needs attention' : 'All clear',
       tone: overdueTasks.length > 0 ? 'danger' : 'success',
+      overdueCount: overdueTasks.length,
     },
     {
+      key: 'focusTime',
       label: 'Focus Time',
       value: formatMinutes(focusMinutesToday),
       sub: `${Math.min(focusLoadPercent, 999)}% of daily capacity`,
       tone: focusLoadPercent > 100 ? 'warning' : 'info',
+      focusLoadPercent: Math.min(focusLoadPercent, 999),
     },
     {
+      key: 'weeklyProgress',
       label: 'Weekly Progress',
       value: weekTasks.length > 0 ? `${weeklyPercent}%` : '—',
       sub:
@@ -174,12 +199,17 @@ export function computeDashboardData(
           ? `${weekCompleted.length} of ${weekTasks.length} completed`
           : 'No tasks due this week',
       tone: weeklyPercent >= 70 ? 'success' : 'primary',
+      weekTaskCount: weekTasks.length,
+      weekCompletedCount: weekCompleted.length,
+      weeklyPercent,
     },
     {
+      key: 'streak',
       label: 'Streak',
       value: String(streak),
       sub: streak === 1 ? 'day planning streak' : 'days planning streak',
       tone: streak > 0 ? 'warning' : 'primary',
+      streakCount: streak,
     },
   ];
 
@@ -191,7 +221,7 @@ export function computeDashboardData(
       return compareDueDates(a.dueDate, b.dueDate);
     })
     .slice(0, FOCUS_MAX_ROWS)
-    .map((t) => toFocusTask(t, referenceDate));
+    .map((task) => toFocusTask(task, referenceDate, t));
 
   const areas = getAreaProgress(tasks);
 

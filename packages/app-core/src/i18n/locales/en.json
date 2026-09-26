@@ -18,7 +18,24 @@
     "completedOfTarget": "{{completed}}/{{target}} completed",
     "completedCount": "{{completed}} completed",
     "checkInToday": "Check in today",
-    "checkedInToday": "Checked in today"
+    "checkedInToday": "Checked in today",
+    "highPriorityCount": "{{count}} high priority",
+    "needsAttention": "Needs attention",
+    "allClearShort": "All clear",
+    "ofDailyCapacity": "{{percent}}% of daily capacity",
+    "ofHourCapacity": "{{percent}}% of {{hours}}h capacity",
+    "noTasksThisWeek": "No tasks due this week",
+    "completionRate": "{{rate}}% completion rate",
+    "minutesOrLess": "15 min or less",
+    "streakDays_one": "{{count}} day planning streak",
+    "streakDays_other": "{{count}} days planning streak",
+    "noDueDate": "No due date",
+    "dueToday": "Due today",
+    "dueTomorrow": "Due tomorrow",
+    "dueInDays_one": "Due in {{count}} day",
+    "dueInDays_other": "Due in {{count}} days",
+    "overdueDays_one": "Overdue {{count}} day",
+    "overdueDays_other": "Overdue {{count}} days"
   },
   "notifications": {
     "title": "Notifications",
@@ -167,7 +184,12 @@
     "myAreasEmpty": "No tasks yet — areas will appear once you add some.",
     "areaStats": "{{completed}} completed · {{open}} open · {{total}} total",
     "smartInsights": "Smart Insights",
-    "smartInsightsEmpty": "No insights yet — check back once you have some tasks in motion."
+    "smartInsightsEmpty": "No insights yet — check back once you have some tasks in motion.",
+    "kpiDueToday": "Due Today",
+    "kpiOverdue": "Overdue",
+    "kpiFocusTime": "Focus Time",
+    "kpiWeeklyProgress": "Weekly Progress",
+    "kpiStreak": "Streak"
   },
   "today": {
     "loading": "Loading today…",
@@ -182,7 +204,19 @@
     "completedCount": "{{count}} completed",
     "completionRatePlanned": "{{rate}}% of today's planned work",
     "noPlannedTasks": "No planned tasks today",
-    "completion": "Completion"
+    "completion": "Completion",
+    "subtitle": "Focus on what matters most today.",
+    "doNowSubtitle": "Your most important work right now",
+    "doNowEmpty": "Nothing urgent right now. You have breathing room.",
+    "scheduledSubtitle": "Time-specific tasks for today",
+    "scheduledEmpty": "No time-blocked tasks scheduled today.",
+    "quickWinsSubtitle": "Small tasks you can finish fast",
+    "quickWinsEmpty": "No quick wins available right now.",
+    "kpiDueToday": "Due Today",
+    "kpiOverdue": "Overdue",
+    "kpiFocusLoad": "Focus Load",
+    "kpiCompleted": "Completed",
+    "kpiQuickWins": "Quick Wins"
   },
   "inbox": {
     "title": "Inbox",

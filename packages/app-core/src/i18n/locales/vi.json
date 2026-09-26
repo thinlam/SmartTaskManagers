@@ -18,7 +18,24 @@
     "completedOfTarget": "{{completed}}/{{target}} hoàn thành",
     "completedCount": "{{completed}} hoàn thành",
     "checkInToday": "Điểm danh hôm nay",
-    "checkedInToday": "Đã điểm danh hôm nay"
+    "checkedInToday": "Đã điểm danh hôm nay",
+    "highPriorityCount": "{{count}} ưu tiên cao",
+    "needsAttention": "Cần chú ý",
+    "allClearShort": "Ổn cả",
+    "ofDailyCapacity": "{{percent}}% công suất mỗi ngày",
+    "ofHourCapacity": "{{percent}}% công suất {{hours}}h",
+    "noTasksThisWeek": "Không có công việc nào đến hạn tuần này",
+    "completionRate": "{{rate}}% tỷ lệ hoàn thành",
+    "minutesOrLess": "15 phút hoặc ít hơn",
+    "streakDays_one": "{{count}} ngày duy trì kế hoạch",
+    "streakDays_other": "{{count}} ngày duy trì kế hoạch",
+    "noDueDate": "Không có ngày đến hạn",
+    "dueToday": "Đến hạn hôm nay",
+    "dueTomorrow": "Đến hạn ngày mai",
+    "dueInDays_one": "Đến hạn trong {{count}} ngày",
+    "dueInDays_other": "Đến hạn trong {{count}} ngày",
+    "overdueDays_one": "Quá hạn {{count}} ngày",
+    "overdueDays_other": "Quá hạn {{count}} ngày"
   },
   "notifications": {
     "title": "Thông báo",
@@ -167,7 +184,12 @@
     "myAreasEmpty": "Chưa có công việc nào — các lĩnh vực sẽ xuất hiện khi bạn thêm công việc.",
     "areaStats": "{{completed}} hoàn thành · {{open}} đang mở · {{total}} tổng cộng",
     "smartInsights": "Thông tin thông minh",
-    "smartInsightsEmpty": "Chưa có thông tin nào — hãy quay lại khi bạn có công việc đang thực hiện."
+    "smartInsightsEmpty": "Chưa có thông tin nào — hãy quay lại khi bạn có công việc đang thực hiện.",
+    "kpiDueToday": "Đến hạn hôm nay",
+    "kpiOverdue": "Quá hạn",
+    "kpiFocusTime": "Thời gian tập trung",
+    "kpiWeeklyProgress": "Tiến độ tuần",
+    "kpiStreak": "Chuỗi ngày"
   },
   "today": {
     "loading": "Đang tải hôm nay…",
@@ -182,7 +204,19 @@
     "completedCount": "{{count}} đã hoàn thành",
     "completionRatePlanned": "{{rate}}% khối lượng công việc đã lên kế hoạch hôm nay",
     "noPlannedTasks": "Không có công việc nào được lên kế hoạch hôm nay",
-    "completion": "Hoàn thành"
+    "completion": "Hoàn thành",
+    "subtitle": "Tập trung vào những việc quan trọng nhất hôm nay.",
+    "doNowSubtitle": "Việc quan trọng nhất cần làm ngay",
+    "doNowEmpty": "Không có gì gấp lúc này. Bạn đang thảnh thơi.",
+    "scheduledSubtitle": "Công việc có thời gian cụ thể hôm nay",
+    "scheduledEmpty": "Không có công việc nào được đặt giờ hôm nay.",
+    "quickWinsSubtitle": "Việc nhỏ có thể hoàn thành nhanh",
+    "quickWinsEmpty": "Không có việc dễ nào lúc này.",
+    "kpiDueToday": "Đến hạn hôm nay",
+    "kpiOverdue": "Quá hạn",
+    "kpiFocusLoad": "Khối lượng tập trung",
+    "kpiCompleted": "Đã hoàn thành",
+    "kpiQuickWins": "Việc dễ hoàn thành"
   },
   "inbox": {
     "title": "Hộp thư",

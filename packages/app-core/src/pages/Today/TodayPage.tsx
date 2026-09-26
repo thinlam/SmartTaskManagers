@@ -1,11 +1,51 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { StatCard } from '@stm/ui';
-import { computeTodayData } from '@stm/shared';
+import { computeTodayData, type TodayKpi } from '@stm/shared';
 import { useTasksContext } from '../../state/TasksContext';
 import { BestNextActionCard } from './BestNextActionCard';
 import { TaskListSection } from './TaskListSection';
 import { EndOfDayReview } from './EndOfDayReview';
+
+/**
+ * `packages/shared`'s computeTodayData() has no i18n access, so its
+ * `label`/`sub` on each KPI are English fallbacks only — this builds the
+ * real, translated text from `kpi.key` and the raw numeric fields it
+ * also carries.
+ */
+function translateKpi(t: TFunction, kpi: TodayKpi): { label: string; sub: string } {
+  switch (kpi.key) {
+    case 'dueToday':
+      return {
+        label: t('today.kpiDueToday'),
+        sub: t('common.highPriorityCount', { count: kpi.highPriorityCount ?? 0 }),
+      };
+    case 'overdue':
+      return {
+        label: t('today.kpiOverdue'),
+        sub: (kpi.overdueCount ?? 0) > 0 ? t('common.needsAttention') : t('common.allClearShort'),
+      };
+    case 'focusLoad':
+      return {
+        label: t('today.kpiFocusLoad'),
+        sub: t('common.ofHourCapacity', {
+          percent: kpi.focusLoadPercent ?? 0,
+          hours: kpi.focusCapacityHours ?? 0,
+        }),
+      };
+    case 'completed':
+      return {
+        label: t('today.kpiCompleted'),
+        sub: t('common.completionRate', { rate: kpi.completionRate ?? 0 }),
+      };
+    case 'quickWins':
+      return {
+        label: t('today.kpiQuickWins'),
+        sub: t('common.minutesOrLess'),
+      };
+  }
+}
 
 /**
  * Frame 04 (Today), adapted to Personal Mode — mirrors
@@ -17,11 +57,11 @@ import { EndOfDayReview } from './EndOfDayReview';
  * recommendedAction are the real Smart Engine output (Phase 29).
  */
 export function TodayPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { tasks, isLoading } = useTasksContext();
-  const data = useMemo(() => computeTodayData(tasks), [tasks]);
+  const data = useMemo(() => computeTodayData(tasks, new Date(), t), [tasks, t]);
 
-  const dateLabel = new Date().toLocaleDateString('en-US', {
+  const dateLabel = new Date().toLocaleDateString(i18n.language, {
     weekday: 'long',
     day: '2-digit',
     month: 'long',
@@ -39,43 +79,40 @@ export function TodayPage() {
           {t('today.title')}
         </h1>
         <p className="text-sm text-ink-secondary">
-          {dateLabel} · {data.subtitle}
+          {dateLabel} · {t('today.subtitle')}
         </p>
       </header>
 
       <section className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-        {data.kpis.map((kpi) => (
-          <StatCard
-            key={kpi.label}
-            label={kpi.label}
-            value={kpi.value}
-            sub={kpi.sub}
-            tone={kpi.tone}
-          />
-        ))}
+        {data.kpis.map((kpi) => {
+          const { label, sub } = translateKpi(t, kpi);
+          return (
+            <StatCard key={kpi.key} label={label} value={kpi.value} sub={sub} tone={kpi.tone} />
+          );
+        })}
       </section>
 
       <BestNextActionCard task={data.bestNext} />
 
       <TaskListSection
         title={t('today.doNow')}
-        subtitle={data.doNow.subtitle}
+        subtitle={t('today.doNowSubtitle')}
         tasks={data.doNow.tasks}
-        emptyText={data.doNow.emptyText}
+        emptyText={t('today.doNowEmpty')}
         accent="danger"
       />
       <TaskListSection
         title={t('today.scheduled')}
-        subtitle={data.scheduled.subtitle}
+        subtitle={t('today.scheduledSubtitle')}
         tasks={data.scheduled.tasks}
-        emptyText={data.scheduled.emptyText}
+        emptyText={t('today.scheduledEmpty')}
         accent="info"
       />
       <TaskListSection
         title={t('today.quickWins')}
-        subtitle={data.quickWins.subtitle}
+        subtitle={t('today.quickWinsSubtitle')}
         tasks={data.quickWins.tasks}
-        emptyText={data.quickWins.emptyText}
+        emptyText={t('today.quickWinsEmpty')}
         accent="success"
       />
 

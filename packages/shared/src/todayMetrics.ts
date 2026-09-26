@@ -1,5 +1,5 @@
 import type { Area, Priority, Task } from '@stm/types';
-import { formatDueLabel } from './formatDueLabel';
+import { formatDueLabel, type DueLabelTranslate } from './formatDueLabel';
 
 /**
  * Ported from computeTodayData_() in apps/google-sheets/src/07_Today.gs —
@@ -18,11 +18,26 @@ const SCHEDULED_MAX_ROWS = 6;
 const QUICK_WINS_MAX_ROWS = 6;
 const DAILY_FOCUS_LIMIT_HOURS = 4;
 
+export type TodayKpiKey = 'dueToday' | 'overdue' | 'focusLoad' | 'completed' | 'quickWins';
+
 export interface TodayKpi {
+  /**
+   * Identifies which of the 5 fixed KPIs this is — `packages/shared` has
+   * no i18n access, so `label`/`sub` below are English fallbacks only;
+   * the real UI (TodayPage) translates by switching on `key` and the raw
+   * numeric fields below instead of using `label`/`sub` directly.
+   */
+  key: TodayKpiKey;
   label: string;
   value: string;
   sub: string;
   tone: 'primary' | 'success' | 'warning' | 'danger' | 'info';
+  /** Populated only for the KPI whose key matches — the raw number(s) a translated `sub` needs. */
+  highPriorityCount?: number;
+  overdueCount?: number;
+  focusLoadPercent?: number;
+  focusCapacityHours?: number;
+  completionRate?: number;
 }
 
 export interface TodayTask {
@@ -84,13 +99,18 @@ function byScoreDesc(a: Task, b: Task): number {
   return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
 }
 
-function toTodayTask(task: Task, referenceDate: Date, dueLabelOverride?: string): TodayTask {
+function toTodayTask(
+  task: Task,
+  referenceDate: Date,
+  dueLabelOverride?: string,
+  t?: DueLabelTranslate,
+): TodayTask {
   return {
     id: task.id,
     title: task.title,
     area: task.area,
     priority: task.priority,
-    dueLabel: dueLabelOverride ?? formatDueLabel(task.dueDate, referenceDate),
+    dueLabel: dueLabelOverride ?? formatDueLabel(task.dueDate, referenceDate, t),
     smartScore: task.smartScore,
     recommendedAction: task.recommendedAction,
   };
@@ -106,7 +126,11 @@ function formatTimeLabel(dueTime: string): string {
   return `${hour12}:${String(minute).padStart(2, '0')} ${period}`;
 }
 
-export function computeTodayData(tasks: Task[], referenceDate: Date = new Date()): TodayData {
+export function computeTodayData(
+  tasks: Task[],
+  referenceDate: Date = new Date(),
+  t?: DueLabelTranslate,
+): TodayData {
   const today = startOfDay(referenceDate);
 
   const openTasks = tasks.filter((t) => t.status !== 'Completed');
@@ -171,32 +195,46 @@ export function computeTodayData(tasks: Task[], referenceDate: Date = new Date()
   const completionRate =
     plannedTodayCount > 0 ? Math.round((completedToday.length / plannedTodayCount) * 100) : 0;
 
+  const todayHighPriorityCount = todayTasks.filter(
+    (t) => t.priority === 'High' || t.priority === 'Urgent' || t.priority === 'Critical',
+  ).length;
+
   const kpis: TodayKpi[] = [
     {
+      key: 'dueToday',
       label: 'Due Today',
       value: String(todayTasks.length),
-      sub: `${todayTasks.filter((t) => t.priority === 'High' || t.priority === 'Urgent' || t.priority === 'Critical').length} high priority`,
+      sub: `${todayHighPriorityCount} high priority`,
       tone: todayTasks.length > 0 ? 'primary' : 'success',
+      highPriorityCount: todayHighPriorityCount,
     },
     {
+      key: 'overdue',
       label: 'Overdue',
       value: String(overdueTasks.length),
       sub: overdueTasks.length > 0 ? 'Needs attention' : 'All clear',
       tone: overdueTasks.length > 0 ? 'danger' : 'success',
+      overdueCount: overdueTasks.length,
     },
     {
+      key: 'focusLoad',
       label: 'Focus Load',
       value: formatMinutes(focusMinutes),
       sub: `${Math.min(capacityPercent, 999)}% of ${DAILY_FOCUS_LIMIT_HOURS}h capacity`,
       tone: capacityPercent > 100 ? 'warning' : 'info',
+      focusLoadPercent: Math.min(capacityPercent, 999),
+      focusCapacityHours: DAILY_FOCUS_LIMIT_HOURS,
     },
     {
+      key: 'completed',
       label: 'Completed',
       value: String(completedToday.length),
       sub: `${completionRate}% completion rate`,
       tone: 'success',
+      completionRate,
     },
     {
+      key: 'quickWins',
       label: 'Quick Wins',
       value: String(quickWinsSource.length),
       sub: '15 min or less',
@@ -207,23 +245,28 @@ export function computeTodayData(tasks: Task[], referenceDate: Date = new Date()
   return {
     subtitle: 'Focus on what matters most today.',
     kpis,
-    bestNext: bestNextSource ? toTodayTask(bestNextSource, referenceDate) : null,
+    bestNext: bestNextSource ? toTodayTask(bestNextSource, referenceDate, undefined, t) : null,
     doNow: {
       subtitle: 'Your most important work right now',
       emptyText: 'Nothing urgent right now. You have breathing room.',
-      tasks: doNowSource.map((t) => toTodayTask(t, referenceDate)),
+      tasks: doNowSource.map((task) => toTodayTask(task, referenceDate, undefined, t)),
     },
     scheduled: {
       subtitle: 'Time-specific tasks for today',
       emptyText: 'No time-blocked tasks scheduled today.',
-      tasks: scheduledSource.map((t) =>
-        toTodayTask(t, referenceDate, t.dueTime ? formatTimeLabel(t.dueTime) : undefined),
+      tasks: scheduledSource.map((task) =>
+        toTodayTask(
+          task,
+          referenceDate,
+          task.dueTime ? formatTimeLabel(task.dueTime) : undefined,
+          t,
+        ),
       ),
     },
     quickWins: {
       subtitle: 'Small tasks you can finish fast',
       emptyText: 'No quick wins available right now.',
-      tasks: quickWinsSource.map((t) => toTodayTask(t, referenceDate)),
+      tasks: quickWinsSource.map((task) => toTodayTask(task, referenceDate, undefined, t)),
     },
     review: {
       completedCount: completedToday.length,

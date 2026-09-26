@@ -1,10 +1,53 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { EmptyState, Progress, SmartInsightCard, StatCard, TaskCard } from '@stm/ui';
-import { computeDashboardData } from '@stm/shared';
+import { computeDashboardData, type DashboardKpi } from '@stm/shared';
 import { translatePriority } from '../../lib/enumLabels';
 import { useTasksContext } from '../../state/TasksContext';
 import { useHabitsContext } from '../../state/HabitsContext';
+
+/**
+ * `packages/shared`'s computeDashboardData() has no i18n access, so its
+ * `label`/`sub` on each KPI are English fallbacks only — this builds the
+ * real, translated text from `kpi.key` and the raw numeric fields it
+ * also carries.
+ */
+function translateKpi(t: TFunction, kpi: DashboardKpi): { label: string; sub: string } {
+  switch (kpi.key) {
+    case 'dueToday':
+      return {
+        label: t('dashboard.kpiDueToday'),
+        sub: t('common.highPriorityCount', { count: kpi.highPriorityCount ?? 0 }),
+      };
+    case 'overdue':
+      return {
+        label: t('dashboard.kpiOverdue'),
+        sub: (kpi.overdueCount ?? 0) > 0 ? t('common.needsAttention') : t('common.allClearShort'),
+      };
+    case 'focusTime':
+      return {
+        label: t('dashboard.kpiFocusTime'),
+        sub: t('common.ofDailyCapacity', { percent: kpi.focusLoadPercent ?? 0 }),
+      };
+    case 'weeklyProgress':
+      return {
+        label: t('dashboard.kpiWeeklyProgress'),
+        sub:
+          (kpi.weekTaskCount ?? 0) > 0
+            ? t('common.completedOfTarget', {
+                completed: kpi.weekCompletedCount ?? 0,
+                target: kpi.weekTaskCount ?? 0,
+              })
+            : t('common.noTasksThisWeek'),
+      };
+    case 'streak':
+      return {
+        label: t('dashboard.kpiStreak'),
+        sub: t('common.streakDays', { count: kpi.streakCount ?? 0 }),
+      };
+  }
+}
 
 /**
  * Frame 03 (Dashboard), adapted to Personal Mode: KPI row, Focus Now,
@@ -22,7 +65,10 @@ export function DashboardPage() {
   const { tasks, isLoading: tasksLoading } = useTasksContext();
   const { habits, isLoading: habitsLoading } = useHabitsContext();
 
-  const data = useMemo(() => computeDashboardData(tasks, habits), [tasks, habits]);
+  const data = useMemo(
+    () => computeDashboardData(tasks, habits, new Date(), t),
+    [tasks, habits, t],
+  );
 
   if (tasksLoading || habitsLoading) {
     return <div className="p-8 text-sm text-ink-muted">{t('dashboard.loading')}</div>;
@@ -39,15 +85,12 @@ export function DashboardPage() {
       </header>
 
       <section className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
-        {data.kpis.map((kpi) => (
-          <StatCard
-            key={kpi.label}
-            label={kpi.label}
-            value={kpi.value}
-            sub={kpi.sub}
-            tone={kpi.tone}
-          />
-        ))}
+        {data.kpis.map((kpi) => {
+          const { label, sub } = translateKpi(t, kpi);
+          return (
+            <StatCard key={kpi.key} label={label} value={kpi.value} sub={sub} tone={kpi.tone} />
+          );
+        })}
       </section>
 
       <section className="flex flex-col gap-3">

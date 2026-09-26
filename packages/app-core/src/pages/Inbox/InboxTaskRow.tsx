@@ -21,7 +21,7 @@ export function InboxTaskRow({ task, onComplete, onDelete, onEdit }: InboxTaskRo
         <TaskCard
           title={task.title}
           meta={task.area}
-          dueLabel={formatDueLabel(task.dueDate)}
+          dueLabel={formatDueLabel(task.dueDate, new Date(), t)}
           priority={task.priority}
           priorityLabel={translatePriority(t, task.priority)}
         />

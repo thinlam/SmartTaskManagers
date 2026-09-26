@@ -20,7 +20,7 @@ export function TaskRow({ task, onComplete, onDelete, onEdit }: TaskRowProps) {
         <TaskCard
           title={task.title}
           meta={task.area}
-          dueLabel={formatDueLabel(task.dueDate)}
+          dueLabel={formatDueLabel(task.dueDate, new Date(), t)}
           priority={task.priority}
           priorityLabel={translatePriority(t, task.priority)}
           status={task.status}
