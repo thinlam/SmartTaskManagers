@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using SmartTask.Application.Auth;
 using SmartTask.Application.Goals;
 using SmartTask.Application.Habits;
 using SmartTask.Application.Notifications;
@@ -55,6 +56,7 @@ public static class DependencyInjection
         services.AddScoped<IGoalRepository, GoalRepository>();
         services.AddScoped<IHabitRepository, HabitRepository>();
         services.AddScoped<INotificationRepository, NotificationRepository>();
+        services.AddScoped<ISessionRepository, SessionRepository>();
 
         return services;
     }
