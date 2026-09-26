@@ -10,19 +10,22 @@ interface StoredAuth {
   expiresAt: string;
   language: string;
   theme: string;
+  avatarDataUrl: string | null;
 }
 
 interface AuthContextValue {
   isAuthenticated: boolean;
   email: string | null;
   theme: string | null;
+  avatarDataUrl: string | null;
   /** True only while reading localStorage on first mount — not for login/register's own in-flight state, that's each form's own concern. */
   isHydrating: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, displayName?: string) => Promise<void>;
-  logout: () => void;
+  logout: () => Promise<void>;
   setLanguage: (language: 'vi' | 'en') => Promise<void>;
   setTheme: (theme: 'light' | 'dark') => Promise<void>;
+  setAvatar: (avatarBase64: string, contentType: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -43,16 +46,6 @@ function applyTheme(theme: string) {
   document.documentElement.classList.toggle('dark', theme === 'dark');
 }
 
-/**
- * New in Phase 27 — the desktop app talks to a real backend now
- * (SmartTask.Api, Phase 22), so it needs a real session instead of
- * opening straight into the app shell. Token persists in
- * `localStorage` (not React state alone) so closing and reopening the
- * Tauri window doesn't force a re-login every time; `@stm/api-client`'s
- * module-level `authToken` (set via `setAuthToken`) is what every other
- * API call actually reads, this context is just the React-facing wrapper
- * around it plus the login/register forms.
- */
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [auth, setAuth] = useState<StoredAuth | null>(null);
   const [isHydrating, setIsHydrating] = useState(true);
@@ -86,6 +79,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       expiresAt: result.expiresAt,
       language: result.language,
       theme: result.theme,
+      avatarDataUrl: result.avatarDataUrl,
     });
   }
 
@@ -97,10 +91,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       expiresAt: result.expiresAt,
       language: result.language,
       theme: result.theme,
+      avatarDataUrl: result.avatarDataUrl,
     });
   }
 
-  function logout() {
+  async function logout() {
+    try {
+      await authApi.logout();
+    } catch (error) {
+      // A failed revoke call must never trap the user in a "logged in"
+      // UI they can't leave — log it and proceed with local sign-out
+      // regardless.
+      console.error('Failed to revoke session on logout:', error);
+    }
     // Deliberately leaves the `dark` class / stm.theme in place — the
     // login screen keeps the last-used theme (LoginPage's own fallback
     // reads stm.theme), and persist() re-applies the next user's real
@@ -136,18 +139,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }
 
+  async function setAvatar(avatarBase64: string, contentType: string) {
+    await authApi.updateAvatar(avatarBase64, contentType);
+    const avatarDataUrl = `data:${contentType};base64,${avatarBase64}`;
+    if (auth) {
+      persist({ ...auth, avatarDataUrl });
+    }
+  }
+
   return (
     <AuthContext.Provider
       value={{
         isAuthenticated: auth !== null,
         email: auth?.email ?? null,
         theme: auth?.theme ?? null,
+        avatarDataUrl: auth?.avatarDataUrl ?? null,
         isHydrating,
         login,
         register,
         logout,
         setLanguage,
         setTheme,
+        setAvatar,
       }}
     >
       {children}
