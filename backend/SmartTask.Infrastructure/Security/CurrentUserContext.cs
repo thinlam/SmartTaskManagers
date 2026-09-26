@@ -12,4 +12,5 @@ namespace SmartTask.Infrastructure.Security;
 public sealed class CurrentUserContext : ICurrentUserContext
 {
     public Guid? UserId { get; set; }
+    public Guid? SessionId { get; set; }
 }

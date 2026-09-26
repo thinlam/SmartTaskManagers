@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using SmartTask.Application.Abstractions;
+using SmartTask.Domain.Auth;
 using SmartTask.Domain.Common;
 using SmartTask.Domain.Goals;
 using SmartTask.Domain.Habits;
@@ -38,6 +39,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options, ICurren
     public DbSet<Habit> Habits => Set<Habit>();
     public DbSet<User> Users => Set<User>();
     public DbSet<Notification> Notifications => Set<Notification>();
+    public DbSet<Session> Sessions => Set<Session>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -52,6 +54,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options, ICurren
         modelBuilder.Entity<Goal>().HasQueryFilter(g => g.UserId == currentUserContext.UserId);
         modelBuilder.Entity<Habit>().HasQueryFilter(h => h.UserId == currentUserContext.UserId);
         modelBuilder.Entity<Notification>().HasQueryFilter(n => n.UserId == currentUserContext.UserId);
+        modelBuilder.Entity<Session>().HasQueryFilter(s => s.UserId == currentUserContext.UserId);
     }
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
@@ -77,6 +80,9 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options, ICurren
                         break;
                     case Notification notification:
                         notification.UserId = currentUserId.Value;
+                        break;
+                    case Session session:
+                        session.UserId = currentUserId.Value;
                         break;
                 }
             }

@@ -12,4 +12,5 @@ namespace SmartTask.Application.Abstractions;
 public interface ICurrentUserContext
 {
     Guid? UserId { get; set; }
+    Guid? SessionId { get; set; }
 }

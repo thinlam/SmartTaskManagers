@@ -43,5 +43,6 @@ public sealed class AppDbContextFactory : IDesignTimeDbContextFactory<AppDbConte
     private sealed class StubCurrentUserContext : ICurrentUserContext
     {
         public Guid? UserId { get; set; }
+        public Guid? SessionId { get; set; }
     }
 }
