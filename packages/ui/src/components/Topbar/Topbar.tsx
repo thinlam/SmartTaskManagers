@@ -147,7 +147,12 @@ export function Topbar({
         </button>
 
         {isPanelOpen && (
-          <div className="absolute right-0 top-full z-20 mt-2">
+          <div
+            className={cn(
+              'fixed inset-x-3 z-20 top-[calc(4rem+env(safe-area-inset-top)+0.5rem)]',
+              'sm:absolute sm:inset-x-auto sm:right-0 sm:top-full sm:mt-2',
+            )}
+          >
             <NotificationPanel
               notifications={notifications}
               isLoading={notificationsLoading}

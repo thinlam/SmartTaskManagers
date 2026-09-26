@@ -32,7 +32,7 @@ export function NotificationPanel({
   const hasUnread = notifications.some((n) => !n.isRead);
 
   return (
-    <div className="flex max-h-[28rem] w-[calc(100vw-1.5rem)] max-w-96 flex-col overflow-hidden rounded-lg border border-border bg-surface shadow-lg">
+    <div className="flex max-h-[28rem] w-full max-w-96 flex-col overflow-hidden rounded-lg border border-border bg-surface shadow-lg sm:w-96">
       <div className="flex items-center justify-between border-b border-border px-4 py-3">
         <h2 className="text-sm font-semibold text-ink-primary">{title}</h2>
         {hasUnread && (

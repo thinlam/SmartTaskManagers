@@ -36,9 +36,12 @@ export function Drawer({ open, onClose, title, children, footer }: DrawerProps) 
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="relative flex h-full w-full max-w-md flex-col bg-surface shadow-lg"
+        className="relative flex h-full w-full max-w-md flex-col bg-surface shadow-lg pr-[env(safe-area-inset-right)]"
       >
-        <div className="flex shrink-0 items-center justify-between border-b border-border px-6 py-4">
+        <div
+          className="flex shrink-0 items-center justify-between border-b border-border px-6 py-4"
+          style={{ paddingTop: 'max(1rem, env(safe-area-inset-top))' }}
+        >
           <h2 className="text-lg font-semibold text-ink-primary">{title}</h2>
           <button
             type="button"
@@ -49,8 +52,20 @@ export function Drawer({ open, onClose, title, children, footer }: DrawerProps) 
             <X className="h-4 w-4" aria-hidden="true" />
           </button>
         </div>
-        <div className="flex-1 overflow-y-auto px-6 py-4">{children}</div>
-        {footer && <div className="shrink-0 border-t border-border px-6 py-4">{footer}</div>}
+        <div
+          className="flex-1 overflow-y-auto px-6 py-4"
+          style={!footer ? { paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' } : undefined}
+        >
+          {children}
+        </div>
+        {footer && (
+          <div
+            className="shrink-0 border-t border-border px-6 py-4"
+            style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom))' }}
+          >
+            {footer}
+          </div>
+        )}
       </div>
     </div>
   );
