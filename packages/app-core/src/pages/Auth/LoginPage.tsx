@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Eye, EyeOff, ListChecks } from 'lucide-react';
-import { Button } from '@stm/ui';
+import { Button, PasswordStrengthChecklist } from '@stm/ui';
 import { ApiError, configureApiClient } from '@stm/api-client';
 import { useAuthContext } from '../../state/AuthContext';
 import { getStoredServerUrl } from '../../lib/serverUrl';
+import { PASSWORD_RULES } from '../../lib/passwordRules';
 import i18n from '../../i18n';
 
 const fieldClasses =
@@ -12,20 +13,6 @@ const fieldClasses =
 const plainFieldClasses =
   'w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-ink-primary outline-none focus-visible:ring-2 focus-visible:ring-primary';
 const labelClasses = 'text-xs font-semibold uppercase tracking-wide text-ink-muted';
-
-interface PasswordRule {
-  key: string;
-  labelKey: string;
-  test: (password: string) => boolean;
-}
-
-/** Mirrors the backend's PasswordPolicy regex in AuthController.cs exactly — keep both in sync. */
-const PASSWORD_RULES: PasswordRule[] = [
-  { key: 'length', labelKey: 'auth.passwordRuleLength', test: (p) => p.length >= 8 },
-  { key: 'uppercase', labelKey: 'auth.passwordRuleUppercase', test: (p) => /[A-Z]/.test(p) },
-  { key: 'lowercase', labelKey: 'auth.passwordRuleLowercase', test: (p) => /[a-z]/.test(p) },
-  { key: 'number', labelKey: 'auth.passwordRuleNumber', test: (p) => /\d/.test(p) },
-];
 
 /**
  * The one screen that exists outside AppShell entirely (Phase 27) — App.tsx
@@ -163,16 +150,13 @@ export function LoginPage() {
 
           {mode === 'register' && (
             <>
-              <ul className="flex flex-col gap-1 rounded-md bg-surface-secondary p-3">
-                {passwordRuleResults.map((rule) => (
-                  <li
-                    key={rule.key}
-                    className={'text-xs ' + (rule.met ? 'text-success' : 'text-ink-muted')}
-                  >
-                    {rule.met ? '✓' : '○'} {t(rule.labelKey)}
-                  </li>
-                ))}
-              </ul>
+              <PasswordStrengthChecklist
+                results={passwordRuleResults.map((rule) => ({
+                  key: rule.key,
+                  label: t(rule.labelKey),
+                  met: rule.met,
+                }))}
+              />
 
               <div className="flex flex-col gap-1">
                 <label htmlFor="login-confirm-password" className={labelClasses}>

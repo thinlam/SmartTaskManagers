@@ -2,15 +2,33 @@ using System.Security.Claims;
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SmartTask.Application.Abstractions;
 using SmartTask.Application.Auth;
 
 namespace SmartTask.Api.Controllers;
 
-public sealed record AuthResponse(Guid UserId, string Email, string Token, DateTimeOffset ExpiresAt, string Language, string Theme);
+public sealed record AuthResponse(
+    Guid UserId,
+    string Email,
+    string Token,
+    DateTimeOffset ExpiresAt,
+    string Language,
+    string Theme,
+    string? AvatarDataUrl
+);
 
 public sealed record UpdateLanguageRequest(string Language);
 
 public sealed record UpdateThemeRequest(string Theme);
+
+public sealed record SessionResponse(
+    Guid Id,
+    string DeviceLabel,
+    string? IpAddress,
+    DateTimeOffset CreatedAt,
+    DateTimeOffset LastActiveAt,
+    bool IsCurrent
+);
 
 /// <summary>
 /// The real vertical slice for Phase 22, same idea as HealthController in
@@ -21,7 +39,8 @@ public sealed record UpdateThemeRequest(string Theme);
 /// </summary>
 [ApiController]
 [Route("api/auth")]
-public sealed class AuthController(IAuthService authService) : ControllerBase
+public sealed class AuthController(IAuthService authService, ICurrentUserContext currentUserContext)
+    : ControllerBase
 {
     /// <summary>
     /// Min 8 chars, at least one lowercase, one uppercase, one digit — matches
@@ -34,6 +53,9 @@ public sealed class AuthController(IAuthService authService) : ControllerBase
         @"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$",
         RegexOptions.Compiled
     );
+
+    private static readonly string[] AllowedAvatarContentTypes = ["image/jpeg", "image/png", "image/webp"];
+    private const int MaxAvatarBytes = 1_500_000;
 
     [HttpPost("register")]
     public async Task<ActionResult<AuthResponse>> Register(
@@ -53,7 +75,12 @@ public sealed class AuthController(IAuthService authService) : ControllerBase
 
         try
         {
-            var result = await authService.RegisterAsync(request, cancellationToken);
+            var result = await authService.RegisterAsync(
+                request,
+                DeviceLabelParser.Parse(Request.Headers["User-Agent"].ToString()),
+                GetClientIpAddress(),
+                cancellationToken
+            );
             return Ok(ToResponse(result));
         }
         catch (InvalidOperationException ex)
@@ -68,7 +95,12 @@ public sealed class AuthController(IAuthService authService) : ControllerBase
         CancellationToken cancellationToken
     )
     {
-        var result = await authService.LoginAsync(request, cancellationToken);
+        var result = await authService.LoginAsync(
+            request,
+            DeviceLabelParser.Parse(Request.Headers["User-Agent"].ToString()),
+            GetClientIpAddress(),
+            cancellationToken
+        );
         if (result is null)
         {
             return Unauthorized(new { message = "Invalid email or password." });
@@ -137,6 +169,178 @@ public sealed class AuthController(IAuthService authService) : ControllerBase
         return NoContent();
     }
 
+    [Authorize]
+    [HttpPatch("avatar")]
+    public async Task<IActionResult> UpdateAvatar(
+        UpdateAvatarRequest request,
+        CancellationToken cancellationToken
+    )
+    {
+        if (!AllowedAvatarContentTypes.Contains(request.ContentType))
+        {
+            return BadRequest(
+                new { message = "Avatar must be image/jpeg, image/png, or image/webp." }
+            );
+        }
+
+        byte[] decoded;
+        try
+        {
+            decoded = Convert.FromBase64String(request.AvatarBase64);
+        }
+        catch (FormatException)
+        {
+            return BadRequest(new { message = "avatarBase64 is not valid base64." });
+        }
+
+        if (decoded.Length > MaxAvatarBytes)
+        {
+            return BadRequest(new { message = $"Avatar must be under {MaxAvatarBytes} bytes." });
+        }
+
+        if (!HasValidImageSignature(decoded, request.ContentType))
+        {
+            return BadRequest(new { message = "File content does not match the declared image type." });
+        }
+
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!Guid.TryParse(userId, out var parsedUserId))
+        {
+            return Unauthorized();
+        }
+
+        try
+        {
+            await authService.UpdateAvatarAsync(
+                parsedUserId,
+                request.AvatarBase64,
+                request.ContentType,
+                cancellationToken
+            );
+        }
+        catch (InvalidOperationException)
+        {
+            return NotFound();
+        }
+
+        return NoContent();
+    }
+
+    [Authorize]
+    [HttpPatch("password")]
+    public async Task<IActionResult> ChangePassword(
+        ChangePasswordRequest request,
+        CancellationToken cancellationToken
+    )
+    {
+        if (!PasswordPolicy.IsMatch(request.NewPassword))
+        {
+            return BadRequest(
+                new
+                {
+                    message = "Password must be at least 8 characters and include an uppercase letter, a lowercase letter, and a number.",
+                }
+            );
+        }
+
+        var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!Guid.TryParse(userId, out var parsedUserId) || currentUserContext.SessionId is not { } sessionId)
+        {
+            return Unauthorized();
+        }
+
+        try
+        {
+            await authService.ChangePasswordAsync(
+                parsedUserId,
+                sessionId,
+                request.CurrentPassword,
+                request.NewPassword,
+                cancellationToken
+            );
+        }
+        catch (UnauthorizedAccessException ex)
+        {
+            return Unauthorized(new { message = ex.Message });
+        }
+        catch (InvalidOperationException)
+        {
+            return NotFound();
+        }
+
+        return NoContent();
+    }
+
+    [Authorize]
+    [HttpGet("sessions")]
+    public async Task<ActionResult<List<SessionResponse>>> GetSessions(CancellationToken cancellationToken)
+    {
+        if (currentUserContext.SessionId is not { } sessionId)
+        {
+            return Unauthorized();
+        }
+
+        var sessions = await authService.GetSessionsAsync(sessionId, cancellationToken);
+        return Ok(
+            sessions
+                .Select(s => new SessionResponse(
+                    s.Id,
+                    s.DeviceLabel,
+                    s.IpAddress,
+                    s.CreatedAt,
+                    s.LastActiveAt,
+                    s.IsCurrent
+                ))
+                .ToList()
+        );
+    }
+
+    [Authorize]
+    [HttpDelete("sessions/{id:guid}")]
+    public async Task<IActionResult> RevokeSession(Guid id, CancellationToken cancellationToken)
+    {
+        if (currentUserContext.SessionId == id)
+        {
+            return BadRequest(new { message = "Sign out to end your own session." });
+        }
+
+        try
+        {
+            await authService.RevokeSessionAsync(id, cancellationToken);
+        }
+        catch (InvalidOperationException)
+        {
+            return NotFound();
+        }
+
+        return NoContent();
+    }
+
+    [Authorize]
+    [HttpPost("sessions/revoke-others")]
+    public async Task<IActionResult> RevokeOtherSessions(CancellationToken cancellationToken)
+    {
+        if (currentUserContext.SessionId is not { } sessionId)
+        {
+            return Unauthorized();
+        }
+
+        await authService.RevokeOtherSessionsAsync(sessionId, cancellationToken);
+        return NoContent();
+    }
+
+    [Authorize]
+    [HttpPost("logout")]
+    public async Task<IActionResult> Logout(CancellationToken cancellationToken)
+    {
+        if (currentUserContext.SessionId is { } sessionId)
+        {
+            await authService.LogoutAsync(sessionId, cancellationToken);
+        }
+
+        return NoContent();
+    }
+
     /// <summary>Requires a valid Bearer token — proves [Authorize] + the JwtBearer middleware configured in Program.cs actually validate a real token, not just that one gets issued.</summary>
     [Authorize]
     [HttpGet("me")]
@@ -147,6 +351,47 @@ public sealed class AuthController(IAuthService authService) : ControllerBase
         return Ok(new { userId, email });
     }
 
+    /// <summary>
+    /// Railway terminates TLS and proxies over HTTP, so
+    /// HttpContext.Connection.RemoteIpAddress is Railway's internal
+    /// address, not the real client's — X-Forwarded-For (set by
+    /// Railway's edge) has the real one when present.
+    /// </summary>
+    private string? GetClientIpAddress()
+    {
+        var forwardedFor = Request.Headers["X-Forwarded-For"].ToString();
+        if (!string.IsNullOrWhiteSpace(forwardedFor))
+        {
+            var candidate = forwardedFor.Split(',')[0].Trim();
+            if (System.Net.IPAddress.TryParse(candidate, out _))
+            {
+                return candidate;
+            }
+        }
+        return HttpContext.Connection.RemoteIpAddress?.ToString();
+    }
+
+    private static bool HasValidImageSignature(byte[] bytes, string contentType)
+    {
+        return contentType switch
+        {
+            "image/jpeg" => bytes.Length >= 3 && bytes[0] == 0xFF && bytes[1] == 0xD8 && bytes[2] == 0xFF,
+            "image/png" => bytes.Length >= 4 && bytes[0] == 0x89 && bytes[1] == 0x50 && bytes[2] == 0x4E && bytes[3] == 0x47,
+            "image/webp" => bytes.Length >= 12
+                && bytes[0] == 0x52 && bytes[1] == 0x49 && bytes[2] == 0x46 && bytes[3] == 0x46
+                && bytes[8] == 0x57 && bytes[9] == 0x45 && bytes[10] == 0x42 && bytes[11] == 0x50,
+            _ => false,
+        };
+    }
+
     private static AuthResponse ToResponse(AuthResult result) =>
-        new(result.UserId, result.Email, result.Token, result.ExpiresAt, result.Language, result.Theme);
+        new(
+            result.UserId,
+            result.Email,
+            result.Token,
+            result.ExpiresAt,
+            result.Language,
+            result.Theme,
+            result.AvatarDataUrl
+        );
 }

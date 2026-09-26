@@ -22,9 +22,15 @@ export class ApiError extends Error {
 
 let baseUrl: string | null = null;
 let authToken: string | null = null;
+let onSessionRevoked: (() => void) | null = null;
 
 export function configureApiClient(options: { baseUrl?: string }): void {
   if (options.baseUrl) baseUrl = options.baseUrl;
+}
+
+/** Called by AuthContext to be notified when the backend reports this session was revoked (password changed elsewhere, explicitly revoked, or a pre-this-feature token with no matching session) — lets the app clear local auth state and fall back to the login screen instead of leaving the user stuck with every request failing. */
+export function setOnSessionRevoked(callback: (() => void) | null): void {
+  onSessionRevoked = callback;
 }
 
 /** Called by AuthContext on login/logout — every other api-client call reads this, none of them take a token argument. */
@@ -57,6 +63,16 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 
   const text = await response.text();
   const data: unknown = text ? JSON.parse(text) : undefined;
+
+  if (
+    response.status === 401 &&
+    typeof data === 'object' &&
+    data !== null &&
+    'code' in data &&
+    (data as { code: unknown }).code === 'session_revoked'
+  ) {
+    onSessionRevoked?.();
+  }
 
   if (!response.ok) {
     const message =

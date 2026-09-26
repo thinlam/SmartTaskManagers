@@ -1273,3 +1273,38 @@ trong 1 fix wave + re-review sạch:**
 **Git commit thực hiện:**
 - 9 commit từ Tasks 1–8 + final-review fix wave, merge vào `main` (commit `cdceca2`), push lên
   `origin/main` → Railway deploy tự động.
+
+## Account Settings v2 (avatar, đổi mật khẩu, sessions) đã thực hiện
+
+**Tính năng shipped:**
+- Avatar upload: chọn ảnh, client-side resize to 256×256 JPEG trước upload, lưu BLOB trong MySQL
+- Change Password: nhập mật khẩu hiện tại + mật khẩu mới, revokes tất cả session khác (giữ session hiện tại)
+- Active Sessions list: hiển thị danh sách session với `jti` (JWT ID) claim mapping, nút revoke per-session + "sign out of all others"
+
+**Kiến trúc:**
+
+JWTs không còn purely stateless — claim `jti` (JWT ID) giờ map 1:1 vào row trong bảng `Sessions`. Mỗi authenticated request kiểm tra session vẫn hợp lệ (chưa revoked), cho phép revoke session trước khi hết 60 phút expiry. Việc kiểm tra này là một inline `app.Use(...)` middleware trong `Program.cs` (không phải class riêng) chạy trước controller, kiểm tra `jti` claim và query bảng `Sessions`.
+
+**Verify thực hiện:**
+
+- `dotnet build -c Release` (từ `backend/`) — `Build succeeded. 0 Warning(s) 0 Error(s)` ✓
+- `npx tsc -b --pretty` — clean, không output ✓
+- `npm run build:tauri` — build production thành công, sinh bundle `smart-task-manager_0.1.0_x64_en-US.msi` và `smart-task-manager_0.1.0_x64-setup.exe` ✓
+- `npm run build:web` — build production thành công, generate `dist/` với TypeScript check pass ✓
+
+**Verification NOT completed (deferred to post-merge-deploy):**
+
+- No browser environment available in this build session — UI smoke test (avatar upload visual confirmation, password error/success message display, sessions list rendering) was not performed. Recommend manual verification on deployed instance: navigate to Account Settings via Topbar account menu, upload avatar and confirm the avatar image renders on the Account Settings page (Topbar's account button only ever shows initials, it does not render the avatar image — nothing to check there), attempt password change with wrong current password and confirm inline error, enter valid new password and confirm success message, verify sessions list still shows current session.
+- Live database checks (avatar BLOB storage, session revocation query) — local environment has no reachable MySQL/database for end-to-end verification. Testing on deployed instance with real database is required, following same pattern as per-user-isolation feature.
+
+**Explicitly out of scope (confirmed with user):**
+
+- Delete Account endpoint
+- Two-Factor Authentication (2FA)
+- Notifications tab in Account Settings
+- Connected Apps management
+- GeoIP-based location display
+
+**Git commit thực hiện:**
+
+Tasks 1–13 (14-task plan) đã merged vào worktree này. Task 14 (này) là verification + ROADMAP update cuối cùng trước merge vào main.

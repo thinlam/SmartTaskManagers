@@ -13,6 +13,8 @@ public sealed class UserConfiguration : IEntityTypeConfiguration<User>
         builder.Property(u => u.Email).HasMaxLength(320).IsRequired();
         builder.Property(u => u.PasswordHash).HasMaxLength(1000).IsRequired();
         builder.Property(u => u.DisplayName).HasMaxLength(200);
+        builder.Property(u => u.AvatarData).HasColumnType("longblob");
+        builder.Property(u => u.AvatarContentType).HasMaxLength(20);
         builder.Property(u => u.Language).HasMaxLength(5).IsRequired().HasDefaultValue("vi");
         builder.Property(u => u.Theme).HasMaxLength(5).IsRequired().HasDefaultValue("light");
 

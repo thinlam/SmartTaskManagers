@@ -52,7 +52,24 @@
   "accountSettings": {
     "title": "Cài đặt tài khoản",
     "subtitle": "Thông tin đăng nhập và tùy chọn cá nhân gắn với tài khoản này.",
-    "emailLabel": "Email"
+    "emailLabel": "Email",
+    "changePhoto": "Đổi ảnh đại diện",
+    "avatarTooLarge": "Ảnh quá lớn sau khi nén, vui lòng chọn ảnh khác.",
+    "avatarInvalidType": "Chỉ chấp nhận ảnh JPEG, PNG hoặc WEBP.",
+    "securityTitle": "Bảo mật",
+    "securitySubtitle": "Đổi mật khẩu đăng nhập của bạn.",
+    "currentPasswordLabel": "Mật khẩu hiện tại",
+    "newPasswordLabel": "Mật khẩu mới",
+    "confirmNewPasswordLabel": "Xác nhận mật khẩu mới",
+    "updatePasswordButton": "Cập nhật mật khẩu",
+    "passwordUpdated": "Đã đổi mật khẩu thành công.",
+    "wrongCurrentPassword": "Mật khẩu hiện tại không đúng.",
+    "sessionsTitle": "Thiết bị đăng nhập",
+    "sessionsSubtitle": "Các thiết bị đang đăng nhập vào tài khoản của bạn.",
+    "thisDevice": "Thiết bị này",
+    "revoke": "Thu hồi",
+    "revokeOthers": "Đăng xuất khỏi mọi thiết bị khác",
+    "activeNow": "Đang hoạt động"
   },
   "settings": {
     "language": "Ngôn ngữ",

@@ -52,7 +52,24 @@
   "accountSettings": {
     "title": "Account Settings",
     "subtitle": "Login details and personal preferences tied to this account.",
-    "emailLabel": "Email"
+    "emailLabel": "Email",
+    "changePhoto": "Change photo",
+    "avatarTooLarge": "Image is still too large after compression — try a different one.",
+    "avatarInvalidType": "Only JPEG, PNG, or WEBP images are accepted.",
+    "securityTitle": "Security",
+    "securitySubtitle": "Change your account password.",
+    "currentPasswordLabel": "Current password",
+    "newPasswordLabel": "New password",
+    "confirmNewPasswordLabel": "Confirm new password",
+    "updatePasswordButton": "Update Password",
+    "passwordUpdated": "Password updated successfully.",
+    "wrongCurrentPassword": "Current password is incorrect.",
+    "sessionsTitle": "Active Sessions",
+    "sessionsSubtitle": "Devices currently signed in to your account.",
+    "thisDevice": "This device",
+    "revoke": "Revoke",
+    "revokeOthers": "Sign out of all other sessions",
+    "activeNow": "Active now"
   },
   "settings": {
     "language": "Language",

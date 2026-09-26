@@ -19,7 +19,7 @@ namespace SmartTask.Infrastructure.Security;
 public sealed class JwtTokenGenerator(IOptions<JwtOptions> options, IDateTimeProvider dateTimeProvider)
     : IJwtTokenGenerator
 {
-    public JwtToken GenerateToken(Guid userId, string email)
+    public JwtToken GenerateToken(Guid userId, string email, Guid sessionId)
     {
         var jwtOptions = options.Value;
         if (string.IsNullOrWhiteSpace(jwtOptions.Secret))
@@ -36,7 +36,7 @@ public sealed class JwtTokenGenerator(IOptions<JwtOptions> options, IDateTimePro
         {
             new Claim(ClaimTypes.NameIdentifier, userId.ToString()),
             new Claim(ClaimTypes.Email, email),
-            new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+            new Claim(JwtRegisteredClaimNames.Jti, sessionId.ToString()),
         };
 
         var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtOptions.Secret));
