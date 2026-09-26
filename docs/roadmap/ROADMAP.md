@@ -1292,10 +1292,26 @@ JWTs không còn purely stateless — claim `jti` (JWT ID) giờ map 1:1 vào ro
 - `npm run build:tauri` — build production thành công, sinh bundle `smart-task-manager_0.1.0_x64_en-US.msi` và `smart-task-manager_0.1.0_x64-setup.exe` ✓
 - `npm run build:web` — build production thành công, generate `dist/` với TypeScript check pass ✓
 
-**Verification NOT completed (deferred to post-merge-deploy):**
+**Final whole-branch review (opus) tìm 1 lỗi Important + 6 lỗi Minor trước khi merge, đã fix trong 1 fix wave + re-review sạch:**
 
-- No browser environment available in this build session — UI smoke test (avatar upload visual confirmation, password error/success message display, sessions list rendering) was not performed. Recommend manual verification on deployed instance: navigate to Account Settings via Topbar account menu, upload avatar and confirm the avatar image renders on the Account Settings page (Topbar's account button only ever shows initials, it does not render the avatar image — nothing to check there), attempt password change with wrong current password and confirm inline error, enter valid new password and confirm success message, verify sessions list still shows current session.
-- Live database checks (avatar BLOB storage, session revocation query) — local environment has no reachable MySQL/database for end-to-end verification. Testing on deployed instance with real database is required, following same pattern as per-user-isolation feature.
+- **Important**: frontend không phản ứng gì khi nhận 401 do session bị revoke (deploy ngày đầu với token cũ, đổi mật khẩu đá thiết bị khác, revoke thủ công) — thiết bị đó bị kẹt ở giao diện đăng nhập với mọi request đều lỗi, thay vì tự động quay về màn hình login. Fix: middleware trả kèm body `{"code":"session_revoked"}` cho 401 loại này (phân biệt với 401 "sai mật khẩu hiện tại" của change-password), `httpClient.ts` có callback `onSessionRevoked`, `AuthContext` đăng ký callback này để tự dọn state đăng nhập cục bộ.
+- Minor: avatar chưa kiểm tra magic-byte thật của ảnh (chỉ kiểm content-type + size) — đã thêm kiểm tra magic-byte JPEG/PNG/WEBP.
+- Minor: `X-Forwarded-For` chưa validate, có thể crash 500 nếu header dị dạng/quá dài — đã validate bằng `IPAddress.TryParse`.
+- Minor: cơ chế auto-assign UserId có thể ghi đè `Session.UserId` nếu vô tình có bearer token hợp lệ đính kèm request đăng ký/đăng nhập — đã thêm guard chỉ gán khi còn `Guid.Empty`.
+- Minor: danh sách session (revoke/load) chưa có xử lý lỗi ở frontend — đã thêm.
+- Minor: 2 chỗ sai trong ROADMAP (tên class middleware không tồn tại, Topbar không hiện avatar) — đã sửa.
+
+**Verify thật trên Railway production (do coordinator thực hiện sau merge), đã PASS toàn bộ:**
+
+- Đăng ký tài khoản mới → `avatarDataUrl: null` ✓
+- Đăng nhập 2 lần (2 "thiết bị") → `GET /api/auth/sessions` trả về đúng 2 session, phân biệt đúng `isCurrent` ✓
+- Upload avatar hợp lệ → `204`; upload sai content-type → `400`; upload bytes giả mạo (không phải ảnh thật) dù khai content-type đúng → `400` (magic-byte check hoạt động) ✓
+- Đổi mật khẩu trên thiết bị A → `204`; thiết bị A vẫn dùng được (`200`); thiết bị B (khác) ngay lập tức nhận `401` kèm `{"code":"session_revoked"}` ✓
+- A revoke session của thiết bị C → `204`; C ngay lập tức `401` kèm `session_revoked` ✓
+- A cố tự revoke session đang dùng của chính mình → `400` (đúng, phải dùng Sign Out) ✓
+- A logout → `204`; cùng token đó ngay lập tức `401` kèm `session_revoked` ✓
+
+**Chưa verify được**: giao diện UI thật qua trình duyệt (upload avatar bằng file picker, xem thông báo lỗi/thành công hiển thị, giao diện danh sách session) — không có trình duyệt trong môi trường build. Đề nghị bạn tự thử qua app thật.
 
 **Explicitly out of scope (confirmed with user):**
 
@@ -1307,4 +1323,4 @@ JWTs không còn purely stateless — claim `jti` (JWT ID) giờ map 1:1 vào ro
 
 **Git commit thực hiện:**
 
-Tasks 1–13 (14-task plan) đã merged vào worktree này. Task 14 (này) là verification + ROADMAP update cuối cùng trước merge vào main.
+14 task + 1 fix wave, merge vào `main` (commit `d7c8fd8`), push lên `origin/main` → Railway deploy tự động.
