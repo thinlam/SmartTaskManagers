@@ -53,7 +53,12 @@ public sealed class AuthController(IAuthService authService) : ControllerBase
 
         try
         {
-            var result = await authService.RegisterAsync(request, cancellationToken);
+            var result = await authService.RegisterAsync(
+                request,
+                GetDeviceLabel(),
+                GetIpAddress(),
+                cancellationToken
+            );
             return Ok(ToResponse(result));
         }
         catch (InvalidOperationException ex)
@@ -68,7 +73,12 @@ public sealed class AuthController(IAuthService authService) : ControllerBase
         CancellationToken cancellationToken
     )
     {
-        var result = await authService.LoginAsync(request, cancellationToken);
+        var result = await authService.LoginAsync(
+            request,
+            GetDeviceLabel(),
+            GetIpAddress(),
+            cancellationToken
+        );
         if (result is null)
         {
             return Unauthorized(new { message = "Invalid email or password." });
@@ -149,4 +159,9 @@ public sealed class AuthController(IAuthService authService) : ControllerBase
 
     private static AuthResponse ToResponse(AuthResult result) =>
         new(result.UserId, result.Email, result.Token, result.ExpiresAt, result.Language, result.Theme);
+
+    private string GetDeviceLabel() =>
+        Request.Headers.UserAgent.ToString() is { Length: > 0 } userAgent ? userAgent : "Unknown device";
+
+    private string? GetIpAddress() => HttpContext.Connection.RemoteIpAddress?.ToString();
 }
