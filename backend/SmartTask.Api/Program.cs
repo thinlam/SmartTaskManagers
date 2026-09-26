@@ -175,13 +175,22 @@ builder.Services.AddAuthorization();
 
 const string FrontendCorsPolicy = "FrontendClient";
 
-// Tauri desktop app origins are fixed in code, not config — Railway's
-// index-based array env vars (Cors__AllowedOrigins__0, __1, ...)
-// overwrite appsettings.json entries by position, which previously
-// wiped out "tauri://localhost" whenever an extra web origin was
-// configured on Railway. Keeping these hardcoded makes them immune
-// to that overwrite.
-var fixedOrigins = new[] { "tauri://localhost", "http://tauri.localhost" };
+// Desktop (Tauri) and mobile (Capacitor) app origins are fixed in code,
+// not config — Railway's index-based array env vars
+// (Cors__AllowedOrigins__0, __1, ...) overwrite appsettings.json entries
+// by position, which previously wiped out "tauri://localhost" whenever
+// an extra web origin was configured on Railway. Keeping these
+// hardcoded makes them immune to that overwrite.
+//
+// "https://localhost" is Capacitor's default WebView origin on both
+// Android and iOS (server.androidScheme, default "https", hostname
+// "localhost" — see apps/web/capacitor.config.ts, which doesn't
+// override either) — every request from the Android/iOS app carries
+// this Origin header, confirmed missing from CORS via a real curl
+// OPTIONS check against production (no access-control-allow-origin
+// came back), which is exactly why the app failed with "Could not
+// reach the server" despite the backend being up.
+var fixedOrigins = new[] { "tauri://localhost", "http://tauri.localhost", "https://localhost" };
 
 var configuredOrigins =
     builder.Configuration
