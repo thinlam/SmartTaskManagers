@@ -46,7 +46,13 @@
     "passwordRuleUppercase": "Có chữ hoa",
     "passwordRuleLowercase": "Có chữ thường",
     "passwordRuleNumber": "Có số",
-    "signOut": "Đăng xuất"
+    "signOut": "Đăng xuất",
+    "accountSettings": "Cài đặt tài khoản"
+  },
+  "accountSettings": {
+    "title": "Cài đặt tài khoản",
+    "subtitle": "Thông tin đăng nhập và tùy chọn cá nhân gắn với tài khoản này.",
+    "emailLabel": "Email"
   },
   "settings": {
     "language": "Ngôn ngữ",

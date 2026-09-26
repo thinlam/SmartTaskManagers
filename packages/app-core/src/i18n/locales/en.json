@@ -46,7 +46,13 @@
     "passwordRuleUppercase": "One uppercase letter",
     "passwordRuleLowercase": "One lowercase letter",
     "passwordRuleNumber": "One number",
-    "signOut": "Sign out"
+    "signOut": "Sign out",
+    "accountSettings": "Account Settings"
+  },
+  "accountSettings": {
+    "title": "Account Settings",
+    "subtitle": "Login details and personal preferences tied to this account.",
+    "emailLabel": "Email"
   },
   "settings": {
     "language": "Language",

@@ -14,6 +14,7 @@ import { KanbanPage } from '../pages/Kanban/KanbanPage';
 import { AnalyticsPage } from '../pages/Analytics/AnalyticsPage';
 import { SmartAssistantPage } from '../pages/Assistant/SmartAssistantPage';
 import { SettingsPage } from '../pages/Settings/SettingsPage';
+import { AccountSettingsPage } from '../pages/AccountSettings/AccountSettingsPage';
 import { APP_ROUTES } from './routes';
 
 /**
@@ -47,11 +48,16 @@ const PAGE_BY_PATH: Record<string, ReactNode> = {
 export const router = createHashRouter([
   {
     element: <AppShell />,
-    children: APP_ROUTES.map((route) => ({
-      path: route.path,
-      element: PAGE_BY_PATH[route.path] ?? (
-        <PlaceholderPage title={route.label} phase={route.phase} />
-      ),
-    })),
+    children: [
+      ...APP_ROUTES.map((route) => ({
+        path: route.path,
+        element: PAGE_BY_PATH[route.path] ?? (
+          <PlaceholderPage title={route.label} phase={route.phase} />
+        ),
+      })),
+      // Not in APP_ROUTES on purpose — reached only via the Topbar's
+      // account menu, never listed as a Sidebar nav item.
+      { path: '/account-settings', element: <AccountSettingsPage /> },
+    ],
   },
 ]);

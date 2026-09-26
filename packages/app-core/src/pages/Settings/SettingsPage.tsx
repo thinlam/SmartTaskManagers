@@ -9,7 +9,6 @@ import {
   SlidersHorizontal,
 } from 'lucide-react';
 import { useSettingsContext } from '../../state/SettingsContext';
-import { useAuthContext } from '../../state/AuthContext';
 
 const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 const STATUSES: TaskStatus[] = ['Inbox', 'To Do', 'In Progress', 'Waiting', 'Completed'];
@@ -31,8 +30,7 @@ const sectionCardClasses =
  */
 export function SettingsPage() {
   const { settings, updateSettings } = useSettingsContext();
-  const { t, i18n } = useTranslation();
-  const { setLanguage, theme, setTheme } = useAuthContext();
+  const { t } = useTranslation();
 
   const STATUS_LABELS: Record<TaskStatus, string> = {
     Inbox: t('settings.statusInbox'),
@@ -86,35 +84,6 @@ export function SettingsPage() {
               onChange={(event) => updateSettings({ workspaceName: event.target.value })}
               className={fieldClasses}
             />
-          </div>
-          <div className="flex flex-col gap-1">
-            <label htmlFor="settings-language" className={labelClasses}>
-              {t('settings.language')}
-            </label>
-            <select
-              id="settings-language"
-              value={i18n.language}
-              onChange={(event) => void setLanguage(event.target.value as 'vi' | 'en')}
-              className={fieldClasses}
-            >
-              <option value="vi">{t('settings.languageVi')}</option>
-              <option value="en">{t('settings.languageEn')}</option>
-            </select>
-          </div>
-          <div className="flex flex-col gap-1">
-            <label htmlFor="settings-dark-mode" className={labelClasses}>
-              {t('settings.darkMode')}
-            </label>
-            <div className="flex items-center gap-2 pt-1">
-              <Switch
-                checked={theme === 'dark'}
-                onCheckedChange={(checked) => void setTheme(checked ? 'dark' : 'light')}
-                aria-label={t('settings.darkMode')}
-              />
-              <span className="text-sm text-ink-secondary">
-                {theme === 'dark' ? t('settings.darkModeOn') : t('settings.darkModeOff')}
-              </span>
-            </div>
           </div>
           <div className="flex flex-col gap-1">
             <label htmlFor="settings-week-start" className={labelClasses}>

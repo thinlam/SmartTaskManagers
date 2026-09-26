@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Bell, CircleUserRound, LogOut, Plus, Search, Settings } from 'lucide-react';
+import { Bell, LogOut, Plus, Search, Settings } from 'lucide-react';
 import type { AppNotification } from '@stm/types';
 import { Button } from '../Button';
 import { NotificationPanel } from '../NotificationPanel';
@@ -19,11 +19,20 @@ export interface TopbarProps {
    * Sign out) instead of signing out on click directly — a single
    * misclick used to end the session with no confirmation.
    */
-  onSettingsClick?: () => void;
+  onAccountSettingsClick?: () => void;
   onSignOutClick?: () => void;
+  /** Usually the signed-in email — also used to derive the avatar initials. */
   accountLabel?: string;
-  settingsLabel?: string;
+  accountSettingsLabel?: string;
   signOutLabel?: string;
+}
+
+/** First 1-2 letters of the email's local part, e.g. "thin@x.io" → "TH". */
+function initialsFromLabel(label: string | undefined): string {
+  if (!label) return '?';
+  const localPart = label.split('@')[0] ?? label;
+  const letters = localPart.replace(/[^a-zA-Z]/g, '');
+  return (letters.slice(0, 2) || localPart.slice(0, 2) || '?').toUpperCase();
 }
 
 /**
@@ -40,10 +49,10 @@ export function Topbar({
   notificationsLoading = false,
   onNotificationClick,
   onMarkAllNotificationsRead,
-  onSettingsClick,
+  onAccountSettingsClick,
   onSignOutClick,
   accountLabel,
-  settingsLabel = 'Settings',
+  accountSettingsLabel = 'Account Settings',
   signOutLabel = 'Sign out',
 }: TopbarProps) {
   const [isPanelOpen, setIsPanelOpen] = useState(false);
@@ -138,46 +147,59 @@ export function Topbar({
           title={accountLabel ?? undefined}
           onClick={() => setIsAccountMenuOpen((open) => !open)}
           className={cn(
-            'flex h-9 w-9 items-center justify-center rounded-full bg-surface-secondary text-ink-secondary transition-colors hover:text-ink-primary',
-            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+            'relative flex h-9 w-9 items-center justify-center rounded-full bg-primary text-sm font-semibold text-white transition-opacity hover:opacity-90',
+            'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2',
           )}
         >
-          <CircleUserRound className="h-5 w-5" aria-hidden="true" />
+          {initialsFromLabel(accountLabel)}
+          <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-surface bg-success" />
         </button>
 
         {isAccountMenuOpen && (
           <div
             className={cn(
-              'absolute right-0 top-full z-20 mt-2 w-56 overflow-hidden rounded-md border border-border bg-surface shadow-lg',
+              'absolute right-0 top-full z-20 mt-2 w-64 overflow-hidden rounded-xl border border-border bg-surface shadow-lg',
             )}
           >
             {accountLabel && (
-              <div className="truncate border-b border-border px-3 py-2 text-xs text-ink-muted">
-                {accountLabel}
+              <div className="flex items-center gap-3 border-b border-border px-4 py-3">
+                <span className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-semibold text-white">
+                  {initialsFromLabel(accountLabel)}
+                  <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-surface bg-success" />
+                </span>
+                <span className="truncate text-sm text-ink-secondary">{accountLabel}</span>
               </div>
             )}
-            <button
-              type="button"
-              onClick={() => {
-                setIsAccountMenuOpen(false);
-                onSettingsClick?.();
-              }}
-              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-ink-primary transition-colors hover:bg-surface-secondary"
-            >
-              <Settings className="h-4 w-4 shrink-0" aria-hidden="true" />
-              {settingsLabel}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setIsAccountMenuOpen(false);
-                onSignOutClick?.();
-              }}
-              className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-danger transition-colors hover:bg-surface-secondary"
-            >
-              <LogOut className="h-4 w-4 shrink-0" aria-hidden="true" />
-              {signOutLabel}
-            </button>
+            <div className="flex flex-col gap-0.5 p-1.5">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsAccountMenuOpen(false);
+                  onAccountSettingsClick?.();
+                }}
+                className="flex w-full items-center gap-3 rounded-md px-2.5 py-2 text-left text-sm text-ink-primary transition-colors hover:bg-surface-secondary"
+              >
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-surface-secondary">
+                  <Settings className="h-4 w-4" aria-hidden="true" />
+                </span>
+                {accountSettingsLabel}
+              </button>
+            </div>
+            <div className="border-t border-border p-1.5">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsAccountMenuOpen(false);
+                  onSignOutClick?.();
+                }}
+                className="flex w-full items-center gap-3 rounded-md px-2.5 py-2 text-left text-sm font-medium text-danger transition-colors hover:bg-danger-soft"
+              >
+                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-danger-soft">
+                  <LogOut className="h-4 w-4" aria-hidden="true" />
+                </span>
+                {signOutLabel}
+              </button>
+            </div>
           </div>
         )}
       </div>
