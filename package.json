@@ -18,7 +18,11 @@
     "build:web": "npm run build --workspace=apps/web",
     "tauri": "npm run tauri --workspace=apps/desktop --",
     "dev:tauri": "npm run tauri --workspace=apps/desktop -- dev",
-    "build:tauri": "npm run tauri --workspace=apps/desktop -- build"
+    "build:tauri": "npm run tauri --workspace=apps/desktop -- build",
+    "android:run": "npm run android:run --workspace=apps/web",
+    "android:build-debug": "npm run android:build-debug --workspace=apps/web",
+    "android:open": "npm run android:open --workspace=apps/web",
+    "ios:open": "npm run ios:open --workspace=apps/web"
   },
   "devDependencies": {
     "@eslint/js": "^9.15.0",

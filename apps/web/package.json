@@ -7,11 +7,19 @@
     "dev": "vite",
     "build": "tsc -b --pretty && vite build",
     "preview": "vite preview",
-    "typecheck": "tsc -b --pretty"
+    "typecheck": "tsc -b --pretty",
+    "cap:sync": "npm run build && npx cap sync",
+    "android:open": "npm run cap:sync && npx cap open android",
+    "android:run": "npm run cap:sync && npx cap run android",
+    "android:build-debug": "npm run cap:sync && cd android && gradlew assembleDebug",
+    "ios:open": "npm run cap:sync && npx cap open ios"
   },
   "dependencies": {
-    "@stm/app-core": "*",
+    "@capacitor/android": "^7.6.9",
+    "@capacitor/core": "^7.6.9",
+    "@capacitor/ios": "^7.6.9",
     "@stm/api-client": "*",
+    "@stm/app-core": "*",
     "@stm/hooks": "*",
     "@stm/shared": "*",
     "@stm/types": "*",
@@ -22,6 +30,7 @@
     "react-router-dom": "^7.18.4"
   },
   "devDependencies": {
+    "@capacitor/cli": "^7.6.9",
     "@tailwindcss/vite": "^4.0.0",
     "@vitejs/plugin-react": "^4.3.4",
     "tailwindcss": "^4.0.0",

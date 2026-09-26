@@ -35,7 +35,7 @@ PHASE 30  Notifications
 PHASE 31  Windows build
 PHASE 32  Installer (.exe / .msi qua Tauri bundler)
 PHASE 33  Web deployment (apps/web, dùng chung packages/*)                    ✅ DONE (build+typecheck+lint sạch — chưa test tương tác thật do không có MySQL local, xem ghi chú)
-PHASE 34  Mobile research (Capacitor — chỉ nghiên cứu, không code)
+PHASE 34  Mobile (Capacitor — Android + iOS)                                   🟢 Android verified thật; iOS code sẵn, chưa build (cần Mac)
 ```
 
 Phase 00–01 đã thực hiện (audit + di chuyển `google-sheets/` vào `apps/`, `.gitignore`, README
@@ -1324,3 +1324,48 @@ JWTs không còn purely stateless — claim `jti` (JWT ID) giờ map 1:1 vào ro
 **Git commit thực hiện:**
 
 14 task + 1 fix wave, merge vào `main` (commit `d7c8fd8`), push lên `origin/main` → Railway deploy tự động.
+
+## Phase 34: Mobile (Capacitor — Android + iOS) đã thực hiện
+
+**Bối cảnh:** Placeholder trong roadmap từ đầu ("Mobile research — chỉ nghiên cứu, không code").
+Bắt đầu làm thật theo yêu cầu, dùng lại 100% `apps/web` (React + Vite build, HashRouter) đóng gói
+qua Capacitor — không tạo app/code mobile riêng biệt, giống cách `apps/desktop` dùng Tauri đóng
+gói cùng bộ `packages/*`.
+
+**Đã làm:**
+
+- Thêm `@capacitor/core`, `@capacitor/android`, `@capacitor/ios`, `@capacitor/cli` vào
+  `apps/web` (bản `^7.6.9` — bản `^8.x` yêu cầu JDK 21 để build native Android lib, còn build tool
+  khác của backend đang dùng JDK 17; hạ xuống 7.x là quyết định có chủ đích để không phải cài
+  thêm JDK, nhưng vẫn cần JDK 21 để chạy Gradle build — xem ghi chú JDK bên dưới).
+- `apps/web/capacitor.config.ts`: `appId: com.smarttaskmanager.app`, `webDir: 'dist'` (dùng chung
+  bản build production có sẵn, không có build riêng cho mobile).
+- Scaffold `apps/web/android/` (native Android project) và `apps/web/ios/` (native Xcode project)
+  qua `npx cap add android`/`npx cap add ios`.
+- Thêm script tiện dùng: `cap:sync`, `android:open`, `android:run`, `android:build-debug`,
+  `ios:open` (ở cả `apps/web/package.json` và root `package.json`, giống pattern `build:tauri`).
+- Ghi chú JDK vào `apps/web/README.md`: Gradle build của Capacitor Android lib yêu cầu **JDK 21**,
+  không chạy được với JDK 17 (lỗi thật gặp phải: `invalid source release: 21`). Máy build này có
+  sẵn JDK 21 qua JBR đi kèm Android Studio (`<Android Studio>/jbr`) — dùng làm `JAVA_HOME` khi
+  build, không cần cài JDK riêng.
+
+**Verify thật đã làm (không chỉ build thành công):**
+
+- `JAVA_HOME=<Android Studio JBR> ./gradlew assembleDebug` trong `apps/web/android` — build APK
+  debug thành công thật (`BUILD SUCCESSFUL`), sinh `app/build/outputs/apk/debug/app-debug.apk`.
+- Khởi động emulator Android thật (Pixel_5, Android SDK có sẵn trên máy), `adb install` APK, mở
+  app bằng `adb shell monkey`, chụp màn hình thật (`adb shell screencap`) — xác nhận app **mở lên
+  hiển thị đúng màn hình đăng nhập bằng tiếng Việt** (không trắng màn hình), dùng chung
+  `VITE_API_BASE_URL` trỏ Railway giống bản web/desktop, không cần cấu hình mạng riêng.
+
+**Chưa làm / ngoài khả năng môi trường hiện tại:**
+
+- **iOS chưa build/verify được** — code trong `ios/` đã sẵn sàng (scaffold xong, `pod install`
+  không chạy được vì máy này là Windows, không có CocoaPods/Xcode). Cần máy Mac thật để mở bằng
+  Xcode, build, và test — đây là giới hạn phần cứng, không phải thiếu code.
+- Chưa test đăng nhập/tạo task thật trên emulator (chỉ xác nhận màn hình đăng nhập hiển thị đúng,
+  chưa thử luồng đăng ký/đăng nhập/CRUD đầy đủ qua UI thật trên Android).
+- Chưa tạo icon/splash screen riêng cho mobile — dùng icon mặc định do Capacitor sinh ra khi
+  scaffold, chưa thay bằng logo thật của app.
+- Chưa build bản release (chỉ mới build bản debug) — bản release cần keystore ký app riêng, chưa
+  làm ở phase này.
