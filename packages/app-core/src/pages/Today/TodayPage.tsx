@@ -1,9 +1,10 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
-import { StatCard } from '@stm/ui';
+import { HelpButton, StatCard } from '@stm/ui';
 import { computeTodayData, type TodayKpi } from '@stm/shared';
 import { useTasksContext } from '../../state/TasksContext';
+import { useSettingsContext } from '../../state/SettingsContext';
 import { BestNextActionCard } from './BestNextActionCard';
 import { TaskListSection } from './TaskListSection';
 import { EndOfDayReview } from './EndOfDayReview';
@@ -59,7 +60,15 @@ function translateKpi(t: TFunction, kpi: TodayKpi): { label: string; sub: string
 export function TodayPage() {
   const { t, i18n } = useTranslation();
   const { tasks, isLoading } = useTasksContext();
-  const data = useMemo(() => computeTodayData(tasks, new Date(), t), [tasks, t]);
+  const { settings } = useSettingsContext();
+  const data = useMemo(
+    () =>
+      computeTodayData(tasks, new Date(), t, {
+        smartScoreEnabled: settings.smartScoreEnabled,
+        explainRecommendations: settings.explainRecommendations,
+      }),
+    [tasks, t, settings],
+  );
 
   const dateLabel = new Date().toLocaleDateString(i18n.language, {
     weekday: 'long',
@@ -75,9 +84,17 @@ export function TodayPage() {
   return (
     <div className="flex flex-col gap-6 p-4 sm:p-8">
       <header className="flex flex-col gap-1">
-        <h1 className="text-[28px] font-bold leading-[34px] text-ink-primary">
-          {t('today.title')}
-        </h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-[28px] font-bold leading-[34px] text-ink-primary">
+            {t('today.title')}
+          </h1>
+          <HelpButton
+            title={t('help.today.title')}
+            intro={t('help.today.intro')}
+            items={t('help.today.items', { returnObjects: true }) as string[]}
+            closeLabel={t('common.close')}
+          />
+        </div>
         <p className="text-sm text-ink-secondary">
           {dateLabel} · {t('today.subtitle')}
         </p>

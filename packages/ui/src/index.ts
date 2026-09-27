@@ -48,3 +48,4 @@ export {
   type PasswordStrengthChecklistProps,
   type PasswordRuleResult,
 } from './components/PasswordStrengthChecklist';
+export { HelpButton, type HelpButtonProps } from './components/HelpButton';

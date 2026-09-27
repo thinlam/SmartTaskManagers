@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { computeProjectMetrics, computeProjectHealth } from '@stm/shared';
-import { EmptyState, StatCard } from '@stm/ui';
+import { EmptyState, HelpButton, StatCard } from '@stm/ui';
 import { useProjectsContext } from '../../state/ProjectsContext';
 import { useTasksContext } from '../../state/TasksContext';
 import { QuickCaptureInput } from '../../components/QuickCaptureInput';
@@ -56,9 +56,17 @@ export function ProjectsPage() {
   return (
     <div className="flex flex-col gap-6 p-4 sm:p-8">
       <header className="flex flex-col gap-1">
-        <h1 className="text-[28px] font-bold leading-[34px] text-ink-primary">
-          {t('projects.title')}
-        </h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-[28px] font-bold leading-[34px] text-ink-primary">
+            {t('projects.title')}
+          </h1>
+          <HelpButton
+            title={t('help.projects.title')}
+            intro={t('help.projects.intro')}
+            items={t('help.projects.items', { returnObjects: true }) as string[]}
+            closeLabel={t('common.close')}
+          />
+        </div>
         <p className="text-sm text-ink-secondary">{t('projects.subtitle')}</p>
       </header>
 

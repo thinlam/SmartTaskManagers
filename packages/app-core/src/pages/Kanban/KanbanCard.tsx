@@ -20,6 +20,7 @@ interface KanbanCardProps {
   dueTone: KanbanTone;
   progressTone: KanbanTone;
   scoreTone: KanbanTone;
+  smartScoreEnabled: boolean;
   onClick: () => void;
 }
 
@@ -41,6 +42,7 @@ export function KanbanCard({
   dueTone,
   progressTone,
   scoreTone,
+  smartScoreEnabled,
   onClick,
 }: KanbanCardProps) {
   const { t } = useTranslation();
@@ -73,11 +75,13 @@ export function KanbanCard({
         <span className={cn('rounded px-1.5 py-0.5', TONE_CLASSES[progressTone])}>
           {task.progress}%
         </span>
-        <span className={cn('rounded px-1.5 py-0.5', TONE_CLASSES[scoreTone])}>
-          {task.smartScore
-            ? t('kanban.scoreChip', { score: task.smartScore })
-            : t('kanban.scoreChipEmpty')}
-        </span>
+        {smartScoreEnabled && (
+          <span className={cn('rounded px-1.5 py-0.5', TONE_CLASSES[scoreTone])}>
+            {task.smartScore
+              ? t('kanban.scoreChip', { score: task.smartScore })
+              : t('kanban.scoreChipEmpty')}
+          </span>
+        )}
       </div>
     </button>
   );

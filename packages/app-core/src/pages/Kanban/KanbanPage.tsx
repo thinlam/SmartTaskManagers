@@ -1,11 +1,12 @@
 import { useMemo } from 'react';
 import type { Task } from '@stm/types';
 import { computeKanbanBoardData } from '@stm/shared';
-import { StatCard } from '@stm/ui';
+import { HelpButton, StatCard } from '@stm/ui';
 import { Sparkles } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useTasksContext } from '../../state/TasksContext';
 import { useProjectsContext } from '../../state/ProjectsContext';
+import { useSettingsContext } from '../../state/SettingsContext';
 import { KanbanLane } from './KanbanLane';
 
 /**
@@ -22,8 +23,12 @@ export function KanbanPage() {
   const { t } = useTranslation();
   const { tasks, openEditDrawer } = useTasksContext();
   const { projects } = useProjectsContext();
+  const { settings } = useSettingsContext();
 
-  const data = useMemo(() => computeKanbanBoardData(tasks), [tasks]);
+  const data = useMemo(
+    () => computeKanbanBoardData(tasks, settings.smartScoreEnabled),
+    [tasks, settings.smartScoreEnabled],
+  );
 
   function handleSelectTask(task: Task) {
     openEditDrawer(task);
@@ -32,9 +37,17 @@ export function KanbanPage() {
   return (
     <div className="flex flex-col gap-6 p-4 sm:p-8">
       <header className="flex flex-col gap-1">
-        <h1 className="text-[28px] font-bold leading-[34px] text-ink-primary">
-          {t('kanban.title')}
-        </h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-[28px] font-bold leading-[34px] text-ink-primary">
+            {t('kanban.title')}
+          </h1>
+          <HelpButton
+            title={t('help.kanban.title')}
+            intro={t('help.kanban.intro')}
+            items={t('help.kanban.items', { returnObjects: true }) as string[]}
+            closeLabel={t('common.close')}
+          />
+        </div>
         <p className="text-sm text-ink-secondary">{t('kanban.subtitle')}</p>
       </header>
 
@@ -83,9 +96,13 @@ export function KanbanPage() {
         <Sparkles className="h-4 w-4 shrink-0" aria-hidden="true" />
         {data.focusTask ? (
           <span>
-            {t('kanban.topFocus')} • {data.focusTask.title} •{' '}
-            {t('kanban.scoreLabel', { score: data.focusTask.smartScore ?? 0 })}
-            {data.focusTask.recommendedAction ? `  •  ${data.focusTask.recommendedAction}` : ''}
+            {t('kanban.topFocus')} • {data.focusTask.title}
+            {settings.smartScoreEnabled
+              ? ` • ${t('kanban.scoreLabel', { score: data.focusTask.smartScore ?? 0 })}`
+              : ''}
+            {settings.explainRecommendations && data.focusTask.recommendedAction
+              ? `  •  ${data.focusTask.recommendedAction}`
+              : ''}
           </span>
         ) : (
           <span>{t('kanban.noFocusTask')}</span>
@@ -100,6 +117,8 @@ export function KanbanPage() {
             today={data.today}
             projects={projects}
             onSelectTask={handleSelectTask}
+            smartScoreEnabled={settings.smartScoreEnabled}
+            explainRecommendations={settings.explainRecommendations}
           />
         ))}
       </div>

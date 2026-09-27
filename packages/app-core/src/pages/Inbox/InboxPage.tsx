@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { EmptyState } from '@stm/ui';
+import { EmptyState, HelpButton } from '@stm/ui';
 import { useTasksContext } from '../../state/TasksContext';
 import { QuickCaptureInput } from '../../components/QuickCaptureInput';
 import { reportError } from '../../lib/reportError';
@@ -37,9 +37,17 @@ export function InboxPage() {
   return (
     <div className="flex flex-col gap-6 p-4 sm:p-8">
       <header className="flex flex-col gap-1">
-        <h1 className="text-[28px] font-bold leading-[34px] text-ink-primary">
-          {t('inbox.title')}
-        </h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-[28px] font-bold leading-[34px] text-ink-primary">
+            {t('inbox.title')}
+          </h1>
+          <HelpButton
+            title={t('help.inbox.title')}
+            intro={t('help.inbox.intro')}
+            items={t('help.inbox.items', { returnObjects: true }) as string[]}
+            closeLabel={t('common.close')}
+          />
+        </div>
         <p className="text-sm text-ink-secondary">{t('inbox.subtitle')}</p>
       </header>
 

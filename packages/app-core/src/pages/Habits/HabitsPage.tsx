@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { EmptyState, StatCard } from '@stm/ui';
+import { EmptyState, HelpButton, StatCard } from '@stm/ui';
 import { useHabitsContext } from '../../state/HabitsContext';
 import { QuickCaptureInput } from '../../components/QuickCaptureInput';
 import { reportError } from '../../lib/reportError';
@@ -51,9 +51,17 @@ export function HabitsPage() {
   return (
     <div className="flex flex-col gap-6 p-4 sm:p-8">
       <header className="flex flex-col gap-1">
-        <h1 className="text-[28px] font-bold leading-[34px] text-ink-primary">
-          {t('habits.title')}
-        </h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-[28px] font-bold leading-[34px] text-ink-primary">
+            {t('habits.title')}
+          </h1>
+          <HelpButton
+            title={t('help.habits.title')}
+            intro={t('help.habits.intro')}
+            items={t('help.habits.items', { returnObjects: true }) as string[]}
+            closeLabel={t('common.close')}
+          />
+        </div>
         <p className="text-sm text-ink-secondary">{t('habits.subtitle')}</p>
       </header>
 

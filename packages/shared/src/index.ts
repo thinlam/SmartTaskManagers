@@ -1,5 +1,11 @@
 export { formatDueLabel } from './formatDueLabel';
 export {
+  resolveSmartEngineOptions,
+  compareBySmartRank,
+  applySmartVisibility,
+  type SmartEngineOptions,
+} from './smartEngineOptions';
+export {
   computeProjectMetrics,
   computeProjectHealth,
   getProjectTopFocusText,

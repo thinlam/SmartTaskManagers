@@ -1,5 +1,11 @@
 import type { Area, Priority, Task } from '@stm/types';
 import { formatDueLabel, type DueLabelTranslate } from './formatDueLabel';
+import {
+  applySmartVisibility,
+  compareBySmartRank,
+  resolveSmartEngineOptions,
+  type SmartEngineOptions,
+} from './smartEngineOptions';
 
 /**
  * Ported from computeTodayData_() in apps/google-sheets/src/07_Today.gs —
@@ -89,16 +95,6 @@ function formatMinutes(totalMinutes: number): string {
   return `${hours}h ${rem}m`;
 }
 
-/** todayByScoreDesc_: SmartScore desc, tie-break by earliest due date, undated tasks sort last. */
-function byScoreDesc(a: Task, b: Task): number {
-  const diff = (b.smartScore ?? 0) - (a.smartScore ?? 0);
-  if (diff !== 0) return diff;
-  if (!a.dueDate && !b.dueDate) return 0;
-  if (!a.dueDate) return 1;
-  if (!b.dueDate) return -1;
-  return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
-}
-
 function toTodayTask(
   task: Task,
   referenceDate: Date,
@@ -130,7 +126,9 @@ export function computeTodayData(
   tasks: Task[],
   referenceDate: Date = new Date(),
   t?: DueLabelTranslate,
+  smartOptions?: SmartEngineOptions,
 ): TodayData {
+  const smart = resolveSmartEngineOptions(smartOptions);
   const today = startOfDay(referenceDate);
 
   const openTasks = tasks.filter((t) => t.status !== 'Completed');
@@ -155,7 +153,7 @@ export function computeTodayData(
       const urgent = diff !== null && diff <= 0;
       return urgent && t.status !== 'Waiting';
     })
-    .sort(byScoreDesc)
+    .sort((a, b) => compareBySmartRank(a, b, smart.smartScoreEnabled))
     .slice(0, DO_NOW_MAX_ROWS);
 
   const doNowIds = new Set(doNowSource.map((t) => t.id));
@@ -172,11 +170,12 @@ export function computeTodayData(
       const minutes = t.estimateMinutes ?? 0;
       return minutes > 0 && minutes <= 15 && !doNowIds.has(t.id) && !scheduledIds.has(t.id);
     })
-    .sort(byScoreDesc)
+    .sort((a, b) => compareBySmartRank(a, b, smart.smartScoreEnabled))
     .slice(0, QUICK_WINS_MAX_ROWS);
 
+  const smartRank = (a: Task, b: Task) => compareBySmartRank(a, b, smart.smartScoreEnabled);
   const bestNextSource =
-    urgentPool.slice().sort(byScoreDesc)[0] ?? openTasks.slice().sort(byScoreDesc)[0] ?? null;
+    urgentPool.slice().sort(smartRank)[0] ?? openTasks.slice().sort(smartRank)[0] ?? null;
 
   const focusMinutes = todayTasks.reduce((sum, t) => sum + (t.estimateMinutes ?? 0), 0);
 
@@ -245,28 +244,37 @@ export function computeTodayData(
   return {
     subtitle: 'Focus on what matters most today.',
     kpis,
-    bestNext: bestNextSource ? toTodayTask(bestNextSource, referenceDate, undefined, t) : null,
+    bestNext: bestNextSource
+      ? applySmartVisibility(toTodayTask(bestNextSource, referenceDate, undefined, t), smart)
+      : null,
     doNow: {
       subtitle: 'Your most important work right now',
       emptyText: 'Nothing urgent right now. You have breathing room.',
-      tasks: doNowSource.map((task) => toTodayTask(task, referenceDate, undefined, t)),
+      tasks: doNowSource.map((task) =>
+        applySmartVisibility(toTodayTask(task, referenceDate, undefined, t), smart),
+      ),
     },
     scheduled: {
       subtitle: 'Time-specific tasks for today',
       emptyText: 'No time-blocked tasks scheduled today.',
       tasks: scheduledSource.map((task) =>
-        toTodayTask(
-          task,
-          referenceDate,
-          task.dueTime ? formatTimeLabel(task.dueTime) : undefined,
-          t,
+        applySmartVisibility(
+          toTodayTask(
+            task,
+            referenceDate,
+            task.dueTime ? formatTimeLabel(task.dueTime) : undefined,
+            t,
+          ),
+          smart,
         ),
       ),
     },
     quickWins: {
       subtitle: 'Small tasks you can finish fast',
       emptyText: 'No quick wins available right now.',
-      tasks: quickWinsSource.map((task) => toTodayTask(task, referenceDate, undefined, t)),
+      tasks: quickWinsSource.map((task) =>
+        applySmartVisibility(toTodayTask(task, referenceDate, undefined, t), smart),
+      ),
     },
     review: {
       completedCount: completedToday.length,

@@ -1,6 +1,12 @@
 import type { Area, Habit, Priority, Task } from '@stm/types';
 import { formatDueLabel, type DueLabelTranslate } from './formatDueLabel';
 import { getAreaProgress, type AreaProgress } from './analyticsMetrics';
+import {
+  applySmartVisibility,
+  compareBySmartRank,
+  resolveSmartEngineOptions,
+  type SmartEngineOptions,
+} from './smartEngineOptions';
 
 /**
  * Ported from computeDashboardData_() in apps/google-sheets/src/
@@ -107,13 +113,6 @@ function countHighImpact(tasks: Task[]): number {
   ).length;
 }
 
-function compareDueDates(a: string | null, b: string | null): number {
-  if (!a && !b) return 0;
-  if (!a) return 1;
-  if (!b) return -1;
-  return new Date(a).getTime() - new Date(b).getTime();
-}
-
 function toFocusTask(task: Task, referenceDate: Date, t?: DueLabelTranslate): DashboardFocusTask {
   return {
     id: task.id,
@@ -137,7 +136,9 @@ export function computeDashboardData(
   habits: Habit[],
   referenceDate: Date = new Date(),
   t?: DueLabelTranslate,
+  smartOptions?: SmartEngineOptions,
 ): DashboardData {
+  const smart = resolveSmartEngineOptions(smartOptions);
   const today = startOfDay(referenceDate);
   const week = getWeekRange(today);
 
@@ -215,13 +216,9 @@ export function computeDashboardData(
 
   const focusNow = openTasks
     .slice()
-    .sort((a, b) => {
-      const diff = (b.smartScore ?? 0) - (a.smartScore ?? 0);
-      if (diff !== 0) return diff;
-      return compareDueDates(a.dueDate, b.dueDate);
-    })
+    .sort((a, b) => compareBySmartRank(a, b, smart.smartScoreEnabled))
     .slice(0, FOCUS_MAX_ROWS)
-    .map((task) => toFocusTask(task, referenceDate, t));
+    .map((task) => applySmartVisibility(toFocusTask(task, referenceDate, t), smart));
 
   const areas = getAreaProgress(tasks);
 
@@ -244,7 +241,7 @@ export function computeDashboardData(
     );
   }
 
-  if (focusMinutesToday > focusCapacityMinutes) {
+  if (smart.scheduleOverloadWarning && focusMinutesToday > focusCapacityMinutes) {
     insights.push({
       tone: 'warning',
       text: `Today is overloaded by ${formatMinutes(focusMinutesToday - focusCapacityMinutes)}. Consider moving a lower-priority task.`,

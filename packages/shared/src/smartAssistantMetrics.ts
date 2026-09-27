@@ -5,6 +5,7 @@ import {
   computeProjectMetrics,
   getProjectNextAction,
 } from './projectMetrics';
+import { compareBySmartRank, resolveSmartEngineOptions, type SmartEngineOptions } from './smartEngineOptions';
 
 /**
  * Smart Assistant — no Sheets precedent (this screen was placeholder-only
@@ -85,14 +86,14 @@ export interface SmartAssistantData {
   habitAlerts: AssistantHabitAlert[];
 }
 
-function toAssistantTask(task: Task, referenceDate: Date): AssistantTask {
+function toAssistantTask(task: Task, referenceDate: Date, smartScoreEnabled: boolean): AssistantTask {
   return {
     id: task.id,
     title: task.title,
     area: task.area,
     priority: task.priority,
     dueLabel: formatDueLabel(task.dueDate, referenceDate),
-    smartScore: task.smartScore,
+    smartScore: smartScoreEnabled ? task.smartScore : undefined,
     risk: task.risk,
   };
 }
@@ -112,7 +113,9 @@ export function computeSmartAssistantData(
   goals: Goal[],
   habits: Habit[],
   referenceDate: Date = new Date(),
+  smartOptions?: SmartEngineOptions,
 ): SmartAssistantData {
+  const smart = resolveSmartEngineOptions(smartOptions);
   const openTasks = tasks.filter((t) => t.status !== 'Completed');
 
   const riskCounts: Record<Risk, number> = { Critical: 0, High: 0, Medium: 0, Low: 0 };
@@ -123,9 +126,9 @@ export function computeSmartAssistantData(
   const criticalTasks = openTasks
     .filter((t) => t.risk === 'Critical' || t.risk === 'High')
     .slice()
-    .sort((a, b) => (b.smartScore ?? 0) - (a.smartScore ?? 0))
+    .sort((a, b) => compareBySmartRank(a, b, smart.smartScoreEnabled))
     .slice(0, CRITICAL_TASKS_MAX)
-    .map((t) => toAssistantTask(t, referenceDate));
+    .map((t) => toAssistantTask(t, referenceDate, smart.smartScoreEnabled));
 
   const byAction = new Map<string, Task[]>();
   for (const task of openTasks) {
@@ -141,8 +144,8 @@ export function computeSmartAssistantData(
     action,
     tasks: (byAction.get(action) ?? [])
       .slice()
-      .sort((a, b) => (b.smartScore ?? 0) - (a.smartScore ?? 0))
-      .map((t) => toAssistantTask(t, referenceDate)),
+      .sort((a, b) => compareBySmartRank(a, b, smart.smartScoreEnabled))
+      .map((t) => toAssistantTask(t, referenceDate, smart.smartScoreEnabled)),
   }));
 
   const projectAlerts: AssistantProjectAlert[] = projects
@@ -164,9 +167,11 @@ export function computeSmartAssistantData(
       nextAction: getProjectNextAction(metrics),
     }));
 
-  const goalAlerts: AssistantGoalAlert[] = goals
-    .filter((goal) => goal.status === 'At Risk')
-    .map((goal) => ({ goalId: goal.id, name: goal.name, progress: goal.progress }));
+  const goalAlerts: AssistantGoalAlert[] = smart.goalAlignmentEnabled
+    ? goals
+        .filter((goal) => goal.status === 'At Risk')
+        .map((goal) => ({ goalId: goal.id, name: goal.name, progress: goal.progress }))
+    : [];
 
   const habitAlerts: AssistantHabitAlert[] = habits
     .filter(

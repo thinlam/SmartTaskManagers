@@ -1,4 +1,5 @@
 import type { Task, TaskStatus } from '@stm/types';
+import { compareBySmartRank } from './smartEngineOptions';
 
 /** Matches KANBAN_LAYOUT.maxCardsPerLane in apps/google-sheets/src/11_Kanban.gs. */
 export const KANBAN_MAX_CARDS_PER_LANE = 7;
@@ -20,19 +21,13 @@ function today(): Date {
   return new Date(now.getFullYear(), now.getMonth(), now.getDate());
 }
 
-/** Ported from kanbanDueSortValue_() — no due date sinks to the bottom of a lane. */
-function dueSortValue(value: string | null): number {
-  const date = stripTime(value);
-  return date ? date.getTime() : Number.MAX_SAFE_INTEGER;
-}
-
 /**
  * Ported from computeKanbanData_()'s per-lane sort: Completed sorts by
  * completedDate descending (newest first); every other lane sorts by
  * SmartScore descending, then by due date ascending (earliest first,
  * unscheduled last).
  */
-function sortLaneTasks(status: TaskStatus): (a: Task, b: Task) => number {
+function sortLaneTasks(status: TaskStatus, smartScoreEnabled: boolean): (a: Task, b: Task) => number {
   return (a, b) => {
     if (status === 'Completed') {
       const aDate = a.completedDate ? new Date(a.completedDate).getTime() : 0;
@@ -40,10 +35,7 @@ function sortLaneTasks(status: TaskStatus): (a: Task, b: Task) => number {
       return bDate - aDate;
     }
 
-    const scoreDiff = (b.smartScore ?? 0) - (a.smartScore ?? 0);
-    if (scoreDiff !== 0) return scoreDiff;
-
-    return dueSortValue(a.dueDate) - dueSortValue(b.dueDate);
+    return compareBySmartRank(a, b, smartScoreEnabled);
   };
 }
 
@@ -167,11 +159,16 @@ export interface KanbanBoardData {
  * that case unreachable, so it's not modeled here), sorts each lane, and
  * computes the same 4 KPIs plus focusTask.
  */
-export function computeKanbanBoardData(allTasks: Task[]): KanbanBoardData {
+export function computeKanbanBoardData(
+  allTasks: Task[],
+  smartScoreEnabled: boolean = true,
+): KanbanBoardData {
   const referenceDate = today();
 
   const lanes: KanbanLaneData[] = KANBAN_LANES.map((status) => {
-    const tasks = allTasks.filter((task) => task.status === status).sort(sortLaneTasks(status));
+    const tasks = allTasks
+      .filter((task) => task.status === status)
+      .sort(sortLaneTasks(status, smartScoreEnabled));
     return {
       status,
       tasks,
@@ -195,7 +192,7 @@ export function computeKanbanBoardData(allTasks: Task[]): KanbanBoardData {
   }).length;
 
   const focusTask =
-    openTasks.slice().sort((a, b) => (b.smartScore ?? 0) - (a.smartScore ?? 0))[0] ?? null;
+    openTasks.slice().sort((a, b) => compareBySmartRank(a, b, smartScoreEnabled))[0] ?? null;
 
   return {
     today: referenceDate,

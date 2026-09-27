@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import type { Task } from '@stm/types';
 import { computeCalendarMonthData } from '@stm/shared';
-import { Button, IconButton, StatCard } from '@stm/ui';
+import { Button, HelpButton, IconButton, StatCard } from '@stm/ui';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useTasksContext } from '../../state/TasksContext';
@@ -41,9 +41,17 @@ export function CalendarPage() {
     <div className="flex flex-col gap-6 p-4 sm:p-8">
       <header className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex flex-col gap-1">
-          <h1 className="text-[28px] font-bold leading-[34px] text-ink-primary">
-            {t('calendar.title')}
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-[28px] font-bold leading-[34px] text-ink-primary">
+              {t('calendar.title')}
+            </h1>
+            <HelpButton
+              title={t('help.calendar.title')}
+              intro={t('help.calendar.intro')}
+              items={t('help.calendar.items', { returnObjects: true }) as string[]}
+              closeLabel={t('common.close')}
+            />
+          </div>
           <p className="text-sm text-ink-secondary">{t('calendar.subtitle')}</p>
         </div>
         <div className="flex items-center gap-2">

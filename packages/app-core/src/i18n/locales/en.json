@@ -156,7 +156,7 @@
     "toggleScheduleOverloadDescription": "Warn when a day's focus load exceeds the daily limit.",
     "toggleExplainRecommendationsLabel": "Explain Recommendations",
     "toggleExplainRecommendationsDescription": "Show why a task was recommended, not just the recommendation.",
-    "smartEngineHelperText": "These control the Smart Engine (Phase 29), which isn't built yet — toggling them here doesn't change any behavior in the app today.",
+    "smartEngineHelperText": "These control real behavior across Dashboard, Today, Kanban, and Smart Assistant — turning one off immediately changes sorting, warnings, or suggestions everywhere in the app.",
     "statusInbox": "Inbox",
     "statusToDo": "To Do",
     "statusInProgress": "In Progress",
@@ -475,5 +475,118 @@
   },
   "placeholder": {
     "notImplemented": "Not implemented yet — coming in {{phase}}."
+  },
+  "help": {
+    "dashboard": {
+      "title": "Dashboard help",
+      "intro": "Your daily overview — what's due, what's overdue, and what to focus on.",
+      "items": [
+        "The 5 cards at the top show tasks due today, overdue tasks, today's focus time, this week's progress, and your habit streak.",
+        "\"Focus Now\" lists your top tasks, automatically ranked by the Smart Engine (priority, due date, progress).",
+        "\"My Areas\" groups your open/completed tasks by area (Career, Health, Personal...) so you can see where things stand.",
+        "\"Smart Insights\" surfaces warnings and suggestions, like overdue tasks or an overloaded day."
+      ]
+    },
+    "today": {
+      "title": "Today help",
+      "intro": "A focused view of what to work on right now.",
+      "items": [
+        "\"Do Now\" lists urgent tasks that need attention today.",
+        "\"Scheduled\" shows tasks with a due date or start date today.",
+        "\"Quick Wins\" are short tasks (usually under 20 minutes) you can clear fast.",
+        "Tap any task to open it and edit details, mark progress, or mark it complete."
+      ]
+    },
+    "inbox": {
+      "title": "Inbox help",
+      "intro": "A quick-capture list for tasks you haven't organized yet.",
+      "items": [
+        "Use Quick Capture to jot down a task fast without filling in every field.",
+        "Every new task starts in Inbox until you assign it an area, project, or priority.",
+        "Regularly clear your Inbox by editing each task and moving it to the right area/project."
+      ]
+    },
+    "tasks": {
+      "title": "Tasks help",
+      "intro": "The full list of every task, with filtering and sorting.",
+      "items": [
+        "Use the filters to narrow by area, project, priority, or status.",
+        "Click \"+ New Task\" (top bar) to create a task from anywhere in the app.",
+        "Click a task row to edit it, or use the row actions to delete it.",
+        "Sort columns by clicking their header to find what you need faster."
+      ]
+    },
+    "projects": {
+      "title": "Projects help",
+      "intro": "Group related tasks into a project and track its health.",
+      "items": [
+        "Each project card shows progress, task count, and a health status (Healthy, Attention, At Risk, Critical).",
+        "Health is calculated automatically from overdue tasks and how close the project is to its deadline.",
+        "Click a project to see all of its tasks and the suggested next action."
+      ]
+    },
+    "goals": {
+      "title": "Goals help",
+      "intro": "Track longer-term goals and link tasks to them.",
+      "items": [
+        "Each goal shows its progress and status (On Track, At Risk, Completed).",
+        "Link tasks to a goal from the task's edit form (\"Goal\" field) so progress rolls up automatically.",
+        "A goal marked \"At Risk\" will also show up as a warning on the Dashboard and Smart Assistant."
+      ]
+    },
+    "habits": {
+      "title": "Habits help",
+      "intro": "Track recurring habits and build streaks.",
+      "items": [
+        "Check in once a day (or per your habit's frequency) to keep your streak alive.",
+        "A streak resets if you miss a check-in on a required day.",
+        "Your longest current streak also shows up as a KPI on the Dashboard."
+      ]
+    },
+    "calendar": {
+      "title": "Calendar help",
+      "intro": "See your tasks laid out by date.",
+      "items": [
+        "Switch between month/week/agenda views using the controls in the header.",
+        "Click a day to see every task due that day.",
+        "Tasks are color-coded by priority so you can spot urgent days at a glance."
+      ]
+    },
+    "kanban": {
+      "title": "Kanban help",
+      "intro": "Visualize task status as a drag-and-drop board.",
+      "items": [
+        "Each column is a status (Inbox, To Do, In Progress, Waiting, Completed).",
+        "Drag a task card to a new column to change its status instantly.",
+        "The top task in each column is highlighted by the Smart Engine as the one to focus on next."
+      ]
+    },
+    "analytics": {
+      "title": "Analytics help",
+      "intro": "Understand trends across all your tasks and habits.",
+      "items": [
+        "Charts break down completion rate, tasks by area, and priority distribution.",
+        "Use this page to spot patterns — e.g. an area that's consistently behind."
+      ]
+    },
+    "assistant": {
+      "title": "Smart Assistant help",
+      "intro": "Rule-based recommendations built from your real data — not a chat AI.",
+      "items": [
+        "Tasks are grouped by recommended action (Overdue - do now, Quick win, Defer...), computed by the Smart Engine from priority, due date, and progress.",
+        "Project/Goal/Habit alerts here flag things that need attention — an at-risk goal, an unhealthy project, or a habit about to lose its streak.",
+        "This page never calls an external AI model — every suggestion is a plain rule over your own data, so it's instant and free."
+      ]
+    },
+    "settings": {
+      "title": "Settings help",
+      "intro": "Configure how the app behaves.",
+      "items": [
+        "General: workspace name, week start day, date format.",
+        "Task Defaults: what a new task starts with (status, priority, estimate).",
+        "Focus & Schedule: your working hours, used to calculate daily focus capacity.",
+        "Smart Engine: toggle which smart features are active — turning one off stops it from affecting sorting, warnings, or suggestions anywhere in the app."
+      ]
+    }
   }
 }

@@ -17,6 +17,8 @@ interface KanbanLaneProps {
   today: Date;
   projects: Project[];
   onSelectTask: (task: Task) => void;
+  smartScoreEnabled: boolean;
+  explainRecommendations: boolean;
 }
 
 function buildMeta(task: Task, projects: Project[]): string {
@@ -26,8 +28,8 @@ function buildMeta(task: Task, projects: Project[]): string {
   return parts.join('  •  ');
 }
 
-function buildAction(task: Task, t: TFunction): string {
-  if (task.recommendedAction) return task.recommendedAction;
+function buildAction(task: Task, t: TFunction, explainRecommendations: boolean): string {
+  if (explainRecommendations && task.recommendedAction) return task.recommendedAction;
   if (task.description) return task.description;
   return task.status === 'Completed' ? t('kanban.actionCompleted') : t('kanban.continueNextStep');
 }
@@ -38,7 +40,14 @@ function buildAction(task: Task, t: TFunction): string {
  * lane.isOverWip), up to KANBAN_MAX_CARDS_PER_LANE cards, a "+N more"
  * footer when truncated, or the lane's empty-state text.
  */
-export function KanbanLane({ lane, today, projects, onSelectTask }: KanbanLaneProps) {
+export function KanbanLane({
+  lane,
+  today,
+  projects,
+  onSelectTask,
+  smartScoreEnabled,
+  explainRecommendations,
+}: KanbanLaneProps) {
   const { t } = useTranslation();
   const visibleTasks = lane.tasks.slice(0, KANBAN_MAX_CARDS_PER_LANE);
   const hiddenCount = Math.max(0, lane.tasks.length - visibleTasks.length);
@@ -68,11 +77,12 @@ export function KanbanLane({ lane, today, projects, onSelectTask }: KanbanLanePr
               key={task.id}
               task={task}
               meta={buildMeta(task, projects)}
-              action={buildAction(task, t)}
+              action={buildAction(task, t, explainRecommendations)}
               dueLabel={getKanbanDueLabel(task.dueDate, task.status, today)}
               dueTone={getKanbanDueTone(task.dueDate, task.status, today)}
               progressTone={getKanbanProgressTone(task.progress)}
               scoreTone={getKanbanScoreTone(task.smartScore ?? 0)}
+              smartScoreEnabled={smartScoreEnabled}
               onClick={() => onSelectTask(task)}
             />
           ))

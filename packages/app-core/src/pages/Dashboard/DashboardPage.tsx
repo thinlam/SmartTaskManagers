@@ -1,11 +1,12 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
-import { EmptyState, Progress, SmartInsightCard, StatCard, TaskCard } from '@stm/ui';
+import { EmptyState, HelpButton, Progress, SmartInsightCard, StatCard, TaskCard } from '@stm/ui';
 import { computeDashboardData, type DashboardKpi } from '@stm/shared';
 import { translatePriority } from '../../lib/enumLabels';
 import { useTasksContext } from '../../state/TasksContext';
 import { useHabitsContext } from '../../state/HabitsContext';
+import { useSettingsContext } from '../../state/SettingsContext';
 
 /**
  * `packages/shared`'s computeDashboardData() has no i18n access, so its
@@ -64,10 +65,16 @@ export function DashboardPage() {
   const { t } = useTranslation();
   const { tasks, isLoading: tasksLoading } = useTasksContext();
   const { habits, isLoading: habitsLoading } = useHabitsContext();
+  const { settings } = useSettingsContext();
 
   const data = useMemo(
-    () => computeDashboardData(tasks, habits, new Date(), t),
-    [tasks, habits, t],
+    () =>
+      computeDashboardData(tasks, habits, new Date(), t, {
+        smartScoreEnabled: settings.smartScoreEnabled,
+        explainRecommendations: settings.explainRecommendations,
+        scheduleOverloadWarning: settings.scheduleOverloadWarning,
+      }),
+    [tasks, habits, t, settings],
   );
 
   if (tasksLoading || habitsLoading) {
@@ -77,9 +84,17 @@ export function DashboardPage() {
   return (
     <div className="flex flex-col gap-6 p-4 sm:p-8">
       <header className="flex flex-col gap-1">
-        <h1 className="text-[28px] font-bold leading-[34px] text-ink-primary">
-          {t('dashboard.title')}
-        </h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-[28px] font-bold leading-[34px] text-ink-primary">
+            {t('dashboard.title')}
+          </h1>
+          <HelpButton
+            title={t('help.dashboard.title')}
+            intro={t('help.dashboard.intro')}
+            items={t('help.dashboard.items', { returnObjects: true }) as string[]}
+            closeLabel={t('common.close')}
+          />
+        </div>
         <p className="text-sm text-ink-secondary">{data.greeting}</p>
         <p className="text-xs text-ink-muted">{data.summary}</p>
       </header>

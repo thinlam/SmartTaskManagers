@@ -156,7 +156,7 @@
     "toggleScheduleOverloadDescription": "Cảnh báo khi khối lượng tập trung trong ngày vượt quá giới hạn hằng ngày.",
     "toggleExplainRecommendationsLabel": "Giải thích đề xuất",
     "toggleExplainRecommendationsDescription": "Hiển thị lý do công việc được đề xuất, không chỉ đề xuất đơn thuần.",
-    "smartEngineHelperText": "Các tùy chọn này điều khiển Công cụ thông minh (Giai đoạn 29), vốn chưa được xây dựng — bật/tắt ở đây không thay đổi hành vi nào của ứng dụng hiện tại.",
+    "smartEngineHelperText": "Các tùy chọn này điều khiển hành vi thật xuyên suốt Tổng quan, Hôm nay, Kanban và Trợ lý thông minh — tắt một mục sẽ ngay lập tức thay đổi cách sắp xếp, cảnh báo, hoặc gợi ý ở mọi nơi trong ứng dụng.",
     "statusInbox": "Hộp thư đến",
     "statusToDo": "Cần làm",
     "statusInProgress": "Đang thực hiện",
@@ -475,5 +475,118 @@
   },
   "placeholder": {
     "notImplemented": "Chưa triển khai — sẽ xây ở {{phase}}."
+  },
+  "help": {
+    "dashboard": {
+      "title": "Trợ giúp: Tổng quan",
+      "intro": "Cái nhìn tổng quan mỗi ngày — việc gì đến hạn, việc gì quá hạn, và nên tập trung vào đâu.",
+      "items": [
+        "5 thẻ ở trên cùng hiển thị: việc đến hạn hôm nay, việc quá hạn, thời gian tập trung hôm nay, tiến độ tuần này, và chuỗi ngày duy trì thói quen.",
+        "\"Tập trung ngay\" liệt kê các việc quan trọng nhất, được Smart Engine tự động xếp hạng theo độ ưu tiên, hạn chót, tiến độ.",
+        "\"Khu vực của tôi\" nhóm việc đang làm/đã xong theo lĩnh vực (Sự nghiệp, Sức khỏe, Cá nhân...) để bạn thấy tổng quan từng mảng.",
+        "\"Gợi ý thông minh\" hiện cảnh báo và đề xuất, ví dụ việc quá hạn hoặc ngày bị quá tải."
+      ]
+    },
+    "today": {
+      "title": "Trợ giúp: Hôm nay",
+      "intro": "Góc nhìn tập trung vào việc cần làm ngay bây giờ.",
+      "items": [
+        "\"Làm ngay\" liệt kê các việc gấp cần xử lý trong hôm nay.",
+        "\"Đã lên lịch\" hiển thị các việc có ngày bắt đầu hoặc hạn chót là hôm nay.",
+        "\"Việc nhanh\" là các việc ngắn (thường dưới 20 phút) bạn có thể xử lý nhanh gọn.",
+        "Bấm vào một việc để mở chi tiết, chỉnh sửa, cập nhật tiến độ hoặc đánh dấu hoàn thành."
+      ]
+    },
+    "inbox": {
+      "title": "Trợ giúp: Hộp thư đến",
+      "intro": "Danh sách ghi nhanh cho các việc chưa được sắp xếp.",
+      "items": [
+        "Dùng Ghi nhanh để tạo việc ngay lập tức mà không cần điền đầy đủ thông tin.",
+        "Mọi việc mới đều nằm ở Hộp thư đến cho tới khi bạn gán lĩnh vực, dự án hoặc độ ưu tiên.",
+        "Nên dọn Hộp thư đến thường xuyên bằng cách sửa từng việc và chuyển vào đúng lĩnh vực/dự án."
+      ]
+    },
+    "tasks": {
+      "title": "Trợ giúp: Công việc",
+      "intro": "Danh sách đầy đủ tất cả công việc, có thể lọc và sắp xếp.",
+      "items": [
+        "Dùng bộ lọc để thu hẹp theo lĩnh vực, dự án, độ ưu tiên hoặc trạng thái.",
+        "Bấm \"+ Công việc mới\" (thanh trên cùng) để tạo việc từ bất kỳ trang nào.",
+        "Bấm vào một dòng để chỉnh sửa, hoặc dùng thao tác trên dòng để xóa.",
+        "Bấm vào tiêu đề cột để sắp xếp, giúp tìm việc nhanh hơn."
+      ]
+    },
+    "projects": {
+      "title": "Trợ giúp: Dự án",
+      "intro": "Nhóm các việc liên quan vào một dự án và theo dõi tình trạng.",
+      "items": [
+        "Mỗi thẻ dự án hiển thị tiến độ, số lượng việc, và tình trạng sức khỏe (Tốt, Cần chú ý, Rủi ro, Nguy cấp).",
+        "Tình trạng được tự động tính dựa trên số việc quá hạn và khoảng cách tới hạn chót của dự án.",
+        "Bấm vào dự án để xem toàn bộ việc bên trong và hành động tiếp theo được đề xuất."
+      ]
+    },
+    "goals": {
+      "title": "Trợ giúp: Mục tiêu",
+      "intro": "Theo dõi mục tiêu dài hạn và liên kết công việc vào đó.",
+      "items": [
+        "Mỗi mục tiêu hiển thị tiến độ và trạng thái (Đúng tiến độ, Rủi ro, Hoàn thành).",
+        "Liên kết việc vào mục tiêu qua trường \"Mục tiêu\" khi sửa việc — tiến độ sẽ tự động cộng dồn.",
+        "Mục tiêu bị đánh dấu \"Rủi ro\" cũng sẽ hiện cảnh báo ở Tổng quan và Trợ lý thông minh."
+      ]
+    },
+    "habits": {
+      "title": "Trợ giúp: Thói quen",
+      "intro": "Theo dõi thói quen lặp lại và xây dựng chuỗi ngày duy trì.",
+      "items": [
+        "Check-in mỗi ngày (hoặc theo tần suất của thói quen) để giữ chuỗi ngày không bị đứt.",
+        "Chuỗi ngày sẽ reset về 0 nếu bạn bỏ lỡ check-in vào ngày bắt buộc.",
+        "Chuỗi ngày dài nhất hiện tại cũng hiển thị như một chỉ số KPI ở Tổng quan."
+      ]
+    },
+    "calendar": {
+      "title": "Trợ giúp: Lịch",
+      "intro": "Xem công việc được sắp xếp theo ngày.",
+      "items": [
+        "Chuyển đổi giữa xem theo tháng/tuần/danh sách bằng các nút ở đầu trang.",
+        "Bấm vào một ngày để xem tất cả việc đến hạn trong ngày đó.",
+        "Việc được tô màu theo độ ưu tiên để dễ nhận ra ngày bận rộn."
+      ]
+    },
+    "kanban": {
+      "title": "Trợ giúp: Kanban",
+      "intro": "Trực quan hóa trạng thái công việc bằng bảng kéo-thả.",
+      "items": [
+        "Mỗi cột là một trạng thái (Hộp thư đến, Cần làm, Đang làm, Chờ, Hoàn thành).",
+        "Kéo thẻ công việc sang cột khác để đổi trạng thái ngay lập tức.",
+        "Việc đứng đầu mỗi cột được Smart Engine đánh dấu là việc nên làm tiếp theo."
+      ]
+    },
+    "analytics": {
+      "title": "Trợ giúp: Phân tích",
+      "intro": "Hiểu xu hướng trên toàn bộ công việc và thói quen của bạn.",
+      "items": [
+        "Biểu đồ phân tích tỷ lệ hoàn thành, việc theo lĩnh vực, và phân bố độ ưu tiên.",
+        "Dùng trang này để phát hiện xu hướng — ví dụ một lĩnh vực liên tục bị trễ."
+      ]
+    },
+    "assistant": {
+      "title": "Trợ giúp: Trợ lý thông minh",
+      "intro": "Đề xuất dựa trên quy tắc từ dữ liệu thật của bạn — không phải AI trò chuyện.",
+      "items": [
+        "Công việc được nhóm theo hành động đề xuất (Quá hạn - làm ngay, Việc nhanh, Hoãn lại...), tính toán bởi Smart Engine dựa trên độ ưu tiên, hạn chót, tiến độ.",
+        "Cảnh báo Dự án/Mục tiêu/Thói quen ở đây đánh dấu những thứ cần chú ý — mục tiêu rủi ro, dự án không khỏe mạnh, hoặc thói quen sắp mất chuỗi ngày.",
+        "Trang này không gọi bất kỳ AI ngoài nào — mọi gợi ý đều là quy tắc đơn giản trên dữ liệu của chính bạn, nên tức thì và miễn phí."
+      ]
+    },
+    "settings": {
+      "title": "Trợ giúp: Cài đặt",
+      "intro": "Cấu hình cách ứng dụng hoạt động.",
+      "items": [
+        "Chung: tên không gian làm việc, ngày bắt đầu tuần, định dạng ngày.",
+        "Mặc định công việc: giá trị khởi tạo cho việc mới (trạng thái, độ ưu tiên, thời lượng ước tính).",
+        "Tập trung & Lịch trình: giờ làm việc của bạn, dùng để tính sức chứa tập trung mỗi ngày.",
+        "Smart Engine: bật/tắt từng tính năng thông minh — tắt một mục sẽ ngừng ảnh hưởng của nó tới sắp xếp, cảnh báo, hoặc gợi ý ở mọi nơi trong ứng dụng."
+      ]
+    }
   }
 }
