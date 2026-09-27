@@ -189,7 +189,13 @@
     "kpiOverdue": "Quá hạn",
     "kpiFocusTime": "Thời gian tập trung",
     "kpiWeeklyProgress": "Tiến độ tuần",
-    "kpiStreak": "Chuỗi ngày"
+    "kpiStreak": "Chuỗi ngày",
+    "customize": "Tùy chỉnh",
+    "dragToReorder": "Kéo để sắp xếp lại",
+    "weeklyTrendTitle": "Xu hướng hoàn thành trong tuần",
+    "weeklyTrendCountLabel": "Đã hoàn thành",
+    "priorityDistributionTitle": "Phân bố độ ưu tiên",
+    "priorityDistributionEmpty": "Chưa có công việc nào."
   },
   "today": {
     "loading": "Đang tải hôm nay…",

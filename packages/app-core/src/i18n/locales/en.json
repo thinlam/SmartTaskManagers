@@ -189,7 +189,13 @@
     "kpiOverdue": "Overdue",
     "kpiFocusTime": "Focus Time",
     "kpiWeeklyProgress": "Weekly Progress",
-    "kpiStreak": "Streak"
+    "kpiStreak": "Streak",
+    "customize": "Customize",
+    "dragToReorder": "Drag to reorder",
+    "weeklyTrendTitle": "Weekly Completion Trend",
+    "weeklyTrendCountLabel": "Completed",
+    "priorityDistributionTitle": "Priority Distribution",
+    "priorityDistributionEmpty": "No tasks yet."
   },
   "today": {
     "loading": "Loading today…",

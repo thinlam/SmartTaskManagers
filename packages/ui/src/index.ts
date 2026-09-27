@@ -49,3 +49,11 @@ export {
   type PasswordRuleResult,
 } from './components/PasswordStrengthChecklist';
 export { HelpButton, type HelpButtonProps } from './components/HelpButton';
+export {
+  WeeklyTrendChart,
+  type WeeklyTrendChartDatum,
+  type WeeklyTrendChartProps,
+  PriorityDistributionChart,
+  type PriorityDistributionChartDatum,
+  type PriorityDistributionChartProps,
+} from './components/Charts';

@@ -55,6 +55,7 @@ export {
 } from './analyticsMetrics';
 export {
   computeDashboardData,
+  type DashboardKpiKey,
   type DashboardKpi,
   type DashboardFocusTask,
   type DashboardInsight,
