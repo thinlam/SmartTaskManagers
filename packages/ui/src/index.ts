@@ -56,4 +56,7 @@ export {
   PriorityDistributionChart,
   type PriorityDistributionChartDatum,
   type PriorityDistributionChartProps,
+  StatusDonutChart,
+  type StatusDonutChartDatum,
+  type StatusDonutChartProps,
 } from './components/Charts';

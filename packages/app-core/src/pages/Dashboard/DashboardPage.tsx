@@ -5,33 +5,48 @@ import { SlidersHorizontal } from 'lucide-react';
 import {
   EmptyState,
   HelpButton,
-  PriorityDistributionChart,
+  PriorityBadge,
   Progress,
+  RiskBadge,
   SmartInsightCard,
   StatCard,
+  StatusDonutChart,
   TaskCard,
   WeeklyTrendChart,
 } from '@stm/ui';
 import {
   computeDashboardData,
   getPriorityDistribution,
+  getStatusDistribution,
   getWeeklyCompletionTrend,
   type DashboardKpi,
   type DashboardKpiKey,
 } from '@stm/shared';
-import { translatePriority } from '../../lib/enumLabels';
+import { translatePriority, translateRisk, translateTaskStatus } from '../../lib/enumLabels';
 import { useTasksContext } from '../../state/TasksContext';
 import { useHabitsContext } from '../../state/HabitsContext';
+import { useProjectsContext } from '../../state/ProjectsContext';
 import { useSettingsContext } from '../../state/SettingsContext';
 
 const KPI_LAYOUT_STORAGE_KEY = 'stm.dashboard.kpiLayout';
 const DEFAULT_KPI_ORDER: DashboardKpiKey[] = [
-  'dueToday',
+  'totalTasks',
+  'completed',
+  'inProgress',
   'overdue',
-  'focusTime',
-  'weeklyProgress',
-  'streak',
+  'dueToday',
+  'dueSoon',
+  'waiting',
+  'completionRate',
 ];
+
+const STATUS_COLOR: Record<string, string> = {
+  Completed: 'var(--color-status-completed)',
+  'In Progress': 'var(--color-status-in-progress)',
+  Inbox: 'var(--color-status-inbox)',
+  Waiting: 'var(--color-status-waiting)',
+  'To Do': 'var(--color-status-to-do)',
+};
 
 interface KpiLayoutEntry {
   key: DashboardKpiKey;
@@ -71,36 +86,42 @@ function loadKpiLayout(): KpiLayoutEntry[] {
  */
 function translateKpi(t: TFunction, kpi: DashboardKpi): { label: string; sub: string } {
   switch (kpi.key) {
-    case 'dueToday':
+    case 'totalTasks':
       return {
-        label: t('dashboard.kpiDueToday'),
-        sub: t('common.highPriorityCount', { count: kpi.highPriorityCount ?? 0 }),
+        label: t('dashboard.kpiTotalTasks'),
+        sub: t('dashboard.kpiTotalTasksSub', { count: kpi.openCount ?? 0 }),
       };
+    case 'completed':
+      return {
+        label: t('dashboard.kpiCompleted'),
+        sub: t('dashboard.kpiCompletedSub', { percent: kpi.completionRatePercent ?? 0 }),
+      };
+    case 'inProgress':
+      return { label: t('dashboard.kpiInProgress'), sub: t('dashboard.kpiInProgressSub') };
     case 'overdue':
       return {
         label: t('dashboard.kpiOverdue'),
         sub: (kpi.overdueCount ?? 0) > 0 ? t('common.needsAttention') : t('common.allClearShort'),
       };
-    case 'focusTime':
+    case 'dueToday':
       return {
-        label: t('dashboard.kpiFocusTime'),
-        sub: t('common.ofDailyCapacity', { percent: kpi.focusLoadPercent ?? 0 }),
+        label: t('dashboard.kpiDueToday'),
+        sub: t('common.highPriorityCount', { count: kpi.highPriorityCount ?? 0 }),
       };
-    case 'weeklyProgress':
+    case 'dueSoon':
       return {
-        label: t('dashboard.kpiWeeklyProgress'),
-        sub:
-          (kpi.weekTaskCount ?? 0) > 0
-            ? t('common.completedOfTarget', {
-                completed: kpi.weekCompletedCount ?? 0,
-                target: kpi.weekTaskCount ?? 0,
-              })
-            : t('common.noTasksThisWeek'),
+        label: t('dashboard.kpiDueSoon'),
+        sub: t('dashboard.kpiDueSoonSub', { days: kpi.dueSoonDaysWindow ?? 0 }),
       };
-    case 'streak':
+    case 'waiting':
+      return { label: t('dashboard.kpiWaiting'), sub: t('dashboard.kpiWaitingSub') };
+    case 'completionRate':
       return {
-        label: t('dashboard.kpiStreak'),
-        sub: t('common.streakDays', { count: kpi.streakCount ?? 0 }),
+        label: t('dashboard.kpiCompletionRate'),
+        sub: t('dashboard.kpiCompletionRateSub', {
+          completed: kpi.completedCount ?? 0,
+          total: kpi.totalCount ?? 0,
+        }),
       };
   }
 }
@@ -120,6 +141,7 @@ export function DashboardPage() {
   const { t, i18n } = useTranslation();
   const { tasks, isLoading: tasksLoading } = useTasksContext();
   const { habits, isLoading: habitsLoading } = useHabitsContext();
+  const { projects } = useProjectsContext();
   const { settings } = useSettingsContext();
   const [kpiLayout, setKpiLayout] = useState<KpiLayoutEntry[]>(loadKpiLayout);
   const [isCustomizeOpen, setIsCustomizeOpen] = useState(false);
@@ -154,13 +176,68 @@ export function DashboardPage() {
 
   const data = useMemo(
     () =>
-      computeDashboardData(tasks, habits, new Date(), t, {
-        smartScoreEnabled: settings.smartScoreEnabled,
-        explainRecommendations: settings.explainRecommendations,
-        scheduleOverloadWarning: settings.scheduleOverloadWarning,
-      }),
+      computeDashboardData(
+        tasks,
+        habits,
+        new Date(),
+        t,
+        {
+          smartScoreEnabled: settings.smartScoreEnabled,
+          explainRecommendations: settings.explainRecommendations,
+          scheduleOverloadWarning: settings.scheduleOverloadWarning,
+        },
+        settings.dueSoonDays,
+      ),
     [tasks, habits, t, settings],
   );
+
+  const projectNameById = useMemo(
+    () => new Map(projects.map((project) => [project.id, project.name])),
+    [projects],
+  );
+
+  const statusDistribution = useMemo(
+    () =>
+      getStatusDistribution(tasks).map((item) => ({
+        key: item.status,
+        label: translateTaskStatus(t, item.status),
+        color: STATUS_COLOR[item.status] ?? 'var(--color-ink-muted)',
+        count: item.count,
+        percentage: item.percentage,
+      })),
+    [tasks, t],
+  );
+
+  const completionOverview = useMemo(() => {
+    const total = tasks.length;
+    const completed = tasks.filter((task) => task.status === 'Completed').length;
+    const overdueCount = data.kpis.find((kpi) => kpi.key === 'overdue')?.overdueCount ?? 0;
+    const remaining = Math.max(total - completed - overdueCount, 0);
+    const pct = (count: number) => (total > 0 ? Math.round((count / total) * 100) : 0);
+    return [
+      {
+        key: 'completed',
+        label: t('dashboard.completionOverviewCompleted'),
+        color: 'var(--color-status-completed)',
+        count: completed,
+        percentage: pct(completed),
+      },
+      {
+        key: 'remaining',
+        label: t('dashboard.completionOverviewRemaining'),
+        color: 'var(--color-primary-light)',
+        count: remaining,
+        percentage: pct(remaining),
+      },
+      {
+        key: 'overdue',
+        label: t('dashboard.completionOverviewOverdue'),
+        color: 'var(--color-danger)',
+        count: overdueCount,
+        percentage: pct(overdueCount),
+      },
+    ];
+  }, [tasks, data.kpis, t]);
 
   const weeklyTrend = useMemo(
     () =>
@@ -179,9 +256,11 @@ export function DashboardPage() {
   const priorityDistribution = useMemo(
     () =>
       getPriorityDistribution(tasks).map((item) => ({
-        priority: item.priority,
+        key: item.priority,
         label: translatePriority(t, item.priority),
+        color: `var(--color-priority-${item.priority.toLowerCase()})`,
         count: item.count,
+        percentage: item.percentage,
       })),
     [tasks, t],
   );
@@ -233,10 +312,7 @@ export function DashboardPage() {
               if (!kpi) return null;
               const { label } = translateKpi(t, kpi);
               return (
-                <label
-                  key={entry.key}
-                  className="flex items-center gap-2 text-sm text-ink-primary"
-                >
+                <label key={entry.key} className="flex items-center gap-2 text-sm text-ink-primary">
                   <input
                     type="checkbox"
                     checked={entry.visible}
@@ -250,7 +326,7 @@ export function DashboardPage() {
           </div>
         )}
 
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
           {visibleKpis.map((kpi) => {
             const { label, sub } = translateKpi(t, kpi);
             return (
@@ -270,12 +346,74 @@ export function DashboardPage() {
                 className="cursor-grab active:cursor-grabbing"
                 title={t('dashboard.dragToReorder')}
               >
-                <StatCard label={label} value={kpi.value} sub={sub} tone={kpi.tone} />
+                <StatCard
+                  label={label}
+                  value={kpi.value}
+                  sub={sub}
+                  tone={kpi.tone}
+                  emphasize={kpi.emphasize}
+                />
               </div>
             );
           })}
         </div>
       </section>
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <section className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-4">
+          <h2 className="text-sm font-semibold text-ink-primary">
+            {t('dashboard.statusBreakdownTitle')}
+          </h2>
+          {statusDistribution.every((item) => item.count === 0) ? (
+            <EmptyState
+              message={t('dashboard.priorityDistributionEmpty')}
+              className="border-none"
+            />
+          ) : (
+            <StatusDonutChart
+              data={statusDistribution}
+              centerValue={String(tasks.length)}
+              centerLabel={t('dashboard.totalTasksLabel')}
+            />
+          )}
+        </section>
+
+        <section className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-4">
+          <h2 className="text-sm font-semibold text-ink-primary">
+            {t('dashboard.priorityDistributionTitle')}
+          </h2>
+          {priorityDistribution.every((item) => item.count === 0) ? (
+            <EmptyState
+              message={t('dashboard.priorityDistributionEmpty')}
+              className="border-none"
+            />
+          ) : (
+            <StatusDonutChart
+              data={priorityDistribution}
+              centerValue={String(tasks.length)}
+              centerLabel={t('dashboard.totalTasksLabel')}
+            />
+          )}
+        </section>
+
+        <section className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-4">
+          <h2 className="text-sm font-semibold text-ink-primary">
+            {t('dashboard.completionOverviewTitle')}
+          </h2>
+          {tasks.length === 0 ? (
+            <EmptyState
+              message={t('dashboard.priorityDistributionEmpty')}
+              className="border-none"
+            />
+          ) : (
+            <StatusDonutChart
+              data={completionOverview}
+              centerValue={`${data.kpis.find((kpi) => kpi.key === 'completionRate')?.value ?? '0%'}`}
+              centerLabel={t('dashboard.completionOverviewCompleted')}
+            />
+          )}
+        </section>
+      </div>
 
       <section className="flex flex-col gap-3">
         <h2 className="text-lg font-semibold text-ink-primary">{t('dashboard.focusNow')}</h2>
@@ -299,25 +437,61 @@ export function DashboardPage() {
         )}
       </section>
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        <section className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-4">
-          <h2 className="text-sm font-semibold text-ink-primary">
-            {t('dashboard.weeklyTrendTitle')}
-          </h2>
-          <WeeklyTrendChart data={weeklyTrend} countLabel={t('dashboard.weeklyTrendCountLabel')} />
-        </section>
+      <section className="flex flex-col gap-3">
+        <h2 className="text-lg font-semibold text-ink-primary">{t('dashboard.attentionTitle')}</h2>
+        {data.attentionTasks.length === 0 ? (
+          <EmptyState message={t('dashboard.attentionEmpty')} />
+        ) : (
+          <div className="overflow-x-auto rounded-lg border border-border bg-surface">
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className="border-b border-border text-xs uppercase tracking-wide text-ink-muted">
+                  <th className="px-4 py-2 font-medium">{t('dashboard.attentionColTask')}</th>
+                  <th className="px-4 py-2 font-medium">{t('dashboard.attentionColProject')}</th>
+                  <th className="px-4 py-2 font-medium">{t('dashboard.attentionColPriority')}</th>
+                  <th className="px-4 py-2 font-medium">{t('dashboard.attentionColDeadline')}</th>
+                  <th className="px-4 py-2 font-medium">{t('dashboard.attentionColRisk')}</th>
+                  <th className="px-4 py-2 font-medium">{t('dashboard.attentionColScore')}</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {data.attentionTasks.map((task) => (
+                  <tr key={task.id} className="hover:bg-surface-secondary">
+                    <td className="px-4 py-2.5 font-medium text-ink-primary">{task.title}</td>
+                    <td className="px-4 py-2.5 text-ink-secondary">
+                      {task.projectId ? (projectNameById.get(task.projectId) ?? '—') : '—'}
+                    </td>
+                    <td className="px-4 py-2.5">
+                      <PriorityBadge
+                        priority={task.priority}
+                        label={translatePriority(t, task.priority)}
+                      />
+                    </td>
+                    <td className="px-4 py-2.5 text-ink-secondary">{task.dueLabel}</td>
+                    <td className="px-4 py-2.5">
+                      {task.risk ? (
+                        <RiskBadge risk={task.risk} label={translateRisk(t, task.risk)} />
+                      ) : (
+                        '—'
+                      )}
+                    </td>
+                    <td className="px-4 py-2.5 font-medium text-ink-primary">
+                      {task.smartScore ?? '—'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
 
-        <section className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-4">
-          <h2 className="text-sm font-semibold text-ink-primary">
-            {t('dashboard.priorityDistributionTitle')}
-          </h2>
-          {priorityDistribution.every((item) => item.count === 0) ? (
-            <EmptyState message={t('dashboard.priorityDistributionEmpty')} className="border-none" />
-          ) : (
-            <PriorityDistributionChart data={priorityDistribution} />
-          )}
-        </section>
-      </div>
+      <section className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-4">
+        <h2 className="text-sm font-semibold text-ink-primary">
+          {t('dashboard.weeklyTrendTitle')}
+        </h2>
+        <WeeklyTrendChart data={weeklyTrend} countLabel={t('dashboard.weeklyTrendCountLabel')} />
+      </section>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <section className="flex flex-col gap-3">
