@@ -658,5 +658,52 @@
         "Smart Engine: bật/tắt từng tính năng thông minh — tắt một mục sẽ ngừng ảnh hưởng của nó tới sắp xếp, cảnh báo, hoặc gợi ý ở mọi nơi trong ứng dụng."
       ]
     }
+  },
+  "taskDetail": {
+    "notFound": "Không tìm thấy công việc.",
+    "backToTasks": "Quay lại Công việc",
+    "completed": "Đã hoàn thành",
+    "markComplete": "Đánh dấu hoàn thành",
+    "updateProgress": "Cập nhật tiến độ",
+    "changeDeadline": "Đổi hạn chót",
+    "editTask": "Sửa công việc",
+    "save": "Lưu",
+    "cancel": "Hủy",
+    "statProgress": "Tiến độ",
+    "statEstimate": "Ước tính",
+    "statEstimateSub": "Thời gian dự kiến",
+    "hoursValue": "{{hours}} giờ",
+    "statDeadline": "Hạn chót",
+    "statSmartScore": "Điểm thông minh",
+    "scoreLabel": {
+      "critical": "Cần chú ý khẩn cấp",
+      "needsAttention": "Cần chú ý",
+      "onTrack": "Đúng tiến độ",
+      "lowPriority": "Ưu tiên thấp"
+    },
+    "smartScoreDisabled": "Đã tắt",
+    "smartScoreDisabledMessage": "Điểm thông minh đang tắt — bật trong Cài đặt > Công cụ thông minh để xem điểm ưu tiên của việc này.",
+    "taskInformation": "Thông tin công việc",
+    "fieldProject": "Dự án",
+    "fieldArea": "Lĩnh vực",
+    "fieldTags": "Thẻ",
+    "noTags": "Không có thẻ",
+    "noProject": "Không có dự án",
+    "fieldStartDate": "Ngày bắt đầu",
+    "fieldDueDate": "Hạn chót",
+    "fieldCompletedDate": "Ngày hoàn thành",
+    "descriptionTitle": "Mô tả",
+    "noDescription": "Chưa có mô tả.",
+    "smartIntelligence": "Thông tin thông minh",
+    "whyThisScore": "Vì sao có điểm này",
+    "whyCriticalPriority": "Độ ưu tiên {{priority}}",
+    "whyHighPriority": "Độ ưu tiên cao",
+    "whyOverdue": "Quá hạn {{count}} ngày",
+    "whyDueToday": "Đến hạn hôm nay — còn 0 ngày",
+    "whyDueSoon": "Còn {{count}} ngày đến hạn",
+    "whyHighRisk": "Mức rủi ro {{risk}}",
+    "activity": "Hoạt động",
+    "activityCreated": "Công việc được tạo",
+    "activityUpdated": "Cập nhật gần nhất"
   }
 }

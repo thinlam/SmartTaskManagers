@@ -6,6 +6,7 @@ import { DashboardPage } from '../pages/Dashboard/DashboardPage';
 import { TodayPage } from '../pages/Today/TodayPage';
 import { InboxPage } from '../pages/Inbox/InboxPage';
 import { TasksPage } from '../pages/Tasks/TasksPage';
+import { TaskDetailPage } from '../pages/Tasks/TaskDetailPage';
 import { ProjectsPage } from '../pages/Projects/ProjectsPage';
 import { GoalsPage } from '../pages/Goals/GoalsPage';
 import { HabitsPage } from '../pages/Habits/HabitsPage';
@@ -58,6 +59,9 @@ export const router = createHashRouter([
       // Not in APP_ROUTES on purpose — reached only via the Topbar's
       // account menu, never listed as a Sidebar nav item.
       { path: '/account-settings', element: <AccountSettingsPage /> },
+      // Not in APP_ROUTES either — reached only by clicking a task row
+      // on the Tasks page (Frame 06), never a Sidebar nav item.
+      { path: '/tasks/:id', element: <TaskDetailPage /> },
     ],
   },
 ]);

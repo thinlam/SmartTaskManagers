@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Download, RefreshCw } from 'lucide-react';
 import type { Priority, Task } from '@stm/types';
@@ -77,6 +78,7 @@ const DUE_LABEL_TONE_CLASSES: Record<ReturnType<typeof dueLabelTone>, string> = 
  */
 export function TasksPage() {
   const { t, i18n } = useTranslation();
+  const navigate = useNavigate();
   const {
     tasks,
     isLoading,
@@ -396,10 +398,16 @@ export function TasksPage() {
                 return (
                   <tr key={task.id} className="hover:bg-surface-secondary">
                     <td className="max-w-[220px] px-4 py-3">
-                      <div className="flex flex-col">
-                        <span className="truncate font-medium text-ink-primary">{task.title}</span>
+                      <button
+                        type="button"
+                        onClick={() => navigate(`/tasks/${task.id}`)}
+                        className="flex flex-col text-left"
+                      >
+                        <span className="truncate font-medium text-ink-primary hover:underline">
+                          {task.title}
+                        </span>
                         <span className="text-xs text-ink-muted">{task.area}</span>
-                      </div>
+                      </button>
                     </td>
                     <td className="px-4 py-3 text-ink-secondary">
                       {task.projectId ? (projectNameById.get(task.projectId) ?? '—') : '—'}

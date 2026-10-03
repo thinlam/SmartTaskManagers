@@ -658,5 +658,52 @@
         "Smart Engine: toggle which smart features are active — turning one off stops it from affecting sorting, warnings, or suggestions anywhere in the app."
       ]
     }
+  },
+  "taskDetail": {
+    "notFound": "Task not found.",
+    "backToTasks": "Back to Tasks",
+    "completed": "Completed",
+    "markComplete": "Mark Complete",
+    "updateProgress": "Update Progress",
+    "changeDeadline": "Change Deadline",
+    "editTask": "Edit Task",
+    "save": "Save",
+    "cancel": "Cancel",
+    "statProgress": "Progress",
+    "statEstimate": "Estimate",
+    "statEstimateSub": "Estimated effort",
+    "hoursValue": "{{hours}} h",
+    "statDeadline": "Deadline",
+    "statSmartScore": "Smart Score",
+    "scoreLabel": {
+      "critical": "Critical Attention",
+      "needsAttention": "Needs Attention",
+      "onTrack": "On Track",
+      "lowPriority": "Low Priority"
+    },
+    "smartScoreDisabled": "Disabled",
+    "smartScoreDisabledMessage": "Smart scoring is turned off — enable it in Settings > Smart Engine to see this task's priority score.",
+    "taskInformation": "Task Information",
+    "fieldProject": "Project",
+    "fieldArea": "Area",
+    "fieldTags": "Tags",
+    "noTags": "No tags",
+    "noProject": "No project",
+    "fieldStartDate": "Start Date",
+    "fieldDueDate": "Due Date",
+    "fieldCompletedDate": "Completed Date",
+    "descriptionTitle": "Description",
+    "noDescription": "No description yet.",
+    "smartIntelligence": "Smart Intelligence",
+    "whyThisScore": "Why this score",
+    "whyCriticalPriority": "{{priority}} priority",
+    "whyHighPriority": "High priority",
+    "whyOverdue": "Overdue by {{count}} day(s)",
+    "whyDueToday": "Due today — 0 days left",
+    "whyDueSoon": "Due in {{count}} day(s)",
+    "whyHighRisk": "{{risk}} risk level",
+    "activity": "Activity",
+    "activityCreated": "Task created",
+    "activityUpdated": "Last updated"
   }
 }
