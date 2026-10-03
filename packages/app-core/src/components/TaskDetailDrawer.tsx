@@ -131,7 +131,7 @@ function isoDateInDays(offsetDays: number): string {
  */
 export function TaskDetailDrawer() {
   const { t } = useTranslation();
-  const { isDrawerOpen, editingTask, closeDrawer, addTask, updateTask, deleteTask } =
+  const { isDrawerOpen, editingTask, createDefaults, closeDrawer, addTask, updateTask, deleteTask } =
     useTasksContext();
   const { projects } = useProjectsContext();
   const { goals } = useGoalsContext();
@@ -141,9 +141,11 @@ export function TaskDetailDrawer() {
 
   useEffect(() => {
     if (!isDrawerOpen) return;
-    setForm(editingTask ? formFromTask(editingTask) : emptyForm());
+    setForm(
+      editingTask ? formFromTask(editingTask) : { ...emptyForm(), ...(createDefaults ?? {}) },
+    );
     setError(null);
-  }, [isDrawerOpen, editingTask]);
+  }, [isDrawerOpen, editingTask, createDefaults]);
 
   function buildSharedFields() {
     const title = form.title.trim();

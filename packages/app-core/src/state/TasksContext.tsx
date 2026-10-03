@@ -1,12 +1,18 @@
 import { createContext, useContext, useState, type ReactNode } from 'react';
 import { useTasks, type UseTasksResult } from '@stm/hooks';
-import type { Task } from '@stm/types';
+import type { Task, TaskStatus } from '@stm/types';
+
+export interface TaskCreateDefaults {
+  status?: TaskStatus;
+}
 
 interface TasksContextValue extends UseTasksResult {
   isDrawerOpen: boolean;
   /** null while creating; the task being edited otherwise. */
   editingTask: Task | null;
-  openCreateDrawer: () => void;
+  /** Pre-fills the create form — e.g. Kanban's per-lane "+" passes the lane's status. */
+  createDefaults: TaskCreateDefaults | null;
+  openCreateDrawer: (defaults?: TaskCreateDefaults) => void;
   openEditDrawer: (task: Task) => void;
   closeDrawer: () => void;
 }
@@ -33,9 +39,11 @@ export function TasksProvider({ children }: { children: ReactNode }) {
   const tasksApi = useTasks();
   const [isDrawerOpen, setDrawerOpen] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [createDefaults, setCreateDefaults] = useState<TaskCreateDefaults | null>(null);
 
-  function openCreateDrawer() {
+  function openCreateDrawer(defaults?: TaskCreateDefaults) {
     setEditingTask(null);
+    setCreateDefaults(defaults ?? null);
     setDrawerOpen(true);
   }
 
@@ -54,6 +62,7 @@ export function TasksProvider({ children }: { children: ReactNode }) {
         ...tasksApi,
         isDrawerOpen,
         editingTask,
+        createDefaults,
         openCreateDrawer,
         openEditDrawer,
         closeDrawer,

@@ -22,6 +22,9 @@ interface KanbanCardProps {
   scoreTone: KanbanTone;
   smartScoreEnabled: boolean;
   onClick: () => void;
+  onDragStart: () => void;
+  onDragEnd: () => void;
+  isDragging: boolean;
 }
 
 /**
@@ -44,6 +47,9 @@ export function KanbanCard({
   scoreTone,
   smartScoreEnabled,
   onClick,
+  onDragStart,
+  onDragEnd,
+  isDragging,
 }: KanbanCardProps) {
   const { t } = useTranslation();
   const isCompleted = task.status === 'Completed';
@@ -51,8 +57,18 @@ export function KanbanCard({
   return (
     <button
       type="button"
+      draggable
+      onDragStart={(event) => {
+        event.dataTransfer.setData('text/plain', task.id);
+        event.dataTransfer.effectAllowed = 'move';
+        onDragStart();
+      }}
+      onDragEnd={onDragEnd}
       onClick={onClick}
-      className="flex flex-col gap-1.5 rounded-lg border border-border bg-surface p-2.5 text-left transition-colors hover:border-border-strong"
+      className={cn(
+        'flex cursor-grab flex-col gap-1.5 rounded-lg border border-border bg-surface p-2.5 text-left transition-colors hover:border-border-strong active:cursor-grabbing',
+        isDragging && 'opacity-40',
+      )}
     >
       <span
         className={cn(

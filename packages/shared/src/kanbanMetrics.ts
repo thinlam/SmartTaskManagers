@@ -1,5 +1,26 @@
-import type { Task, TaskStatus } from '@stm/types';
+import type { Priority, Task, TaskStatus } from '@stm/types';
 import { compareBySmartRank } from './smartEngineOptions';
+
+export type KanbanSortMode = 'smartScore' | 'dueDate' | 'priority';
+
+const PRIORITY_WEIGHT: Record<Priority, number> = {
+  Critical: 5,
+  Urgent: 4,
+  High: 3,
+  Medium: 2,
+  Low: 1,
+};
+
+function compareByDueDate(a: Task, b: Task): number {
+  if (!a.dueDate && !b.dueDate) return 0;
+  if (!a.dueDate) return 1;
+  if (!b.dueDate) return -1;
+  return new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime();
+}
+
+function compareByPriority(a: Task, b: Task): number {
+  return PRIORITY_WEIGHT[b.priority] - PRIORITY_WEIGHT[a.priority];
+}
 
 /** Matches KANBAN_LAYOUT.maxCardsPerLane in apps/google-sheets/src/11_Kanban.gs. */
 export const KANBAN_MAX_CARDS_PER_LANE = 7;
@@ -27,7 +48,11 @@ function today(): Date {
  * SmartScore descending, then by due date ascending (earliest first,
  * unscheduled last).
  */
-function sortLaneTasks(status: TaskStatus, smartScoreEnabled: boolean): (a: Task, b: Task) => number {
+function sortLaneTasks(
+  status: TaskStatus,
+  smartScoreEnabled: boolean,
+  sortMode: KanbanSortMode,
+): (a: Task, b: Task) => number {
   return (a, b) => {
     if (status === 'Completed') {
       const aDate = a.completedDate ? new Date(a.completedDate).getTime() : 0;
@@ -35,7 +60,14 @@ function sortLaneTasks(status: TaskStatus, smartScoreEnabled: boolean): (a: Task
       return bDate - aDate;
     }
 
-    return compareBySmartRank(a, b, smartScoreEnabled);
+    switch (sortMode) {
+      case 'dueDate':
+        return compareByDueDate(a, b);
+      case 'priority':
+        return compareByPriority(a, b);
+      default:
+        return compareBySmartRank(a, b, smartScoreEnabled);
+    }
   };
 }
 
@@ -162,13 +194,14 @@ export interface KanbanBoardData {
 export function computeKanbanBoardData(
   allTasks: Task[],
   smartScoreEnabled: boolean = true,
+  sortMode: KanbanSortMode = 'smartScore',
 ): KanbanBoardData {
   const referenceDate = today();
 
   const lanes: KanbanLaneData[] = KANBAN_LANES.map((status) => {
     const tasks = allTasks
       .filter((task) => task.status === status)
-      .sort(sortLaneTasks(status, smartScoreEnabled));
+      .sort(sortLaneTasks(status, smartScoreEnabled, sortMode));
     return {
       status,
       tasks,

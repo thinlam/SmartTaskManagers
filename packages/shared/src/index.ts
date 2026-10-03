@@ -38,6 +38,7 @@ export {
   type KanbanLaneData,
   type KanbanBoardData,
   type KanbanTone,
+  type KanbanSortMode,
 } from './kanbanMetrics';
 export {
   computeAnalyticsSummary,
