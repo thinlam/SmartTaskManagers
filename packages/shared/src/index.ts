@@ -65,9 +65,12 @@ export {
 } from './dashboardMetrics';
 export {
   computeTodayData,
+  type TodayKpiKey,
   type TodayKpi,
   type TodayTask,
   type TodayTaskSection,
+  type TodayCompletedTask,
+  type TodayHourlyActivity,
   type TodayReview,
   type TodayData,
 } from './todayMetrics';

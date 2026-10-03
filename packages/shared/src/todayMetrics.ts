@@ -8,41 +8,45 @@ import {
 } from './smartEngineOptions';
 
 /**
- * Ported from computeTodayData_() in apps/google-sheets/src/07_Today.gs —
- * same 5 KPIs (Due Today, Overdue, Focus Load, Completed, Quick Wins),
- * same Best Next Action / Do Now / Scheduled / Quick Wins / End-of-Day
- * Review sections, same tie-break rule (todayByScoreDesc_: SmartScore
- * desc, then earliest due date, undated last). `smartScore`/
- * `recommendedAction` come from the backend's real Smart Engine (Phase
- * 29) already attached to each Task — nothing here recomputes them.
- * `dailyFocusLimitHours` hard-coded — see dashboardMetrics.ts's identical
- * doc comment for why.
+ * Ported from computeTodayData_() in apps/google-sheets/src/07_Today.gs,
+ * then redesigned per Frame 04 — KPI row now matches the mockup's 4
+ * status-count tiles (Due Today, Overdue, In Progress, Completed Today)
+ * instead of the Sheets original's 5 (dropped Focus Load/Quick Wins as
+ * KPI cards; Quick Wins survives as its own task-list section below).
+ * Same tie-break rule throughout (compareBySmartRank: SmartScore desc,
+ * then earliest due date, undated last). `smartScore`/`recommendedAction`
+ * come from the backend's real Smart Engine (Phase 29) already attached
+ * to each Task — nothing here recomputes them.
  */
 
 const DO_NOW_MAX_ROWS = 6;
 const SCHEDULED_MAX_ROWS = 6;
 const QUICK_WINS_MAX_ROWS = 6;
-const DAILY_FOCUS_LIMIT_HOURS = 4;
+const TOP_FOCUS_MAX_ROWS = 3;
+const OVERDUE_MAX_ROWS = 6;
+const HIGH_PRIORITY_MAX_ROWS = 6;
+const COMPLETED_TODAY_MAX_ROWS = 8;
 
-export type TodayKpiKey = 'dueToday' | 'overdue' | 'focusLoad' | 'completed' | 'quickWins';
+export type TodayKpiKey = 'dueToday' | 'overdue' | 'inProgress' | 'completed';
 
 export interface TodayKpi {
   /**
-   * Identifies which of the 5 fixed KPIs this is — `packages/shared` has
-   * no i18n access, so `label`/`sub` below are English fallbacks only;
-   * the real UI (TodayPage) translates by switching on `key` and the raw
-   * numeric fields below instead of using `label`/`sub` directly.
+   * Identifies which of the 4 fixed KPIs this is (Frame 04's status-count
+   * tiles) — `packages/shared` has no i18n access, so `label`/`sub` below
+   * are English fallbacks only; the real UI (TodayPage) translates by
+   * switching on `key` and the raw numeric fields below instead of using
+   * `label`/`sub` directly.
    */
   key: TodayKpiKey;
   label: string;
   value: string;
   sub: string;
   tone: 'primary' | 'success' | 'warning' | 'danger' | 'info';
+  /** True only for Overdue when its count is > 0 — TodayPage renders this one with a highlighted border, matching Frame 04. */
+  emphasize?: boolean;
   /** Populated only for the KPI whose key matches — the raw number(s) a translated `sub` needs. */
   highPriorityCount?: number;
   overdueCount?: number;
-  focusLoadPercent?: number;
-  focusCapacityHours?: number;
   completionRate?: number;
 }
 
@@ -52,6 +56,10 @@ export interface TodayTask {
   area: Area;
   priority: Priority;
   dueLabel: string;
+  /** References a Project's id — the UI resolves it to a name (same pattern as Dashboard's attentionTasks). */
+  projectId?: string;
+  /** 0–100, the task's real progress field. */
+  progress: number;
   smartScore?: number;
   recommendedAction?: string;
 }
@@ -60,6 +68,23 @@ export interface TodayTaskSection {
   subtitle: string;
   emptyText: string;
   tasks: TodayTask[];
+}
+
+export interface TodayCompletedTask {
+  id: string;
+  title: string;
+  projectId?: string;
+  /** Full ISO timestamp (real CompletedDate from the backend, not just a date) — the UI formats it to a time-of-day label. */
+  completedAtIso: string;
+}
+
+export interface TodayHourlyActivity {
+  /** 0–23. */
+  hour: number;
+  /** Tasks actually completed in this hour today (real CompletedDate). */
+  completedCount: number;
+  /** Open tasks due today with a dueTime in this hour — not yet completed. */
+  scheduledCount: number;
 }
 
 export interface TodayReview {
@@ -71,10 +96,16 @@ export interface TodayReview {
 export interface TodayData {
   subtitle: string;
   kpis: TodayKpi[];
+  /** Top 3 ranked tasks for the "Today's Focus" section (01/02/03) — same pool/ranking `bestNext` used to pick its single pick from. */
+  topFocus: TodayTask[];
   bestNext: TodayTask | null;
+  overdueTasks: TodayTask[];
+  highPriorityTasks: TodayTask[];
   doNow: TodayTaskSection;
   scheduled: TodayTaskSection;
   quickWins: TodayTaskSection;
+  completedToday: TodayCompletedTask[];
+  hourlyActivity: TodayHourlyActivity[];
   review: TodayReview;
 }
 
@@ -84,15 +115,6 @@ function startOfDay(date: Date): Date {
 
 function daysBetween(from: Date, to: Date): number {
   return Math.round((to.getTime() - from.getTime()) / 86_400_000);
-}
-
-function formatMinutes(totalMinutes: number): string {
-  const minutes = Math.max(0, totalMinutes);
-  const hours = Math.floor(minutes / 60);
-  const rem = minutes % 60;
-  if (hours === 0) return `${rem}m`;
-  if (rem === 0) return `${hours}h`;
-  return `${hours}h ${rem}m`;
 }
 
 function toTodayTask(
@@ -107,6 +129,8 @@ function toTodayTask(
     area: task.area,
     priority: task.priority,
     dueLabel: dueLabelOverride ?? formatDueLabel(task.dueDate, referenceDate, t),
+    projectId: task.projectId ?? undefined,
+    progress: task.progress,
     smartScore: task.smartScore,
     recommendedAction: task.recommendedAction,
   };
@@ -132,6 +156,7 @@ export function computeTodayData(
   const today = startOfDay(referenceDate);
 
   const openTasks = tasks.filter((t) => t.status !== 'Completed');
+  const inProgressTasks = tasks.filter((t) => t.status === 'In Progress');
   const todayTasks = openTasks.filter(
     (t) => t.dueDate && startOfDay(new Date(t.dueDate)).getTime() === today.getTime(),
   );
@@ -141,6 +166,7 @@ export function computeTodayData(
 
   const urgentPool = [...todayTasks, ...overdueTasks];
   const seen = new Set<string>();
+  const smartRank = (a: Task, b: Task) => compareBySmartRank(a, b, smart.smartScoreEnabled);
 
   const doNowSource = urgentPool
     .filter((t) => {
@@ -153,7 +179,7 @@ export function computeTodayData(
       const urgent = diff !== null && diff <= 0;
       return urgent && t.status !== 'Waiting';
     })
-    .sort((a, b) => compareBySmartRank(a, b, smart.smartScoreEnabled))
+    .sort(smartRank)
     .slice(0, DO_NOW_MAX_ROWS);
 
   const doNowIds = new Set(doNowSource.map((t) => t.id));
@@ -170,33 +196,51 @@ export function computeTodayData(
       const minutes = t.estimateMinutes ?? 0;
       return minutes > 0 && minutes <= 15 && !doNowIds.has(t.id) && !scheduledIds.has(t.id);
     })
-    .sort((a, b) => compareBySmartRank(a, b, smart.smartScoreEnabled))
+    .sort(smartRank)
     .slice(0, QUICK_WINS_MAX_ROWS);
 
-  const smartRank = (a: Task, b: Task) => compareBySmartRank(a, b, smart.smartScoreEnabled);
-  const bestNextSource =
-    urgentPool.slice().sort(smartRank)[0] ?? openTasks.slice().sort(smartRank)[0] ?? null;
+  const rankedPool = (urgentPool.length > 0 ? urgentPool : openTasks).slice().sort(smartRank);
+  const topFocusSource = rankedPool.slice(0, TOP_FOCUS_MAX_ROWS);
+  const bestNextSource = rankedPool[0] ?? null;
 
-  const focusMinutes = todayTasks.reduce((sum, t) => sum + (t.estimateMinutes ?? 0), 0);
+  const overdueSource = overdueTasks.slice().sort(smartRank).slice(0, OVERDUE_MAX_ROWS);
 
-  const completedToday = tasks.filter(
-    (t) =>
-      t.status === 'Completed' &&
-      t.completedDate &&
-      startOfDay(new Date(t.completedDate)).getTime() === today.getTime(),
-  );
+  const highPrioritySource = openTasks
+    .filter(
+      (t) =>
+        (t.priority === 'Critical' || t.priority === 'Urgent' || t.priority === 'High') &&
+        !overdueTasks.includes(t),
+    )
+    .sort(smartRank)
+    .slice(0, HIGH_PRIORITY_MAX_ROWS);
 
-  const focusLimitMinutes = DAILY_FOCUS_LIMIT_HOURS * 60;
-  const capacityPercent =
-    focusLimitMinutes > 0 ? Math.round((focusMinutes / focusLimitMinutes) * 100) : 0;
+  const completedTodaySource = tasks
+    .filter(
+      (t) =>
+        t.status === 'Completed' &&
+        t.completedDate &&
+        startOfDay(new Date(t.completedDate)).getTime() === today.getTime(),
+    )
+    .sort((a, b) => new Date(b.completedDate!).getTime() - new Date(a.completedDate!).getTime());
 
-  const plannedTodayCount = todayTasks.length + completedToday.length;
+  const plannedTodayCount = todayTasks.length + completedTodaySource.length;
   const completionRate =
-    plannedTodayCount > 0 ? Math.round((completedToday.length / plannedTodayCount) * 100) : 0;
+    plannedTodayCount > 0 ? Math.round((completedTodaySource.length / plannedTodayCount) * 100) : 0;
 
   const todayHighPriorityCount = todayTasks.filter(
     (t) => t.priority === 'High' || t.priority === 'Urgent' || t.priority === 'Critical',
   ).length;
+
+  const hourlyActivity: TodayHourlyActivity[] = Array.from({ length: 24 }, (_, hour) => ({
+    hour,
+    completedCount: completedTodaySource.filter(
+      (t) => new Date(t.completedDate!).getHours() === hour,
+    ).length,
+    scheduledCount: todayTasks.filter((t) => {
+      if (!t.dueTime) return false;
+      return Number(t.dueTime.split(':')[0]) === hour;
+    }).length,
+  })).filter((h) => h.completedCount > 0 || h.scheduledCount > 0);
 
   const kpis: TodayKpi[] = [
     {
@@ -213,40 +257,41 @@ export function computeTodayData(
       value: String(overdueTasks.length),
       sub: overdueTasks.length > 0 ? 'Needs attention' : 'All clear',
       tone: overdueTasks.length > 0 ? 'danger' : 'success',
+      emphasize: overdueTasks.length > 0,
       overdueCount: overdueTasks.length,
     },
     {
-      key: 'focusLoad',
-      label: 'Focus Load',
-      value: formatMinutes(focusMinutes),
-      sub: `${Math.min(capacityPercent, 999)}% of ${DAILY_FOCUS_LIMIT_HOURS}h capacity`,
-      tone: capacityPercent > 100 ? 'warning' : 'info',
-      focusLoadPercent: Math.min(capacityPercent, 999),
-      focusCapacityHours: DAILY_FOCUS_LIMIT_HOURS,
+      key: 'inProgress',
+      label: 'In Progress',
+      value: String(inProgressTasks.length),
+      sub: 'Currently active',
+      tone: 'primary',
     },
     {
       key: 'completed',
-      label: 'Completed',
-      value: String(completedToday.length),
-      sub: `${completionRate}% completion rate`,
+      label: 'Completed Today',
+      value: String(completedTodaySource.length),
+      sub: `${completionRate}% of today's plan`,
       tone: 'success',
       completionRate,
-    },
-    {
-      key: 'quickWins',
-      label: 'Quick Wins',
-      value: String(quickWinsSource.length),
-      sub: '15 min or less',
-      tone: 'primary',
     },
   ];
 
   return {
     subtitle: 'Focus on what matters most today.',
     kpis,
+    topFocus: topFocusSource.map((task) =>
+      applySmartVisibility(toTodayTask(task, referenceDate, undefined, t), smart),
+    ),
     bestNext: bestNextSource
       ? applySmartVisibility(toTodayTask(bestNextSource, referenceDate, undefined, t), smart)
       : null,
+    overdueTasks: overdueSource.map((task) =>
+      applySmartVisibility(toTodayTask(task, referenceDate, undefined, t), smart),
+    ),
+    highPriorityTasks: highPrioritySource.map((task) =>
+      applySmartVisibility(toTodayTask(task, referenceDate, undefined, t), smart),
+    ),
     doNow: {
       subtitle: 'Your most important work right now',
       emptyText: 'Nothing urgent right now. You have breathing room.',
@@ -276,8 +321,15 @@ export function computeTodayData(
         applySmartVisibility(toTodayTask(task, referenceDate, undefined, t), smart),
       ),
     },
+    completedToday: completedTodaySource.slice(0, COMPLETED_TODAY_MAX_ROWS).map((task) => ({
+      id: task.id,
+      title: task.title,
+      projectId: task.projectId ?? undefined,
+      completedAtIso: task.completedDate!,
+    })),
+    hourlyActivity,
     review: {
-      completedCount: completedToday.length,
+      completedCount: completedTodaySource.length,
       completionRate,
       plannedCount: plannedTodayCount,
     },

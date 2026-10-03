@@ -59,4 +59,7 @@ export {
   StatusDonutChart,
   type StatusDonutChartDatum,
   type StatusDonutChartProps,
+  HourlyActivityChart,
+  type HourlyActivityChartDatum,
+  type HourlyActivityChartProps,
 } from './components/Charts';

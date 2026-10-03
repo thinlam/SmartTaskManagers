@@ -13,3 +13,8 @@ export {
   type StatusDonutChartDatum,
   type StatusDonutChartProps,
 } from './StatusDonutChart';
+export {
+  HourlyActivityChart,
+  type HourlyActivityChartDatum,
+  type HourlyActivityChartProps,
+} from './HourlyActivityChart';
