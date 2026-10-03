@@ -1,6 +1,8 @@
 import type { Task } from '@stm/types';
 import type { KanbanTone } from '@stm/shared';
 import { PriorityBadge, cn } from '@stm/ui';
+import { useDraggable } from '@dnd-kit/core';
+import { CSS } from '@dnd-kit/utilities';
 import { translatePriority } from '../../lib/enumLabels';
 import { useTranslation } from 'react-i18next';
 
@@ -22,9 +24,6 @@ interface KanbanCardProps {
   scoreTone: KanbanTone;
   smartScoreEnabled: boolean;
   onClick: () => void;
-  onDragStart: () => void;
-  onDragEnd: () => void;
-  isDragging: boolean;
 }
 
 /**
@@ -36,6 +35,15 @@ interface KanbanCardProps {
  * instead of porting a separate priority-tone background strip — that
  * token family already exists and is the established idiom everywhere
  * else in this app, no reason to duplicate it here.
+ *
+ * Draggable via @dnd-kit/core's useDraggable rather than native HTML5
+ * drag-and-drop — the native `draggable` attribute only ever fires from
+ * mouse input, so it silently didn't work via touch in the packaged
+ * Android/iOS app. @dnd-kit listens on Pointer/Touch events instead, so
+ * the same card is draggable with a mouse or a finger. The click-to-open
+ * handler still works because KanbanPage's PointerSensor has a small
+ * activation distance — a tap that doesn't move far enough to count as a
+ * drag still reaches onClick normally.
  */
 export function KanbanCard({
   task,
@@ -47,28 +55,25 @@ export function KanbanCard({
   scoreTone,
   smartScoreEnabled,
   onClick,
-  onDragStart,
-  onDragEnd,
-  isDragging,
 }: KanbanCardProps) {
   const { t } = useTranslation();
   const isCompleted = task.status === 'Completed';
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: task.id,
+  });
 
   return (
     <button
+      ref={setNodeRef}
       type="button"
-      draggable
-      onDragStart={(event) => {
-        event.dataTransfer.setData('text/plain', task.id);
-        event.dataTransfer.effectAllowed = 'move';
-        onDragStart();
-      }}
-      onDragEnd={onDragEnd}
       onClick={onClick}
+      style={{ transform: CSS.Translate.toString(transform) }}
       className={cn(
-        'flex cursor-grab flex-col gap-1.5 rounded-lg border border-border bg-surface p-2.5 text-left transition-colors hover:border-border-strong active:cursor-grabbing',
-        isDragging && 'opacity-40',
+        'flex touch-none cursor-grab flex-col gap-1.5 rounded-lg border border-border bg-surface p-2.5 text-left transition-colors hover:border-border-strong active:cursor-grabbing',
+        isDragging && 'z-10 opacity-40 shadow-lg',
       )}
+      {...listeners}
+      {...attributes}
     >
       <span
         className={cn(

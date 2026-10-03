@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import type { Project, Task, TaskStatus } from '@stm/types';
 import {
   KANBAN_MAX_CARDS_PER_LANE,
@@ -9,6 +8,7 @@ import {
   type KanbanLaneData,
 } from '@stm/shared';
 import { Badge, cn } from '@stm/ui';
+import { useDroppable } from '@dnd-kit/core';
 import { Plus } from 'lucide-react';
 import type { TFunction } from 'i18next';
 import { useTranslation } from 'react-i18next';
@@ -20,10 +20,6 @@ interface KanbanLaneProps {
   projects: Project[];
   onSelectTask: (task: Task) => void;
   onAddTask: (status: TaskStatus) => void;
-  onDropTask: (taskId: string, status: TaskStatus) => void;
-  onCardDragStart: (taskId: string) => void;
-  onCardDragEnd: () => void;
-  draggedTaskId: string | null;
   smartScoreEnabled: boolean;
   explainRecommendations: boolean;
 }
@@ -58,9 +54,9 @@ function buildAction(task: Task, t: TFunction, explainRecommendations: boolean):
  * footer when truncated, or the lane's empty-state text. Frame 08
  * redesign: a colored top bar per lane (matching its status color
  * token), a real "+" button to create a task pre-filled with this
- * lane's status, and native HTML5 drag-and-drop — dropping a card here
- * calls onDropTask, which the page wires to a real updateTask(id,
- * { status }) call.
+ * lane's status, and this lane is a @dnd-kit droppable zone (id = this
+ * lane's status) — KanbanPage's DndContext handles the actual
+ * updateTask(id, { status }) call on drop.
  */
 export function KanbanLane({
   lane,
@@ -68,15 +64,11 @@ export function KanbanLane({
   projects,
   onSelectTask,
   onAddTask,
-  onDropTask,
-  onCardDragStart,
-  onCardDragEnd,
-  draggedTaskId,
   smartScoreEnabled,
   explainRecommendations,
 }: KanbanLaneProps) {
   const { t } = useTranslation();
-  const [isDragOver, setIsDragOver] = useState(false);
+  const { setNodeRef, isOver } = useDroppable({ id: lane.status });
   const visibleTasks = lane.tasks.slice(0, KANBAN_MAX_CARDS_PER_LANE);
   const hiddenCount = Math.max(0, lane.tasks.length - visibleTasks.length);
 
@@ -84,22 +76,11 @@ export function KanbanLane({
     <div className="flex w-72 shrink-0 flex-col">
       <div className={cn('h-1 rounded-t-md', LANE_BAR_CLASS[lane.status])} aria-hidden="true" />
       <div
+        ref={setNodeRef}
         className={cn(
           'flex flex-1 flex-col gap-2 rounded-b-md border border-t-0 border-border bg-surface-secondary/30 p-2 transition-colors',
-          isDragOver && 'bg-primary-light/60 ring-2 ring-primary/40',
+          isOver && 'bg-primary-light/60 ring-2 ring-primary/40',
         )}
-        onDragOver={(event) => {
-          event.preventDefault();
-          event.dataTransfer.dropEffect = 'move';
-        }}
-        onDragEnter={() => setIsDragOver(true)}
-        onDragLeave={() => setIsDragOver(false)}
-        onDrop={(event) => {
-          event.preventDefault();
-          setIsDragOver(false);
-          const taskId = event.dataTransfer.getData('text/plain');
-          if (taskId) onDropTask(taskId, lane.status);
-        }}
       >
         <div className="flex flex-col gap-0.5 px-1 pt-1">
           <div className="flex items-center justify-between">
@@ -149,10 +130,7 @@ export function KanbanLane({
                 progressTone={getKanbanProgressTone(task.progress)}
                 scoreTone={getKanbanScoreTone(task.smartScore ?? 0)}
                 smartScoreEnabled={smartScoreEnabled}
-                isDragging={draggedTaskId === task.id}
                 onClick={() => onSelectTask(task)}
-                onDragStart={() => onCardDragStart(task.id)}
-                onDragEnd={onCardDragEnd}
               />
             ))
           )}

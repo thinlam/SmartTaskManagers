@@ -3,6 +3,14 @@ import { useNavigate } from 'react-router-dom';
 import type { Priority, Task, TaskStatus } from '@stm/types';
 import { computeKanbanBoardData, type KanbanSortMode } from '@stm/shared';
 import { HelpButton, StatCard } from '@stm/ui';
+import {
+  DndContext,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
 import { Sparkles } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useTasksContext } from '../../state/TasksContext';
@@ -50,7 +58,17 @@ export function KanbanPage() {
   const [priorityFilter, setPriorityFilter] = useState<Priority | 'All'>('All');
   const [dueFilter, setDueFilter] = useState<DueFilter>('All');
   const [sortMode, setSortMode] = useState<KanbanSortMode>('smartScore');
-  const [draggedTaskId, setDraggedTaskId] = useState<string | null>(null);
+
+  // PointerSensor covers mouse/pen (desktop web); TouchSensor covers
+  // touch (the packaged Android/iOS app's WebView) — native HTML5
+  // drag-and-drop only ever fires from mouse input, which is why the
+  // first version of this board couldn't be dragged on a phone. Both
+  // sensors need a small activation threshold so a plain tap/click to
+  // open a card's Task Detail page doesn't get mistaken for a drag.
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 8 } }),
+  );
 
   const filteredTasks = useMemo(() => {
     const today = startOfDay(new Date());
@@ -86,7 +104,10 @@ export function KanbanPage() {
     openCreateDrawer({ status });
   }
 
-  function handleDropTask(taskId: string, status: TaskStatus) {
+  function handleDragEnd(event: DragEndEvent) {
+    const status = event.over?.id as TaskStatus | undefined;
+    const taskId = event.active.id as string;
+    if (!status) return;
     const task = tasks.find((candidate) => candidate.id === taskId);
     if (!task || task.status === status) return;
     updateTask(taskId, { status }).catch(reportError);
@@ -222,24 +243,22 @@ export function KanbanPage() {
         </span>
       </div>
 
-      <div className="flex gap-4 overflow-x-auto pb-2">
-        {data.lanes.map((lane) => (
-          <KanbanLane
-            key={lane.status}
-            lane={lane}
-            today={data.today}
-            projects={projects}
-            onSelectTask={handleSelectTask}
-            onAddTask={handleAddTask}
-            onDropTask={handleDropTask}
-            onCardDragStart={setDraggedTaskId}
-            onCardDragEnd={() => setDraggedTaskId(null)}
-            draggedTaskId={draggedTaskId}
-            smartScoreEnabled={settings.smartScoreEnabled}
-            explainRecommendations={settings.explainRecommendations}
-          />
-        ))}
-      </div>
+      <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+        <div className="flex gap-4 overflow-x-auto pb-2">
+          {data.lanes.map((lane) => (
+            <KanbanLane
+              key={lane.status}
+              lane={lane}
+              today={data.today}
+              projects={projects}
+              onSelectTask={handleSelectTask}
+              onAddTask={handleAddTask}
+              smartScoreEnabled={settings.smartScoreEnabled}
+              explainRecommendations={settings.explainRecommendations}
+            />
+          ))}
+        </div>
+      </DndContext>
 
       {settings.smartScoreEnabled && (
         <p className="text-xs text-ink-muted">
