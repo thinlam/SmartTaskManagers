@@ -1,5 +1,6 @@
 import { useEffect, type ReactNode } from 'react';
 import { X } from 'lucide-react';
+import { cn } from '../../lib/cn';
 
 export interface DrawerProps {
   open: boolean;
@@ -7,7 +8,14 @@ export interface DrawerProps {
   title: string;
   children: ReactNode;
   footer?: ReactNode;
+  /** 'md' (default, max-w-md) for simple forms; 'lg' (max-w-2xl) for richer forms like Quick Add Task's pill selectors + live preview. */
+  size?: 'md' | 'lg';
 }
+
+const SIZE_CLASS: Record<NonNullable<DrawerProps['size']>, string> = {
+  md: 'max-w-md',
+  lg: 'max-w-2xl',
+};
 
 /**
  * Right-anchored panel + backdrop, used for Task Detail (Phase 12).
@@ -17,7 +25,7 @@ export interface DrawerProps {
  * phase's scope justifies. Called out here rather than silently skipped;
  * revisit if a screen reader / keyboard-only pass finds it insufficient.
  */
-export function Drawer({ open, onClose, title, children, footer }: DrawerProps) {
+export function Drawer({ open, onClose, title, children, footer, size = 'md' }: DrawerProps) {
   useEffect(() => {
     if (!open) return;
     function handleKeyDown(event: KeyboardEvent) {
@@ -36,7 +44,10 @@ export function Drawer({ open, onClose, title, children, footer }: DrawerProps) 
         role="dialog"
         aria-modal="true"
         aria-label={title}
-        className="relative flex h-full w-full max-w-md flex-col bg-surface shadow-lg pr-[env(safe-area-inset-right)]"
+        className={cn(
+          'relative flex h-full w-full flex-col bg-surface shadow-lg pr-[env(safe-area-inset-right)]',
+          SIZE_CLASS[size],
+        )}
       >
         <div
           className="flex shrink-0 items-center justify-between border-b border-border px-6 py-4"

@@ -347,7 +347,21 @@
     "colTimeline": "Timeline",
     "colRisk": "Risk",
     "colScore": "Score",
-    "showingRange": "Showing {{from}}–{{to}} of {{total}} tasks"
+    "showingRange": "Showing {{from}}–{{to}} of {{total}} tasks",
+    "quickAddFooterHint": "Enter to add · Esc to cancel · Ctrl+Enter to add & create another",
+    "addAndCreateAnotherButton": "Add & create another",
+    "livePreviewTitle": "Live Preview",
+    "livePreviewPlaceholderTitle": "Your task name",
+    "sectionTaskDetails": "Task Details",
+    "sectionAssignment": "Assignment",
+    "sectionPriorityStatus": "Priority & Status",
+    "sectionSchedule": "Schedule",
+    "titlePlaceholder": "e.g. Prepare release notes",
+    "dueToday": "Today",
+    "dueTomorrow": "Tomorrow",
+    "duePlus3Days": "+3 days",
+    "dueNextWeek": "Next week",
+    "calculatedAutomaticallyHint": "Smart Score, Risk Level and Recommended Action are calculated automatically after you add this task."
   },
   "projects": {
     "loading": "Loading projects…",

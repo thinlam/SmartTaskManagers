@@ -347,7 +347,21 @@
     "colTimeline": "Thời gian",
     "colRisk": "Rủi ro",
     "colScore": "Điểm",
-    "showingRange": "Hiển thị {{from}}–{{to}} trong {{total}} công việc"
+    "showingRange": "Hiển thị {{from}}–{{to}} trong {{total}} công việc",
+    "quickAddFooterHint": "Enter để thêm · Esc để hủy · Ctrl+Enter để thêm & tạo tiếp",
+    "addAndCreateAnotherButton": "Thêm & tạo tiếp",
+    "livePreviewTitle": "Xem trước",
+    "livePreviewPlaceholderTitle": "Tên công việc của bạn",
+    "sectionTaskDetails": "Chi tiết công việc",
+    "sectionAssignment": "Phân loại",
+    "sectionPriorityStatus": "Ưu tiên & Trạng thái",
+    "sectionSchedule": "Lịch trình",
+    "titlePlaceholder": "VD: Soạn ghi chú phát hành",
+    "dueToday": "Hôm nay",
+    "dueTomorrow": "Ngày mai",
+    "duePlus3Days": "+3 ngày",
+    "dueNextWeek": "Tuần sau",
+    "calculatedAutomaticallyHint": "Điểm thông minh, Mức rủi ro và Hành động đề xuất sẽ được tự động tính sau khi bạn thêm công việc này."
   },
   "projects": {
     "loading": "Đang tải dự án…",
