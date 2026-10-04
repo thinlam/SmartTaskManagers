@@ -1,5 +1,10 @@
 export { formatDueLabel } from './formatDueLabel';
 export {
+  parseQuickCapture,
+  type ParsedQuickCapture,
+  type QuickCaptureProject,
+} from './quickCapture';
+export {
   resolveSmartEngineOptions,
   compareBySmartRank,
   applySmartVisibility,
