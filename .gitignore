@@ -45,3 +45,4 @@ yarn-error.log*
 # .clasp.json IS committed on purpose (contains scriptId, no secret).
 # Never commit clasp credentials:
 .clasprc.json
+.tools/

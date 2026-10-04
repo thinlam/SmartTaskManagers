@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Download, RefreshCw } from 'lucide-react';
 import type { Priority, Task } from '@stm/types';
@@ -90,11 +90,14 @@ export function TasksPage() {
     openEditDrawer,
   } = useTasksContext();
   const { projects } = useProjectsContext();
+  const [searchParams] = useSearchParams();
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<StatusFilter>('All');
   const [priority, setPriority] = useState<PriorityFilter>('All');
   const [risk, setRisk] = useState<RiskFilter>('All');
-  const [projectId, setProjectId] = useState<string>('All');
+  // "View project →" on Projects (Frame 11) links here as /tasks?project=<id> —
+  // this is the only way to arrive with a non-default filter already applied.
+  const [projectId, setProjectId] = useState<string>(() => searchParams.get('project') ?? 'All');
   const [sort, setSort] = useState<SortOption>('smartScore');
   const [viewTab, setViewTab] = useState<ViewTab>('all');
   const [page, setPage] = useState(1);

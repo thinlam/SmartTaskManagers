@@ -1,5 +1,5 @@
-import type { ProjectHealth } from '@stm/types';
-import { ProjectHealthBadge } from '../Badge';
+import type { Priority, ProjectHealth } from '@stm/types';
+import { ProjectHealthBadge, PriorityBadge } from '../Badge';
 import { Progress } from '../Progress';
 import { cn } from '../../lib/cn';
 
@@ -27,6 +27,12 @@ export interface ProjectCardProps {
   nextActionText: string;
   /** Translated "Next" section label — falls back to English when omitted. */
   nextLabel?: string;
+  /** Derived (not stored) — see getProjectDerivedPriority in packages/shared. Omit to hide the badge. */
+  priority?: Priority;
+  priorityLabel?: string;
+  onViewProject?: () => void;
+  /** Translated "View project" button text — falls back to English when omitted. */
+  viewProjectLabel?: string;
 }
 
 const STRIPE_CLASSES: Record<ProjectHealth, string> = {
@@ -75,6 +81,10 @@ export function ProjectCard({
   hasTopTask,
   nextActionText,
   nextLabel = 'Next',
+  priority,
+  priorityLabel,
+  onViewProject,
+  viewProjectLabel = 'View project →',
 }: ProjectCardProps) {
   return (
     <div className="flex overflow-hidden rounded-lg border border-border bg-surface">
@@ -82,7 +92,10 @@ export function ProjectCard({
       <div className="flex flex-1 flex-col gap-3 p-4">
         <div className="flex items-start justify-between gap-3">
           <span className="text-sm font-semibold text-ink-primary">{name}</span>
-          <ProjectHealthBadge health={health} label={healthLabel} />
+          <div className="flex shrink-0 items-center gap-1.5">
+            {priority && <PriorityBadge priority={priority} label={priorityLabel} />}
+            <ProjectHealthBadge health={health} label={healthLabel} />
+          </div>
         </div>
 
         <div className="flex items-center justify-between gap-3 text-xs">
@@ -119,17 +132,25 @@ export function ProjectCard({
           </span>
         </div>
 
-        <div className="flex items-start gap-2 text-xs">
-          <span
-            className={cn(
-              'shrink-0 rounded-md px-2 py-0.5 font-semibold uppercase tracking-wide',
-              NEXT_LABEL_CLASSES[health],
-            )}
-          >
-            {nextLabel}
-          </span>
-          <span className="text-ink-secondary">{nextActionText}</span>
+        <div
+          className={cn(
+            'rounded-md px-3 py-2 text-xs font-medium',
+            NEXT_LABEL_CLASSES[health],
+          )}
+        >
+          <span className="sr-only">{nextLabel}: </span>
+          {nextActionText}
         </div>
+
+        {onViewProject && (
+          <button
+            type="button"
+            onClick={onViewProject}
+            className="self-end text-xs font-semibold text-primary hover:underline"
+          >
+            {viewProjectLabel}
+          </button>
+        )}
       </div>
     </div>
   );

@@ -1,4 +1,4 @@
-import type { Project, ProjectHealth, Task } from '@stm/types';
+import type { Priority, Project, ProjectHealth, Task } from '@stm/types';
 
 export interface ProjectMetrics {
   taskCount: number;
@@ -10,6 +10,35 @@ export interface ProjectMetrics {
   /** 0–100, average of linked tasks' progress (Completed counts as 100). */
   progress: number;
   topTask: Task | null;
+  /** Earliest startDate among linked tasks that have one, or null — Project itself has no startDate field, so this is derived rather than fabricated. */
+  earliestStartDate: string | null;
+  /** This project's own linked tasks (task.projectId === project.id) — exposed so callers don't need to re-filter allTasks themselves. */
+  linkedTasks: Task[];
+}
+
+const PRIORITY_WEIGHT: Record<Priority, number> = {
+  Critical: 5,
+  Urgent: 4,
+  High: 3,
+  Medium: 2,
+  Low: 1,
+};
+
+/**
+ * Project has no `priority` field of its own (Frame 11's mockup shows
+ * one, but this app's data model doesn't) — derived instead from the
+ * highest-priority still-open linked task, same honesty rule as every
+ * other derived-not-fabricated metric here. Defaults to 'Medium' when a
+ * project has no open tasks to derive from.
+ */
+export function getProjectDerivedPriority(metrics: ProjectMetrics): Priority {
+  const openTasks = metrics.linkedTasks.filter((task) => task.status !== 'Completed');
+  const first = openTasks[0];
+  if (!first) return 'Medium';
+  return openTasks.reduce(
+    (highest, task) => (PRIORITY_WEIGHT[task.priority] > PRIORITY_WEIGHT[highest] ? task.priority : highest),
+    first.priority,
+  );
 }
 
 /**
@@ -49,6 +78,12 @@ export function computeProjectMetrics(project: Project, allTasks: Task[]): Proje
   const topTask =
     openTasks.slice().sort((a, b) => (b.smartScore ?? 0) - (a.smartScore ?? 0))[0] ?? null;
 
+  const startDates = tasks
+    .map((task) => task.startDate)
+    .filter((date): date is string => date != null)
+    .sort();
+  const earliestStartDate = startDates[0] ?? null;
+
   return {
     taskCount: tasks.length,
     openCount: openTasks.length,
@@ -58,6 +93,8 @@ export function computeProjectMetrics(project: Project, allTasks: Task[]): Proje
     criticalCount: criticalTasks.length,
     progress,
     topTask,
+    earliestStartDate,
+    linkedTasks: tasks,
   };
 }
 
@@ -143,6 +180,26 @@ export function formatTargetLabel(
   if (diffDays === 0) return 'Target today';
   if (diffDays === 1) return 'Target tomorrow';
   return `Target ${formatted}`;
+}
+
+/**
+ * "Sep 01 → Oct 15" style range for Frame 11's redesigned ProjectCard —
+ * Project has no startDate field of its own, so the start side is
+ * `metrics.earliestStartDate` (derived from linked tasks, see
+ * computeProjectMetrics). Falls back to formatTargetLabel's plain
+ * wording when there's no derivable start date, rather than fabricating
+ * one.
+ */
+export function formatProjectDateRange(
+  earliestStartDate: string | null,
+  targetDate: string | null,
+  referenceDate: Date = new Date(),
+): string {
+  if (!earliestStartDate || !targetDate) return formatTargetLabel(targetDate, referenceDate);
+  const start = stripToCalendarDate(new Date(earliestStartDate));
+  const target = stripToCalendarDate(new Date(targetDate));
+  const fmt = (date: Date) => date.toLocaleDateString('en-US', { day: '2-digit', month: 'short' });
+  return `${fmt(start)} → ${fmt(target)}`;
 }
 
 function stripToCalendarDate(date: Date): Date {

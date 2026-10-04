@@ -15,7 +15,9 @@ export {
   computeProjectHealth,
   getProjectTopFocusText,
   getProjectNextAction,
+  getProjectDerivedPriority,
   formatTargetLabel,
+  formatProjectDateRange,
   type ProjectMetrics,
 } from './projectMetrics';
 export {
