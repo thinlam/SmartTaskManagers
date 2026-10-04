@@ -18,11 +18,15 @@ export {
   sortCalendarTasks,
   getCalendarTaskTone,
   calendarDateKey,
+  getUpcomingDeadlines,
+  getBusiestUpcomingDay,
   CALENDAR_MAX_TASKS_PER_DAY,
   CALENDAR_AGENDA_MAX_ROWS,
   type CalendarDay,
   type CalendarMonthData,
   type CalendarTaskTone,
+  type UpcomingDeadline,
+  type BusiestDayInsight,
 } from './calendarMetrics';
 export {
   computeKanbanBoardData,

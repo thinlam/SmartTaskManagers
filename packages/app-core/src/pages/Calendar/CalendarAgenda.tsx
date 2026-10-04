@@ -1,8 +1,7 @@
 import type { Task } from '@stm/types';
 import { formatDueLabel } from '@stm/shared';
-import { Pencil } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { EmptyState, IconButton, TaskCard } from '@stm/ui';
+import { EmptyState, TaskCard } from '@stm/ui';
 import { translatePriority, translateTaskStatus } from '../../lib/enumLabels';
 
 interface CalendarAgendaProps {
@@ -17,7 +16,9 @@ interface CalendarAgendaProps {
  * computeCalendarMonthData). Reuses TaskCard (same row used by Dashboard/
  * Today/Tasks) instead of a 4th bespoke row component — the Sheets
  * version's per-column Area/Status/Priority/Score cells collapse into
- * TaskCard's existing badges.
+ * TaskCard's existing badges. Clicking a row opens the real Task Detail
+ * page (same as Tasks/Kanban) instead of the edit drawer — editing is
+ * one click away from there via its own "Edit Task" button.
  */
 export function CalendarAgenda({ tasks, onSelectTask }: CalendarAgendaProps) {
   const { t } = useTranslation();
@@ -29,26 +30,24 @@ export function CalendarAgenda({ tasks, onSelectTask }: CalendarAgendaProps) {
   return (
     <div className="flex flex-col gap-2">
       {tasks.map((task) => (
-        <div key={task.id} className="flex items-center gap-2">
-          <div className="min-w-0 flex-1">
-            <TaskCard
-              title={task.title}
-              meta={task.area}
-              dueLabel={formatDueLabel(task.dueDate, new Date(), t)}
-              priority={task.priority}
-              priorityLabel={translatePriority(t, task.priority)}
-              status={task.status}
-              statusLabel={translateTaskStatus(t, task.status)}
-              smartScore={task.smartScore}
-              recommendedAction={task.recommendedAction}
-            />
-          </div>
-          <IconButton
-            icon={<Pencil className="h-4 w-4" aria-hidden="true" />}
-            aria-label={t('calendar.editAriaLabel', { title: task.title })}
-            onClick={() => onSelectTask(task)}
+        <button
+          key={task.id}
+          type="button"
+          onClick={() => onSelectTask(task)}
+          className="text-left"
+        >
+          <TaskCard
+            title={task.title}
+            meta={task.area}
+            dueLabel={formatDueLabel(task.dueDate, new Date(), t)}
+            priority={task.priority}
+            priorityLabel={translatePriority(t, task.priority)}
+            status={task.status}
+            statusLabel={translateTaskStatus(t, task.status)}
+            smartScore={task.smartScore}
+            recommendedAction={task.recommendedAction}
           />
-        </div>
+        </button>
       ))}
     </div>
   );

@@ -1,5 +1,5 @@
 import type { Task } from '@stm/types';
-import type { CalendarDay, CalendarMonthData } from '@stm/shared';
+import type { CalendarDay } from '@stm/shared';
 import { useTranslation } from 'react-i18next';
 import { CalendarDayCell } from './CalendarDayCell';
 
@@ -13,15 +13,27 @@ const WEEKDAY_KEYS = [
   'weekdaySun',
 ] as const;
 
-interface CalendarGridProps {
-  data: CalendarMonthData;
+interface CalendarWeekGridProps {
+  /** Exactly 7 consecutive CalendarDay entries (Monday–Sunday) — the week containing the selected day. */
+  weekDays: CalendarDay[];
+  today: Date;
   selectedDateKey: string;
   onSelectDay: (day: CalendarDay) => void;
   onSelectTask: (task: Task) => void;
 }
 
-/** Ported layout from writeCalendarWeekdays_()/writeCalendarGrid_() — Monday-start weekday header + the 42-cell (6×7) grid. */
-export function CalendarGrid({ data, selectedDateKey, onSelectDay, onSelectTask }: CalendarGridProps) {
+/**
+ * The Week tab (Frame 09) — same CalendarDayCell used by the Month grid,
+ * just one row instead of six, so a day's tasks aren't truncated to 4
+ * chips the way a packed month view needs to.
+ */
+export function CalendarWeekGrid({
+  weekDays,
+  today,
+  selectedDateKey,
+  onSelectDay,
+  onSelectTask,
+}: CalendarWeekGridProps) {
   const { t } = useTranslation();
 
   return (
@@ -37,11 +49,11 @@ export function CalendarGrid({ data, selectedDateKey, onSelectDay, onSelectTask 
         ))}
       </div>
       <div className="grid grid-cols-7">
-        {data.days.map((day) => (
+        {weekDays.map((day) => (
           <CalendarDayCell
             key={day.dateKey}
             day={day}
-            today={data.today}
+            today={today}
             isSelected={day.dateKey === selectedDateKey}
             onSelectDay={onSelectDay}
             onSelectTask={onSelectTask}

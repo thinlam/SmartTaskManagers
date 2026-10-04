@@ -27,6 +27,8 @@ interface CalendarDayCellProps {
   day: CalendarDay;
   /** CalendarMonthData.today — passed down rather than reading day.date, since a day's own tasks always share its date. */
   today: Date;
+  isSelected: boolean;
+  onSelectDay: (day: CalendarDay) => void;
   onSelectTask: (task: Task) => void;
 }
 
@@ -37,9 +39,18 @@ interface CalendarDayCellProps {
  * from getCalendarTaskTone(), replacing the spreadsheet's ✓/!/◆/• prefix
  * glyphs with Lucide icons — the desktop app has room for real icons, the
  * Sheets version didn't), and a footer text ("No tasks"/"1 task"/"N
- * tasks", "+N more" when truncated).
+ * tasks", "+N more" when truncated). Frame 09 redesign: clicking
+ * anywhere in the cell (not a task chip) selects the day for the
+ * sidebar's "Selected Day" panel — a ring highlights whichever day is
+ * currently selected.
  */
-export function CalendarDayCell({ day, today, onSelectTask }: CalendarDayCellProps) {
+export function CalendarDayCell({
+  day,
+  today,
+  isSelected,
+  onSelectDay,
+  onSelectTask,
+}: CalendarDayCellProps) {
   const { t } = useTranslation();
   const visibleTasks = day.tasks.slice(0, CALENDAR_MAX_TASKS_PER_DAY);
   const hiddenCount = Math.max(0, day.tasks.length - visibleTasks.length);
@@ -50,12 +61,15 @@ export function CalendarDayCell({ day, today, onSelectTask }: CalendarDayCellPro
   if (hiddenCount > 0) footerText += `  •  ${t('calendar.moreCount', { count: hiddenCount })}`;
 
   return (
-    <div
+    <button
+      type="button"
+      onClick={() => onSelectDay(day)}
       className={cn(
-        'flex min-h-[104px] flex-col gap-1 border border-border p-1.5',
+        'flex min-h-[104px] flex-col gap-1 border border-border p-1.5 text-left transition-shadow',
         !day.isCurrentMonth && 'bg-background',
         day.isCurrentMonth && day.isWeekend && 'bg-surface-secondary/40',
         day.isCurrentMonth && !day.isWeekend && 'bg-surface',
+        isSelected && 'ring-2 ring-inset ring-primary',
       )}
     >
       <div
@@ -79,10 +93,20 @@ export function CalendarDayCell({ day, today, onSelectTask }: CalendarDayCellPro
           const tone = getCalendarTaskTone(task, today);
           const Icon = TONE_ICON[tone];
           return (
-            <button
+            <span
               key={task.id}
-              type="button"
-              onClick={() => onSelectTask(task)}
+              role="button"
+              tabIndex={0}
+              onClick={(event) => {
+                event.stopPropagation();
+                onSelectTask(task);
+              }}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.stopPropagation();
+                  onSelectTask(task);
+                }
+              }}
               className={cn(
                 'flex items-center gap-1 truncate rounded px-1 py-0.5 text-left text-[11px]',
                 TONE_CLASSES[tone],
@@ -91,12 +115,12 @@ export function CalendarDayCell({ day, today, onSelectTask }: CalendarDayCellPro
             >
               <Icon className="h-2.5 w-2.5 shrink-0" aria-hidden="true" />
               <span className="truncate">{task.title}</span>
-            </button>
+            </span>
           );
         })}
       </div>
 
       <span className="text-[10px] text-ink-muted">{footerText}</span>
-    </div>
+    </button>
   );
 }
