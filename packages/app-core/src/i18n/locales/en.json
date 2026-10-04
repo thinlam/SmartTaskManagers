@@ -70,7 +70,8 @@
     "habits": "Habits",
     "analytics": "Analytics",
     "assistant": "Smart Assistant",
-    "settings": "Settings"
+    "settings": "Settings",
+    "gantt": "Gantt"
   },
   "auth": {
     "appName": "Smart Task",
@@ -707,6 +708,17 @@
         "Focus & Schedule: your working hours, used to calculate daily focus capacity.",
         "Smart Engine: toggle which smart features are active — turning one off stops it from affecting sorting, warnings, or suggestions anywhere in the app."
       ]
+    },
+    "gantt": {
+      "title": "Gantt help",
+      "intro": "See every scheduled task laid out on a timeline, grouped by project.",
+      "items": [
+        "Each bar spans a task's start date to its due date — drag a bar left or right to reschedule it (both dates shift together); the change saves for real.",
+        "Only tasks with a due date appear here — undated tasks have nothing to plot on a timeline.",
+        "Bars are colored by status (blue = In Progress, gray = To Do, amber = Waiting); a bar turns red once its due date has passed and the task is still open.",
+        "Switch between Day/Week/Month to zoom the timeline in or out.",
+        "Click a bar or task name to open its full Task Detail page."
+      ]
     }
   },
   "taskDetail": {
@@ -755,5 +767,36 @@
     "activity": "Activity",
     "activityCreated": "Task created",
     "activityUpdated": "Last updated"
+  },
+  "gantt": {
+    "title": "Gantt",
+    "subtitle": "Track schedule, progress and delay risk across projects on one timeline.",
+    "scaleDay": "Day",
+    "scaleWeek": "Week",
+    "scaleMonth": "Month",
+    "colTask": "Task",
+    "colProgress": "Progress",
+    "colSchedule": "Schedule",
+    "colStatus": "Status",
+    "statOnTrack": "On Track",
+    "statOnTrackSub": "{{percent}}% of visible tasks",
+    "statAtRisk": "At Risk",
+    "statAtRiskSub": "Due today or blocked",
+    "statDelayed": "Delayed",
+    "statDelayedSub": "Past due, still open",
+    "statAvgProgress": "Avg Progress",
+    "statAvgProgressSub": "{{count}} visible tasks",
+    "statusOnTrack": "On track",
+    "statusCompleted": "Completed",
+    "statusDelayed": "Delayed {{count}}d",
+    "statusBlocked": "Blocked",
+    "statusDueToday": "Due today",
+    "legendInProgress": "In Progress",
+    "legendWaiting": "Waiting",
+    "legendToDo": "To Do",
+    "legendDelayed": "Delayed",
+    "legendHint": "Click a bar to open Task Detail · Drag a bar to reschedule",
+    "noProjectGroup": "No Project",
+    "emptyState": "No scheduled tasks match the current filters."
   }
 }

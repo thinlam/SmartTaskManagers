@@ -12,6 +12,7 @@ import { GoalsPage } from '../pages/Goals/GoalsPage';
 import { HabitsPage } from '../pages/Habits/HabitsPage';
 import { CalendarPage } from '../pages/Calendar/CalendarPage';
 import { KanbanPage } from '../pages/Kanban/KanbanPage';
+import { GanttPage } from '../pages/Gantt/GanttPage';
 import { AnalyticsPage } from '../pages/Analytics/AnalyticsPage';
 import { SmartAssistantPage } from '../pages/Assistant/SmartAssistantPage';
 import { SettingsPage } from '../pages/Settings/SettingsPage';
@@ -34,6 +35,7 @@ const PAGE_BY_PATH: Record<string, ReactNode> = {
   '/habits': <HabitsPage />,
   '/calendar': <CalendarPage />,
   '/kanban': <KanbanPage />,
+  '/gantt': <GanttPage />,
   '/analytics': <AnalyticsPage />,
   '/assistant': <SmartAssistantPage />,
   '/settings': <SettingsPage />,

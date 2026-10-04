@@ -70,7 +70,8 @@
     "habits": "Thói quen",
     "analytics": "Phân tích",
     "assistant": "Trợ lý thông minh",
-    "settings": "Cài đặt"
+    "settings": "Cài đặt",
+    "gantt": "Gantt"
   },
   "auth": {
     "appName": "Smart Task",
@@ -707,6 +708,17 @@
         "Tập trung & Lịch trình: giờ làm việc của bạn, dùng để tính sức chứa tập trung mỗi ngày.",
         "Smart Engine: bật/tắt từng tính năng thông minh — tắt một mục sẽ ngừng ảnh hưởng của nó tới sắp xếp, cảnh báo, hoặc gợi ý ở mọi nơi trong ứng dụng."
       ]
+    },
+    "gantt": {
+      "title": "Trợ giúp: Gantt",
+      "intro": "Xem mọi công việc đã lên lịch trên một dòng thời gian, nhóm theo dự án.",
+      "items": [
+        "Mỗi thanh trải từ ngày bắt đầu đến hạn chót của công việc — kéo thanh sang trái/phải để đổi lịch (cả 2 ngày dịch chuyển cùng nhau); thay đổi được lưu thật.",
+        "Chỉ công việc có hạn chót mới hiển thị ở đây — việc chưa có ngày thì không có gì để vẽ trên dòng thời gian.",
+        "Thanh được tô màu theo trạng thái (xanh dương = Đang thực hiện, xám = Cần làm, hổ phách = Đang chờ); thanh chuyển đỏ khi đã quá hạn mà vẫn chưa xong.",
+        "Chuyển đổi Ngày/Tuần/Tháng để phóng to/thu nhỏ dòng thời gian.",
+        "Bấm vào thanh hoặc tên công việc để mở trang Chi tiết công việc đầy đủ."
+      ]
     }
   },
   "taskDetail": {
@@ -755,5 +767,36 @@
     "activity": "Hoạt động",
     "activityCreated": "Công việc được tạo",
     "activityUpdated": "Cập nhật gần nhất"
+  },
+  "gantt": {
+    "title": "Gantt",
+    "subtitle": "Theo dõi tiến độ, lịch trình và rủi ro trễ hạn trên một dòng thời gian.",
+    "scaleDay": "Ngày",
+    "scaleWeek": "Tuần",
+    "scaleMonth": "Tháng",
+    "colTask": "Công việc",
+    "colProgress": "Tiến độ",
+    "colSchedule": "Lịch trình",
+    "colStatus": "Trạng thái",
+    "statOnTrack": "Đúng tiến độ",
+    "statOnTrackSub": "{{percent}}% công việc đang hiển thị",
+    "statAtRisk": "Rủi ro",
+    "statAtRiskSub": "Đến hạn hôm nay hoặc bị chặn",
+    "statDelayed": "Trễ hạn",
+    "statDelayedSub": "Quá hạn, chưa hoàn thành",
+    "statAvgProgress": "Tiến độ TB",
+    "statAvgProgressSub": "{{count}} công việc đang hiển thị",
+    "statusOnTrack": "Đúng tiến độ",
+    "statusCompleted": "Hoàn thành",
+    "statusDelayed": "Trễ {{count}} ngày",
+    "statusBlocked": "Bị chặn",
+    "statusDueToday": "Đến hạn hôm nay",
+    "legendInProgress": "Đang thực hiện",
+    "legendWaiting": "Đang chờ",
+    "legendToDo": "Cần làm",
+    "legendDelayed": "Trễ hạn",
+    "legendHint": "Bấm vào thanh để mở Chi tiết công việc · Kéo thanh để đổi lịch",
+    "noProjectGroup": "Không có dự án",
+    "emptyState": "Không có công việc nào có lịch trình khớp bộ lọc hiện tại."
   }
 }

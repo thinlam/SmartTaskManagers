@@ -28,6 +28,7 @@ const NAV_LABEL_KEYS: Record<string, string> = {
   '/projects': 'nav.projects',
   '/calendar': 'nav.calendar',
   '/kanban': 'nav.kanban',
+  '/gantt': 'nav.gantt',
   '/goals': 'nav.goals',
   '/habits': 'nav.habits',
   '/analytics': 'nav.analytics',

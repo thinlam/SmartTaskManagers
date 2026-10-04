@@ -80,6 +80,21 @@ export {
   type TodayData,
 } from './todayMetrics';
 export {
+  getGanttVisibleRange,
+  stepGanttAnchor,
+  getGanttTaskHealth,
+  computeGanttKpis,
+  getGanttBarPosition,
+  sortGanttTasks,
+  GANTT_SCALE_CONFIG,
+  GANTT_PRIORITIES,
+  type GanttScale,
+  type GanttVisibleRange,
+  type GanttTaskHealth,
+  type GanttKpis,
+  type GanttBarPosition,
+} from './ganttMetrics';
+export {
   computeSmartAssistantData,
   type AssistantTask,
   type AssistantActionGroup,
