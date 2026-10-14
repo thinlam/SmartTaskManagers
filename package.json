@@ -4,10 +4,11 @@
   "workspaces": [
     "apps/desktop",
     "apps/web",
+    "apps/hub",
     "packages/*"
   ],
   "scripts": {
-    "typecheck": "tsc -b && npm run typecheck --workspace=apps/desktop && npm run typecheck --workspace=apps/web",
+    "typecheck": "tsc -b && npm run typecheck --workspace=apps/desktop && npm run typecheck --workspace=apps/web && npm run typecheck --workspace=apps/hub",
     "typecheck:clean": "tsc -b --clean",
     "lint": "eslint .",
     "format": "prettier --check .",
@@ -16,6 +17,11 @@
     "build:desktop": "npm run build --workspace=apps/desktop",
     "dev:web": "npm run dev --workspace=apps/web",
     "build:web": "npm run build --workspace=apps/web",
+    "dev:hub": "npm run dev --workspace=apps/hub",
+    "build:hub": "npm run build --workspace=apps/hub",
+    "tauri:hub": "npm run tauri --workspace=apps/hub --",
+    "dev:hub-tauri": "npm run tauri --workspace=apps/hub -- dev",
+    "build:hub-tauri": "npm run tauri --workspace=apps/hub -- build",
     "tauri": "npm run tauri --workspace=apps/desktop --",
     "dev:tauri": "npm run tauri --workspace=apps/desktop -- dev",
     "build:tauri": "npm run tauri --workspace=apps/desktop -- build",
