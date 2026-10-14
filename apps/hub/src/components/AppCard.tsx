@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { Button } from '@stm/ui';
 import type { AppEntry } from '../data/apps';
 import { StatusBadge } from './StatusBadge';
+import { InstallButton } from './InstallButton';
 
 function primaryActionLabel(app: AppEntry): string {
   if (app.status === 'soon') return 'Sắp ra mắt';
@@ -43,6 +44,21 @@ export function AppCard({ app }: { app: AppEntry }) {
         <Button variant="secondary" disabled className="mt-auto w-full">
           {primaryActionLabel(app)}
         </Button>
+      ) : app.id === 'smart-task-manager' ? (
+        <InstallButton
+          app={app}
+          className="mt-auto w-full"
+          fallback={
+            <Link to={`/apps/${app.id}`}>
+              <Button
+                variant={app.status === 'beta' ? 'secondary' : 'primary'}
+                className="w-full"
+              >
+                {hasDownload ? primaryActionLabel(app) : 'Xem chi tiết'}
+              </Button>
+            </Link>
+          }
+        />
       ) : (
         <Link to={`/apps/${app.id}`} className="mt-auto">
           <Button variant={app.status === 'beta' ? 'secondary' : 'primary'} className="w-full">

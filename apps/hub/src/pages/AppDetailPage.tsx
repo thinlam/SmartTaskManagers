@@ -2,6 +2,7 @@ import { Link, useParams } from 'react-router-dom';
 import { Button } from '@stm/ui';
 import { getAppById } from '../data/apps';
 import { StatusBadge } from '../components/StatusBadge';
+import { InstallButton } from '../components/InstallButton';
 import { openExternal } from '../lib/openExternal';
 
 export function AppDetailPage() {
@@ -98,7 +99,17 @@ export function AppDetailPage() {
                 >
                   <p className="font-medium text-ink-primary">{platform.label}</p>
                   <p className="mt-1 text-xs text-ink-secondary">{platform.note}</p>
-                  {platform.downloadUrl ? (
+                  {platform.installer && platform === app.platforms.find((p) => p.installer) ? (
+                    <InstallButton
+                      app={app}
+                      className="mt-3 w-full"
+                      fallback={
+                        <Button className="w-full" onClick={() => openExternal(platform.downloadUrl!)}>
+                          {platform.actionLabel}
+                        </Button>
+                      }
+                    />
+                  ) : platform.downloadUrl ? (
                     <Button
                       className="mt-3 w-full"
                       onClick={() => openExternal(platform.downloadUrl!)}
