@@ -55,6 +55,16 @@ export function useInstallState(app: AppEntry): InstallController | null {
   const platform = app.platforms.find((p) => p.installer);
   const [status, setStatus] = useState<InstallStatus>({ kind: 'not-installed' });
   const abortRef = useRef<AbortController | null>(null);
+  const mountedRef = useRef(true);
+  const busyRef = useRef(false);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      abortRef.current?.abort();
+    };
+  }, []);
 
   useEffect(() => {
     if (!platform?.installer || !isTauriRuntime()) return;
@@ -79,18 +89,25 @@ export function useInstallState(app: AppEntry): InstallController | null {
 
   const install = useCallback(() => {
     if (!platform?.installer) return;
+    if (busyRef.current) return;
+    busyRef.current = true;
     const installer = platform.installer;
     const downloadUrl = platform.downloadUrl;
     if (!downloadUrl) {
+      busyRef.current = false;
       setStatus({ kind: 'error', message: 'Thiếu link tải cho ứng dụng này.' });
       return;
     }
     const controller = new AbortController();
     abortRef.current = controller;
 
+    const safeSetStatus = (next: InstallStatus) => {
+      if (mountedRef.current) setStatus(next);
+    };
+
     (async () => {
       try {
-        setStatus({ kind: 'downloading', percent: 0 });
+        safeSetStatus({ kind: 'downloading', percent: 0 });
         const { fetch: tauriFetch } = await import('@tauri-apps/plugin-http');
         const response = await tauriFetch(downloadUrl, { signal: controller.signal });
         if (!response.ok || !response.body) {
@@ -105,7 +122,7 @@ export function useInstallState(app: AppEntry): InstallController | null {
           if (done) break;
           chunks.push(value);
           received += value.byteLength;
-          setStatus({
+          safeSetStatus({
             kind: 'downloading',
             percent: total > 0 ? Math.round((received / total) * 100) : 0,
           });
@@ -129,7 +146,7 @@ export function useInstallState(app: AppEntry): InstallController | null {
         const installerPath = `${cacheDir.replace(/[\\/]+$/, '')}\\${app.id}-${installer.version}.${ext}`;
         await writeFile(installerPath, bytes);
 
-        setStatus({ kind: 'installing' });
+        safeSetStatus({ kind: 'installing' });
         const { Command } = await import('@tauri-apps/plugin-shell');
         const command =
           installer.installerType === 'msi'
@@ -156,18 +173,19 @@ export function useInstallState(app: AppEntry): InstallController | null {
         await store.set(app.id, record);
         await store.save();
 
-        setStatus({ kind: 'installed', exePath });
+        safeSetStatus({ kind: 'installed', exePath });
       } catch (err) {
         if (controller.signal.aborted) {
-          setStatus({ kind: 'not-installed' });
+          safeSetStatus({ kind: 'not-installed' });
           return;
         }
-        setStatus({
+        safeSetStatus({
           kind: 'error',
           message: err instanceof Error ? err.message : 'Đã xảy ra lỗi không xác định.',
         });
       } finally {
         abortRef.current = null;
+        busyRef.current = false;
       }
     })();
   }, [app.id, platform]);

@@ -17,10 +17,21 @@
       "identifier": "fs:default",
       "allow": [
         { "path": "$APPCACHE/**" },
-        { "path": "$APPDATA/**" }
+        { "path": "$APPDATA/**" },
+        { "path": "$LOCALDATA/smart-task-manager/**" }
       ]
     },
-    "shell:allow-execute",
+    {
+      "identifier": "shell:allow-execute",
+      "allow": [
+        { "name": "msiexec", "cmd": "msiexec", "args": true },
+        {
+          "name": "smart-task-manager-installer",
+          "cmd": "$APPCACHE/smart-task-manager-0.1.0.exe",
+          "args": true
+        }
+      ]
+    },
     "store:default"
   ]
 }
