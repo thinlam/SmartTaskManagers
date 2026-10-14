@@ -1,5 +1,22 @@
 export type AppStatus = 'ready' | 'beta' | 'soon';
 
+export interface InstallerSpec {
+  /** Must match the version this build's sha256 was computed from. */
+  version: string;
+  /** Lowercase hex SHA256 of the exact file at downloadUrl. */
+  sha256: string;
+  installerType: 'nsis' | 'msi';
+  /** Args passed to the installer executable (nsis) or to msiexec (msi). */
+  silentArgs: string[];
+  /**
+   * Absolute install path with env-var placeholders (e.g.
+   * "%LOCALAPPDATA%\\smart-task-manager\\smart-task-manager.exe"),
+   * resolved at runtime. Checked after a silent install to confirm
+   * success and to know what "Mở" should launch.
+   */
+  installPathTemplate: string;
+}
+
 export interface AppPlatform {
   /** e.g. "Microsoft Excel (Windows)" */
   label: string;
@@ -9,6 +26,8 @@ export interface AppPlatform {
   actionLabel: string;
   /** GitHub Release asset URL. Null when not published yet. */
   downloadUrl: string | null;
+  /** Present only for platforms Hub can download/verify/install itself. */
+  installer?: InstallerSpec;
 }
 
 export interface AppFeature {
@@ -52,6 +71,14 @@ export const apps: AppEntry[] = [
         actionLabel: 'Tải Setup.exe',
         downloadUrl:
           'https://github.com/thinlam/SmartTaskManagers/releases/latest/download/smart-task-manager_0.1.0_x64-setup.exe',
+        installer: {
+          version: '0.1.0',
+          sha256: 'c2be000f2097ed6c10d27dc472161aba99bc7ce66b7c1f0c15e2a66024f08be',
+          installerType: 'nsis',
+          silentArgs: ['/S'],
+          installPathTemplate:
+            '%LOCALAPPDATA%\\smart-task-manager\\smart-task-manager.exe',
+        },
       },
       {
         label: 'Windows Desktop (.msi)',
@@ -59,6 +86,14 @@ export const apps: AppEntry[] = [
         actionLabel: 'Tải .msi',
         downloadUrl:
           'https://github.com/thinlam/SmartTaskManagers/releases/latest/download/smart-task-manager_0.1.0_x64_en-US.msi',
+        installer: {
+          version: '0.1.0',
+          sha256: 'd18f3ea8a9ce6e831cab03b71dbeec6ddb727d936b51bbae35cc3e71f0a1c50',
+          installerType: 'msi',
+          silentArgs: ['/qn'],
+          installPathTemplate:
+            '%LOCALAPPDATA%\\smart-task-manager\\smart-task-manager.exe',
+        },
       },
     ],
     features: [
