@@ -9,12 +9,14 @@ export interface InstallerSpec {
   /** Args passed to the installer executable (nsis) or to msiexec (msi). */
   silentArgs: string[];
   /**
-   * Absolute install path with env-var placeholders (e.g.
-   * "%LOCALAPPDATA%\\smart-task-manager\\smart-task-manager.exe"),
-   * resolved at runtime. Checked after a silent install to confirm
-   * success and to know what "Mở" should launch.
+   * Path of the Start Menu shortcut the installer creates, relative to
+   * "...\Start Menu\Programs\" (e.g. "Smart Task Manager\\smart-task-manager.lnk").
+   * Resolved after a silent install by reading the shortcut's real
+   * target — more reliable than computing %LOCALAPPDATA%\<app> ourselves,
+   * since the installer's own install-directory logic doesn't always
+   * agree with what the OS reports as LocalAppData.
    */
-  installPathTemplate: string;
+  startMenuShortcut: string;
 }
 
 export interface AppPlatform {
@@ -73,11 +75,10 @@ export const apps: AppEntry[] = [
           'https://github.com/thinlam/SmartTaskManagers/releases/latest/download/smart-task-manager_0.1.0_x64-setup.exe',
         installer: {
           version: '0.1.0',
-          sha256: 'c2be000f2097ed6c10d27dc472161aba99bc7ce66b7c1f0c15e2a66024f08be',
+          sha256: '6f2f4494d8cb896edd57f25aed700916cd3ad88e6ad89484874ed446bc5c555b',
           installerType: 'nsis',
           silentArgs: ['/S'],
-          installPathTemplate:
-            '%LOCALAPPDATA%\\smart-task-manager\\smart-task-manager.exe',
+          startMenuShortcut: 'Smart Task Manager\\smart-task-manager.lnk',
         },
       },
       {
@@ -88,11 +89,10 @@ export const apps: AppEntry[] = [
           'https://github.com/thinlam/SmartTaskManagers/releases/latest/download/smart-task-manager_0.1.0_x64_en-US.msi',
         installer: {
           version: '0.1.0',
-          sha256: 'd18f3ea8a9ce6e831cab03b71dbeec6ddb727d936b51bbae35cc3e71f0a1c50',
+          sha256: '035d265291b1c16c0c90abda62c4e643698505a6e09b100174c3eaab4ec1a442',
           installerType: 'msi',
           silentArgs: ['/qn'],
-          installPathTemplate:
-            '%LOCALAPPDATA%\\smart-task-manager\\smart-task-manager.exe',
+          startMenuShortcut: 'Smart Task Manager\\smart-task-manager.lnk',
         },
       },
     ],

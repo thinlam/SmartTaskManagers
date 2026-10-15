@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { homeDir, localDataDir } from '@tauri-apps/api/path';
 import type { AppEntry } from '../data/apps';
 
 export type InstallStatus =
@@ -19,17 +18,14 @@ export interface InstallController {
 }
 
 /**
- * Resolves a Windows env-var placeholder path template (e.g.
- * "%LOCALAPPDATA%\\smart-task-manager\\smart-task-manager.exe") against
- * real Tauri path APIs. Only %LOCALAPPDATA% and %USERPROFILE% are
- * supported — that covers every installPathTemplate this manifest uses.
+ * Resolves where the installer actually put the app by reading the real
+ * target of the Start Menu shortcut NSIS just created — not by computing
+ * %LOCALAPPDATA%\<app> ourselves, which can disagree with where NSIS's
+ * own install-directory logic actually wrote the files.
  */
-export async function resolveInstallPath(template: string): Promise<string> {
-  const localAppData = await localDataDir();
-  const userProfile = await homeDir();
-  return template
-    .replace(/%LOCALAPPDATA%/gi, localAppData.replace(/[\\/]+$/, ''))
-    .replace(/%USERPROFILE%/gi, userProfile.replace(/[\\/]+$/, ''));
+export async function resolveInstalledExePath(startMenuShortcut: string): Promise<string> {
+  const { invoke } = await import('@tauri-apps/api/core');
+  return invoke<string>('resolve_shortcut_target', { relativePath: startMenuShortcut });
 }
 
 export async function sha256Hex(data: ArrayBuffer): Promise<string> {
@@ -139,7 +135,7 @@ export function useInstallState(app: AppEntry): InstallController | null {
           throw new Error('Tệp tải về bị hỏng, vui lòng thử lại.');
         }
 
-        const { writeFile, exists } = await import('@tauri-apps/plugin-fs');
+        const { writeFile } = await import('@tauri-apps/plugin-fs');
         const { appCacheDir } = await import('@tauri-apps/api/path');
         const ext = installer.installerType === 'msi' ? 'msi' : 'exe';
         const cacheDir = await appCacheDir();
@@ -147,20 +143,32 @@ export function useInstallState(app: AppEntry): InstallController | null {
         await writeFile(installerPath, bytes);
 
         safeSetStatus({ kind: 'installing' });
-        const { Command } = await import('@tauri-apps/plugin-shell');
-        const command =
+        const { invoke } = await import('@tauri-apps/api/core');
+        const program = installer.installerType === 'msi' ? 'msiexec' : installerPath;
+        const args =
           installer.installerType === 'msi'
-            ? Command.create('msiexec', ['/i', installerPath, ...installer.silentArgs])
-            : Command.create(installerPath, installer.silentArgs);
-        const output = await command.execute();
-        if (output.code !== 0) {
-          throw new Error(`Cài đặt thất bại (mã lỗi ${output.code}).`);
+            ? ['/i', installerPath, ...installer.silentArgs]
+            : installer.silentArgs;
+        const exitCode = await invoke<number>('run_installer', { program, args });
+        if (exitCode !== 0) {
+          throw new Error(`Cài đặt thất bại (mã lỗi ${exitCode}).`);
         }
 
-        const exePath = await resolveInstallPath(installer.installPathTemplate);
-        const installedExists = await exists(exePath);
+        let exePath: string;
+        try {
+          exePath = await resolveInstalledExePath(installer.startMenuShortcut);
+        } catch (e) {
+          throw new Error(
+            `Cài đặt xong nhưng không đọc được lối tắt Start Menu (${
+              e instanceof Error ? e.message : String(e)
+            }), vui lòng thử lại.`,
+          );
+        }
+        const installedExists = await invoke<boolean>('path_exists', { path: exePath });
         if (!installedExists) {
-          throw new Error('Cài đặt xong nhưng không tìm thấy ứng dụng, vui lòng thử lại.');
+          throw new Error(
+            `Cài đặt xong nhưng không tìm thấy ứng dụng ở "${exePath}", vui lòng thử lại.`,
+          );
         }
 
         const { load } = await import('@tauri-apps/plugin-store');
@@ -179,9 +187,16 @@ export function useInstallState(app: AppEntry): InstallController | null {
           safeSetStatus({ kind: 'not-installed' });
           return;
         }
+        const rawMessage =
+          err instanceof Error
+            ? err.message
+            : typeof err === 'string'
+              ? err
+              : JSON.stringify(err);
+        console.error('[installManager] install failed:', err);
         safeSetStatus({
           kind: 'error',
-          message: err instanceof Error ? err.message : 'Đã xảy ra lỗi không xác định.',
+          message: rawMessage || 'Đã xảy ra lỗi không xác định.',
         });
       } finally {
         abortRef.current = null;
@@ -198,8 +213,15 @@ export function useInstallState(app: AppEntry): InstallController | null {
     if (status.kind !== 'installed' && status.kind !== 'update-available') return;
     const exePath = status.exePath;
     (async () => {
-      const { openPath } = await import('@tauri-apps/plugin-opener');
-      await openPath(exePath);
+      try {
+        const { invoke } = await import('@tauri-apps/api/core');
+        await invoke('open_installed_app', { path: exePath });
+      } catch (err) {
+        console.error('[installManager] open failed:', err);
+        const message =
+          err instanceof Error ? err.message : typeof err === 'string' ? err : JSON.stringify(err);
+        setStatus({ kind: 'error', message: `Không mở được ứng dụng: ${message}` });
+      }
     })();
   }, [status]);
 
