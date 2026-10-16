@@ -237,7 +237,16 @@ export function useInstallState(app: AppEntry): InstallController | null {
         setStatus({ kind: 'uninstalling' });
         const { invoke } = await import('@tauri-apps/api/core');
         const exitCode = await invoke<number>('uninstall_app', { exePath });
-        const stillExists = await invoke<boolean>('path_exists', { path: exePath });
+        // NSIS's uninstaller copies itself to a temp dir to delete the
+        // original app (can't delete its own running binary), so the
+        // main process can exit 0 slightly before the file is actually
+        // gone — poll instead of checking once immediately after.
+        let stillExists = true;
+        for (let attempt = 0; attempt < 10; attempt++) {
+          stillExists = await invoke<boolean>('path_exists', { path: exePath });
+          if (!stillExists) break;
+          await new Promise((resolve) => setTimeout(resolve, 500));
+        }
         if (stillExists) {
           throw new Error(`Gỡ cài đặt có thể chưa hoàn tất (mã ${exitCode}).`);
         }
