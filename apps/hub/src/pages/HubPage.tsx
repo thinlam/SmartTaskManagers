@@ -63,6 +63,27 @@ export function HubPage() {
               </Link>
             </div>
           </div>
+
+          <div
+            className="hidden shrink-0 grid-cols-4 gap-3 rounded-lg bg-surface-secondary p-4 md:grid md:w-80"
+            aria-hidden="true"
+          >
+            <div className="col-span-1 row-span-2 rounded-md bg-primary" />
+            <div className="col-span-3 h-8 rounded-md bg-surface" />
+            <div className="col-span-3 h-8 rounded-md bg-surface" />
+            <div className="col-span-3 flex items-end gap-1.5 rounded-md bg-surface p-2">
+              <div className="h-6 w-full rounded-sm bg-primary-light" />
+              <div className="h-10 w-full rounded-sm bg-primary/60" />
+              <div className="h-5 w-full rounded-sm bg-primary-light" />
+              <div className="h-14 w-full rounded-sm bg-primary" />
+              <div className="h-8 w-full rounded-sm bg-primary/60" />
+            </div>
+            <div className="col-span-1 flex flex-col justify-center gap-1.5 rounded-md bg-surface p-2">
+              <div className="h-1.5 w-full rounded-full bg-danger" />
+              <div className="h-1.5 w-full rounded-full bg-warning" />
+              <div className="h-1.5 w-full rounded-full bg-success" />
+            </div>
+          </div>
         </div>
       )}
 

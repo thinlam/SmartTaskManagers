@@ -20,6 +20,12 @@ function Header() {
           <Link to="/" className="hover:text-ink-primary">
             Ứng dụng
           </Link>
+          <span className="cursor-not-allowed text-ink-muted" title="Sắp ra mắt">
+            Giáo trình
+          </span>
+          <span className="cursor-not-allowed text-ink-muted" title="Sắp ra mắt">
+            Hướng dẫn
+          </span>
         </nav>
         <Link to="/">
           <Button size="sm">Tải app</Button>
