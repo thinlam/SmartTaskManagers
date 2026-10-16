@@ -5,10 +5,11 @@
     "apps/desktop",
     "apps/web",
     "apps/hub",
+    "apps/voicescribe",
     "packages/*"
   ],
   "scripts": {
-    "typecheck": "tsc -b && npm run typecheck --workspace=apps/desktop && npm run typecheck --workspace=apps/web && npm run typecheck --workspace=apps/hub",
+    "typecheck": "tsc -b && npm run typecheck --workspace=apps/desktop && npm run typecheck --workspace=apps/web && npm run typecheck --workspace=apps/hub && npm run typecheck --workspace=apps/voicescribe",
     "typecheck:clean": "tsc -b --clean",
     "lint": "eslint .",
     "format": "prettier --check .",
@@ -19,6 +20,7 @@
     "build:web": "npm run build --workspace=apps/web",
     "dev:hub": "npm run dev --workspace=apps/hub",
     "build:hub": "npm run build --workspace=apps/hub",
+    "smoke-test:voicescribe": "npm run smoke-test --workspace=apps/voicescribe --",
     "tauri:hub": "npm run tauri --workspace=apps/hub --",
     "dev:hub-tauri": "npm run tauri --workspace=apps/hub -- dev",
     "build:hub-tauri": "npm run tauri --workspace=apps/hub -- build",

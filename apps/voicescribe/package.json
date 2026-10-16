@@ -1,0 +1,20 @@
+{
+  "name": "voicescribe",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "smoke-test": "node --env-file=.env --import tsx src/scripts/smoke-test.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@huggingface/inference": "^4.13.32",
+    "@types/node": "^26.6.5",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  }
+}
