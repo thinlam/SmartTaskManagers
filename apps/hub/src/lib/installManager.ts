@@ -74,7 +74,22 @@ export function useInstallState(app: AppEntry): InstallController | null {
       if (cancelled) return;
       if (!record) {
         setStatus({ kind: 'not-installed' });
-      } else if (record.version === platform.installer!.version) {
+        return;
+      }
+      // The exe recorded at install time may no longer be there (user
+      // uninstalled it outside Hub, e.g. via Windows Settings) — treat
+      // that the same as never having installed it, rather than
+      // offering a "Mở"/"Cập nhật" button that would just fail.
+      const { invoke } = await import('@tauri-apps/api/core');
+      const stillExists = await invoke<boolean>('path_exists', { path: record.exePath });
+      if (cancelled) return;
+      if (!stillExists) {
+        await store.delete(app.id);
+        await store.save();
+        setStatus({ kind: 'not-installed' });
+        return;
+      }
+      if (record.version === platform.installer!.version) {
         setStatus({ kind: 'installed', exePath: record.exePath });
       } else {
         setStatus({ kind: 'update-available', exePath: record.exePath });
@@ -236,20 +251,30 @@ export function useInstallState(app: AppEntry): InstallController | null {
       try {
         setStatus({ kind: 'uninstalling' });
         const { invoke } = await import('@tauri-apps/api/core');
-        const exitCode = await invoke<number>('uninstall_app', { exePath });
-        // NSIS's uninstaller copies itself to a temp dir to delete the
-        // original app (can't delete its own running binary), so the
-        // main process can exit 0 slightly before the file is actually
-        // gone — poll instead of checking once immediately after.
-        let stillExists = true;
-        for (let attempt = 0; attempt < 10; attempt++) {
-          stillExists = await invoke<boolean>('path_exists', { path: exePath });
-          if (!stillExists) break;
-          await new Promise((resolve) => setTimeout(resolve, 500));
+
+        // The app may already be gone (manually uninstalled, or a
+        // previous attempt actually succeeded despite reporting an
+        // error) — in that case there's nothing to run, just clear
+        // Hub's stale record instead of failing on a missing exe/
+        // uninstaller.
+        const alreadyGone = !(await invoke<boolean>('path_exists', { path: exePath }));
+        if (!alreadyGone) {
+          const exitCode = await invoke<number>('uninstall_app', { exePath });
+          // NSIS's uninstaller copies itself to a temp dir to delete the
+          // original app (can't delete its own running binary), so the
+          // main process can exit 0 slightly before the file is actually
+          // gone — poll instead of checking once immediately after.
+          let stillExists = true;
+          for (let attempt = 0; attempt < 10; attempt++) {
+            stillExists = await invoke<boolean>('path_exists', { path: exePath });
+            if (!stillExists) break;
+            await new Promise((resolve) => setTimeout(resolve, 500));
+          }
+          if (stillExists) {
+            throw new Error(`Gỡ cài đặt có thể chưa hoàn tất (mã ${exitCode}).`);
+          }
         }
-        if (stillExists) {
-          throw new Error(`Gỡ cài đặt có thể chưa hoàn tất (mã ${exitCode}).`);
-        }
+
         const { load } = await import('@tauri-apps/plugin-store');
         const store = await load(STORE_FILE, { autoSave: false });
         await store.delete(app.id);
