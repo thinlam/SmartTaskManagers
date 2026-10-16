@@ -79,10 +79,10 @@ export const DEFAULT_APPS: AppEntry[] = [
         note: 'Setup.exe · cài ứng dụng Smart Task Manager, không cần Excel',
         actionLabel: 'Tải Setup.exe',
         downloadUrl:
-          'https://github.com/thinlam/SmartTaskManagers/releases/latest/download/smart-task-manager_0.1.0_x64-setup.exe',
+          'https://github.com/thinlam/SmartTaskManagers/releases/download/v0.1.0/smart-task-manager_0.1.0_x64-setup.exe',
         installer: {
           version: '0.1.0',
-          sha256: '6f2f4494d8cb896edd57f25aed700916cd3ad88e6ad89484874ed446bc5c555b',
+          sha256: 'c701b40de44010d697500dc3be05ff3086f69590921fc5de4555aa9e3c782889',
           installerType: 'nsis',
           silentArgs: ['/S'],
           startMenuShortcut: 'Smart Task Manager\\smart-task-manager.lnk',
@@ -93,10 +93,10 @@ export const DEFAULT_APPS: AppEntry[] = [
         note: 'Dùng nếu công ty/tổ chức bạn yêu cầu cài qua MSI',
         actionLabel: 'Tải .msi',
         downloadUrl:
-          'https://github.com/thinlam/SmartTaskManagers/releases/latest/download/smart-task-manager_0.1.0_x64_en-US.msi',
+          'https://github.com/thinlam/SmartTaskManagers/releases/download/v0.1.0/smart-task-manager_0.1.0_x64_en-US.msi',
         installer: {
           version: '0.1.0',
-          sha256: '035d265291b1c16c0c90abda62c4e643698505a6e09b100174c3eaab4ec1a442',
+          sha256: 'c9ea7177e03dcbd8d6062721e31782bf8c3d5c70c142baac72410fe1c4c16a62',
           installerType: 'msi',
           silentArgs: ['/qn'],
           startMenuShortcut: 'Smart Task Manager\\smart-task-manager.lnk',
