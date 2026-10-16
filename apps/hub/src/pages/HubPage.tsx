@@ -2,14 +2,17 @@ import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Search } from 'lucide-react';
 import { Button } from '@stm/ui';
-import { apps, categories, getFeaturedApp } from '../data/apps';
+import { getCategories, getFeaturedApp } from '../data/apps';
+import { useAppsManifest } from '../data/useAppsManifest';
 import { AppCard } from '../components/AppCard';
 import { StatusBadge } from '../components/StatusBadge';
 
 export function HubPage() {
+  const { apps } = useAppsManifest();
   const [category, setCategory] = useState('Tất cả');
   const [search, setSearch] = useState('');
-  const featured = getFeaturedApp();
+  const featured = getFeaturedApp(apps);
+  const categories = useMemo(() => getCategories(apps), [apps]);
 
   const filtered = useMemo(() => {
     return apps.filter((app) => {
@@ -17,7 +20,7 @@ export function HubPage() {
       const matchesSearch = app.name.toLowerCase().includes(search.trim().toLowerCase());
       return matchesCategory && matchesSearch;
     });
-  }, [category, search]);
+  }, [apps, category, search]);
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-10">

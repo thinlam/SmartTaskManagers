@@ -53,7 +53,14 @@ export interface AppEntry {
   installSteps?: string[];
 }
 
-export const apps: AppEntry[] = [
+/**
+ * Bundled fallback — used only if the remote manifest (apps-manifest.json,
+ * fetched by useAppsManifest()) can't be reached. Keeping this in sync
+ * with the remote file isn't required for correctness (it's a fallback,
+ * not a cache), but should roughly track it so offline users still see
+ * something reasonable.
+ */
+export const DEFAULT_APPS: AppEntry[] = [
   {
     id: 'smart-task-manager',
     badge: 'ST',
@@ -220,12 +227,14 @@ export const apps: AppEntry[] = [
   },
 ];
 
-export function getAppById(id: string): AppEntry | undefined {
+export function getAppById(apps: AppEntry[], id: string): AppEntry | undefined {
   return apps.find((app) => app.id === id);
 }
 
-export function getFeaturedApp(): AppEntry | undefined {
+export function getFeaturedApp(apps: AppEntry[]): AppEntry | undefined {
   return apps.find((app) => app.featured) ?? apps.find((app) => app.status === 'ready');
 }
 
-export const categories = ['Tất cả', ...Array.from(new Set(apps.map((app) => app.category)))];
+export function getCategories(apps: AppEntry[]): string[] {
+  return ['Tất cả', ...Array.from(new Set(apps.map((app) => app.category)))];
+}

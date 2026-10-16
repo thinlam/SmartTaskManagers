@@ -1,13 +1,15 @@
 import { Link, useParams } from 'react-router-dom';
 import { Button } from '@stm/ui';
 import { getAppById } from '../data/apps';
+import { useAppsManifest } from '../data/useAppsManifest';
 import { StatusBadge } from '../components/StatusBadge';
 import { InstallButton } from '../components/InstallButton';
 import { openExternal } from '../lib/openExternal';
 
 export function AppDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const app = id ? getAppById(id) : undefined;
+  const { apps } = useAppsManifest();
+  const app = id ? getAppById(apps, id) : undefined;
 
   if (!app) {
     return (
