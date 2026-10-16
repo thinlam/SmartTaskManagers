@@ -5,6 +5,7 @@ export type InstallStatus =
   | { kind: 'not-installed' }
   | { kind: 'downloading'; percent: number }
   | { kind: 'installing' }
+  | { kind: 'uninstalling' }
   | { kind: 'installed'; exePath: string }
   | { kind: 'update-available'; exePath: string }
   | { kind: 'error'; message: string };
@@ -14,6 +15,7 @@ export interface InstallController {
   install: () => void;
   cancel: () => void;
   open: () => void;
+  uninstall: () => void;
   retry: () => void;
 }
 
@@ -225,11 +227,41 @@ export function useInstallState(app: AppEntry): InstallController | null {
     })();
   }, [status]);
 
+  const uninstall = useCallback(() => {
+    if (status.kind !== 'installed' && status.kind !== 'update-available') return;
+    if (busyRef.current) return;
+    busyRef.current = true;
+    const exePath = status.exePath;
+    (async () => {
+      try {
+        setStatus({ kind: 'uninstalling' });
+        const { invoke } = await import('@tauri-apps/api/core');
+        const exitCode = await invoke<number>('uninstall_app', { exePath });
+        const stillExists = await invoke<boolean>('path_exists', { path: exePath });
+        if (stillExists) {
+          throw new Error(`Gỡ cài đặt có thể chưa hoàn tất (mã ${exitCode}).`);
+        }
+        const { load } = await import('@tauri-apps/plugin-store');
+        const store = await load(STORE_FILE, { autoSave: false });
+        await store.delete(app.id);
+        await store.save();
+        setStatus({ kind: 'not-installed' });
+      } catch (err) {
+        console.error('[installManager] uninstall failed:', err);
+        const message =
+          err instanceof Error ? err.message : typeof err === 'string' ? err : JSON.stringify(err);
+        setStatus({ kind: 'error', message: `Không gỡ cài đặt được: ${message}` });
+      } finally {
+        busyRef.current = false;
+      }
+    })();
+  }, [status, app.id]);
+
   const retry = useCallback(() => {
     setStatus({ kind: 'not-installed' });
   }, []);
 
   if (!platform?.installer || !isTauriRuntime()) return null;
 
-  return { status, install, cancel, open, retry };
+  return { status, install, cancel, open, uninstall, retry };
 }

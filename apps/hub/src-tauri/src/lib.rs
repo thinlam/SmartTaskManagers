@@ -50,6 +50,29 @@ fn open_installed_app(app: tauri::AppHandle, path: String) -> Result<(), String>
   Ok(())
 }
 
+/// Silently uninstalls an app NSIS installed, by running the
+/// `uninstall.exe` NSIS itself places next to the app's own exe. `exe_path`
+/// is never arbitrary — the frontend only ever calls this with the same
+/// path it got back from resolve_shortcut_target, so the uninstaller path
+/// computed here (same directory, fixed filename) is always a path Hub
+/// itself derived, never one supplied by web content.
+#[tauri::command]
+fn uninstall_app(exe_path: String) -> Result<i32, String> {
+  let exe = std::path::PathBuf::from(&exe_path);
+  let dir = exe
+    .parent()
+    .ok_or_else(|| "invalid exe path".to_string())?;
+  let uninstaller = dir.join("uninstall.exe");
+  if !uninstaller.exists() {
+    return Err(format!("uninstaller not found: {}", uninstaller.display()));
+  }
+  let status = std::process::Command::new(&uninstaller)
+    .arg("/S")
+    .status()
+    .map_err(|e| e.to_string())?;
+  Ok(status.code().unwrap_or(-1))
+}
+
 /// Checks whether a file exists at an absolute path. Bypasses the fs
 /// plugin's own scope resolution — plain filesystem check, not a file
 /// read/write, so no broader access is granted by it.
@@ -156,7 +179,8 @@ pub fn run() {
       path_exists,
       resolve_shortcut_target,
       run_installer,
-      open_installed_app
+      open_installed_app,
+      uninstall_app
     ])
     .setup(|app| {
       if cfg!(debug_assertions) {

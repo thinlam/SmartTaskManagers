@@ -58,19 +58,53 @@ export function InstallButton({
     );
   }
 
+  if (status.kind === 'uninstalling') {
+    return (
+      <Button
+        className={className}
+        disabled
+        leadingIcon={<Loader2 className="h-4 w-4 animate-spin" />}
+      >
+        Đang gỡ cài đặt...
+      </Button>
+    );
+  }
+
+  const handleUninstall = () => {
+    if (window.confirm('Gỡ cài đặt ứng dụng này khỏi máy?')) {
+      controller.uninstall();
+    }
+  };
+
   if (status.kind === 'installed') {
     return (
-      <Button className={className} onClick={controller.open}>
-        Mở
-      </Button>
+      <div className={className}>
+        <Button className="w-full" onClick={controller.open}>
+          Mở
+        </Button>
+        <button
+          onClick={handleUninstall}
+          className="mt-2 w-full text-center text-xs font-medium text-ink-muted hover:text-danger hover:underline"
+        >
+          Gỡ cài đặt
+        </button>
+      </div>
     );
   }
 
   if (status.kind === 'update-available') {
     return (
-      <Button className={className} variant="secondary" onClick={controller.install}>
-        Cập nhật
-      </Button>
+      <div className={className}>
+        <Button className="w-full" variant="secondary" onClick={controller.install}>
+          Cập nhật
+        </Button>
+        <button
+          onClick={handleUninstall}
+          className="mt-2 w-full text-center text-xs font-medium text-ink-muted hover:text-danger hover:underline"
+        >
+          Gỡ cài đặt
+        </button>
+      </div>
     );
   }
 
