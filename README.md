@@ -12,7 +12,8 @@ bộ code frontend (`packages/*`) trên nhiều nền tảng: Windows Desktop, W
 | **Windows Desktop** (React + Tauri) | ✅ Production    | `apps/desktop` — `.msi`/`.exe` installer, `npm run build:tauri`        |
 | **Web** (React)                     | ✅ Production    | `apps/web` — dùng chung `packages/*` với Desktop                       |
 | **Google Sheets + Apps Script**     | ✅ Production    | `apps/google-sheets` — bản gốc trước khi có backend, vẫn đồng bộ được  |
-| **Android / iOS**                   | 🔜 Research only | Capacitor, chưa code                                                   |
+| **Android** (Capacitor)              | 🟢 Đang phát triển | `apps/web/android` — build APK debug thật đã verify chạy được         |
+| **iOS** (Capacitor)                  | 🟡 Code sẵn sàng | `apps/web/ios` — cần máy Mac + Xcode để build/verify, chưa test thật   |
 | **Excel**                           | ⏸ Frozen         | `apps/excel` — chưa bắt đầu, giữ chỗ                                   |
 
 ## Tính năng chính

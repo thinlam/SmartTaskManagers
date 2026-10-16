@@ -17,8 +17,10 @@ const RISK_CLASSES: Record<Risk, string> = {
 
 export interface RiskBadgeProps {
   risk: Risk;
+  /** Translated display text — falls back to the raw enum value when omitted (this package has no i18n access). */
+  label?: string;
 }
 
-export function RiskBadge({ risk }: RiskBadgeProps) {
-  return <Badge className={RISK_CLASSES[risk]}>{risk}</Badge>;
+export function RiskBadge({ risk, label }: RiskBadgeProps) {
+  return <Badge className={RISK_CLASSES[risk]}>{label ?? risk}</Badge>;
 }

@@ -1,26 +1,27 @@
-import type { Project, Task } from '@stm/types';
+import type { Priority, Project, ProjectHealth } from '@stm/types';
+import type { ProjectMetrics } from '@stm/shared';
 import {
-  computeProjectMetrics,
-  computeProjectHealth,
   getProjectTopFocusText,
   getProjectNextAction,
-  formatTargetLabel,
+  formatProjectDateRange,
 } from '@stm/shared';
 import { Pencil, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { IconButton, ProjectCard, type ProjectCardMetricChip } from '@stm/ui';
+import { translatePriority, translateProjectHealth } from '../../lib/enumLabels';
 
 interface ProjectRowProps {
   project: Project;
-  allTasks: Task[];
+  metrics: ProjectMetrics;
+  health: ProjectHealth;
+  priority: Priority;
   onEdit: (project: Project) => void;
   onDelete: (id: string) => void;
+  onView: () => void;
 }
 
-export function ProjectRow({ project, allTasks, onEdit, onDelete }: ProjectRowProps) {
+export function ProjectRow({ project, metrics, health, priority, onEdit, onDelete, onView }: ProjectRowProps) {
   const { t } = useTranslation();
-  const metrics = computeProjectMetrics(project, allTasks);
-  const health = computeProjectHealth(metrics);
 
   const chips: ProjectCardMetricChip[] = [
     { label: t('projects.chipOpen'), value: metrics.openCount, tone: 'info' },
@@ -57,13 +58,21 @@ export function ProjectRow({ project, allTasks, onEdit, onDelete }: ProjectRowPr
       <ProjectCard
         name={project.name}
         area={project.area}
-        targetLabel={formatTargetLabel(project.targetDate)}
+        targetLabel={formatProjectDateRange(metrics.earliestStartDate, project.targetDate)}
         health={health}
+        healthLabel={translateProjectHealth(t, health)}
         progress={metrics.progress}
+        progressLabel={t('common.percentComplete', { progress: metrics.progress })}
         chips={chips}
         topFocusText={getProjectTopFocusText(metrics)}
+        topFocusLabel={t('common.topFocus')}
         hasTopTask={metrics.topTask !== null}
         nextActionText={getProjectNextAction(metrics)}
+        nextLabel={t('common.next')}
+        priority={priority}
+        priorityLabel={translatePriority(t, priority)}
+        onViewProject={onView}
+        viewProjectLabel={t('projects.viewProjectLabel')}
       />
     </div>
   );

@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import type { AppNotification } from '@stm/types';
 import { useNotifications } from '@stm/hooks';
-import { Sidebar, Topbar, type SidebarGroup } from '@stm/ui';
+import { Sidebar, Topbar, cn, type SidebarGroup } from '@stm/ui';
 import { APP_ROUTES, NAV_GROUP_ORDER } from './routes';
 import { useTasksContext } from '../state/TasksContext';
 import { useAuthContext } from '../state/AuthContext';
@@ -28,6 +28,7 @@ const NAV_LABEL_KEYS: Record<string, string> = {
   '/projects': 'nav.projects',
   '/calendar': 'nav.calendar',
   '/kanban': 'nav.kanban',
+  '/gantt': 'nav.gantt',
   '/goals': 'nav.goals',
   '/habits': 'nav.habits',
   '/analytics': 'nav.analytics',
@@ -51,14 +52,21 @@ export function AppShell() {
   const navigate = useNavigate();
   const { t } = useTranslation();
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
   const { openCreateDrawer } = useTasksContext();
-  const { email, logout } = useAuthContext();
+  const { email, avatarDataUrl, logout } = useAuthContext();
   const {
     notifications,
     isLoading: notificationsLoading,
     markRead,
     markAllRead,
   } = useNotifications();
+
+  // Close the mobile drawer automatically after navigating to a new page —
+  // otherwise it stays open over the newly-loaded page's content.
+  useEffect(() => {
+    setMobileNavOpen(false);
+  }, [location.pathname]);
 
   function handleNotificationClick(notification: AppNotification) {
     if (!notification.isRead) {
@@ -85,26 +93,47 @@ export function AppShell() {
   }));
 
   return (
-    <div className="flex h-screen bg-background">
+    <div
+      className={cn(
+        'flex h-screen bg-background',
+        // Keeps the whole shell clear of a notch/punch-hole camera and the
+        // status bar in the Capacitor Android/iOS apps (Phase 34) —
+        // `env(safe-area-inset-*)` only reports real values with
+        // `viewport-fit=cover` set in index.html; it's 0 everywhere else
+        // (desktop, normal mobile browser), so this is a no-op there.
+        'pt-[env(safe-area-inset-top)] pl-[env(safe-area-inset-left)] pr-[env(safe-area-inset-right)]',
+      )}
+    >
       <Sidebar
         groups={groups}
         collapsed={collapsed}
         onToggleCollapse={() => setCollapsed((c) => !c)}
+        mobileOpen={mobileNavOpen}
+        onMobileClose={() => setMobileNavOpen(false)}
+        closeLabel={t('common.close')}
       />
       <div className="flex flex-1 flex-col overflow-hidden">
         <Topbar
           onNewTask={openCreateDrawer}
+          newTaskLabel={t('common.newTask')}
+          onMenuClick={() => setMobileNavOpen(true)}
+          searchPlaceholder={t('common.searchPlaceholder')}
           onAccountSettingsClick={() => navigate('/account-settings')}
           onSignOutClick={logout}
           accountLabel={email ?? undefined}
+          avatarUrl={avatarDataUrl}
           accountSettingsLabel={t('auth.accountSettings')}
           signOutLabel={t('auth.signOut')}
           notifications={notifications}
           notificationsLoading={notificationsLoading}
           onNotificationClick={handleNotificationClick}
           onMarkAllNotificationsRead={() => markAllRead().catch(reportError)}
+          notificationsTitle={t('notifications.title')}
+          markAllNotificationsReadLabel={t('notifications.markAllRead')}
+          notificationsLoadingLabel={t('common.loading')}
+          noNotificationsLabel={t('notifications.empty')}
         />
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto pb-[env(safe-area-inset-bottom)]">
           <Outlet />
         </main>
       </div>

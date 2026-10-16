@@ -7,7 +7,15 @@ import {
   getProjectProgressList,
   getWeeklyCompletionTrend,
 } from '@stm/shared';
-import { EmptyState, PriorityBadge, Progress, SmartInsightCard, StatCard } from '@stm/ui';
+import {
+  EmptyState,
+  HelpButton,
+  PriorityBadge,
+  Progress,
+  SmartInsightCard,
+  StatCard,
+} from '@stm/ui';
+import { translatePriority } from '../../lib/enumLabels';
 import { useTranslation } from 'react-i18next';
 import { useTasksContext } from '../../state/TasksContext';
 import { useProjectsContext } from '../../state/ProjectsContext';
@@ -40,11 +48,19 @@ export function AnalyticsPage() {
 
   if (tasks.length === 0) {
     return (
-      <div className="flex flex-col gap-6 p-8">
+      <div className="flex flex-col gap-6 p-4 sm:p-8">
         <header className="flex flex-col gap-1">
-          <h1 className="text-[28px] font-bold leading-[34px] text-ink-primary">
-            {t('analytics.title')}
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-[28px] font-bold leading-[34px] text-ink-primary">
+              {t('analytics.title')}
+            </h1>
+            <HelpButton
+              title={t('help.analytics.title')}
+              intro={t('help.analytics.intro')}
+              items={t('help.analytics.items', { returnObjects: true }) as string[]}
+              closeLabel={t('common.close')}
+            />
+          </div>
           <p className="text-sm text-ink-secondary">{t('analytics.subtitle')}</p>
         </header>
         <EmptyState message={t('analytics.emptyState')} />
@@ -53,11 +69,19 @@ export function AnalyticsPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6 p-8">
+    <div className="flex flex-col gap-6 p-4 sm:p-8">
       <header className="flex flex-col gap-1">
-        <h1 className="text-[28px] font-bold leading-[34px] text-ink-primary">
-          {t('analytics.title')}
-        </h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-[28px] font-bold leading-[34px] text-ink-primary">
+            {t('analytics.title')}
+          </h1>
+          <HelpButton
+            title={t('help.analytics.title')}
+            intro={t('help.analytics.intro')}
+            items={t('help.analytics.items', { returnObjects: true }) as string[]}
+            closeLabel={t('common.close')}
+          />
+        </div>
         <p className="text-sm text-ink-secondary">{t('analytics.subtitle')}</p>
       </header>
 
@@ -103,7 +127,10 @@ export function AnalyticsPage() {
             {priorityDistribution.map((item) => (
               <div key={item.priority} className="flex flex-col gap-1">
                 <div className="flex items-center justify-between text-sm">
-                  <PriorityBadge priority={item.priority} />
+                  <PriorityBadge
+                    priority={item.priority}
+                    label={translatePriority(t, item.priority)}
+                  />
                   <span className="text-ink-secondary">
                     {item.count} · {item.percentage}%
                   </span>

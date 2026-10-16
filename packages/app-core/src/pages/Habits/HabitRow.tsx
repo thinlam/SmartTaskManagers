@@ -3,6 +3,7 @@ import { Pencil, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { HabitCard, IconButton } from '@stm/ui';
+import { translateHabitFrequency } from '../../lib/enumLabels';
 import { useHabitsContext } from '../../state/HabitsContext';
 import { reportError } from '../../lib/reportError';
 
@@ -49,12 +50,24 @@ export function HabitRow({ habit, onEdit, onDelete }: HabitRowProps) {
       <HabitCard
         name={habit.name}
         frequency={habit.frequency}
+        frequencyLabel={translateHabitFrequency(t, habit.frequency)}
         streak={habit.streak}
+        streakLabel={t('common.streakInARow', { streak: habit.streak })}
         completedCount={habit.completedCount}
         targetCount={habit.targetCount}
+        completedLabel={
+          habit.targetCount > 0
+            ? t('common.completedOfTarget', {
+                completed: habit.completedCount,
+                target: habit.targetCount,
+              })
+            : t('common.completedCount', { completed: habit.completedCount })
+        }
         lastDoneLabel={formatLastDoneLabel(habit.lastCompletedDate, t)}
         checkedInToday={checkedInToday}
         onCheckIn={() => checkInHabit(habit.id).catch(reportError)}
+        checkInButtonLabel={t('common.checkInToday')}
+        checkedInButtonLabel={t('common.checkedInToday')}
       />
     </div>
   );

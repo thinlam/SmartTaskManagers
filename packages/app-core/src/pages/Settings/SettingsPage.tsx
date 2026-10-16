@@ -1,5 +1,5 @@
 import type { Priority, TaskStatus } from '@stm/types';
-import { Switch } from '@stm/ui';
+import { HelpButton, Switch } from '@stm/ui';
 import { useTranslation } from 'react-i18next';
 import {
   Clock,
@@ -57,15 +57,23 @@ export function SettingsPage() {
   };
 
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-6 p-8">
+    <div className="mx-auto flex max-w-3xl flex-col gap-6 p-4 sm:p-8">
       <header className="flex items-center gap-3">
         <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-white">
           <SettingsIcon className="h-5 w-5" aria-hidden="true" />
         </div>
         <div className="flex flex-col gap-1">
-          <h1 className="text-[28px] font-bold leading-[34px] text-ink-primary">
-            {t('settings.title')}
-          </h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-[28px] font-bold leading-[34px] text-ink-primary">
+              {t('settings.title')}
+            </h1>
+            <HelpButton
+              title={t('help.settings.title')}
+              intro={t('help.settings.intro')}
+              items={t('help.settings.items', { returnObjects: true }) as string[]}
+              closeLabel={t('common.close')}
+            />
+          </div>
           <p className="text-sm text-ink-secondary">{t('settings.subtitle')}</p>
         </div>
       </header>

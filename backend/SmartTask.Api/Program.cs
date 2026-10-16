@@ -175,13 +175,43 @@ builder.Services.AddAuthorization();
 
 const string FrontendCorsPolicy = "FrontendClient";
 
-// Tauri desktop app origins are fixed in code, not config — Railway's
-// index-based array env vars (Cors__AllowedOrigins__0, __1, ...)
-// overwrite appsettings.json entries by position, which previously
-// wiped out "tauri://localhost" whenever an extra web origin was
-// configured on Railway. Keeping these hardcoded makes them immune
-// to that overwrite.
-var fixedOrigins = new[] { "tauri://localhost", "http://tauri.localhost" };
+// Desktop (Tauri) and mobile (Capacitor) app origins are fixed in code,
+// not config — Railway's index-based array env vars
+// (Cors__AllowedOrigins__0, __1, ...) overwrite appsettings.json entries
+// by position, which previously wiped out "tauri://localhost" whenever
+// an extra web origin was configured on Railway. Keeping these
+// hardcoded makes them immune to that overwrite.
+//
+// "https://localhost" is Capacitor's default WebView origin on both
+// Android and iOS (server.androidScheme, default "https", hostname
+// "localhost" — see apps/web/capacitor.config.ts, which doesn't
+// override either) — every request from the Android/iOS app carries
+// this Origin header, confirmed missing from CORS via a real curl
+// OPTIONS check against production (no access-control-allow-origin
+// came back), which is exactly why the app failed with "Could not
+// reach the server" despite the backend being up.
+// "http://localhost:5173"/"5174" cover running `apps/web` locally (Vite
+// dev server) against this same deployed Railway backend — the shared
+// backend the whole team develops against (no local API needed). The
+// "Local development fallback" below only adds these when
+// IsDevelopment() is true, which is never the case on Railway itself
+// (ASPNETCORE_ENVIRONMENT=Production there) — so a local dev frontend
+// hitting the deployed backend was never actually covered, confirmed via
+// a real curl OPTIONS check (no access-control-allow-origin came back)
+// after the app failed with "Could not reach the server". Fixed here
+// instead of via Cors__AllowedOrigins so it's immune to Railway's
+// index-based array overwrite, same reasoning as the Tauri/Capacitor
+// origins above.
+var fixedOrigins = new[]
+{
+    "tauri://localhost",
+    "http://tauri.localhost",
+    "https://localhost",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:5174",
+    "http://127.0.0.1:5174",
+};
 
 var configuredOrigins =
     builder.Configuration

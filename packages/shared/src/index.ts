@@ -1,10 +1,23 @@
 export { formatDueLabel } from './formatDueLabel';
 export {
+  parseQuickCapture,
+  type ParsedQuickCapture,
+  type QuickCaptureProject,
+} from './quickCapture';
+export {
+  resolveSmartEngineOptions,
+  compareBySmartRank,
+  applySmartVisibility,
+  type SmartEngineOptions,
+} from './smartEngineOptions';
+export {
   computeProjectMetrics,
   computeProjectHealth,
   getProjectTopFocusText,
   getProjectNextAction,
+  getProjectDerivedPriority,
   formatTargetLabel,
+  formatProjectDateRange,
   type ProjectMetrics,
 } from './projectMetrics';
 export {
@@ -12,11 +25,15 @@ export {
   sortCalendarTasks,
   getCalendarTaskTone,
   calendarDateKey,
+  getUpcomingDeadlines,
+  getBusiestUpcomingDay,
   CALENDAR_MAX_TASKS_PER_DAY,
   CALENDAR_AGENDA_MAX_ROWS,
   type CalendarDay,
   type CalendarMonthData,
   type CalendarTaskTone,
+  type UpcomingDeadline,
+  type BusiestDayInsight,
 } from './calendarMetrics';
 export {
   computeKanbanBoardData,
@@ -32,16 +49,19 @@ export {
   type KanbanLaneData,
   type KanbanBoardData,
   type KanbanTone,
+  type KanbanSortMode,
 } from './kanbanMetrics';
 export {
   computeAnalyticsSummary,
   getPriorityDistribution,
+  getStatusDistribution,
   getAreaProgress,
   getProjectProgressList,
   getWeeklyCompletionTrend,
   getAnalyticsInsights,
   type AnalyticsSummary,
   type PriorityDistributionItem,
+  type StatusDistributionItem,
   type AreaProgress,
   type ProjectProgressItem,
   type WeeklyTrendDay,
@@ -49,6 +69,7 @@ export {
 } from './analyticsMetrics';
 export {
   computeDashboardData,
+  type DashboardKpiKey,
   type DashboardKpi,
   type DashboardFocusTask,
   type DashboardInsight,
@@ -56,12 +77,30 @@ export {
 } from './dashboardMetrics';
 export {
   computeTodayData,
+  type TodayKpiKey,
   type TodayKpi,
   type TodayTask,
   type TodayTaskSection,
+  type TodayCompletedTask,
+  type TodayHourlyActivity,
   type TodayReview,
   type TodayData,
 } from './todayMetrics';
+export {
+  getGanttVisibleRange,
+  stepGanttAnchor,
+  getGanttTaskHealth,
+  computeGanttKpis,
+  getGanttBarPosition,
+  sortGanttTasks,
+  GANTT_SCALE_CONFIG,
+  GANTT_PRIORITIES,
+  type GanttScale,
+  type GanttVisibleRange,
+  type GanttTaskHealth,
+  type GanttKpis,
+  type GanttBarPosition,
+} from './ganttMetrics';
 export {
   computeSmartAssistantData,
   type AssistantTask,

@@ -102,6 +102,78 @@ export interface CalendarDay {
   hasOverdue: boolean;
 }
 
+export interface UpcomingDeadline {
+  dateKey: string;
+  date: Date;
+  task: Task;
+}
+
+/**
+ * Open tasks due strictly after `referenceDate` through `referenceDate +
+ * days` (inclusive) — the Frame 09 "Upcoming deadlines" sidebar panel.
+ * Excludes today itself (that's what the Selected Day panel already
+ * covers) and anything overdue.
+ */
+export function getUpcomingDeadlines(
+  tasks: Task[],
+  referenceDate: Date,
+  days: number = 7,
+): UpcomingDeadline[] {
+  const start = new Date(
+    referenceDate.getFullYear(),
+    referenceDate.getMonth(),
+    referenceDate.getDate(),
+  );
+  const end = new Date(start.getFullYear(), start.getMonth(), start.getDate() + days);
+
+  return tasks
+    .filter((task) => task.status !== 'Completed')
+    .map((task) => ({ task, due: stripTime(task.dueDate) }))
+    .filter(
+      (entry): entry is { task: Task; due: Date } =>
+        entry.due !== null &&
+        entry.due.getTime() > start.getTime() &&
+        entry.due.getTime() <= end.getTime(),
+    )
+    .sort((a, b) => a.due.getTime() - b.due.getTime() || sortCalendarTasks(a.task, b.task))
+    .map(({ task, due }) => ({ dateKey: calendarDateKey(due), date: due, task }));
+}
+
+export interface BusiestDayInsight {
+  dateKey: string;
+  date: Date;
+  count: number;
+  highPriorityCount: number;
+}
+
+/**
+ * Picks the single busiest day out of a list of upcoming deadlines (most
+ * tasks due that day, ties broken by whichever comes first) — the real
+ * data behind Frame 09's "Smart insight" box. No prediction or
+ * fabrication: just a count of tasks that are genuinely due that day.
+ */
+export function getBusiestUpcomingDay(deadlines: UpcomingDeadline[]): BusiestDayInsight | null {
+  const byDate = new Map<string, UpcomingDeadline[]>();
+  for (const deadline of deadlines) {
+    const list = byDate.get(deadline.dateKey) ?? [];
+    list.push(deadline);
+    byDate.set(deadline.dateKey, list);
+  }
+
+  let best: BusiestDayInsight | null = null;
+  for (const [dateKey, list] of byDate) {
+    if (best && list.length <= best.count) continue;
+    const highPriorityCount = list.filter(
+      (entry) =>
+        entry.task.priority === 'Critical' ||
+        entry.task.priority === 'Urgent' ||
+        entry.task.priority === 'High',
+    ).length;
+    best = { dateKey, date: list[0]!.date, count: list.length, highPriorityCount };
+  }
+  return best;
+}
+
 export interface CalendarMonthData {
   anchor: Date;
   monthStart: Date;

@@ -8,8 +8,12 @@ export interface TaskCardProps {
   meta: string;
   dueLabel: string;
   priority: Priority;
+  /** Translated priority text — falls back to the raw enum value when omitted. */
+  priorityLabel?: string;
   /** Omit in "focus" contexts (Dashboard/Today) where status is implied by the section. */
   status?: TaskStatus;
+  /** Translated status text — falls back to the raw enum value when omitted. */
+  statusLabel?: string;
   /** 0–100. Renders a thin progress bar under the row when provided. */
   progress?: number;
   /**
@@ -34,7 +38,9 @@ export function TaskCard({
   meta,
   dueLabel,
   priority,
+  priorityLabel,
   status,
+  statusLabel,
   progress,
   smartScore,
   recommendedAction,
@@ -49,8 +55,8 @@ export function TaskCard({
           </span>
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          {status && <StatusBadge status={status} />}
-          <PriorityBadge priority={priority} />
+          {status && <StatusBadge status={status} label={statusLabel} />}
+          <PriorityBadge priority={priority} label={priorityLabel} />
           {typeof smartScore === 'number' && (
             <span className="text-sm font-semibold text-ink-primary" title="Smart Score">
               {smartScore}

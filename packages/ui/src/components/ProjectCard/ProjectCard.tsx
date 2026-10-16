@@ -1,5 +1,5 @@
-import type { ProjectHealth } from '@stm/types';
-import { ProjectHealthBadge } from '../Badge';
+import type { Priority, ProjectHealth } from '@stm/types';
+import { ProjectHealthBadge, PriorityBadge } from '../Badge';
 import { Progress } from '../Progress';
 import { cn } from '../../lib/cn';
 
@@ -14,11 +14,25 @@ export interface ProjectCardProps {
   area: string;
   targetLabel: string;
   health: ProjectHealth;
+  /** Translated health text — falls back to the raw enum value when omitted. */
+  healthLabel?: string;
   progress: number;
+  /** Translated "N% complete" text — falls back to English when omitted. */
+  progressLabel?: string;
   chips: ProjectCardMetricChip[];
   topFocusText: string;
+  /** Translated "Top focus" section label — falls back to English when omitted. */
+  topFocusLabel?: string;
   hasTopTask: boolean;
   nextActionText: string;
+  /** Translated "Next" section label — falls back to English when omitted. */
+  nextLabel?: string;
+  /** Derived (not stored) — see getProjectDerivedPriority in packages/shared. Omit to hide the badge. */
+  priority?: Priority;
+  priorityLabel?: string;
+  onViewProject?: () => void;
+  /** Translated "View project" button text — falls back to English when omitted. */
+  viewProjectLabel?: string;
 }
 
 const STRIPE_CLASSES: Record<ProjectHealth, string> = {
@@ -58,11 +72,19 @@ export function ProjectCard({
   area,
   targetLabel,
   health,
+  healthLabel,
   progress,
+  progressLabel,
   chips,
   topFocusText,
+  topFocusLabel = 'Top focus',
   hasTopTask,
   nextActionText,
+  nextLabel = 'Next',
+  priority,
+  priorityLabel,
+  onViewProject,
+  viewProjectLabel = 'View project →',
 }: ProjectCardProps) {
   return (
     <div className="flex overflow-hidden rounded-lg border border-border bg-surface">
@@ -70,14 +92,19 @@ export function ProjectCard({
       <div className="flex flex-1 flex-col gap-3 p-4">
         <div className="flex items-start justify-between gap-3">
           <span className="text-sm font-semibold text-ink-primary">{name}</span>
-          <ProjectHealthBadge health={health} />
+          <div className="flex shrink-0 items-center gap-1.5">
+            {priority && <PriorityBadge priority={priority} label={priorityLabel} />}
+            <ProjectHealthBadge health={health} label={healthLabel} />
+          </div>
         </div>
 
         <div className="flex items-center justify-between gap-3 text-xs">
           <span className="text-ink-secondary">
             {area} · {targetLabel}
           </span>
-          <span className="shrink-0 font-semibold text-ink-primary">{progress}% complete</span>
+          <span className="shrink-0 font-semibold text-ink-primary">
+            {progressLabel ?? `${progress}% complete`}
+          </span>
         </div>
 
         <Progress value={progress} />
@@ -98,24 +125,32 @@ export function ProjectCard({
 
         <div className="flex items-start gap-2 text-xs">
           <span className="shrink-0 rounded-md bg-primary-light px-2 py-0.5 font-semibold uppercase tracking-wide text-primary">
-            Top focus
+            {topFocusLabel}
           </span>
           <span className={hasTopTask ? 'font-medium text-ink-primary' : 'text-ink-muted'}>
             {topFocusText}
           </span>
         </div>
 
-        <div className="flex items-start gap-2 text-xs">
-          <span
-            className={cn(
-              'shrink-0 rounded-md px-2 py-0.5 font-semibold uppercase tracking-wide',
-              NEXT_LABEL_CLASSES[health],
-            )}
-          >
-            Next
-          </span>
-          <span className="text-ink-secondary">{nextActionText}</span>
+        <div
+          className={cn(
+            'rounded-md px-3 py-2 text-xs font-medium',
+            NEXT_LABEL_CLASSES[health],
+          )}
+        >
+          <span className="sr-only">{nextLabel}: </span>
+          {nextActionText}
         </div>
+
+        {onViewProject && (
+          <button
+            type="button"
+            onClick={onViewProject}
+            className="self-end text-xs font-semibold text-primary hover:underline"
+          >
+            {viewProjectLabel}
+          </button>
+        )}
       </div>
     </div>
   );

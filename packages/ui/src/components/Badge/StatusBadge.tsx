@@ -16,8 +16,10 @@ const STATUS_CLASSES: Record<TaskStatus, string> = {
 
 export interface StatusBadgeProps {
   status: TaskStatus;
+  /** Translated display text — falls back to the raw enum value when omitted (this package has no i18n access). */
+  label?: string;
 }
 
-export function StatusBadge({ status }: StatusBadgeProps) {
-  return <Badge className={STATUS_CLASSES[status]}>{status}</Badge>;
+export function StatusBadge({ status, label }: StatusBadgeProps) {
+  return <Badge className={STATUS_CLASSES[status]}>{label ?? status}</Badge>;
 }

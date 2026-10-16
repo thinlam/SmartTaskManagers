@@ -1,11 +1,13 @@
 import { useMemo } from 'react';
 import { computeSmartAssistantData } from '@stm/shared';
-import { EmptyState, ProjectHealthBadge, RiskBadge, StatCard, TaskCard } from '@stm/ui';
+import { EmptyState, HelpButton, ProjectHealthBadge, RiskBadge, StatCard, TaskCard } from '@stm/ui';
+import { translateProjectHealth, translateRisk } from '../../lib/enumLabels';
 import { useTranslation } from 'react-i18next';
 import { useTasksContext } from '../../state/TasksContext';
 import { useProjectsContext } from '../../state/ProjectsContext';
 import { useGoalsContext } from '../../state/GoalsContext';
 import { useHabitsContext } from '../../state/HabitsContext';
+import { useSettingsContext } from '../../state/SettingsContext';
 
 /**
  * No Sheets precedent — this route existed as a nav placeholder since
@@ -22,10 +24,15 @@ export function SmartAssistantPage() {
   const { projects, isLoading: projectsLoading } = useProjectsContext();
   const { goals, isLoading: goalsLoading } = useGoalsContext();
   const { habits, isLoading: habitsLoading } = useHabitsContext();
+  const { settings } = useSettingsContext();
 
   const data = useMemo(
-    () => computeSmartAssistantData(tasks, projects, goals, habits),
-    [tasks, projects, goals, habits],
+    () =>
+      computeSmartAssistantData(tasks, projects, goals, habits, new Date(), {
+        smartScoreEnabled: settings.smartScoreEnabled,
+        goalAlignmentEnabled: settings.goalAlignmentEnabled,
+      }),
+    [tasks, projects, goals, habits, settings],
   );
 
   const isLoading = tasksLoading || projectsLoading || goalsLoading || habitsLoading;
@@ -42,11 +49,19 @@ export function SmartAssistantPage() {
     data.habitAlerts.length === 0;
 
   return (
-    <div className="flex flex-col gap-6 p-8">
+    <div className="flex flex-col gap-6 p-4 sm:p-8">
       <header className="flex flex-col gap-1">
-        <h1 className="text-[28px] font-bold leading-[34px] text-ink-primary">
-          {t('assistant.title')}
-        </h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-[28px] font-bold leading-[34px] text-ink-primary">
+            {t('assistant.title')}
+          </h1>
+          <HelpButton
+            title={t('help.assistant.title')}
+            intro={t('help.assistant.intro')}
+            items={t('help.assistant.items', { returnObjects: true }) as string[]}
+            closeLabel={t('common.close')}
+          />
+        </div>
         <p className="text-sm text-ink-secondary">{data.summary}</p>
       </header>
 
@@ -98,7 +113,9 @@ export function SmartAssistantPage() {
                         smartScore={task.smartScore}
                       />
                     </div>
-                    {task.risk && <RiskBadge risk={task.risk} />}
+                    {task.risk && (
+                      <RiskBadge risk={task.risk} label={translateRisk(t, task.risk)} />
+                    )}
                   </div>
                 ))}
               </div>
@@ -146,7 +163,10 @@ export function SmartAssistantPage() {
                     >
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-medium text-ink-primary">{alert.name}</span>
-                        <ProjectHealthBadge health={alert.health} />
+                        <ProjectHealthBadge
+                          health={alert.health}
+                          label={translateProjectHealth(t, alert.health)}
+                        />
                       </div>
                       <span className="text-xs text-ink-secondary">{alert.nextAction}</span>
                     </div>

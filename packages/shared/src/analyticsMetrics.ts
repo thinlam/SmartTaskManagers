@@ -1,4 +1,4 @@
-import type { Area, Priority, Project, Task } from '@stm/types';
+import type { Area, Priority, Project, Task, TaskStatus } from '@stm/types';
 import { computeProjectMetrics } from './projectMetrics';
 
 /**
@@ -61,6 +61,23 @@ export function getPriorityDistribution(tasks: Task[]): PriorityDistributionItem
   return PRIORITY_ORDER.map((priority) => {
     const count = tasks.filter((task) => task.priority === priority).length;
     return { priority, count, percentage: total > 0 ? Math.round((count / total) * 100) : 0 };
+  });
+}
+
+export interface StatusDistributionItem {
+  status: TaskStatus;
+  count: number;
+  /** 0–100, share of totalTasks. */
+  percentage: number;
+}
+
+const STATUS_ORDER: TaskStatus[] = ['Completed', 'In Progress', 'Inbox', 'Waiting', 'To Do'];
+
+export function getStatusDistribution(tasks: Task[]): StatusDistributionItem[] {
+  const total = tasks.length;
+  return STATUS_ORDER.map((status) => {
+    const count = tasks.filter((task) => task.status === status).length;
+    return { status, count, percentage: total > 0 ? Math.round((count / total) * 100) : 0 };
   });
 }
 

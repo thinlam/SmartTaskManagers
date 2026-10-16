@@ -1,5 +1,5 @@
 import type { Task } from '@stm/types';
-import type { CalendarMonthData } from '@stm/shared';
+import type { CalendarDay, CalendarMonthData } from '@stm/shared';
 import { useTranslation } from 'react-i18next';
 import { CalendarDayCell } from './CalendarDayCell';
 
@@ -15,11 +15,13 @@ const WEEKDAY_KEYS = [
 
 interface CalendarGridProps {
   data: CalendarMonthData;
+  selectedDateKey: string;
+  onSelectDay: (day: CalendarDay) => void;
   onSelectTask: (task: Task) => void;
 }
 
 /** Ported layout from writeCalendarWeekdays_()/writeCalendarGrid_() — Monday-start weekday header + the 42-cell (6×7) grid. */
-export function CalendarGrid({ data, onSelectTask }: CalendarGridProps) {
+export function CalendarGrid({ data, selectedDateKey, onSelectDay, onSelectTask }: CalendarGridProps) {
   const { t } = useTranslation();
 
   return (
@@ -40,6 +42,8 @@ export function CalendarGrid({ data, onSelectTask }: CalendarGridProps) {
             key={day.dateKey}
             day={day}
             today={data.today}
+            isSelected={day.dateKey === selectedDateKey}
+            onSelectDay={onSelectDay}
             onSelectTask={onSelectTask}
           />
         ))}

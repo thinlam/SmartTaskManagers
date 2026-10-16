@@ -74,7 +74,15 @@ export function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-background to-primary-light/40 p-8">
+    <div
+      className="flex min-h-screen items-center justify-center bg-gradient-to-b from-background to-primary-light/40 p-8"
+      style={{
+        paddingTop: 'max(2rem, env(safe-area-inset-top))',
+        paddingBottom: 'max(2rem, env(safe-area-inset-bottom))',
+        paddingLeft: 'max(2rem, env(safe-area-inset-left))',
+        paddingRight: 'max(2rem, env(safe-area-inset-right))',
+      }}
+    >
       <div className="flex w-full max-w-sm flex-col gap-6 rounded-xl border border-border bg-surface p-8 shadow-lg">
         <div className="flex flex-col items-center gap-3 text-center">
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-white">

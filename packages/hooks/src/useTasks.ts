@@ -23,6 +23,10 @@ export interface UseTasksResult {
   tasks: Task[];
   isLoading: boolean;
   error: string | null;
+  /** Set on every successful load/refetch — the Tasks page's "Updated {time}" timestamp (Frame 05) reads this instead of faking a clock tick. */
+  lastFetchedAt: Date | null;
+  /** Re-fetches from the server without the initial-load `isLoading` flash — the Tasks page's "Refresh" button (Frame 05) calls this directly rather than needing a remount. */
+  refetch: () => Promise<void>;
   addTask: (input: NewTaskInput) => Promise<Task>;
   updateTask: (id: string, patch: Partial<Task>) => Promise<Task>;
   deleteTask: (id: string) => Promise<void>;
@@ -49,14 +53,17 @@ export function useTasks(): UseTasksResult {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [lastFetchedAt, setLastFetchedAt] = useState<Date | null>(null);
+
+  const load = useCallback(async (): Promise<void> => {
+    const data = await taskApi.getAll();
+    setTasks(data);
+    setLastFetchedAt(new Date());
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
-    taskApi
-      .getAll()
-      .then((data) => {
-        if (!cancelled) setTasks(data);
-      })
+    load()
       .catch((err: unknown) => {
         if (!cancelled) setError(err instanceof Error ? err.message : 'Failed to load tasks.');
       })
@@ -66,7 +73,16 @@ export function useTasks(): UseTasksResult {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [load]);
+
+  const refetch = useCallback(async (): Promise<void> => {
+    try {
+      await load();
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to refresh tasks.');
+    }
+  }, [load]);
 
   const addTask = useCallback(async (input: NewTaskInput): Promise<Task> => {
     const created = await taskApi.create(input);
@@ -104,5 +120,15 @@ export function useTasks(): UseTasksResult {
     return completed;
   }, []);
 
-  return { tasks, isLoading, error, addTask, updateTask, deleteTask, completeTask };
+  return {
+    tasks,
+    isLoading,
+    error,
+    lastFetchedAt,
+    refetch,
+    addTask,
+    updateTask,
+    deleteTask,
+    completeTask,
+  };
 }

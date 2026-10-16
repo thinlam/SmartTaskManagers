@@ -7,13 +7,23 @@ import { Progress } from '../Progress';
 export interface HabitCardProps {
   name: string;
   frequency: HabitFrequency;
+  /** Translated frequency text — falls back to the raw enum value when omitted. */
+  frequencyLabel?: string;
   streak: number;
+  /** Translated "N in a row" text — falls back to English when omitted. */
+  streakLabel?: string;
   completedCount: number;
   /** 0 = no target set — hides the progress bar. */
   targetCount: number;
+  /** Translated "N/M completed" or "N completed" text — falls back to English when omitted. */
+  completedLabel?: string;
   lastDoneLabel: string;
   checkedInToday: boolean;
   onCheckIn: () => void;
+  /** Translated check-in button text — falls back to English when omitted. */
+  checkInButtonLabel?: string;
+  /** Translated "already checked in" button text — falls back to English when omitted. */
+  checkedInButtonLabel?: string;
 }
 
 /**
@@ -27,36 +37,41 @@ export interface HabitCardProps {
 export function HabitCard({
   name,
   frequency,
+  frequencyLabel,
   streak,
+  streakLabel,
   completedCount,
   targetCount,
+  completedLabel,
   lastDoneLabel,
   checkedInToday,
   onCheckIn,
+  checkInButtonLabel = 'Check in today',
+  checkedInButtonLabel = 'Checked in today',
 }: HabitCardProps) {
   return (
     <div className="flex flex-col gap-3 rounded-lg border border-border bg-surface p-4">
       <div className="flex items-start justify-between gap-3">
         <span className="text-sm font-semibold text-ink-primary">{name}</span>
-        <Badge tone="neutral">{frequency}</Badge>
+        <Badge tone="neutral">{frequencyLabel ?? frequency}</Badge>
       </div>
 
       <div className="flex items-center gap-1.5 text-xs font-semibold text-warning">
         <Flame className="h-4 w-4" aria-hidden="true" />
-        <span>{streak} in a row</span>
+        <span>{streakLabel ?? `${streak} in a row`}</span>
       </div>
 
       {targetCount > 0 ? (
         <div className="flex flex-col gap-1.5">
           <div className="flex items-center justify-between text-xs text-ink-secondary">
-            <span>
-              {completedCount}/{targetCount} completed
-            </span>
+            <span>{completedLabel ?? `${completedCount}/${targetCount} completed`}</span>
           </div>
           <Progress value={(completedCount / targetCount) * 100} />
         </div>
       ) : (
-        <span className="text-xs text-ink-secondary">{completedCount} completed</span>
+        <span className="text-xs text-ink-secondary">
+          {completedLabel ?? `${completedCount} completed`}
+        </span>
       )}
 
       <div className="flex items-center justify-between gap-3">
@@ -68,7 +83,7 @@ export function HabitCard({
           disabled={checkedInToday}
           onClick={onCheckIn}
         >
-          {checkedInToday ? 'Checked in today' : 'Check in today'}
+          {checkedInToday ? checkedInButtonLabel : checkInButtonLabel}
         </Button>
       </div>
     </div>

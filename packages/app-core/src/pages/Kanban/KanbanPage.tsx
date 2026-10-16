@@ -1,40 +1,132 @@
-import { useMemo } from 'react';
-import type { Task } from '@stm/types';
-import { computeKanbanBoardData } from '@stm/shared';
-import { StatCard } from '@stm/ui';
+import { useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import type { Priority, Task, TaskStatus } from '@stm/types';
+import { computeKanbanBoardData, type KanbanSortMode } from '@stm/shared';
+import { HelpButton, StatCard } from '@stm/ui';
+import {
+  DndContext,
+  PointerSensor,
+  TouchSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
 import { Sparkles } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useTasksContext } from '../../state/TasksContext';
 import { useProjectsContext } from '../../state/ProjectsContext';
+import { useSettingsContext } from '../../state/SettingsContext';
+import { reportError } from '../../lib/reportError';
 import { KanbanLane } from './KanbanLane';
+
+type DueFilter = 'All' | 'overdue' | 'today' | 'week';
+
+const PRIORITIES: Priority[] = ['Critical', 'Urgent', 'High', 'Medium', 'Low'];
+
+const controlClasses =
+  'rounded-md border border-border bg-surface px-3 py-1.5 text-xs font-medium text-ink-primary outline-none focus-visible:ring-2 focus-visible:ring-primary';
+
+function startOfDay(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth(), date.getDate());
+}
 
 /**
  * Ported from computeKanbanData_()/writeKanbanKpis_()/writeKanbanHeader_()
  * in apps/google-sheets/src/11_Kanban.gs — same 4 KPIs (Open Tasks/Due
  * Today/Overdue/Completed), same 5 lanes in TaskStatus order, same "Top
- * Focus" banner (highest-SmartScore open task). No new context/store:
- * Kanban only reads TasksContext (for tasks + the click-to-edit action,
- * same pattern as Calendar, Phase 16) and ProjectsContext (to resolve a
- * card's `projectId` into a name for its meta line — same cross-context
- * read Projects/Goals already established).
+ * Focus" banner (highest-SmartScore open task). Redesigned per Frame 08:
+ * a real filter bar (Project/Priority/Due date/Sort), colored lane
+ * headers, a per-lane "+" that pre-fills the create drawer's status, a
+ * legend explaining the Smart Score color coding, and — the user's
+ * explicit ask — real drag-and-drop: dropping a card on another lane
+ * calls updateTask(id, { status }) for real, no optimistic-only fake.
+ *
+ * No new context/store beyond that: Kanban reads TasksContext (tasks +
+ * updateTask + the create/edit drawer) and ProjectsContext (to resolve
+ * a card's `projectId` into a name for its meta line and to populate
+ * the Project filter) — same cross-context read Projects/Goals already
+ * established elsewhere.
  */
 export function KanbanPage() {
   const { t } = useTranslation();
-  const { tasks, openEditDrawer } = useTasksContext();
+  const navigate = useNavigate();
+  const { tasks, updateTask, openCreateDrawer } = useTasksContext();
   const { projects } = useProjectsContext();
+  const { settings } = useSettingsContext();
 
-  const data = useMemo(() => computeKanbanBoardData(tasks), [tasks]);
+  const [projectFilter, setProjectFilter] = useState('All');
+  const [priorityFilter, setPriorityFilter] = useState<Priority | 'All'>('All');
+  const [dueFilter, setDueFilter] = useState<DueFilter>('All');
+  const [sortMode, setSortMode] = useState<KanbanSortMode>('smartScore');
+
+  // PointerSensor covers mouse/pen (desktop web); TouchSensor covers
+  // touch (the packaged Android/iOS app's WebView) — native HTML5
+  // drag-and-drop only ever fires from mouse input, which is why the
+  // first version of this board couldn't be dragged on a phone. Both
+  // sensors need a small activation threshold so a plain tap/click to
+  // open a card's Task Detail page doesn't get mistaken for a drag.
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 150, tolerance: 8 } }),
+  );
+
+  const filteredTasks = useMemo(() => {
+    const today = startOfDay(new Date());
+    const weekEnd = new Date(today);
+    weekEnd.setDate(weekEnd.getDate() + 7);
+
+    return tasks.filter((task) => {
+      if (projectFilter !== 'All' && task.projectId !== projectFilter) return false;
+      if (priorityFilter !== 'All' && task.priority !== priorityFilter) return false;
+      if (dueFilter !== 'All') {
+        if (!task.dueDate) return false;
+        const due = startOfDay(new Date(task.dueDate));
+        if (dueFilter === 'overdue' && !(due.getTime() < today.getTime())) return false;
+        if (dueFilter === 'today' && due.getTime() !== today.getTime()) return false;
+        if (dueFilter === 'week' && !(due.getTime() >= today.getTime() && due.getTime() <= weekEnd.getTime())) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }, [tasks, projectFilter, priorityFilter, dueFilter]);
+
+  const data = useMemo(
+    () => computeKanbanBoardData(filteredTasks, settings.smartScoreEnabled, sortMode),
+    [filteredTasks, settings.smartScoreEnabled, sortMode],
+  );
 
   function handleSelectTask(task: Task) {
-    openEditDrawer(task);
+    navigate(`/tasks/${task.id}`);
+  }
+
+  function handleAddTask(status: TaskStatus) {
+    openCreateDrawer({ status });
+  }
+
+  function handleDragEnd(event: DragEndEvent) {
+    const status = event.over?.id as TaskStatus | undefined;
+    const taskId = event.active.id as string;
+    if (!status) return;
+    const task = tasks.find((candidate) => candidate.id === taskId);
+    if (!task || task.status === status) return;
+    updateTask(taskId, { status }).catch(reportError);
   }
 
   return (
-    <div className="flex flex-col gap-6 p-8">
+    <div className="flex flex-col gap-6 p-4 sm:p-8">
       <header className="flex flex-col gap-1">
-        <h1 className="text-[28px] font-bold leading-[34px] text-ink-primary">
-          {t('kanban.title')}
-        </h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-[28px] font-bold leading-[34px] text-ink-primary">
+            {t('kanban.title')}
+          </h1>
+          <HelpButton
+            title={t('help.kanban.title')}
+            intro={t('help.kanban.intro')}
+            items={t('help.kanban.items', { returnObjects: true }) as string[]}
+            closeLabel={t('common.close')}
+          />
+        </div>
         <p className="text-sm text-ink-secondary">{t('kanban.subtitle')}</p>
       </header>
 
@@ -83,26 +175,100 @@ export function KanbanPage() {
         <Sparkles className="h-4 w-4 shrink-0" aria-hidden="true" />
         {data.focusTask ? (
           <span>
-            {t('kanban.topFocus')} • {data.focusTask.title} •{' '}
-            {t('kanban.scoreLabel', { score: data.focusTask.smartScore ?? 0 })}
-            {data.focusTask.recommendedAction ? `  •  ${data.focusTask.recommendedAction}` : ''}
+            {t('kanban.topFocus')} • {data.focusTask.title}
+            {settings.smartScoreEnabled
+              ? ` • ${t('kanban.scoreLabel', { score: data.focusTask.smartScore ?? 0 })}`
+              : ''}
+            {settings.explainRecommendations && data.focusTask.recommendedAction
+              ? `  •  ${data.focusTask.recommendedAction}`
+              : ''}
           </span>
         ) : (
           <span>{t('kanban.noFocusTask')}</span>
         )}
       </div>
 
-      <div className="flex gap-4 overflow-x-auto pb-2">
-        {data.lanes.map((lane) => (
-          <KanbanLane
-            key={lane.status}
-            lane={lane}
-            today={data.today}
-            projects={projects}
-            onSelectTask={handleSelectTask}
-          />
-        ))}
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          <select
+            value={projectFilter}
+            onChange={(event) => setProjectFilter(event.target.value)}
+            aria-label={t('tasks.projectFilterAriaLabel')}
+            className={controlClasses}
+          >
+            <option value="All">{t('kanban.filterProjectAll')}</option>
+            {projects.map((project) => (
+              <option key={project.id} value={project.id}>
+                {project.name}
+              </option>
+            ))}
+          </select>
+          <select
+            value={priorityFilter}
+            onChange={(event) => setPriorityFilter(event.target.value as Priority | 'All')}
+            aria-label={t('tasks.priorityFilterAriaLabel')}
+            className={controlClasses}
+          >
+            <option value="All">{t('kanban.filterPriorityAll')}</option>
+            {PRIORITIES.map((priority) => (
+              <option key={priority} value={priority}>
+                {priority}
+              </option>
+            ))}
+          </select>
+          <select
+            value={dueFilter}
+            onChange={(event) => setDueFilter(event.target.value as DueFilter)}
+            aria-label={t('kanban.filterDueDateAriaLabel')}
+            className={controlClasses}
+          >
+            <option value="All">{t('kanban.filterDueDateAll')}</option>
+            <option value="overdue">{t('kanban.filterDueDateOverdue')}</option>
+            <option value="today">{t('kanban.filterDueDateToday')}</option>
+            <option value="week">{t('kanban.filterDueDateWeek')}</option>
+          </select>
+          <select
+            value={sortMode}
+            onChange={(event) => setSortMode(event.target.value as KanbanSortMode)}
+            aria-label={t('kanban.sortAriaLabel')}
+            className={controlClasses}
+          >
+            <option value="smartScore">{t('kanban.sortSmartScore')}</option>
+            <option value="dueDate">{t('kanban.sortDueDate')}</option>
+            <option value="priority">{t('kanban.sortPriority')}</option>
+          </select>
+        </div>
+        <span className="text-xs text-ink-muted">
+          {t('kanban.taskCountAndDragHint', { count: filteredTasks.length })}
+        </span>
       </div>
+
+      <DndContext sensors={sensors} onDragEnd={handleDragEnd}>
+        <div className="flex gap-4 overflow-x-auto pb-2">
+          {data.lanes.map((lane) => (
+            <KanbanLane
+              key={lane.status}
+              lane={lane}
+              today={data.today}
+              projects={projects}
+              onSelectTask={handleSelectTask}
+              onAddTask={handleAddTask}
+              smartScoreEnabled={settings.smartScoreEnabled}
+              explainRecommendations={settings.explainRecommendations}
+            />
+          ))}
+        </div>
+      </DndContext>
+
+      {settings.smartScoreEnabled && (
+        <p className="text-xs text-ink-muted">
+          <span className="font-semibold uppercase tracking-wide">{t('kanban.legendTitle')}</span>{' '}
+          {t('kanban.legendCritical')} · {t('kanban.legendVeryHigh')} · {t('kanban.legendHigh')} ·{' '}
+          {t('kanban.legendNormal')}
+          {' | '}
+          {t('kanban.legendClickHint')} · {t('kanban.legendDragHint')}
+        </p>
+      )}
     </div>
   );
 }

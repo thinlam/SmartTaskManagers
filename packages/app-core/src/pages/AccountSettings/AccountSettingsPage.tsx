@@ -163,7 +163,7 @@ export function AccountSettingsPage() {
   }
 
   return (
-    <div className="mx-auto flex max-w-3xl flex-col gap-6 p-8">
+    <div className="mx-auto flex max-w-3xl flex-col gap-6 p-4 sm:p-8">
       <header className="flex items-center gap-3">
         <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-white">
           <UserCog className="h-5 w-5" aria-hidden="true" />

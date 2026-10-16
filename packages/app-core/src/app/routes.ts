@@ -4,6 +4,7 @@ import {
   CalendarCheck,
   ChartColumn,
   FolderKanban,
+  GanttChart,
   Inbox as InboxIcon,
   Kanban,
   LayoutDashboard,
@@ -57,6 +58,7 @@ export const APP_ROUTES: AppRoute[] = [
   },
   { path: '/calendar', label: 'Calendar', group: 'Planning', phase: 'Phase 16', icon: Calendar },
   { path: '/kanban', label: 'Kanban', group: 'Planning', phase: 'Phase 17', icon: Kanban },
+  { path: '/gantt', label: 'Gantt', group: 'Planning', phase: 'Phase 36', icon: GanttChart },
 
   { path: '/goals', label: 'Goals', group: 'Personal', phase: 'Phase 14', icon: Target },
   { path: '/habits', label: 'Habits', group: 'Personal', phase: 'Phase 15', icon: Repeat },

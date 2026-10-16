@@ -1,6 +1,12 @@
-import type { Area, Habit, Priority, Task } from '@stm/types';
-import { formatDueLabel } from './formatDueLabel';
+import type { Area, Habit, Priority, Risk, Task } from '@stm/types';
+import { formatDueLabel, type DueLabelTranslate } from './formatDueLabel';
 import { getAreaProgress, type AreaProgress } from './analyticsMetrics';
+import {
+  applySmartVisibility,
+  compareBySmartRank,
+  resolveSmartEngineOptions,
+  type SmartEngineOptions,
+} from './smartEngineOptions';
 
 /**
  * Ported from computeDashboardData_() in apps/google-sheets/src/
@@ -23,14 +29,46 @@ import { getAreaProgress, type AreaProgress } from './analyticsMetrics';
  */
 
 const FOCUS_MAX_ROWS = 6;
+const ATTENTION_MAX_ROWS = 8;
 const INSIGHT_MAX_ITEMS = 3;
 const DAILY_FOCUS_LIMIT_HOURS = 4;
+const DEFAULT_DUE_SOON_DAYS = 3;
+
+export type DashboardKpiKey =
+  | 'totalTasks'
+  | 'completed'
+  | 'inProgress'
+  | 'overdue'
+  | 'dueToday'
+  | 'dueSoon'
+  | 'waiting'
+  | 'completionRate';
 
 export interface DashboardKpi {
+  /**
+   * Identifies which of the 8 fixed KPIs this is (Frame 03's status-count
+   * tiles, adapted to this app's real 5-value TaskStatus — there is no
+   * "Blocked" status here, "waiting" is the closest real equivalent) —
+   * `packages/shared` has no i18n access, so `label`/`sub` below are
+   * English fallbacks only; the real UI (DashboardPage) translates by
+   * switching on `key` and the raw numeric fields below instead of using
+   * `label`/`sub` directly.
+   */
+  key: DashboardKpiKey;
   label: string;
   value: string;
   sub: string;
   tone: 'primary' | 'success' | 'warning' | 'danger' | 'info';
+  /** True only for Overdue when its count is > 0 — DashboardPage renders this one with a highlighted border, matching Frame 03. */
+  emphasize?: boolean;
+  /** Populated only for the KPI whose key matches — the raw number(s) a translated `sub` needs. */
+  highPriorityCount?: number;
+  overdueCount?: number;
+  totalCount?: number;
+  openCount?: number;
+  completedCount?: number;
+  completionRatePercent?: number;
+  dueSoonDaysWindow?: number;
 }
 
 export interface DashboardFocusTask {
@@ -43,6 +81,16 @@ export interface DashboardFocusTask {
   recommendedAction?: string;
 }
 
+export interface DashboardAttentionTask {
+  id: string;
+  title: string;
+  projectId?: string;
+  priority: Priority;
+  dueLabel: string;
+  risk?: Risk;
+  smartScore?: number;
+}
+
 export interface DashboardInsight {
   tone: 'danger' | 'warning' | 'success' | 'info';
   text: string;
@@ -53,6 +101,7 @@ export interface DashboardData {
   summary: string;
   kpis: DashboardKpi[];
   focusNow: DashboardFocusTask[];
+  attentionTasks: DashboardAttentionTask[];
   areas: AreaProgress[];
   insights: DashboardInsight[];
 }
@@ -90,20 +139,13 @@ function countHighImpact(tasks: Task[]): number {
   ).length;
 }
 
-function compareDueDates(a: string | null, b: string | null): number {
-  if (!a && !b) return 0;
-  if (!a) return 1;
-  if (!b) return -1;
-  return new Date(a).getTime() - new Date(b).getTime();
-}
-
-function toFocusTask(task: Task, referenceDate: Date): DashboardFocusTask {
+function toFocusTask(task: Task, referenceDate: Date, t?: DueLabelTranslate): DashboardFocusTask {
   return {
     id: task.id,
     title: task.title,
     area: task.area,
     priority: task.priority,
-    dueLabel: formatDueLabel(task.dueDate, referenceDate),
+    dueLabel: formatDueLabel(task.dueDate, referenceDate, t),
     smartScore: task.smartScore,
     recommendedAction: task.recommendedAction,
   };
@@ -119,81 +161,140 @@ export function computeDashboardData(
   tasks: Task[],
   habits: Habit[],
   referenceDate: Date = new Date(),
+  t?: DueLabelTranslate,
+  smartOptions?: SmartEngineOptions,
+  dueSoonDays: number = DEFAULT_DUE_SOON_DAYS,
 ): DashboardData {
+  const smart = resolveSmartEngineOptions(smartOptions);
   const today = startOfDay(referenceDate);
   const week = getWeekRange(today);
 
   const openTasks = tasks.filter((t) => t.status !== 'Completed');
+  const completedTasks = tasks.filter((t) => t.status === 'Completed');
+  const inProgressTasks = tasks.filter((t) => t.status === 'In Progress');
+  const waitingTasks = tasks.filter((t) => t.status === 'Waiting');
   const todayTasks = openTasks.filter(
     (t) => t.dueDate && startOfDay(new Date(t.dueDate)).getTime() === today.getTime(),
   );
   const overdueTasks = openTasks.filter(
     (t) => t.dueDate && daysBetween(today, startOfDay(new Date(t.dueDate))) < 0,
   );
+  const dueSoonTasks = openTasks.filter((t) => {
+    if (!t.dueDate) return false;
+    const diff = daysBetween(today, startOfDay(new Date(t.dueDate)));
+    return diff > 0 && diff <= dueSoonDays;
+  });
   const weekTasks = tasks.filter((t) => {
     if (!t.dueDate) return false;
     const d = startOfDay(new Date(t.dueDate)).getTime();
     return d >= week.start.getTime() && d <= week.end.getTime();
   });
-  const weekCompleted = weekTasks.filter((t) => t.status === 'Completed');
 
-  const focusMinutesToday = todayTasks.reduce((sum, t) => sum + (t.estimateMinutes ?? 0), 0);
-  const focusCapacityMinutes = DAILY_FOCUS_LIMIT_HOURS * 60;
-  const focusLoadPercent =
-    focusCapacityMinutes > 0 ? Math.round((focusMinutesToday / focusCapacityMinutes) * 100) : 0;
-
-  const weeklyPercent =
-    weekTasks.length > 0 ? Math.round((weekCompleted.length / weekTasks.length) * 100) : 0;
-
-  const streak = habits.reduce((max, h) => Math.max(max, h.streak), 0);
+  const completionRate =
+    tasks.length > 0 ? Math.round((completedTasks.length / tasks.length) * 100) : 0;
 
   const kpis: DashboardKpi[] = [
     {
-      label: 'Due Today',
-      value: String(todayTasks.length),
-      sub: `${countHighImpact(todayTasks)} high priority`,
-      tone: todayTasks.length > 0 ? 'primary' : 'success',
+      key: 'totalTasks',
+      label: 'Total Tasks',
+      value: String(tasks.length),
+      sub: `${openTasks.length} open`,
+      tone: 'primary',
+      totalCount: tasks.length,
+      openCount: openTasks.length,
     },
     {
+      key: 'completed',
+      label: 'Completed',
+      value: String(completedTasks.length),
+      sub: `${completionRate}% completion rate`,
+      tone: 'success',
+      completedCount: completedTasks.length,
+      completionRatePercent: completionRate,
+    },
+    {
+      key: 'inProgress',
+      label: 'In Progress',
+      value: String(inProgressTasks.length),
+      sub: 'Currently active',
+      tone: 'primary',
+    },
+    {
+      key: 'overdue',
       label: 'Overdue',
       value: String(overdueTasks.length),
       sub: overdueTasks.length > 0 ? 'Needs attention' : 'All clear',
       tone: overdueTasks.length > 0 ? 'danger' : 'success',
+      emphasize: overdueTasks.length > 0,
+      overdueCount: overdueTasks.length,
     },
     {
-      label: 'Focus Time',
-      value: formatMinutes(focusMinutesToday),
-      sub: `${Math.min(focusLoadPercent, 999)}% of daily capacity`,
-      tone: focusLoadPercent > 100 ? 'warning' : 'info',
+      key: 'dueToday',
+      label: 'Due Today',
+      value: String(todayTasks.length),
+      sub: `${countHighImpact(todayTasks)} high priority`,
+      tone: todayTasks.length > 0 ? 'primary' : 'success',
+      highPriorityCount: countHighImpact(todayTasks),
     },
     {
-      label: 'Weekly Progress',
-      value: weekTasks.length > 0 ? `${weeklyPercent}%` : '—',
-      sub:
-        weekTasks.length > 0
-          ? `${weekCompleted.length} of ${weekTasks.length} completed`
-          : 'No tasks due this week',
-      tone: weeklyPercent >= 70 ? 'success' : 'primary',
+      key: 'dueSoon',
+      label: 'Due Soon',
+      value: String(dueSoonTasks.length),
+      sub: `Next ${dueSoonDays} days`,
+      tone: 'info',
+      dueSoonDaysWindow: dueSoonDays,
     },
     {
-      label: 'Streak',
-      value: String(streak),
-      sub: streak === 1 ? 'day planning streak' : 'days planning streak',
-      tone: streak > 0 ? 'warning' : 'primary',
+      key: 'waiting',
+      label: 'Waiting',
+      value: String(waitingTasks.length),
+      sub: 'Blocked on something',
+      tone: waitingTasks.length > 0 ? 'warning' : 'success',
+    },
+    {
+      key: 'completionRate',
+      label: 'Completion Rate',
+      value: `${completionRate}%`,
+      sub: `${completedTasks.length} of ${tasks.length} done`,
+      tone: completionRate >= 70 ? 'success' : 'primary',
+      completedCount: completedTasks.length,
+      totalCount: tasks.length,
     },
   ];
 
   const focusNow = openTasks
     .slice()
-    .sort((a, b) => {
-      const diff = (b.smartScore ?? 0) - (a.smartScore ?? 0);
-      if (diff !== 0) return diff;
-      return compareDueDates(a.dueDate, b.dueDate);
-    })
+    .sort((a, b) => compareBySmartRank(a, b, smart.smartScoreEnabled))
     .slice(0, FOCUS_MAX_ROWS)
-    .map((t) => toFocusTask(t, referenceDate));
+    .map((task) => applySmartVisibility(toFocusTask(task, referenceDate, t), smart));
+
+  const attentionTasks: DashboardAttentionTask[] = openTasks
+    .filter(
+      (task) =>
+        overdueTasks.includes(task) ||
+        dueSoonTasks.includes(task) ||
+        task.risk === 'High' ||
+        task.risk === 'Critical',
+    )
+    .sort((a, b) => compareBySmartRank(a, b, smart.smartScoreEnabled))
+    .slice(0, ATTENTION_MAX_ROWS)
+    .map((task) => ({
+      id: task.id,
+      title: task.title,
+      projectId: task.projectId ?? undefined,
+      priority: task.priority,
+      dueLabel: formatDueLabel(task.dueDate, referenceDate, t),
+      risk: task.risk,
+      smartScore: smart.smartScoreEnabled ? task.smartScore : undefined,
+    }));
 
   const areas = getAreaProgress(tasks);
+
+  const weekCompleted = weekTasks.filter((t) => t.status === 'Completed');
+  const weeklyPercent =
+    weekTasks.length > 0 ? Math.round((weekCompleted.length / weekTasks.length) * 100) : 0;
+  const focusMinutesToday = todayTasks.reduce((sum, t) => sum + (t.estimateMinutes ?? 0), 0);
+  const focusCapacityMinutes = DAILY_FOCUS_LIMIT_HOURS * 60;
 
   const insights: DashboardInsight[] = [];
 
@@ -214,7 +315,7 @@ export function computeDashboardData(
     );
   }
 
-  if (focusMinutesToday > focusCapacityMinutes) {
+  if (smart.scheduleOverloadWarning && focusMinutesToday > focusCapacityMinutes) {
     insights.push({
       tone: 'warning',
       text: `Today is overloaded by ${formatMinutes(focusMinutesToday - focusCapacityMinutes)}. Consider moving a lower-priority task.`,
@@ -252,6 +353,7 @@ export function computeDashboardData(
     summary,
     kpis,
     focusNow,
+    attentionTasks,
     areas,
     insights: insights.slice(0, INSIGHT_MAX_ITEMS),
   };

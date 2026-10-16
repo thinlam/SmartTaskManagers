@@ -1,5 +1,7 @@
 import type { TaskSummary } from '@stm/types';
+import { useTranslation } from 'react-i18next';
 import { EmptyState, TaskCard } from '@stm/ui';
+import { translatePriority } from '../../lib/enumLabels';
 
 interface TaskListSectionProps {
   title: string;
@@ -27,6 +29,7 @@ export function TaskListSection({
   emptyText,
   accent,
 }: TaskListSectionProps) {
+  const { t } = useTranslation();
   return (
     <section className="flex flex-col gap-3">
       <div className="flex flex-col gap-0.5">
@@ -48,6 +51,7 @@ export function TaskListSection({
               meta={task.area}
               dueLabel={task.dueLabel}
               priority={task.priority}
+              priorityLabel={translatePriority(t, task.priority)}
               smartScore={task.smartScore}
               recommendedAction={task.recommendedAction}
             />

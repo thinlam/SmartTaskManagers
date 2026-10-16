@@ -16,8 +16,10 @@ const STATUS_TONE: Record<GoalStatus, 'info' | 'warning' | 'success'> = {
 
 export interface GoalStatusBadgeProps {
   status: GoalStatus;
+  /** Translated display text — falls back to the raw enum value when omitted (this package has no i18n access). */
+  label?: string;
 }
 
-export function GoalStatusBadge({ status }: GoalStatusBadgeProps) {
-  return <Badge tone={STATUS_TONE[status]}>{status}</Badge>;
+export function GoalStatusBadge({ status, label }: GoalStatusBadgeProps) {
+  return <Badge tone={STATUS_TONE[status]}>{label ?? status}</Badge>;
 }

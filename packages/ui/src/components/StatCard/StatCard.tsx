@@ -7,6 +7,8 @@ export interface StatCardProps {
   value: string;
   sub?: string;
   tone?: 'primary' | 'success' | 'warning' | 'danger' | 'info';
+  /** Frame 03's red-bordered Overdue tile — a highlighted border/background for a card that needs immediate attention, distinct from `tone` (which only colors the `sub` text). */
+  emphasize?: boolean;
 }
 
 const TONE_TEXT: Record<NonNullable<StatCardProps['tone']>, string> = {
@@ -18,12 +20,39 @@ const TONE_TEXT: Record<NonNullable<StatCardProps['tone']>, string> = {
 };
 
 /** Frame 02 (Component Library → Cards, "TOTAL TASKS 128 +12% tuần này"). */
-export function StatCard({ label, value, sub, tone = 'primary' }: StatCardProps) {
+export function StatCard({
+  label,
+  value,
+  sub,
+  tone = 'primary',
+  emphasize = false,
+}: StatCardProps) {
   return (
-    <div className="flex flex-col gap-1 rounded-lg border border-border bg-surface p-4">
-      <span className="text-xs font-medium uppercase tracking-wide text-ink-muted">{label}</span>
-      <span className="text-[32px] font-bold leading-[38px] text-ink-primary">{value}</span>
-      {sub && <span className={cn('text-xs', TONE_TEXT[tone])}>{sub}</span>}
+    <div
+      className={cn(
+        'flex flex-col gap-1 rounded-lg border bg-surface p-4',
+        emphasize ? 'border-danger bg-danger-soft' : 'border-border',
+      )}
+    >
+      <span
+        className={cn(
+          'text-xs font-medium uppercase tracking-wide',
+          emphasize ? 'text-danger' : 'text-ink-muted',
+        )}
+      >
+        {label}
+      </span>
+      <span
+        className={cn(
+          'text-[32px] font-bold leading-[38px]',
+          emphasize ? 'text-danger' : 'text-ink-primary',
+        )}
+      >
+        {value}
+      </span>
+      {sub && (
+        <span className={cn('text-xs', emphasize ? 'text-danger' : TONE_TEXT[tone])}>{sub}</span>
+      )}
     </div>
   );
 }
