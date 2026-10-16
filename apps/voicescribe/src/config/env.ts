@@ -5,6 +5,8 @@
  */
 export interface AppConfig {
   hfToken: string;
+  port: number;
+  maxUploadMb: number;
 }
 
 export function loadConfig(): AppConfig {
@@ -14,5 +16,7 @@ export function loadConfig(): AppConfig {
       'Thiếu biến môi trường HF_TOKEN. Tạo file .env (xem .env.example) với HF_TOKEN=hf_...',
     );
   }
-  return { hfToken };
+  const port = Number.parseInt(process.env.PORT ?? '3001', 10);
+  const maxUploadMb = Number.parseInt(process.env.MAX_UPLOAD_MB ?? '100', 10);
+  return { hfToken, port, maxUploadMb };
 }
