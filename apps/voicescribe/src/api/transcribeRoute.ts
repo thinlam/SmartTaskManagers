@@ -1,6 +1,8 @@
 import { Router, type Request, type Response } from 'express';
 import multer from 'multer';
 import { transcribeLongAudio } from '../services/longAudioTranscription.js';
+import { diarizeAudio } from '../services/diarization.js';
+import { mergeTranscriptWithSpeakers } from '../utils/mergeSpeakers.js';
 import { TranscriptionError } from '../types/transcription.js';
 import type { AppConfig } from '../config/env.js';
 
@@ -49,16 +51,43 @@ export function createTranscribeRouter(config: AppConfig): Router {
         return;
       }
 
+      const numSpeakersRaw = req.body.num_speakers;
+      const numSpeakers =
+        typeof numSpeakersRaw === 'string' && numSpeakersRaw.trim() !== ''
+          ? Number.parseInt(numSpeakersRaw, 10)
+          : undefined;
+
       try {
         const result = await transcribeLongAudio({
           hfToken: config.hfToken,
           audio: req.file.buffer,
           fileName: req.file.originalname,
         });
+
+        // Diarization is best-effort: a sidecar that isn't running (or
+        // fails for this file) shouldn't block the transcript the user
+        // actually asked for — fall back to a single "Người nói 1"
+        // label and report the failure separately instead.
+        let diarizationError: string | null = null;
+        let labeledSegments;
+        try {
+          const speakerSegments = await diarizeAudio({
+            audio: req.file.buffer,
+            fileName: req.file.originalname,
+            numSpeakers,
+          });
+          labeledSegments = mergeTranscriptWithSpeakers(result.segments, speakerSegments);
+        } catch (err) {
+          diarizationError =
+            err instanceof TranscriptionError ? err.message : 'Lỗi không xác định khi nhận dạng người nói.';
+          labeledSegments = result.segments.map((seg) => ({ ...seg, speaker: 'Người nói 1' }));
+        }
+
         res.status(200).json({
           text: result.text,
-          segments: result.segments,
+          segments: labeledSegments,
           processingTimeMs: result.processingTimeMs,
+          diarizationError,
         });
       } catch (err) {
         if (err instanceof TranscriptionError) {
