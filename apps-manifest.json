@@ -39,12 +39,30 @@
         }
       ],
       "features": [
-        { "title": "Dashboard & Today", "desc": "KPI, Focus Today và các task cần chú ý nhất." },
-        { "title": "Kanban, Calendar, Gantt", "desc": "Ba góc nhìn từ cùng một nguồn dữ liệu Tasks." },
-        { "title": "SmartScore & Risk", "desc": "Điểm ưu tiên 0-100 giải thích được, cấu hình trong Settings." },
-        { "title": "Nhắc deadline", "desc": "Thông báo quá hạn, đến hạn hôm nay và task bị chặn." },
-        { "title": "Dự án & Thành viên", "desc": "Project Health và workload của từng người." },
-        { "title": "Báo cáo", "desc": "Báo cáo ngày, tuần, tháng và hiệu suất dự án." }
+        {
+          "title": "Dashboard & Today",
+          "desc": "KPI, Focus Today và các task cần chú ý nhất."
+        },
+        {
+          "title": "Kanban, Calendar, Gantt",
+          "desc": "Ba góc nhìn từ cùng một nguồn dữ liệu Tasks."
+        },
+        {
+          "title": "SmartScore & Risk",
+          "desc": "Điểm ưu tiên 0-100 giải thích được, cấu hình trong Settings."
+        },
+        {
+          "title": "Nhắc deadline",
+          "desc": "Thông báo quá hạn, đến hạn hôm nay và task bị chặn."
+        },
+        {
+          "title": "Dự án & Thành viên",
+          "desc": "Project Health và workload của từng người."
+        },
+        {
+          "title": "Báo cáo",
+          "desc": "Báo cáo ngày, tuần, tháng và hiệu suất dự án."
+        }
       ],
       "installSteps": [
         "Tải Setup.exe và chạy trình cài đặt.",
@@ -57,11 +75,49 @@
       "badge": "CM",
       "name": "Content Manager",
       "shortDesc": "Lên lịch, theo dõi trạng thái và quản lý nội dung từ ý tưởng đến xuất bản.",
-      "longDesc": "Lên lịch, theo dõi trạng thái và quản lý nội dung từ ý tưởng đến xuất bản.",
-      "tags": ["Excel", "Google Sheets"],
+      "longDesc": "Ứng dụng quản lý nội dung cho đội ngũ marketing: Dashboard, danh sách nội dung, Kanban kéo thả, lịch đăng bài, thư viện media, chiến dịch và báo cáo cho Facebook, TikTok, YouTube, Website và Zalo. Có bản Web, Mobile (Android/iOS) và Windows Desktop, dùng chung backend Content Manager (ASP.NET Core + PostgreSQL).",
+      "tags": ["Windows Desktop", "Web App", "Mobile"],
       "category": "Nội dung",
-      "status": "soon",
-      "platforms": []
+      "status": "beta",
+      "platforms": [
+        {
+          "label": "Windows Desktop",
+          "note": "Bản Beta · đang chuẩn bị bộ cài, cần backend Content Manager đang chạy",
+          "actionLabel": "Sắp có bộ cài",
+          "downloadUrl": null
+        }
+      ],
+      "features": [
+        {
+          "title": "Tổng quan",
+          "desc": "KPI tuần/tháng, việc cần tập trung hôm nay và hoạt động gần đây."
+        },
+        {
+          "title": "Kanban kéo thả",
+          "desc": "Chuyển trạng thái từ Ý tưởng đến Đã đăng chỉ bằng một lần kéo."
+        },
+        {
+          "title": "Lịch đăng bài",
+          "desc": "Xem theo tháng, tuần hoặc danh sách, lọc theo kênh."
+        },
+        {
+          "title": "Thư viện media",
+          "desc": "Tải lên ảnh/video và đính kèm vào nội dung."
+        },
+        {
+          "title": "Chiến dịch & Báo cáo",
+          "desc": "Nhóm nội dung theo chiến dịch, xuất báo cáo CSV."
+        },
+        {
+          "title": "Web, Mobile, Desktop",
+          "desc": "Một codebase chạy trên trình duyệt, Android/iOS và Windows."
+        }
+      ],
+      "installSteps": [
+        "Khởi động backend: npm run cm:up (Docker + PostgreSQL).",
+        "Mở Content Manager và nhập địa chỉ máy chủ ở màn hình đăng nhập.",
+        "Đăng ký tài khoản đầu tiên — tài khoản này là Quản trị viên."
+      ]
     },
     {
       "id": "giao-trinh-word",

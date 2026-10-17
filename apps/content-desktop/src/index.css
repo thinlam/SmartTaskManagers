@@ -1,0 +1,4 @@
+@import 'tailwindcss';
+@import '@cm/core/theme.css';
+
+@source '../../../packages/cm-core/src';
