@@ -10,7 +10,8 @@ WORKDIR /app
 COPY --from=build /app/publish .
 ENV ASPNETCORE_ENVIRONMENT=Production \
     Storage__Path=/data/uploads
-VOLUME /data/uploads
+# No VOLUME instruction: Railway rejects it at validation time. Attach a Railway
+# Volume mounted at /data/uploads instead (docker-compose declares its own volume).
 EXPOSE 8080
 # Railway injects $PORT at runtime; fall back to 8080 for plain `docker run`.
 ENTRYPOINT ["sh", "-c", "ASPNETCORE_URLS=http://+:${PORT:-8080} exec dotnet ContentManager.Api.dll"]
