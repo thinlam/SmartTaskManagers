@@ -7,10 +7,12 @@
     "apps/hub",
     "apps/voicescribe",
     "apps/voicescribe/web",
+    "apps/content-web",
+    "apps/content-desktop",
     "packages/*"
   ],
   "scripts": {
-    "typecheck": "tsc -b && npm run typecheck --workspace=apps/desktop && npm run typecheck --workspace=apps/web && npm run typecheck --workspace=apps/hub && npm run typecheck --workspace=apps/voicescribe && npm run typecheck --workspace=@voicescribe/web",
+    "typecheck": "tsc -b && npm run typecheck --workspace=apps/desktop && npm run typecheck --workspace=apps/web && npm run typecheck --workspace=apps/hub && npm run typecheck --workspace=apps/voicescribe && npm run typecheck --workspace=@voicescribe/web && npm run typecheck --workspace=packages/cm-core && npm run typecheck --workspace=apps/content-web && npm run typecheck --workspace=apps/content-desktop",
     "typecheck:clean": "tsc -b --clean",
     "lint": "eslint .",
     "format": "prettier --check .",
@@ -33,7 +35,16 @@
     "android:run": "npm run android:run --workspace=apps/web",
     "android:build-debug": "npm run android:build-debug --workspace=apps/web",
     "android:open": "npm run android:open --workspace=apps/web",
-    "ios:open": "npm run ios:open --workspace=apps/web"
+    "ios:open": "npm run ios:open --workspace=apps/web",
+    "dev:cm-web": "npm run dev --workspace=apps/content-web",
+    "build:cm-web": "npm run build --workspace=apps/content-web",
+    "dev:cm-desktop": "npm run dev --workspace=apps/content-desktop",
+    "tauri:cm": "npm run tauri --workspace=apps/content-desktop --",
+    "dev:cm-tauri": "npm run tauri --workspace=apps/content-desktop -- dev",
+    "build:cm-tauri": "npm run tauri --workspace=apps/content-desktop -- build",
+    "cm:android-open": "npm run android:open --workspace=apps/content-web",
+    "cm:up": "docker compose -f docker-compose.content-manager.yml up -d --build",
+    "cm:down": "docker compose -f docker-compose.content-manager.yml down"
   },
   "devDependencies": {
     "@eslint/js": "^9.15.0",

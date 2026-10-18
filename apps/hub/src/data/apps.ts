@@ -125,20 +125,57 @@ export const DEFAULT_APPS: AppEntry[] = [
     badge: 'CM',
     name: 'Content Manager',
     shortDesc: 'Lên lịch, theo dõi trạng thái và quản lý nội dung từ ý tưởng đến xuất bản.',
-    longDesc: 'Lên lịch, theo dõi trạng thái và quản lý nội dung từ ý tưởng đến xuất bản.',
-    tags: ['Excel', 'Google Sheets'],
+    longDesc:
+      'Ứng dụng quản lý nội dung cho đội ngũ marketing: Dashboard, danh sách nội dung, Kanban kéo thả, lịch đăng bài, thư viện media, chiến dịch và báo cáo cho Facebook, TikTok, YouTube, Website và Zalo. Có bản Web, Mobile (Android/iOS) và Windows Desktop, dùng chung backend Content Manager (ASP.NET Core + PostgreSQL).',
+    tags: ['Windows Desktop', 'Web App', 'Mobile'],
     category: 'Nội dung',
-    status: 'soon',
-    platforms: [],
+    status: 'beta',
+    platforms: [
+      {
+        label: 'Windows Desktop',
+        note: 'Bản Beta · đang chuẩn bị bộ cài, cần backend Content Manager đang chạy',
+        actionLabel: 'Sắp có bộ cài',
+        downloadUrl: null,
+      },
+    ],
+    features: [
+      {
+        title: 'Tổng quan',
+        desc: 'KPI tuần/tháng, việc cần tập trung hôm nay và hoạt động gần đây.',
+      },
+      {
+        title: 'Kanban kéo thả',
+        desc: 'Chuyển trạng thái từ Ý tưởng đến Đã đăng chỉ bằng một lần kéo.',
+      },
+      {
+        title: 'Lịch đăng bài',
+        desc: 'Xem theo tháng, tuần hoặc danh sách, lọc theo kênh.',
+      },
+      {
+        title: 'Thư viện media',
+        desc: 'Tải lên ảnh/video và đính kèm vào nội dung.',
+      },
+      {
+        title: 'Chiến dịch & Báo cáo',
+        desc: 'Nhóm nội dung theo chiến dịch, xuất báo cáo CSV.',
+      },
+      {
+        title: 'Web, Mobile, Desktop',
+        desc: 'Một codebase chạy trên trình duyệt, Android/iOS và Windows.',
+      },
+    ],
+    installSteps: [
+      'Khởi động backend: npm run cm:up (Docker + PostgreSQL).',
+      'Mở Content Manager và nhập địa chỉ máy chủ ở màn hình đăng nhập.',
+      'Đăng ký tài khoản đầu tiên — tài khoản này là Quản trị viên.',
+    ],
   },
   {
     id: 'giao-trinh-word',
     badge: 'W',
     name: 'Giáo Trình Word Add-in',
-    shortDesc:
-      'Task Pane hỗ trợ định dạng, chuẩn hóa văn bản và tra cứu phím tắt ngay trong Word.',
-    longDesc:
-      'Task Pane hỗ trợ định dạng, chuẩn hóa văn bản và tra cứu phím tắt ngay trong Word.',
+    shortDesc: 'Task Pane hỗ trợ định dạng, chuẩn hóa văn bản và tra cứu phím tắt ngay trong Word.',
+    longDesc: 'Task Pane hỗ trợ định dạng, chuẩn hóa văn bản và tra cứu phím tắt ngay trong Word.',
     tags: ['Word', 'Office Add-in'],
     category: 'Word',
     status: 'ready',
@@ -157,8 +194,7 @@ export const DEFAULT_APPS: AppEntry[] = [
     badge: 'X',
     name: 'Giáo Trình Excel Add-in',
     shortDesc: 'Công cụ công thức, làm sạch dữ liệu và bài học thực hành tích hợp trong Excel.',
-    longDesc:
-      'Công cụ công thức, làm sạch dữ liệu và bài học thực hành tích hợp trong Excel.',
+    longDesc: 'Công cụ công thức, làm sạch dữ liệu và bài học thực hành tích hợp trong Excel.',
     tags: ['Excel', 'Office Add-in'],
     category: 'Excel',
     status: 'ready',
@@ -207,8 +243,7 @@ export const DEFAULT_APPS: AppEntry[] = [
     badge: 'DC',
     name: 'Data Cleaner',
     shortDesc: 'Xóa trùng lặp, cắt khoảng trắng, phát hiện ô lỗi và chuẩn hóa dữ liệu hàng loạt.',
-    longDesc:
-      'Xóa trùng lặp, cắt khoảng trắng, phát hiện ô lỗi và chuẩn hóa dữ liệu hàng loạt.',
+    longDesc: 'Xóa trùng lặp, cắt khoảng trắng, phát hiện ô lỗi và chuẩn hóa dữ liệu hàng loạt.',
     tags: ['Excel'],
     category: 'Excel',
     status: 'soon',

@@ -1,0 +1,44 @@
+# Content Manager — local stack (PostgreSQL + API).
+#   docker compose -f docker-compose.content-manager.yml up -d --build
+# API:      http://localhost:5290   (health: /health)
+# Postgres: localhost:5433          (db contentmanager, user cm)
+name: content-manager
+
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: contentmanager
+      POSTGRES_USER: cm
+      POSTGRES_PASSWORD: ${CM_DB_PASSWORD:-cm_dev_password}
+    ports:
+      - "5433:5432"
+    volumes:
+      - cm-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cm -d contentmanager"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build: ./backend/ContentManager.Api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      ConnectionStrings__Default: Host=db;Port=5432;Database=contentmanager;Username=cm;Password=${CM_DB_PASSWORD:-cm_dev_password}
+      Jwt__Secret: ${CM_JWT_SECRET:-local-dev-only-secret-change-before-deploying-0123456789}
+      Seed__Demo: ${CM_SEED_DEMO:-true}
+      Cors__AllowedOrigins__0: http://localhost:5180
+      Cors__AllowedOrigins__1: http://localhost:5181
+    ports:
+      - "5290:8080"
+    volumes:
+      - cm-uploads:/data/uploads
+
+volumes:
+  cm-pgdata:
+  cm-uploads:

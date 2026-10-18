@@ -1,0 +1,49 @@
+{
+  "$schema": "../../../node_modules/@tauri-apps/cli/config.schema.json",
+  "productName": "content-manager",
+  "version": "0.1.0",
+  "identifier": "com.contentmanager.desktop",
+  "build": {
+    "frontendDist": "../dist",
+    "devUrl": "http://localhost:5181",
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "Content Manager",
+        "width": 1360,
+        "height": 860,
+        "minWidth": 1024,
+        "minHeight": 680,
+        "resizable": true,
+        "fullscreen": false
+      }
+    ],
+    "security": { "csp": null }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis", "msi"],
+    "publisher": "lâm Nguyên Thìn",
+    "copyright": "© 2026 lâm Nguyên Thìn",
+    "category": "Productivity",
+    "shortDescription": "Lên lịch, theo dõi trạng thái và quản lý nội dung từ ý tưởng đến xuất bản",
+    "longDescription": "Content Manager giúp đội ngũ nội dung lên kế hoạch, soạn thảo, duyệt và lên lịch đăng bài trên Facebook, TikTok, YouTube, Website và Zalo. Kết nối với backend Content Manager riêng.",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "windows": {
+      "nsis": {
+        "installMode": "currentUser",
+        "languages": ["English"],
+        "startMenuFolder": "Content Manager"
+      }
+    }
+  }
+}
