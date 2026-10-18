@@ -28,6 +28,7 @@ uploads/
 .env
 .env.*
 !.env.example
+!apps/content-desktop/.env.production
 *.pem
 *.key
 appsettings.*.local.json

@@ -78,13 +78,33 @@
       "longDesc": "Ứng dụng quản lý nội dung cho đội ngũ marketing: Dashboard, danh sách nội dung, Kanban kéo thả, lịch đăng bài, thư viện media, chiến dịch và báo cáo cho Facebook, TikTok, YouTube, Website và Zalo. Có bản Web, Mobile (Android/iOS) và Windows Desktop, dùng chung backend Content Manager (ASP.NET Core + PostgreSQL).",
       "tags": ["Windows Desktop", "Web App", "Mobile"],
       "category": "Nội dung",
-      "status": "beta",
+      "status": "ready",
       "platforms": [
         {
-          "label": "Windows Desktop",
-          "note": "Bản Beta · đang chuẩn bị bộ cài, cần backend Content Manager đang chạy",
-          "actionLabel": "Sắp có bộ cài",
-          "downloadUrl": null
+          "label": "Windows Desktop (khuyên dùng)",
+          "note": "Setup.exe · kết nối sẵn tới máy chủ Content Manager (Railway)",
+          "actionLabel": "Tải Setup.exe",
+          "downloadUrl": "https://github.com/thinlam/SmartTaskManagers/releases/download/content-manager-v0.1.0/content-manager_0.1.0_x64-setup.exe",
+          "installer": {
+            "version": "0.1.0",
+            "sha256": "a2b9e6d442eebab20b6cd92a1a8ad1289474d42772baba70fc456eebf9982e98",
+            "installerType": "nsis",
+            "silentArgs": ["/S"],
+            "startMenuShortcut": "Content Manager\\content-manager.lnk"
+          }
+        },
+        {
+          "label": "Windows Desktop (.msi)",
+          "note": "Dùng nếu công ty/tổ chức bạn yêu cầu cài qua MSI",
+          "actionLabel": "Tải .msi",
+          "downloadUrl": "https://github.com/thinlam/SmartTaskManagers/releases/download/content-manager-v0.1.0/content-manager_0.1.0_x64_en-US.msi",
+          "installer": {
+            "version": "0.1.0",
+            "sha256": "25d2d8c3a63239b32da52a6d712f8cc70615b906be71071370bbf03b838d0184",
+            "installerType": "msi",
+            "silentArgs": ["/qn"],
+            "startMenuShortcut": "Content Manager\\content-manager.lnk"
+          }
         }
       ],
       "features": [
@@ -114,9 +134,10 @@
         }
       ],
       "installSteps": [
-        "Khởi động backend: npm run cm:up (Docker + PostgreSQL).",
-        "Mở Content Manager và nhập địa chỉ máy chủ ở màn hình đăng nhập.",
-        "Đăng ký tài khoản đầu tiên — tài khoản này là Quản trị viên."
+        "Tải Setup.exe và chạy trình cài đặt.",
+        "Mở Content Manager vừa cài — ứng dụng kết nối sẵn tới máy chủ Railway, không cần chạy backend local.",
+        "Đăng ký tài khoản đầu tiên (hoặc đăng nhập) — tài khoản đầu tiên là Quản trị viên.",
+        "Có thể đổi địa chỉ máy chủ trong Cài đặt → Máy chủ nếu dùng backend riêng."
       ]
     },
     {
