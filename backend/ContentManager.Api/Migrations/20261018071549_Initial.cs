@@ -1,6 +1,5 @@
 ﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
-using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
@@ -17,6 +16,7 @@ namespace ContentManager.Api.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    WorkspaceId = table.Column<Guid>(type: "uuid", nullable: false),
                     Name = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
                     Description = table.Column<string>(type: "text", nullable: true),
                     StartDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
@@ -30,10 +30,24 @@ namespace ContentManager.Api.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Workspaces",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    Name = table.Column<string>(type: "text", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Workspaces", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Users",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    WorkspaceId = table.Column<Guid>(type: "uuid", nullable: false),
                     Email = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
                     FullName = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
                     PasswordHash = table.Column<string>(type: "text", nullable: false),
@@ -43,6 +57,12 @@ namespace ContentManager.Api.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_Users", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Users_Workspaces_WorkspaceId",
+                        column: x => x.WorkspaceId,
+                        principalTable: "Workspaces",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -50,6 +70,7 @@ namespace ContentManager.Api.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    WorkspaceId = table.Column<Guid>(type: "uuid", nullable: false),
                     UserId = table.Column<Guid>(type: "uuid", nullable: true),
                     ContentId = table.Column<Guid>(type: "uuid", nullable: true),
                     Action = table.Column<string>(type: "character varying(32)", maxLength: 32, nullable: false),
@@ -72,8 +93,8 @@ namespace ContentManager.Api.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    Number = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityAlwaysColumn),
+                    WorkspaceId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Number = table.Column<int>(type: "integer", nullable: false),
                     Title = table.Column<string>(type: "character varying(300)", maxLength: 300, nullable: false),
                     Description = table.Column<string>(type: "text", nullable: true),
                     Channel = table.Column<string>(type: "character varying(16)", maxLength: 16, nullable: false),
@@ -109,6 +130,7 @@ namespace ContentManager.Api.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    WorkspaceId = table.Column<Guid>(type: "uuid", nullable: false),
                     FileName = table.Column<string>(type: "character varying(260)", maxLength: 260, nullable: false),
                     StoredName = table.Column<string>(type: "text", nullable: false),
                     ContentType = table.Column<string>(type: "character varying(128)", maxLength: 128, nullable: false),
@@ -139,6 +161,16 @@ namespace ContentManager.Api.Migrations
                 column: "UserId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Activities_WorkspaceId",
+                table: "Activities",
+                column: "WorkspaceId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Campaigns_WorkspaceId",
+                table: "Campaigns",
+                column: "WorkspaceId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Contents_AssigneeId",
                 table: "Contents",
                 column: "AssigneeId");
@@ -147,12 +179,6 @@ namespace ContentManager.Api.Migrations
                 name: "IX_Contents_CampaignId",
                 table: "Contents",
                 column: "CampaignId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Contents_Number",
-                table: "Contents",
-                column: "Number",
-                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_Contents_ScheduledAt",
@@ -165,15 +191,36 @@ namespace ContentManager.Api.Migrations
                 column: "Status");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Contents_WorkspaceId",
+                table: "Contents",
+                column: "WorkspaceId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Contents_WorkspaceId_Number",
+                table: "Contents",
+                columns: new[] { "WorkspaceId", "Number" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Media_ContentId",
                 table: "Media",
                 column: "ContentId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Media_WorkspaceId",
+                table: "Media",
+                column: "WorkspaceId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Users_Email",
                 table: "Users",
                 column: "Email",
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Users_WorkspaceId",
+                table: "Users",
+                column: "WorkspaceId");
         }
 
         /// <inheritdoc />
@@ -193,6 +240,9 @@ namespace ContentManager.Api.Migrations
 
             migrationBuilder.DropTable(
                 name: "Users");
+
+            migrationBuilder.DropTable(
+                name: "Workspaces");
         }
     }
 }

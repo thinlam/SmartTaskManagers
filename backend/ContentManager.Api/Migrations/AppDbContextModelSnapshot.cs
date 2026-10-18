@@ -46,11 +46,16 @@ namespace ContentManager.Api.Migrations
                     b.Property<Guid?>("UserId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uuid");
+
                     b.HasKey("Id");
 
                     b.HasIndex("CreatedAt");
 
                     b.HasIndex("UserId");
+
+                    b.HasIndex("WorkspaceId");
 
                     b.ToTable("Activities");
                 });
@@ -83,7 +88,12 @@ namespace ContentManager.Api.Migrations
                         .HasMaxLength(16)
                         .HasColumnType("character varying(16)");
 
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uuid");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("WorkspaceId");
 
                     b.ToTable("Campaigns");
                 });
@@ -112,10 +122,7 @@ namespace ContentManager.Api.Migrations
                         .HasColumnType("text");
 
                     b.Property<int>("Number")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityAlwaysColumn(b.Property<int>("Number"));
 
                     b.Property<string>("Priority")
                         .IsRequired()
@@ -144,18 +151,23 @@ namespace ContentManager.Api.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uuid");
+
                     b.HasKey("Id");
 
                     b.HasIndex("AssigneeId");
 
                     b.HasIndex("CampaignId");
 
-                    b.HasIndex("Number")
-                        .IsUnique();
-
                     b.HasIndex("ScheduledAt");
 
                     b.HasIndex("Status");
+
+                    b.HasIndex("WorkspaceId");
+
+                    b.HasIndex("WorkspaceId", "Number")
+                        .IsUnique();
 
                     b.ToTable("Contents");
                 });
@@ -192,9 +204,14 @@ namespace ContentManager.Api.Migrations
                     b.Property<Guid?>("UploadedById")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uuid");
+
                     b.HasKey("Id");
 
                     b.HasIndex("ContentId");
+
+                    b.HasIndex("WorkspaceId");
 
                     b.ToTable("Media");
                 });
@@ -227,12 +244,35 @@ namespace ContentManager.Api.Migrations
                         .HasMaxLength(16)
                         .HasColumnType("character varying(16)");
 
+                    b.Property<Guid>("WorkspaceId")
+                        .HasColumnType("uuid");
+
                     b.HasKey("Id");
 
                     b.HasIndex("Email")
                         .IsUnique();
 
+                    b.HasIndex("WorkspaceId");
+
                     b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("ContentManager.Api.Domain.Workspace", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("Workspaces");
                 });
 
             modelBuilder.Entity("ContentManager.Api.Domain.ActivityLog", b =>
@@ -268,6 +308,15 @@ namespace ContentManager.Api.Migrations
                         .WithMany("Media")
                         .HasForeignKey("ContentId")
                         .OnDelete(DeleteBehavior.SetNull);
+                });
+
+            modelBuilder.Entity("ContentManager.Api.Domain.User", b =>
+                {
+                    b.HasOne("ContentManager.Api.Domain.Workspace", null)
+                        .WithMany()
+                        .HasForeignKey("WorkspaceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("ContentManager.Api.Domain.Content", b =>

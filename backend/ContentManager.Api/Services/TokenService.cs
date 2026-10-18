@@ -28,6 +28,7 @@ public class TokenService(Microsoft.Extensions.Options.IOptions<JwtOptions> opti
             new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new Claim(ClaimTypes.Email, user.Email),
             new Claim(ClaimTypes.Role, user.Role.ToString()),
+            new Claim(HttpTenant.ClaimType, user.WorkspaceId.ToString()),
         };
         var jwt = new JwtSecurityToken(
             _o.Issuer, _o.Audience, claims,

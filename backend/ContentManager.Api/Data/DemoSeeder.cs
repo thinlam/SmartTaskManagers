@@ -13,28 +13,30 @@ public static class DemoSeeder
     {
         if (await db.Users.AnyAsync()) return;
 
+        var ws = new Workspace { Name = "Content Marketing Workspace" };
+        db.Workspaces.Add(ws);
         string hash(string p) => BCrypt.Net.BCrypt.HashPassword(p);
-        var admin = new User { Email = DemoEmail, FullName = "Minh Anh", Role = Role.Admin, PasswordHash = hash(DemoPassword) };
+        var admin = new User { WorkspaceId = ws.Id, Email = DemoEmail, FullName = "Minh Anh", Role = Role.Admin, PasswordHash = hash(DemoPassword) };
         var people = new[]
         {
             admin,
-            new User { Email = "quanghuy@contentmanager.local", FullName = "Quang Huy", Role = Role.Editor, PasswordHash = hash(DemoPassword) },
-            new User { Email = "thaovy@contentmanager.local", FullName = "Thảo Vy", Role = Role.Editor, PasswordHash = hash(DemoPassword) },
-            new User { Email = "quocbao@contentmanager.local", FullName = "Quốc Bảo", Role = Role.Editor, PasswordHash = hash(DemoPassword) },
-            new User { Email = "lanchi@contentmanager.local", FullName = "Lan Chi", Role = Role.Editor, PasswordHash = hash(DemoPassword) },
-            new User { Email = "hoangnam@contentmanager.local", FullName = "Hoàng Nam", Role = Role.Viewer, PasswordHash = hash(DemoPassword) },
-            new User { Email = "thuha@contentmanager.local", FullName = "Thu Hà", Role = Role.Editor, PasswordHash = hash(DemoPassword) },
+            new User { WorkspaceId = ws.Id, Email = "quanghuy@contentmanager.local", FullName = "Quang Huy", Role = Role.Editor, PasswordHash = hash(DemoPassword) },
+            new User { WorkspaceId = ws.Id, Email = "thaovy@contentmanager.local", FullName = "Thảo Vy", Role = Role.Editor, PasswordHash = hash(DemoPassword) },
+            new User { WorkspaceId = ws.Id, Email = "quocbao@contentmanager.local", FullName = "Quốc Bảo", Role = Role.Editor, PasswordHash = hash(DemoPassword) },
+            new User { WorkspaceId = ws.Id, Email = "lanchi@contentmanager.local", FullName = "Lan Chi", Role = Role.Editor, PasswordHash = hash(DemoPassword) },
+            new User { WorkspaceId = ws.Id, Email = "hoangnam@contentmanager.local", FullName = "Hoàng Nam", Role = Role.Viewer, PasswordHash = hash(DemoPassword) },
+            new User { WorkspaceId = ws.Id, Email = "thuha@contentmanager.local", FullName = "Thu Hà", Role = Role.Editor, PasswordHash = hash(DemoPassword) },
         };
         db.Users.AddRange(people);
 
         var today = DateTime.UtcNow.Date;
         var campaigns = new[]
         {
-            new Campaign { Name = "Chiến dịch mùa thu", Description = "Ra mắt bộ sưu tập mùa thu trên toàn bộ kênh.", Status = CampaignStatus.Active, StartDate = today.AddDays(-20), EndDate = today.AddDays(40) },
-            new Campaign { Name = "TikTok Challenge", Description = "Cuộc thi 7 ngày sáng tạo nội dung cùng cộng đồng.", Status = CampaignStatus.Active, StartDate = today.AddDays(-5), EndDate = today.AddDays(25) },
-            new Campaign { Name = "Product Education", Description = "Chuỗi nội dung hướng dẫn sử dụng sản phẩm.", Status = CampaignStatus.Active, StartDate = today.AddDays(-30), EndDate = today.AddDays(60) },
-            new Campaign { Name = "Ra mắt sản phẩm", Description = "Chiến dịch truyền thông cho sản phẩm mới.", Status = CampaignStatus.Planned, StartDate = today.AddDays(10), EndDate = today.AddDays(45) },
-            new Campaign { Name = "Always-on Content", Description = "Nội dung duy trì thường xuyên trên các kênh.", Status = CampaignStatus.Active, StartDate = today.AddDays(-90), EndDate = null },
+            new Campaign { WorkspaceId = ws.Id, Name = "Chiến dịch mùa thu", Description = "Ra mắt bộ sưu tập mùa thu trên toàn bộ kênh.", Status = CampaignStatus.Active, StartDate = today.AddDays(-20), EndDate = today.AddDays(40) },
+            new Campaign { WorkspaceId = ws.Id, Name = "TikTok Challenge", Description = "Cuộc thi 7 ngày sáng tạo nội dung cùng cộng đồng.", Status = CampaignStatus.Active, StartDate = today.AddDays(-5), EndDate = today.AddDays(25) },
+            new Campaign { WorkspaceId = ws.Id, Name = "Product Education", Description = "Chuỗi nội dung hướng dẫn sử dụng sản phẩm.", Status = CampaignStatus.Active, StartDate = today.AddDays(-30), EndDate = today.AddDays(60) },
+            new Campaign { WorkspaceId = ws.Id, Name = "Ra mắt sản phẩm", Description = "Chiến dịch truyền thông cho sản phẩm mới.", Status = CampaignStatus.Planned, StartDate = today.AddDays(10), EndDate = today.AddDays(45) },
+            new Campaign { WorkspaceId = ws.Id, Name = "Always-on Content", Description = "Nội dung duy trì thường xuyên trên các kênh.", Status = CampaignStatus.Active, StartDate = today.AddDays(-90), EndDate = null },
         };
         db.Campaigns.AddRange(campaigns);
 
@@ -73,12 +75,15 @@ public static class DemoSeeder
             ("Bài PR báo chí ra mắt sản phẩm", Channel.Website, ContentStatus.Review, Priority.High, 3, 3, 10, 9),
         };
 
+        var number = 0;
         foreach (var (title, channel, status, priority, who, camp, day, hour) in seed)
         {
             var when = today.AddDays(day).AddHours(hour);
             var created = when.AddDays(-Random.Shared.Next(2, 10));
             db.Contents.Add(new Content
             {
+                WorkspaceId = ws.Id,
+                Number = ++number,
                 Title = title,
                 Description = $"Nội dung \"{title}\" thuộc {campaigns[camp].Name}.",
                 Channel = channel,
@@ -95,10 +100,10 @@ public static class DemoSeeder
         }
 
         db.Activities.AddRange(
-            new ActivityLog { User = people[0], Action = "published", Subject = "Mẹo tối ưu nội dung Facebook", CreatedAt = DateTime.UtcNow.AddMinutes(-5) },
-            new ActivityLog { User = people[1], Action = "status", Subject = "Trend biến hình cùng sản phẩm", CreatedAt = DateTime.UtcNow.AddMinutes(-18) },
-            new ActivityLog { User = people[2], Action = "uploaded", Subject = "HDSD tính năng mới.mp4", CreatedAt = DateTime.UtcNow.AddMinutes(-45) },
-            new ActivityLog { User = people[3], Action = "status", Subject = "Giới thiệu sản phẩm mới", CreatedAt = DateTime.UtcNow.AddHours(-1) });
+            new ActivityLog { WorkspaceId = ws.Id, User = people[0], Action = "published", Subject = "Mẹo tối ưu nội dung Facebook", CreatedAt = DateTime.UtcNow.AddMinutes(-5) },
+            new ActivityLog { WorkspaceId = ws.Id, User = people[1], Action = "status", Subject = "Trend biến hình cùng sản phẩm", CreatedAt = DateTime.UtcNow.AddMinutes(-18) },
+            new ActivityLog { WorkspaceId = ws.Id, User = people[2], Action = "uploaded", Subject = "HDSD tính năng mới.mp4", CreatedAt = DateTime.UtcNow.AddMinutes(-45) },
+            new ActivityLog { WorkspaceId = ws.Id, User = people[3], Action = "status", Subject = "Giới thiệu sản phẩm mới", CreatedAt = DateTime.UtcNow.AddHours(-1) });
 
         await db.SaveChangesAsync();
     }

@@ -61,6 +61,7 @@ public static class ContentEndpoints
             var status = i.Status ?? ContentStatus.Idea;
             var c = new Content
             {
+                Number = (await db.Contents.MaxAsync(x => (int?)x.Number) ?? 0) + 1,
                 Title = i.Title!.Trim(),
                 Description = i.Description,
                 Channel = i.Channel!.Value,

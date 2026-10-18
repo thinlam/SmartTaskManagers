@@ -3,6 +3,7 @@ using ContentManager.Api.Domain;
 using ContentManager.Api.Services;
 using Microsoft.EntityFrameworkCore;
 
+
 namespace ContentManager.Api.Endpoints;
 
 /// <summary>Campaigns, members, media and activity feed.</summary>
@@ -84,10 +85,11 @@ public static class MiscEndpoints
     {
         var g = app.MapGroup("/api/members").RequireAuthorization();
 
-        g.MapGet("", async (AppDbContext db) =>
-            Results.Ok((await db.Users.AsNoTracking().OrderBy(u => u.CreatedAt).ToListAsync()).Select(u => u.ToDto())));
+        g.MapGet("", async (AppDbContext db, ITenant tenant) =>
+            Results.Ok((await db.Users.AsNoTracking().Where(u => u.WorkspaceId == tenant.WorkspaceId)
+                .OrderBy(u => u.CreatedAt).ToListAsync()).Select(u => u.ToDto())));
 
-        g.MapPost("", async (MemberInput i, HttpContext ctx, AppDbContext db) =>
+        g.MapPost("", async (MemberInput i, HttpContext ctx, AppDbContext db, ITenant tenant) =>
         {
             if (!await IsAdmin(ctx, db)) return Results.Forbid();
             var email = i.Email?.Trim().ToLowerInvariant() ?? "";
@@ -99,6 +101,7 @@ public static class MiscEndpoints
                 return Results.Conflict(new { error = "Email này đã được đăng ký." });
             var u = new User
             {
+                WorkspaceId = tenant.WorkspaceId,
                 Email = email, FullName = i.FullName.Trim(), Role = i.Role,
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(i.Password),
             };
@@ -107,10 +110,10 @@ public static class MiscEndpoints
             return Results.Created($"/api/members/{u.Id}", u.ToDto());
         });
 
-        g.MapPut("/{id:guid}/role", async (Guid id, RoleInput i, HttpContext ctx, AppDbContext db) =>
+        g.MapPut("/{id:guid}/role", async (Guid id, RoleInput i, HttpContext ctx, AppDbContext db, ITenant tenant) =>
         {
             if (!await IsAdmin(ctx, db)) return Results.Forbid();
-            var u = await db.Users.FindAsync(id);
+            var u = await db.Users.FirstOrDefaultAsync(x => x.Id == id && x.WorkspaceId == tenant.WorkspaceId);
             if (u is null) return Results.NotFound();
             if (u.Id == ctx.User.UserId() && i.Role != Role.Admin)
                 return Results.BadRequest(new { error = "Không thể tự hạ quyền quản trị của chính mình." });
@@ -119,11 +122,11 @@ public static class MiscEndpoints
             return Results.Ok(u.ToDto());
         });
 
-        g.MapDelete("/{id:guid}", async (Guid id, HttpContext ctx, AppDbContext db) =>
+        g.MapDelete("/{id:guid}", async (Guid id, HttpContext ctx, AppDbContext db, ITenant tenant) =>
         {
             if (!await IsAdmin(ctx, db)) return Results.Forbid();
             if (id == ctx.User.UserId()) return Results.BadRequest(new { error = "Không thể xóa chính mình." });
-            var u = await db.Users.FindAsync(id);
+            var u = await db.Users.FirstOrDefaultAsync(x => x.Id == id && x.WorkspaceId == tenant.WorkspaceId);
             if (u is null) return Results.NotFound();
             db.Users.Remove(u);
             await db.SaveChangesAsync();
@@ -152,7 +155,7 @@ public static class MiscEndpoints
             if (type == "image") query = query.Where(m => m.ContentType.StartsWith("image/"));
             if (type == "video") query = query.Where(m => m.ContentType.StartsWith("video/"));
             var rows = await query.OrderByDescending(m => m.CreatedAt)
-                .Select(m => new { m, By = db.Users.Where(u => u.Id == m.UploadedById).Select(u => u.FullName).FirstOrDefault() })
+                .Select(m => new { m, By = db.Users.Where(u => u.Id == m.UploadedById && u.WorkspaceId == m.WorkspaceId).Select(u => u.FullName).FirstOrDefault() })
                 .ToListAsync();
             return Results.Ok(rows.Select(r => r.m.ToDto(r.By)));
         }).RequireAuthorization();
@@ -199,7 +202,7 @@ public static class MiscEndpoints
         // header, and the file id is an unguessable GUID.
         g.MapGet("/{id:guid}/file", async (Guid id, AppDbContext db) =>
         {
-            var m = await db.Media.AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
+            var m = await db.Media.IgnoreQueryFilters().AsNoTracking().FirstOrDefaultAsync(x => x.Id == id);
             var path = m is null ? null : Path.Combine(dir, m.StoredName);
             return path is null || !File.Exists(path)
                 ? Results.NotFound()

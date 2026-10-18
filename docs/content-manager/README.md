@@ -20,6 +20,9 @@ npm run dev:cm-web       # http://localhost:5180
 npm run dev:cm-tauri     # desktop (cần Rust)
 ```
 
+Mỗi tài khoản đăng ký mới có workspace riêng, trống hoàn toàn (cách ly dữ liệu theo workspace);
+thành viên do Quản trị viên thêm sẽ vào cùng workspace đó.
+
 Dữ liệu demo được seed khi `Seed__Demo=true` (mặc định trong compose):
 `admin@contentmanager.local` / `Demo@1234` (các thành viên demo cùng mật khẩu).
 Tắt bằng `CM_SEED_DEMO=false`. Đổi `CM_JWT_SECRET`, `CM_DB_PASSWORD` trước khi deploy thật.

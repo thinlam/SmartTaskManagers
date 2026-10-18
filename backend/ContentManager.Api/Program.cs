@@ -13,6 +13,8 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.ConfigureHttpJsonOptions(o =>
     o.SerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<ITenant, HttpTenant>();
 builder.Services.AddDbContext<AppDbContext>(o => o.UseNpgsql(ResolveConnectionString(builder.Configuration)));
 
 builder.Services.Configure<JwtOptions>(builder.Configuration.GetSection("Jwt"));

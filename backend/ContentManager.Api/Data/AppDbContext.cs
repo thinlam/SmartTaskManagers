@@ -1,10 +1,15 @@
 using ContentManager.Api.Domain;
+using ContentManager.Api.Services;
 using Microsoft.EntityFrameworkCore;
 
 namespace ContentManager.Api.Data;
 
-public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
+public class AppDbContext(DbContextOptions<AppDbContext> options, ITenant tenant) : DbContext(options)
 {
+    // Read per query by the global filters below, so each request only sees its own workspace.
+    private Guid CurrentWorkspaceId => tenant.WorkspaceId;
+
+    public DbSet<Workspace> Workspaces => Set<Workspace>();
     public DbSet<User> Users => Set<User>();
     public DbSet<Campaign> Campaigns => Set<Campaign>();
     public DbSet<Content> Contents => Set<Content>();
@@ -16,6 +21,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         b.Entity<User>(e =>
         {
             e.HasIndex(x => x.Email).IsUnique();
+            e.HasIndex(x => x.WorkspaceId);
+            e.HasOne<Workspace>().WithMany().HasForeignKey(x => x.WorkspaceId).OnDelete(DeleteBehavior.Cascade);
             e.Property(x => x.Email).HasMaxLength(256);
             e.Property(x => x.FullName).HasMaxLength(128);
             e.Property(x => x.Role).HasConversion<string>().HasMaxLength(16);
@@ -29,8 +36,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
         b.Entity<Content>(e =>
         {
-            e.Property(x => x.Number).UseIdentityAlwaysColumn();
-            e.HasIndex(x => x.Number).IsUnique();
+            e.HasIndex(x => new { x.WorkspaceId, x.Number }).IsUnique();
             e.Property(x => x.Title).HasMaxLength(300);
             e.Property(x => x.Channel).HasConversion<string>().HasMaxLength(16);
             e.Property(x => x.Status).HasConversion<string>().HasMaxLength(16);
@@ -54,5 +60,32 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             e.HasIndex(x => x.CreatedAt);
             e.HasOne(x => x.User).WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.SetNull);
         });
+
+        b.Entity<Campaign>().HasQueryFilter(x => x.WorkspaceId == CurrentWorkspaceId);
+        b.Entity<Content>().HasQueryFilter(x => x.WorkspaceId == CurrentWorkspaceId);
+        b.Entity<MediaAsset>().HasQueryFilter(x => x.WorkspaceId == CurrentWorkspaceId);
+        b.Entity<ActivityLog>().HasQueryFilter(x => x.WorkspaceId == CurrentWorkspaceId);
+        foreach (var t in new[] { typeof(Campaign), typeof(Content), typeof(MediaAsset), typeof(ActivityLog) })
+            b.Entity(t).HasIndex(nameof(IWorkspaceOwned.WorkspaceId));
+    }
+
+    public override int SaveChanges(bool acceptAllChangesOnSuccess)
+    {
+        StampWorkspace();
+        return base.SaveChanges(acceptAllChangesOnSuccess);
+    }
+
+    public override Task<int> SaveChangesAsync(bool acceptAllChangesOnSuccess, CancellationToken ct = default)
+    {
+        StampWorkspace();
+        return base.SaveChangesAsync(acceptAllChangesOnSuccess, ct);
+    }
+
+    /// <summary>New tenant rows default to the caller's workspace (seeding sets it explicitly).</summary>
+    private void StampWorkspace()
+    {
+        foreach (var entry in ChangeTracker.Entries<IWorkspaceOwned>())
+            if (entry.State == EntityState.Added && entry.Entity.WorkspaceId == Guid.Empty)
+                entry.Entity.WorkspaceId = CurrentWorkspaceId;
     }
 }

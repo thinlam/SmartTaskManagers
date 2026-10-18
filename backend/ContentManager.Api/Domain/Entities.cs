@@ -10,8 +10,22 @@ public enum Role { Admin, Editor, Viewer }
 
 public enum CampaignStatus { Planned, Active, Done }
 
+public class Workspace
+{
+    public Guid Id { get; set; } = Guid.NewGuid();
+    public string Name { get; set; } = "";
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+}
+
+/// <summary>Implemented by every row that belongs to exactly one workspace (tenant).</summary>
+public interface IWorkspaceOwned
+{
+    Guid WorkspaceId { get; set; }
+}
+
 public class User
 {
+    public Guid WorkspaceId { get; set; }
     public Guid Id { get; set; } = Guid.NewGuid();
     public string Email { get; set; } = "";
     public string FullName { get; set; } = "";
@@ -20,8 +34,9 @@ public class User
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }
 
-public class Campaign
+public class Campaign : IWorkspaceOwned
 {
+    public Guid WorkspaceId { get; set; }
     public Guid Id { get; set; } = Guid.NewGuid();
     public string Name { get; set; } = "";
     public string? Description { get; set; }
@@ -31,10 +46,11 @@ public class Campaign
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }
 
-public class Content
+public class Content : IWorkspaceOwned
 {
+    public Guid WorkspaceId { get; set; }
     public Guid Id { get; set; } = Guid.NewGuid();
-    /// <summary>Sequential number rendered as CNT-0001.</summary>
+    /// <summary>Per-workspace sequence rendered as CNT-0001.</summary>
     public int Number { get; set; }
     public string Title { get; set; } = "";
     public string? Description { get; set; }
@@ -53,8 +69,9 @@ public class Content
     public List<MediaAsset> Media { get; set; } = [];
 }
 
-public class MediaAsset
+public class MediaAsset : IWorkspaceOwned
 {
+    public Guid WorkspaceId { get; set; }
     public Guid Id { get; set; } = Guid.NewGuid();
     public string FileName { get; set; } = "";
     public string StoredName { get; set; } = "";
@@ -65,8 +82,9 @@ public class MediaAsset
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }
 
-public class ActivityLog
+public class ActivityLog : IWorkspaceOwned
 {
+    public Guid WorkspaceId { get; set; }
     public Guid Id { get; set; } = Guid.NewGuid();
     public Guid? UserId { get; set; }
     public User? User { get; set; }

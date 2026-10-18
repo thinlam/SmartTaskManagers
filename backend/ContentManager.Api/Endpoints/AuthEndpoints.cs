@@ -21,14 +21,17 @@ public static class AuthEndpoints
             if (await db.Users.AnyAsync(u => u.Email == email))
                 return Results.Conflict(new { error = "Email này đã được đăng ký." });
 
-            var first = !await db.Users.AnyAsync();
+            // Every sign-up starts with its own empty workspace and becomes its admin.
+            var workspace = new Workspace { Name = $"Không gian của {i.FullName.Trim()}" };
             var user = new User
             {
+                WorkspaceId = workspace.Id,
                 Email = email,
                 FullName = i.FullName.Trim(),
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(i.Password),
-                Role = first ? Role.Admin : Role.Editor,
+                Role = Role.Admin,
             };
+            db.Workspaces.Add(workspace);
             db.Users.Add(user);
             await db.SaveChangesAsync();
             var (token, exp) = tokens.Create(user);
