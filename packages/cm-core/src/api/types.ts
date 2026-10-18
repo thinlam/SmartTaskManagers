@@ -23,6 +23,15 @@ export interface User {
   createdAt: string;
 }
 
+export interface Workspace {
+  id: string;
+  name: string;
+  createdAt: string;
+  memberCount: number;
+  contentCount: number;
+  mediaBytes: number;
+}
+
 export interface AuthResult {
   token: string;
   expiresAt: string;

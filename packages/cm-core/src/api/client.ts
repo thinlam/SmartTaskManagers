@@ -12,6 +12,7 @@ import type {
   ReportSummary,
   Role,
   User,
+  Workspace,
 } from './types';
 
 const SERVER_KEY = 'cm.serverUrl';
@@ -124,6 +125,12 @@ export const api = {
       send<AuthResult>('POST', '/api/auth/register', { email, fullName, password }),
     me: () => get<User>('/api/auth/me'),
     updateMe: (fullName: string) => send<User>('PUT', '/api/auth/me', { fullName }),
+    changePassword: (currentPassword: string, newPassword: string) =>
+      send<void>('PUT', '/api/auth/password', { currentPassword, newPassword }),
+  },
+  workspace: {
+    get: () => get<Workspace>('/api/workspace'),
+    rename: (name: string) => send<void>('PUT', '/api/workspace', { name }),
   },
   contents: {
     list: (q: ContentQuery = {}) => get<Paged<Content>>('/api/contents', { ...q }),

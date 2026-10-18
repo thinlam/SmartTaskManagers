@@ -37,6 +37,7 @@ import {
 } from '../components/ui';
 import { activityText } from '../lib/activity';
 import { cn, fmtDate, fmtRelativeDay, fmtTime, sameDay, timeAgo } from '../lib/format';
+import { getPrefs } from '../lib/prefs';
 import { useAsync, useLookups } from '../state/AppState';
 
 function Delta({ kpi, label, invert }: { kpi: Kpi; label: string; invert?: boolean }) {
@@ -65,7 +66,7 @@ function Delta({ kpi, label, invert }: { kpi: Kpi; label: string; invert?: boole
 export function DashboardPage() {
   const navigate = useNavigate();
   const { members } = useLookups();
-  const [range, setRange] = useState<'week' | 'month'>('week');
+  const [range, setRange] = useState<'week' | 'month'>(getPrefs().dashboardRange);
   const [channel, setChannel] = useState('');
   const [assigneeId, setAssigneeId] = useState('');
 

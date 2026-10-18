@@ -33,6 +33,7 @@ import {
 } from '../components/ui';
 import { cn, fmtDate, isOverdue } from '../lib/format';
 import { STATUS_META } from '../lib/meta';
+import { getPrefs } from '../lib/prefs';
 import { errMsg, useAsync, useLookups, useToast } from '../state/AppState';
 
 const PAGE_SIZES = [10, 20, 50];
@@ -50,9 +51,9 @@ export function ContentsPage() {
   const [priority, setPriority] = useState('');
   const [assigneeId, setAssigneeId] = useState('');
   const [advanced, setAdvanced] = useState(false);
-  const [view, setView] = useState<'list' | 'grid'>('list');
+  const [view, setView] = useState<'list' | 'grid'>(getPrefs().contentsView);
   const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(20);
+  const [pageSize, setPageSize] = useState<number>(getPrefs().pageSize);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [toDelete, setToDelete] = useState<string[] | null>(null);
   const [deleting, setDeleting] = useState(false);

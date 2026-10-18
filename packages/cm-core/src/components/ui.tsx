@@ -210,7 +210,7 @@ export function ChannelIcon({ channel, size = 28 }: { channel: Channel; size?: n
     case 'TikTok':
       return (
         <svg {...s} viewBox="0 0 32 32" aria-label="TikTok">
-          <circle cx="16" cy="16" r="16" fill={c} />
+          <circle cx="16" cy="16" r="15.5" fill={c} stroke="#64748b" strokeOpacity="0.5" />
           <path
             fill="#fff"
             d="M21.2 11.3a4 4 0 0 1-1.6-3h-2.8v11.2a2.3 2.3 0 1 1-1.6-2.2v-2.9a5.2 5.2 0 1 0 4.4 5.1v-5.7a6.7 6.7 0 0 0 3.9 1.2V11.7a4 4 0 0 1-2.3-.4z"

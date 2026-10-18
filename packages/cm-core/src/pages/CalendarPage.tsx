@@ -14,6 +14,7 @@ import {
 } from '../components/ui';
 import { cn, fmtTime, sameDay } from '../lib/format';
 import { CHANNEL_META } from '../lib/meta';
+import { getPrefs } from '../lib/prefs';
 import { useAsync } from '../state/AppState';
 
 type View = 'month' | 'week' | 'list';
@@ -28,7 +29,7 @@ const toDateParam = (d: Date, hour = 9) =>
 export function CalendarPage() {
   const navigate = useNavigate();
   const today = startOfDay(new Date());
-  const [view, setView] = useState<View>('month');
+  const [view, setView] = useState<View>(getPrefs().calendarView);
   const [cursor, setCursor] = useState(today);
   const [hidden, setHidden] = useState<Set<string>>(new Set());
 

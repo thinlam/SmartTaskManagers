@@ -63,6 +63,45 @@ public static class AuthEndpoints
             await db.SaveChangesAsync();
             return Results.Ok(user.ToDto());
         }).RequireAuthorization();
+        g.MapPut("/password", async (PasswordInput i, HttpContext ctx, AppDbContext db) =>
+        {
+            var user = await db.Users.FindAsync(ctx.User.UserId());
+            if (user is null) return Results.Unauthorized();
+            if (!BCrypt.Net.BCrypt.Verify(i.CurrentPassword ?? "", user.PasswordHash))
+                return Results.BadRequest(new { error = "Mật khẩu hiện tại không đúng." });
+            if (!PasswordOk(i.NewPassword))
+                return Results.BadRequest(new { error = "Mật khẩu mới tối thiểu 8 ký tự, gồm chữ hoa, chữ thường và số." });
+            if (i.NewPassword == i.CurrentPassword)
+                return Results.BadRequest(new { error = "Mật khẩu mới phải khác mật khẩu hiện tại." });
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(i.NewPassword);
+            await db.SaveChangesAsync();
+            return Results.NoContent();
+        }).RequireAuthorization();
+
+        var ws = app.MapGroup("/api/workspace").RequireAuthorization();
+
+        ws.MapGet("", async (AppDbContext db, ITenant tenant) =>
+        {
+            var w = await db.Workspaces.AsNoTracking().FirstOrDefaultAsync(x => x.Id == tenant.WorkspaceId);
+            if (w is null) return Results.NotFound();
+            return Results.Ok(new WorkspaceDto(w.Id, w.Name, w.CreatedAt,
+                await db.Users.CountAsync(u => u.WorkspaceId == w.Id),
+                await db.Contents.CountAsync(),
+                await db.Media.SumAsync(m => (long?)m.Size) ?? 0));
+        });
+
+        ws.MapPut("", async (WorkspaceInput i, HttpContext ctx, AppDbContext db, ITenant tenant) =>
+        {
+            var me = await db.Users.FindAsync(ctx.User.UserId());
+            if (me is null || me.Role != Role.Admin) return Results.Forbid();
+            var name = i.Name?.Trim() ?? "";
+            if (name.Length is < 1 or > 100) return Results.BadRequest(new { error = "Tên workspace phải từ 1 đến 100 ký tự." });
+            var w = await db.Workspaces.FindAsync(tenant.WorkspaceId);
+            if (w is null) return Results.NotFound();
+            w.Name = name;
+            await db.SaveChangesAsync();
+            return Results.NoContent();
+        });
     }
 
     public static bool PasswordOk(string? p) =>

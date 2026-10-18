@@ -1,4 +1,5 @@
 import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { initTheme } from './lib/prefs';
 import { AppShell } from './components/AppShell';
 import { Spinner } from './components/ui';
 import { AuthProvider, LookupProvider, ToastProvider, useAuth } from './state/AppState';
@@ -12,6 +13,7 @@ import { LoginPage } from './pages/LoginPage';
 import { MediaPage } from './pages/MediaPage';
 import { MembersPage } from './pages/MembersPage';
 import { ReportsPage } from './pages/ReportsPage';
+import { AccountPage } from './pages/AccountPage';
 import { SettingsPage } from './pages/SettingsPage';
 
 function Routed() {
@@ -40,6 +42,7 @@ function Routed() {
             <Route path="campaigns" element={<CampaignsPage />} />
             <Route path="reports" element={<ReportsPage />} />
             <Route path="members" element={<MembersPage />} />
+            <Route path="account" element={<AccountPage />} />
             <Route path="settings" element={<SettingsPage />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Route>
@@ -48,6 +51,8 @@ function Routed() {
     </LookupProvider>
   );
 }
+
+initTheme();
 
 export function App() {
   return (

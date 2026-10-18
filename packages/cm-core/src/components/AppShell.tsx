@@ -14,6 +14,7 @@ import {
   Plus,
   Search,
   Settings,
+  UserRound,
   Users,
   X,
 } from 'lucide-react';
@@ -63,6 +64,7 @@ const TITLES: [string, string][] = [
   ['/campaigns', 'Chiến dịch'],
   ['/reports', 'Báo cáo'],
   ['/members', 'Thành viên'],
+  ['/account', 'Tài khoản'],
   ['/settings', 'Cài đặt'],
 ];
 
@@ -165,6 +167,16 @@ function UserMenu() {
             <p className="truncate text-sm font-bold">{user.fullName}</p>
             <p className="truncate text-xs text-ink-3">{user.email}</p>
           </div>
+          <button
+            type="button"
+            onClick={() => {
+              setOpen(false);
+              navigate('/account');
+            }}
+            className="flex h-10 w-full cursor-pointer items-center gap-2 rounded-md px-3 text-sm hover:bg-sunken"
+          >
+            <UserRound className="h-4 w-4" /> Tài khoản
+          </button>
           <button
             type="button"
             onClick={() => {
