@@ -87,7 +87,7 @@
           "downloadUrl": "https://github.com/thinlam/SmartTaskManagers/releases/download/content-manager-v0.1.0/content-manager_0.1.0_x64-setup.exe",
           "installer": {
             "version": "0.1.0",
-            "sha256": "a2b9e6d442eebab20b6cd92a1a8ad1289474d42772baba70fc456eebf9982e98",
+            "sha256": "b7b84fc1d713f0dafb7bbb7f35e2bc007dc1713ff6f067190164237f6d7b5367",
             "installerType": "nsis",
             "silentArgs": ["/S"],
             "startMenuShortcut": "Content Manager\\content-manager.lnk"
@@ -100,7 +100,7 @@
           "downloadUrl": "https://github.com/thinlam/SmartTaskManagers/releases/download/content-manager-v0.1.0/content-manager_0.1.0_x64_en-US.msi",
           "installer": {
             "version": "0.1.0",
-            "sha256": "25d2d8c3a63239b32da52a6d712f8cc70615b906be71071370bbf03b838d0184",
+            "sha256": "7b420f8a51ab7dd6fbae3052e27d891428a84fe2603e7f1caeb340454bdb35b8",
             "installerType": "msi",
             "silentArgs": ["/qn"],
             "startMenuShortcut": "Content Manager\\content-manager.lnk"
