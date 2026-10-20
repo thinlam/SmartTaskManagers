@@ -141,6 +141,72 @@
       ]
     },
     {
+      "id": "voicescribe",
+      "badge": "VS",
+      "name": "VoiceScribe",
+      "shortDesc": "Chuyển file ghi âm thành văn bản có mốc thời gian, xuất ra Word.",
+      "longDesc": "Ứng dụng chuyển giọng nói thành văn bản: tải lên file ghi âm (mp3, m4a, wav, mp4, webm), nhận bản chép lời có mốc thời gian, lưu thư viện bản ghi và xuất ra Word. Có bản Web và Windows Desktop, dùng chung máy chủ VoiceScribe (Node.js + Hugging Face).",
+      "tags": ["Windows Desktop", "Web App"],
+      "category": "Ghi âm & Văn bản",
+      "status": "ready",
+      "platforms": [
+        {
+          "label": "Windows Desktop (khuyên dùng)",
+          "note": "Setup.exe · kết nối sẵn tới máy chủ VoiceScribe (Railway)",
+          "actionLabel": "Tải Setup.exe",
+          "downloadUrl": "https://github.com/thinlam/SmartTaskManagers/releases/download/voicescribe-v0.1.0/voicescribe_0.1.0_x64-setup.exe",
+          "installer": {
+            "version": "0.1.0",
+            "sha256": "a99b04ef0f0f22f5f6cd06857216ffec154c35ce32dab7fec9db0c2128d970c4",
+            "installerType": "nsis",
+            "silentArgs": ["/S"],
+            "startMenuShortcut": "VoiceScribe\u000boicescribe.lnk"
+          }
+        },
+        {
+          "label": "Windows Desktop (.msi)",
+          "note": "Dùng nếu công ty/tổ chức bạn yêu cầu cài qua MSI",
+          "actionLabel": "Tải .msi",
+          "downloadUrl": "https://github.com/thinlam/SmartTaskManagers/releases/download/voicescribe-v0.1.0/voicescribe_0.1.0_x64_en-US.msi",
+          "installer": {
+            "version": "0.1.0",
+            "sha256": "d945bbd6a50d6bd1dea25b104c11bfa51ad03cf6f06443f1b298947c9d2641f5",
+            "installerType": "msi",
+            "silentArgs": ["/qn"],
+            "startMenuShortcut": "VoiceScribe\u000boicescribe.lnk"
+          }
+        }
+      ],
+      "features": [
+        {
+          "title": "Chép lời tự động",
+          "desc": "Chuyển giọng nói thành văn bản kèm mốc thời gian từng đoạn."
+        },
+        {
+          "title": "File dài",
+          "desc": "Tự chia file âm thanh dài thành nhiều đoạn rồi ghép lại."
+        },
+        {
+          "title": "Thư viện bản ghi",
+          "desc": "Xem lại và quản lý các bản chép lời đã tạo."
+        },
+        {
+          "title": "Xuất Word",
+          "desc": "Tải bản chép lời về dạng tài liệu .docx."
+        },
+        {
+          "title": "Web & Desktop",
+          "desc": "Dùng trên trình duyệt hoặc cài ứng dụng Windows."
+        }
+      ],
+      "installSteps": [
+        "Tải Setup.exe và chạy trình cài đặt.",
+        "Mở VoiceScribe vừa cài — ứng dụng kết nối sẵn tới máy chủ Railway.",
+        "Khi được hỏi, nhập khóa truy cập do quản trị viên cung cấp.",
+        "Chọn file ghi âm và bấm chuyển đổi để nhận bản chép lời."
+      ]
+    },
+    {
       "id": "giao-trinh-word",
       "badge": "W",
       "name": "Giáo Trình Word Add-in",
