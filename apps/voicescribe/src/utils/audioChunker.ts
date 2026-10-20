@@ -60,7 +60,11 @@ export async function splitAudioIntoChunks(filePath: string): Promise<AudioChunk
     const chunks: AudioChunk[] = [];
     let startSec = 0;
     let index = 0;
-    while (startSec < durationSec) {
+    // Stop once less than a second of audio remains: a sliver that small
+    // adds nothing to the transcript, and seeking ffmpeg to within ~1s of
+    // EOF on VBR mp3 intermittently trips the decoder ("Header missing",
+    // empty output) instead of just yielding a short clip.
+    while (startSec < durationSec - 1) {
       const outPath = join(tmpDir, `chunk-${index}.wav`);
       await execFileAsync('ffmpeg', [
         '-y',
