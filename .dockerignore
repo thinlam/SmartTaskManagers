@@ -1,0 +1,18 @@
+# Root-context Docker builds (apps/voicescribe/Dockerfile) — keep the context small.
+**/node_modules
+**/dist
+**/.venv
+**/target
+**/ffmpeg-shared
+**/__pycache__
+**/.env
+**/.env.*
+!**/.env.example
+.git
+apps/content-web/android
+apps/content-desktop/src-tauri
+apps/desktop
+apps/hub
+backend
+docs
+excel

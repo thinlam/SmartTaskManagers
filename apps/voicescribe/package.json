@@ -6,6 +6,7 @@
   "scripts": {
     "smoke-test": "node --env-file=.env --import tsx src/scripts/smoke-test.ts",
     "dev": "node --env-file=.env --import tsx src/server.ts",
+    "start": "node --import tsx src/server.ts",
     "typecheck": "tsc --noEmit"
   },
   "keywords": [],

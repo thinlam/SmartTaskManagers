@@ -7,6 +7,8 @@ export interface AppConfig {
   hfToken: string;
   port: number;
   maxUploadMb: number;
+  /** Shared secret required on /api when set; see api/accessKey.ts. */
+  accessKey: string | undefined;
 }
 
 export function loadConfig(): AppConfig {
@@ -18,5 +20,6 @@ export function loadConfig(): AppConfig {
   }
   const port = Number.parseInt(process.env.PORT ?? '3001', 10);
   const maxUploadMb = Number.parseInt(process.env.MAX_UPLOAD_MB ?? '100', 10);
-  return { hfToken, port, maxUploadMb };
+  const accessKey = process.env.ACCESS_KEY?.trim() || undefined;
+  return { hfToken, port, maxUploadMb, accessKey };
 }

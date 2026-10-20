@@ -1,5 +1,23 @@
 import type { TranscribeResult } from '../types';
 
+const ACCESS_KEY_STORAGE = 'voicescribe.accessKey';
+
+function readAccessKey(): string {
+  try {
+    return localStorage.getItem(ACCESS_KEY_STORAGE) ?? '';
+  } catch {
+    return '';
+  }
+}
+
+function saveAccessKey(key: string): void {
+  try {
+    localStorage.setItem(ACCESS_KEY_STORAGE, key);
+  } catch {
+    // Storage unavailable: the key is just asked again next time.
+  }
+}
+
 /**
  * Uses XMLHttpRequest (not fetch) specifically for its upload.onprogress
  * event — this is how the UI's progress bar reflects real upload
@@ -13,10 +31,13 @@ export function transcribeFile(
   numSpeakers: number | undefined,
   onUploadProgress: (percent: number) => void,
   signal?: AbortSignal,
+  retriedWithKey = false,
 ): Promise<TranscribeResult> {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open('POST', '/api/transcribe');
+    const accessKey = readAccessKey();
+    if (accessKey) xhr.setRequestHeader('x-access-key', accessKey);
 
     xhr.upload.onprogress = (event) => {
       if (event.lengthComputable) {
@@ -25,6 +46,15 @@ export function transcribeFile(
     };
 
     xhr.onload = () => {
+      // The server is gated by ACCESS_KEY: ask once, remember it, and retry.
+      if (xhr.status === 401 && !retriedWithKey) {
+        const entered = window.prompt('Nhập khóa truy cập VoiceScribe:');
+        if (entered) {
+          saveAccessKey(entered.trim());
+          transcribeFile(file, numSpeakers, onUploadProgress, signal, true).then(resolve, reject);
+          return;
+        }
+      }
       let body: unknown;
       try {
         body = JSON.parse(xhr.responseText);
