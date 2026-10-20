@@ -18,3 +18,5 @@ export type TranscriptionState =
   | { kind: 'processing'; fileName: string }
   | { kind: 'done'; fileName: string; result: TranscribeResult }
   | { kind: 'error'; message: string };
+
+export type Page = 'new' | 'library' | 'detail' | 'folders' | 'settings';

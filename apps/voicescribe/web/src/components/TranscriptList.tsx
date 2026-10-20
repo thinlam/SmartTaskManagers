@@ -8,7 +8,7 @@ function formatClockTimestamp(seconds: number): string {
   return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
 }
 
-const AVATAR_COLORS = ['bg-blue-500', 'bg-amber-500', 'bg-emerald-500', 'bg-fuchsia-500', 'bg-rose-500'];
+const AVATAR_COLORS = ['bg-indigo-500', 'bg-emerald-500', 'bg-amber-500', 'bg-fuchsia-500', 'bg-rose-500'];
 
 function avatarColorFor(speaker: string, speakerOrder: string[]): string {
   const index = speakerOrder.indexOf(speaker);
@@ -21,12 +21,14 @@ export function TranscriptList({
   speakerNames,
   onRenameSpeaker,
   searchQuery,
+  mergeBySpeaker = false,
 }: {
   segments: LabeledSegment[];
   speakerOrder: string[];
   speakerNames: Record<string, string>;
   onRenameSpeaker: (rawSpeaker: string, newName: string) => void;
   searchQuery: string;
+  mergeBySpeaker?: boolean;
 }) {
   // Keyed by row index, not by raw speaker label: several rows can share
   // the same speaker, and keying by label would make all of them render
@@ -41,8 +43,20 @@ export function TranscriptList({
     ? segments.filter((seg) => seg.text.toLowerCase().includes(searchQuery.trim().toLowerCase()))
     : segments;
 
-  if (filtered.length === 0) {
-    return <p className="p-6 text-sm text-white/40">Không tìm thấy đoạn nào khớp.</p>;
+  const rows = mergeBySpeaker
+    ? filtered.reduce<{ seg: LabeledSegment; rowIndex: number }[]>((acc, seg, i) => {
+        const last = acc[acc.length - 1];
+        if (last && last.seg.speaker === seg.speaker) {
+          last.seg = { ...last.seg, text: `${last.seg.text.trim()} ${seg.text.trim()}` };
+          return acc;
+        }
+        acc.push({ seg, rowIndex: i });
+        return acc;
+      }, [])
+    : filtered.map((seg, i) => ({ seg, rowIndex: i }));
+
+  if (rows.length === 0) {
+    return <p className="p-4 text-sm text-slate-400">Không tìm thấy đoạn nào khớp.</p>;
   }
 
   function startEditing(rowIndex: number, displayName: string) {
@@ -58,22 +72,19 @@ export function TranscriptList({
   }
 
   return (
-    <div className="flex flex-col divide-y divide-white/5">
-      {filtered.map((seg, i) => {
+    <div className="flex flex-col gap-5">
+      {rows.map(({ seg, rowIndex: i }) => {
         const displayName = speakerNames[seg.speaker] ?? seg.speaker;
         const isEditing = editingRow === i;
         return (
-          <div key={i} className="flex gap-4 px-6 py-4">
-            <span className="w-14 shrink-0 pt-0.5 font-mono text-xs text-white/40">
-              {formatClockTimestamp(seg.start)}
+          <div key={i} className="flex gap-3">
+            <span
+              className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-white ${avatarColorFor(seg.speaker, speakerOrder)}`}
+            >
+              {displayName.slice(0, 1).toUpperCase()}
             </span>
             <div className="min-w-0 flex-1">
               <div className="mb-1 flex items-center gap-2">
-                <span
-                  className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-semibold text-white ${avatarColorFor(seg.speaker, speakerOrder)}`}
-                >
-                  {displayName.slice(0, 1).toUpperCase()}
-                </span>
                 {isEditing ? (
                   <input
                     ref={inputRef}
@@ -85,19 +96,20 @@ export function TranscriptList({
                       if (e.key === 'Enter') commitEdit(seg.speaker);
                       if (e.key === 'Escape') setEditingRow(null);
                     }}
-                    className="rounded border border-emerald-400/50 bg-white/10 px-1.5 py-0.5 text-sm font-medium text-white outline-none"
+                    className="rounded border border-indigo-300 bg-white px-1.5 py-0.5 text-sm font-semibold text-slate-900 outline-none"
                   />
                 ) : (
                   <button
                     onClick={() => startEditing(i, displayName)}
-                    className="text-sm font-medium text-white hover:underline"
+                    className="text-sm font-semibold text-slate-900 hover:underline"
                     title="Bấm để đổi tên người nói"
                   >
                     {displayName}
                   </button>
                 )}
+                <span className="font-mono text-xs text-slate-400">{formatClockTimestamp(seg.start)}</span>
               </div>
-              <p className="text-[15px] leading-relaxed text-white/85">{seg.text.trim()}</p>
+              <p className="leading-relaxed text-slate-700">{seg.text.trim()}</p>
             </div>
           </div>
         );
