@@ -39,7 +39,19 @@ exposed to the internet.
    startup if the folder exists — no manual `PATH` edit needed once
    it's extracted in place.
 
-4. **Run it:**
+4. **GPU acceleration (optional but strongly recommended).** `pip install
+   -r requirements.txt` pulls a CPU-only torch/torchaudio by default. On
+   a machine with an NVIDIA GPU, replace them with a CUDA build —
+   roughly an order of magnitude faster than CPU for this model:
+   ```
+   pip install --index-url https://download.pytorch.org/whl/cu128 --force-reinstall --no-deps torch torchaudio
+   ```
+   (check `nvidia-smi` for the driver's supported CUDA version and pick
+   a matching `cuXXX` tag from https://download.pytorch.org/whl/torch/ —
+   wheels are backward-compatible with newer drivers). `main.py` moves
+   the pipeline to `cuda` automatically when `torch.cuda.is_available()`.
+
+5. **Run it:**
    ```
    set HF_TOKEN=hf_...
    uvicorn main:app --host 127.0.0.1 --port 8008
@@ -51,10 +63,9 @@ exposed to the internet.
 
 - First request after startup is slow (model weights load lazily on
   first call, not at process start).
-- CPU-only inference: diarizing N minutes of audio takes roughly
-  2-3x N minutes on a typical laptop CPU — much slower than the
-  Whisper transcription step. A GPU box would be far faster; not set
-  up here.
+- Without the GPU build (step 4), inference is CPU-only: diarizing N
+  minutes of audio takes roughly 2-3x N minutes on a typical laptop
+  CPU — much slower than the Whisper transcription step.
 - Diarization runs on the whole uploaded file in memory, not chunked
   like the Whisper path — very long files (an hour+) may be slow or
   memory-heavy. Not yet load-tested beyond ~1 minute of real audio.

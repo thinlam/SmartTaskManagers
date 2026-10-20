@@ -27,6 +27,7 @@ _FFMPEG_SHARED_BIN = Path(__file__).parent / "ffmpeg-shared" / "ffmpeg-master-la
 if _FFMPEG_SHARED_BIN.is_dir():
     os.environ["PATH"] = f"{_FFMPEG_SHARED_BIN}{os.pathsep}{os.environ.get('PATH', '')}"
 
+import torch
 from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from pydantic import BaseModel
 from pyannote.audio import Pipeline
@@ -52,6 +53,8 @@ def get_pipeline() -> Pipeline:
             _pipeline = Pipeline.from_pretrained(
                 "pyannote/speaker-diarization-3.1", token=token
             )
+            if torch.cuda.is_available():
+                _pipeline = _pipeline.to(torch.device("cuda"))
         except Exception as exc:  # noqa: BLE001 - surfaced as a clear 503 below
             raise HTTPException(
                 status_code=503,
