@@ -7,6 +7,7 @@
     "apps/hub",
     "apps/voicescribe",
     "apps/voicescribe/web",
+    "apps/voicescribe/desktop",
     "apps/content-web",
     "apps/content-desktop",
     "packages/*"
@@ -36,6 +37,8 @@
     "android:build-debug": "npm run android:build-debug --workspace=apps/web",
     "android:open": "npm run android:open --workspace=apps/web",
     "ios:open": "npm run ios:open --workspace=apps/web",
+    "dev:vs-desktop": "npm run tauri --workspace=@voicescribe/desktop -- dev",
+    "build:vs-tauri": "npm run tauri --workspace=@voicescribe/desktop -- build",
     "dev:cm-web": "npm run dev --workspace=apps/content-web",
     "build:cm-web": "npm run build --workspace=apps/content-web",
     "dev:cm-desktop": "npm run dev --workspace=apps/content-desktop",

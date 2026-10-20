@@ -4,6 +4,7 @@ import express from 'express';
 import { loadConfig } from './config/env.js';
 import { createTranscribeRouter } from './api/transcribeRoute.js';
 import { requireAccessKey } from './api/accessKey.js';
+import { allowDesktopOrigins } from './api/cors.js';
 
 const config = loadConfig();
 const app = express();
@@ -12,7 +13,7 @@ app.get('/health', (_req, res) => {
   res.json({ status: 'ok' });
 });
 
-app.use('/api', requireAccessKey(config.accessKey), createTranscribeRouter(config));
+app.use('/api', allowDesktopOrigins, requireAccessKey(config.accessKey), createTranscribeRouter(config));
 
 // In production the built web app (web/dist) is served by this same process,
 // so the browser talks to one origin and `/api` needs no CORS or proxy.

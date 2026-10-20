@@ -1,5 +1,8 @@
 import type { TranscribeResult } from '../types';
 
+/** Empty in the browser (same origin); the desktop build points at the hosted server. */
+const API_BASE = (import.meta.env.VITE_API_URL ?? '').replace(/\/+$/, '');
+
 const ACCESS_KEY_STORAGE = 'voicescribe.accessKey';
 
 function readAccessKey(): string {
@@ -35,7 +38,7 @@ export function transcribeFile(
 ): Promise<TranscribeResult> {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
-    xhr.open('POST', '/api/transcribe');
+    xhr.open('POST', `${API_BASE}/api/transcribe`);
     const accessKey = readAccessKey();
     if (accessKey) xhr.setRequestHeader('x-access-key', accessKey);
 

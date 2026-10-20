@@ -1,0 +1,49 @@
+{
+  "$schema": "../../../../node_modules/@tauri-apps/cli/config.schema.json",
+  "productName": "voicescribe",
+  "version": "0.1.0",
+  "identifier": "com.voicescribe.desktop",
+  "build": {
+    "frontendDist": "../../web/dist",
+    "devUrl": "http://localhost:5175",
+    "beforeDevCommand": "npm run dev --workspace=@voicescribe/web",
+    "beforeBuildCommand": "npm run build:desktop --workspace=@voicescribe/web"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "VoiceScribe",
+        "width": 1280,
+        "height": 820,
+        "minWidth": 960,
+        "minHeight": 640,
+        "resizable": true,
+        "fullscreen": false
+      }
+    ],
+    "security": { "csp": null }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["nsis", "msi"],
+    "publisher": "lâm Nguyên Thìn",
+    "copyright": "© 2026 lâm Nguyên Thìn",
+    "category": "Productivity",
+    "shortDescription": "Chuyển giọng nói thành văn bản, tách người nói",
+    "longDescription": "VoiceScribe chuyển file ghi âm thành văn bản có mốc thời gian, xuất ra Word và quản lý thư viện bản ghi. Kết nối với máy chủ VoiceScribe riêng.",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ],
+    "windows": {
+      "nsis": {
+        "installMode": "currentUser",
+        "languages": ["English"],
+        "startMenuFolder": "VoiceScribe"
+      }
+    }
+  }
+}
