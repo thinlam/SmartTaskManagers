@@ -215,7 +215,7 @@ export const DEFAULT_APPS: AppEntry[] = [
           sha256: 'a99b04ef0f0f22f5f6cd06857216ffec154c35ce32dab7fec9db0c2128d970c4',
           installerType: 'nsis',
           silentArgs: ['/S'],
-          startMenuShortcut: 'VoiceScribeoicescribe.lnk',
+          startMenuShortcut: 'VoiceScribe\\voicescribe.lnk',
         },
       },
       {
@@ -229,7 +229,7 @@ export const DEFAULT_APPS: AppEntry[] = [
           sha256: 'd945bbd6a50d6bd1dea25b104c11bfa51ad03cf6f06443f1b298947c9d2641f5',
           installerType: 'msi',
           silentArgs: ['/qn'],
-          startMenuShortcut: 'VoiceScribeoicescribe.lnk',
+          startMenuShortcut: 'VoiceScribe\\voicescribe.lnk',
         },
       },
     ],
