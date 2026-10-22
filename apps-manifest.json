@@ -145,7 +145,7 @@
       "badge": "VS",
       "name": "VoiceScribe",
       "shortDesc": "Chuyển file ghi âm thành văn bản có mốc thời gian, xuất ra Word.",
-      "longDesc": "Ứng dụng chuyển giọng nói thành văn bản: tải lên file ghi âm (mp3, m4a, wav, mp4, webm), nhận bản chép lời có mốc thời gian, lưu thư viện bản ghi và xuất ra Word. Có bản Web và Windows Desktop, dùng chung máy chủ VoiceScribe (Node.js + Hugging Face).",
+      "longDesc": "Ứng dụng chuyển giọng nói thành văn bản: tải lên file ghi âm (mp3, m4a, wav, mp4, webm), nhận bản chép lời có mốc thời gian, lưu thư viện bản ghi theo tài khoản, sắp xếp theo thư mục và xuất ra Word/TXT/SRT. Có bản Web và Windows Desktop, dùng chung máy chủ VoiceScribe (Node.js + Hugging Face).",
       "tags": ["Windows Desktop", "Web App"],
       "category": "Ghi âm & Văn bản",
       "status": "ready",
@@ -154,10 +154,10 @@
           "label": "Windows Desktop (khuyên dùng)",
           "note": "Setup.exe · kết nối sẵn tới máy chủ VoiceScribe (Railway)",
           "actionLabel": "Tải Setup.exe",
-          "downloadUrl": "https://github.com/thinlam/SmartTaskManagers/releases/download/voicescribe-v0.1.0/voicescribe_0.1.0_x64-setup.exe",
+          "downloadUrl": "https://github.com/thinlam/SmartTaskManagers/releases/download/voicescribe-v0.2.0/voicescribe_0.2.0_x64-setup.exe",
           "installer": {
-            "version": "0.1.0",
-            "sha256": "a99b04ef0f0f22f5f6cd06857216ffec154c35ce32dab7fec9db0c2128d970c4",
+            "version": "0.2.0",
+            "sha256": "2e50d87c33d24b82e17bceb887f963d65fcf182d5b66bb620775b307c594daf7",
             "installerType": "nsis",
             "silentArgs": ["/S"],
             "startMenuShortcut": "VoiceScribe\\voicescribe.lnk"
@@ -167,10 +167,10 @@
           "label": "Windows Desktop (.msi)",
           "note": "Dùng nếu công ty/tổ chức bạn yêu cầu cài qua MSI",
           "actionLabel": "Tải .msi",
-          "downloadUrl": "https://github.com/thinlam/SmartTaskManagers/releases/download/voicescribe-v0.1.0/voicescribe_0.1.0_x64_en-US.msi",
+          "downloadUrl": "https://github.com/thinlam/SmartTaskManagers/releases/download/voicescribe-v0.2.0/voicescribe_0.2.0_x64_en-US.msi",
           "installer": {
-            "version": "0.1.0",
-            "sha256": "d945bbd6a50d6bd1dea25b104c11bfa51ad03cf6f06443f1b298947c9d2641f5",
+            "version": "0.2.0",
+            "sha256": "21777499d9e0c7777a8304a7a151d771744b468ec9ac47bf68da9de4c8984fc9",
             "installerType": "msi",
             "silentArgs": ["/qn"],
             "startMenuShortcut": "VoiceScribe\\voicescribe.lnk"
@@ -188,7 +188,7 @@
         },
         {
           "title": "Thư viện bản ghi",
-          "desc": "Xem lại và quản lý các bản chép lời đã tạo."
+          "desc": "Mọi bản ghi được lưu theo tài khoản, có tìm kiếm và thư mục."
         },
         {
           "title": "Xuất Word",
@@ -202,8 +202,8 @@
       "installSteps": [
         "Tải Setup.exe và chạy trình cài đặt.",
         "Mở VoiceScribe vừa cài — ứng dụng kết nối sẵn tới máy chủ Railway.",
-        "Khi được hỏi, nhập khóa truy cập do quản trị viên cung cấp.",
-        "Chọn file ghi âm và bấm chuyển đổi để nhận bản chép lời."
+        "Tạo tài khoản (cần mã mời nếu máy chủ yêu cầu) hoặc đăng nhập.",
+        "Tải file ghi âm lên để nhận bản chép lời, tự lưu vào thư viện."
       ]
     },
     {
