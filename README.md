@@ -184,26 +184,30 @@ Chi tiết (Android, deploy Railway): [`docs/content-manager/README.md`](docs/co
 
 ### VoiceScribe
 
-Cần file `apps/voicescribe/.env` với `HF_TOKEN=hf_...` (xem `.env.example`).
+Cần PostgreSQL và file `apps/voicescribe/.env` (xem `.env.example`: `HF_TOKEN`, `DATABASE_URL`).
 
 ```bash
-npm run dev --workspace=apps/voicescribe          # backend tại http://localhost:3001
-npm run dev --workspace=@voicescribe/web          # web tại http://localhost:5175
-npm run dev:vs-desktop                            # cửa sổ Windows native
-npm run build:vs-tauri                            # build .exe/.msi
+docker compose -f docker-compose.voicescribe.yml up -d   # PostgreSQL local (cổng 5434)
+npm run dev --workspace=apps/voicescribe                 # backend tại http://localhost:3001
+npm run dev --workspace=@voicescribe/web                 # web tại http://localhost:5175
+npm run dev:vs-desktop                                   # cửa sổ Windows native
+npm run build:vs-tauri                                   # build .exe/.msi
 ```
 
+Tính năng: đăng ký/đăng nhập (dữ liệu tách theo tài khoản), chuyển giọng nói thành văn bản, thư viện
+bản ghi có tìm kiếm và phân trang, thư mục, đổi tên người nói, ghi chú, xuất Word/TXT/SRT.
+
 Nhận diện người nói là dịch vụ Python tùy chọn (`apps/voicescribe/diarization-service`, cổng 8008).
-Khi deploy, đặt `ACCESS_KEY` để chặn người lạ dùng hết quota Hugging Face; Dockerfile build từ
+Khi deploy (production) tính năng này tắt trừ khi đặt `DIARIZATION_SERVICE_URL`. Dockerfile build từ
 thư mục gốc repo: `apps/voicescribe/Dockerfile`.
 
 ### Deploy lên Railway
 
-| Dịch vụ                | Root Directory                | Ghi chú                                                                         |
-| ---------------------- | ----------------------------- | ------------------------------------------------------------------------------- |
-| Smart Task Manager API | `/backend`                    | MySQL                                                                           |
-| Content Manager API    | `/backend/ContentManager.Api` | PostgreSQL, Volume tại `/data/uploads`, `Jwt__Secret`, `Seed__Demo=false`       |
-| VoiceScribe            | `/`                           | `RAILWAY_DOCKERFILE_PATH=apps/voicescribe/Dockerfile`, `HF_TOKEN`, `ACCESS_KEY` |
+| Dịch vụ                | Root Directory                | Ghi chú                                                                                                                                 |
+| ---------------------- | ----------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| Smart Task Manager API | `/backend`                    | MySQL                                                                                                                                   |
+| Content Manager API    | `/backend/ContentManager.Api` | PostgreSQL, Volume tại `/data/uploads`, `Jwt__Secret`, `Seed__Demo=false`                                                               |
+| VoiceScribe            | `/`                           | Postgres (`DATABASE_URL`), `RAILWAY_DOCKERFILE_PATH=apps/voicescribe/Dockerfile`, `HF_TOKEN`, `JWT_SECRET` (>= 32 ký tự), `SIGNUP_CODE` |
 
 ### App Hub
 

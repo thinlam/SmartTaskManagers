@@ -91,17 +91,23 @@ export function createTranscribeRouter(config: AppConfig, db: Db): Router {
         // label and report the failure separately instead.
         let diarizationError: string | null = null;
         let labeledSegments;
-        try {
-          const speakerSegments = await diarizeAudio({
-            audio: req.file.buffer,
-            fileName: req.file.originalname,
-            numSpeakers,
-          });
-          labeledSegments = mergeTranscriptWithSpeakers(result.segments, speakerSegments);
-        } catch (err) {
-          diarizationError =
-            err instanceof TranscriptionError ? err.message : 'Lỗi không xác định khi nhận dạng người nói.';
+        if (!config.diarizationEnabled) {
           labeledSegments = result.segments.map((seg) => ({ ...seg, speaker: 'Người nói 1' }));
+        } else {
+          try {
+            const speakerSegments = await diarizeAudio({
+              audio: req.file.buffer,
+              fileName: req.file.originalname,
+              numSpeakers,
+            });
+            labeledSegments = mergeTranscriptWithSpeakers(result.segments, speakerSegments);
+          } catch (err) {
+            diarizationError =
+              err instanceof TranscriptionError
+                ? err.message
+                : 'Lỗi không xác định khi nhận dạng người nói.';
+            labeledSegments = result.segments.map((seg) => ({ ...seg, speaker: 'Người nói 1' }));
+          }
         }
 
         const saved = await insertRecording(db, {

@@ -11,6 +11,12 @@ export interface AppConfig {
   jwtSecret: string;
   /** When set, registering requires this invite code (keeps strangers from spending the HF quota). */
   signupCode: string | undefined;
+  /**
+   * Whether the Python speaker-diarization sidecar is expected to be reachable. On a hosted
+   * (production) deploy it is off unless DIARIZATION_SERVICE_URL is set, so transcripts skip
+   * the speaker step instead of failing it on every request.
+   */
+  diarizationEnabled: boolean;
 }
 
 const DEV_JWT_SECRET = 'voicescribe-dev-only-secret-change-before-deploying';
@@ -43,5 +49,6 @@ export function loadConfig(): AppConfig {
   const port = Number.parseInt(process.env.PORT ?? '3001', 10);
   const maxUploadMb = Number.parseInt(process.env.MAX_UPLOAD_MB ?? '100', 10);
   const signupCode = process.env.SIGNUP_CODE?.trim() || undefined;
-  return { hfToken, port, maxUploadMb, databaseUrl, jwtSecret, signupCode };
+  const diarizationEnabled = !production || Boolean(process.env.DIARIZATION_SERVICE_URL);
+  return { hfToken, port, maxUploadMb, databaseUrl, jwtSecret, signupCode, diarizationEnabled };
 }

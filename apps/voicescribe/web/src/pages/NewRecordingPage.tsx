@@ -1,145 +1,80 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { FileDown, Copy, Search, Loader2, AlertCircle, X } from 'lucide-react';
-import { transcribeFile } from '../lib/api';
-import { exportDocx, exportSrt, exportTxt } from '../lib/export';
+import { useRef, useState } from 'react';
+import { AlertCircle, Loader2, X } from 'lucide-react';
+import { api, transcribeFile } from '../lib/api';
+import { errorText } from '../lib/format';
 import { UploadZone } from '../components/UploadZone';
-import { TranscriptList } from '../components/TranscriptList';
-import type { TranscriptionState } from '../types';
+import { Card, Field, PageHeader, inputClass, primaryButtonClass, secondaryButtonClass } from '../components/ui';
+import { useAsync, useAuth, useToast } from '../state/AppState';
 
-function baseNameOf(fileName: string): string {
-  return fileName.replace(/\.[^.]+$/, '') || 'ban-ghi';
-}
+type State =
+  | { kind: 'idle' }
+  | { kind: 'uploading'; percent: number; fileName: string }
+  | { kind: 'processing'; fileName: string }
+  | { kind: 'error'; message: string };
 
-interface Note {
-  text: string;
-  addedAt: string;
-}
-
-export function NewRecordingPage() {
-  const [state, setState] = useState<TranscriptionState>({ kind: 'idle' });
-  const [numSpeakers, setNumSpeakers] = useState<string>('');
-  const [search, setSearch] = useState('');
-  const [speakerNames, setSpeakerNames] = useState<Record<string, string>>({});
-  const [splitSpeakers, setSplitSpeakers] = useState(true);
-  const [autoScroll, setAutoScroll] = useState(true);
-  const [notes, setNotes] = useState<Note[]>([]);
-  const [noteDraft, setNoteDraft] = useState('');
+export function NewRecordingPage({ onSaved }: { onSaved: (id: string) => void }) {
+  const { config } = useAuth();
+  const toast = useToast();
+  const folders = useAsync(() => api.folders.list(), []);
+  const [state, setState] = useState<State>({ kind: 'idle' });
+  const [title, setTitle] = useState('');
+  const [folderId, setFolderId] = useState('');
+  const [numSpeakers, setNumSpeakers] = useState('');
   const abortRef = useRef<AbortController | null>(null);
-  const transcriptEndRef = useRef<HTMLDivElement>(null);
 
-  const speakerOrder = useMemo(() => {
-    if (state.kind !== 'done') return [];
-    const seen: string[] = [];
-    for (const seg of state.result.segments) {
-      if (!seen.includes(seg.speaker)) seen.push(seg.speaker);
-    }
-    return seen;
-  }, [state]);
-
-  useEffect(() => {
-    if (autoScroll) transcriptEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [state, notes, autoScroll]);
+  const maxUploadMb = config?.maxUploadMb ?? 100;
 
   function handleFileSelected(file: File) {
-    setSpeakerNames({});
-    setSearch('');
-    setNotes([]);
+    if (file.size > maxUploadMb * 1024 * 1024) {
+      setState({ kind: 'error', message: `File vượt quá dung lượng tối đa ${maxUploadMb}MB.` });
+      return;
+    }
     const controller = new AbortController();
     abortRef.current = controller;
     setState({ kind: 'uploading', percent: 0, fileName: file.name });
 
-    const parsedNumSpeakers = numSpeakers.trim() ? Number.parseInt(numSpeakers, 10) : undefined;
-
     transcribeFile(
       file,
-      parsedNumSpeakers,
+      {
+        title: title.trim() || undefined,
+        folderId: folderId || undefined,
+        numSpeakers: numSpeakers.trim() ? Number.parseInt(numSpeakers, 10) : undefined,
+      },
       (percent) => {
-        setState((prev) => (prev.kind === 'uploading' ? { ...prev, percent } : prev));
-        if (percent >= 100) setState({ kind: 'processing', fileName: file.name });
+        setState((prev) => {
+          if (prev.kind !== 'uploading') return prev;
+          return percent >= 100 ? { kind: 'processing', fileName: file.name } : { ...prev, percent };
+        });
       },
       controller.signal,
     )
-      .then((result) => setState({ kind: 'done', fileName: file.name, result }))
+      .then((recording) => {
+        toast.success('Đã lưu bản ghi vào thư viện.');
+        onSaved(recording.id);
+      })
       .catch((err: unknown) => {
         if (err instanceof DOMException && err.name === 'AbortError') {
           setState({ kind: 'idle' });
           return;
         }
-        setState({
-          kind: 'error',
-          message: err instanceof Error ? err.message : 'Đã xảy ra lỗi không xác định.',
-        });
+        setState({ kind: 'error', message: errorText(err) });
       });
   }
 
-  function handleRenameSpeaker(rawSpeaker: string, newName: string) {
-    setSpeakerNames((prev) => ({ ...prev, [rawSpeaker]: newName }));
-  }
-
-  function currentSegmentsWithNames() {
-    if (state.kind !== 'done') return [];
-    return state.result.segments.map((seg) => ({
-      ...seg,
-      speaker: speakerNames[seg.speaker] ?? seg.speaker,
-    }));
-  }
-
-  function handleCopy() {
-    if (state.kind !== 'done') return;
-    const text = currentSegmentsWithNames()
-      .map((seg) => `${seg.speaker}: ${seg.text.trim()}`)
-      .join('\n');
-    navigator.clipboard.writeText(text);
-  }
-
-  function addNote() {
-    const text = noteDraft.trim();
-    if (!text) return;
-    setNotes((prev) => [...prev, { text, addedAt: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) }]);
-    setNoteDraft('');
-  }
+  const busy = state.kind === 'uploading' || state.kind === 'processing';
 
   return (
     <div className="flex-1 overflow-y-auto p-8">
-      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-slate-900">Ghi âm mới</h1>
-          <p className="mt-1 text-sm text-slate-500">
-            Tải lên file âm thanh — VoiceScribe chuyển thành văn bản và tách người nói.
-          </p>
-        </div>
-        <div className="flex shrink-0 gap-2">
-          <span className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700">
-            Tiếng Việt
-          </span>
-          <span className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700">
-            Độ chính xác cao
-          </span>
-        </div>
-      </div>
+      <PageHeader
+        title="Ghi âm mới"
+        subtitle="Tải lên file âm thanh — VoiceScribe chuyển thành văn bản và lưu vào thư viện của bạn."
+      />
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
-        {/* Left: recorder / upload card */}
-        <div className="flex flex-col rounded-2xl border border-slate-200 bg-white p-6">
-          {state.kind === 'idle' && (
-            <>
-              <UploadZone onFileSelected={handleFileSelected} />
-              <label className="mt-4 block text-xs font-medium text-slate-500">Số người nói (tùy chọn)</label>
-              <input
-                type="number"
-                min={1}
-                value={numSpeakers}
-                onChange={(e) => setNumSpeakers(e.target.value)}
-                placeholder="Tự động"
-                className="mt-1 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 outline-none focus:border-indigo-400"
-              />
-              <p className="mt-1 text-xs text-slate-400">
-                Nhập đúng số người nói giúp tăng độ chính xác phân biệt giọng.
-              </p>
-            </>
-          )}
+      <div className="mx-auto grid max-w-5xl grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
+        <Card className="flex min-h-[420px] flex-col">
+          {state.kind === 'idle' && <UploadZone onFileSelected={handleFileSelected} />}
 
-          {(state.kind === 'uploading' || state.kind === 'processing') && (
+          {busy && (
             <div className="flex flex-1 flex-col items-center justify-center gap-4 py-16 text-center">
               <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
               <p className="font-medium text-slate-900">
@@ -149,22 +84,14 @@ export function NewRecordingPage() {
               </p>
               {state.kind === 'uploading' ? (
                 <div className="h-1.5 w-64 overflow-hidden rounded-full bg-slate-100">
-                  <div
-                    className="h-full bg-indigo-600 transition-[width]"
-                    style={{ width: `${state.percent}%` }}
-                  />
+                  <div className="h-full bg-indigo-600 transition-[width]" style={{ width: `${state.percent}%` }} />
                 </div>
               ) : (
-                <p className="text-xs text-slate-400">
-                  Có thể mất vài phút với file dài, đặc biệt nếu bật nhận dạng người nói.
+                <p className="max-w-sm text-xs text-slate-400">
+                  Có thể mất vài phút với file dài. Bạn có thể giữ cửa sổ này mở cho đến khi xong.
                 </p>
               )}
-              <button
-                onClick={() => {
-                  abortRef.current?.abort();
-                }}
-                className="mt-2 flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-500 hover:bg-slate-50"
-              >
+              <button onClick={() => abortRef.current?.abort()} className={`${secondaryButtonClass} text-xs`}>
                 <X className="h-3 w-3" /> Hủy
               </button>
             </div>
@@ -175,147 +102,65 @@ export function NewRecordingPage() {
               <AlertCircle className="h-10 w-10 text-rose-500" />
               <p className="font-medium text-slate-900">Không xử lý được file âm thanh</p>
               <p className="max-w-md text-sm text-slate-500">{state.message}</p>
-              <button
-                onClick={() => setState({ kind: 'idle' })}
-                className="mt-2 rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
-              >
+              <button onClick={() => setState({ kind: 'idle' })} className={`${primaryButtonClass} mt-2`}>
                 Thử lại
               </button>
             </div>
           )}
+        </Card>
 
-          {state.kind === 'done' && (
-            <>
-              <div className="flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <p className="truncate font-semibold text-slate-900">{state.fileName}</p>
-                  <p className="text-xs text-slate-400">
-                    {state.result.segments.length} đoạn · {(state.result.processingTimeMs / 1000).toFixed(1)}s xử lý
-                    {state.result.diarizationError && (
-                      <span className="ml-2 text-amber-600">
-                        · Nhận dạng người nói thất bại, gán chung "Người nói 1"
-                      </span>
-                    )}
-                  </p>
-                </div>
-                <button
-                  onClick={() => setState({ kind: 'idle' })}
-                  className="shrink-0 rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-slate-50"
-                >
-                  Ghi âm khác
-                </button>
-              </div>
-
-              <div className="mt-5 flex flex-wrap gap-2">
-                <button
-                  onClick={handleCopy}
-                  className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
-                >
-                  <Copy className="h-3.5 w-3.5" /> Sao chép
-                </button>
-                <button
-                  onClick={() => exportTxt(currentSegmentsWithNames(), baseNameOf(state.fileName))}
-                  className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
-                >
-                  .txt
-                </button>
-                <button
-                  onClick={() => exportSrt(currentSegmentsWithNames(), baseNameOf(state.fileName))}
-                  className="rounded-lg border border-slate-200 px-3 py-1.5 text-sm font-medium text-slate-700 hover:bg-slate-50"
-                >
-                  .srt
-                </button>
-                <button
-                  onClick={() => exportDocx(currentSegmentsWithNames(), baseNameOf(state.fileName))}
-                  className="flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-indigo-500"
-                >
-                  <FileDown className="h-3.5 w-3.5" /> .docx
-                </button>
-              </div>
-
-              <div className="relative mt-5">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Tìm trong bản ghi"
-                  className="w-full rounded-lg border border-slate-200 bg-slate-50 py-2 pl-9 pr-3 text-sm outline-none focus:border-indigo-400"
-                />
-              </div>
-            </>
-          )}
-        </div>
-
-        {/* Right: live transcript card */}
-        <div className="flex flex-col rounded-2xl border border-slate-200 bg-white p-6">
-          <div className="mb-4 flex items-center justify-between gap-3">
-            <h2 className="font-semibold text-slate-900">Bản ghi trực tiếp</h2>
-            <div className="flex gap-2">
-              <button
-                onClick={() => setSplitSpeakers((v) => !v)}
-                className={`rounded-lg border px-3 py-1.5 text-xs font-medium ${
-                  splitSpeakers
-                    ? 'border-slate-200 text-slate-700 hover:bg-slate-50'
-                    : 'border-indigo-200 bg-indigo-50 text-indigo-700'
-                }`}
-              >
-                Tách người nói
-              </button>
-              <button
-                onClick={() => setAutoScroll((v) => !v)}
-                className={`rounded-lg px-3 py-1.5 text-xs font-medium ${
-                  autoScroll ? 'bg-indigo-50 text-indigo-700' : 'border border-slate-200 text-slate-500'
-                }`}
-              >
-                Tự cuộn: {autoScroll ? 'Bật' : 'Tắt'}
-              </button>
-            </div>
-          </div>
-
-          <div className="flex-1 overflow-y-auto">
-            {state.kind !== 'done' ? (
-              <p className="py-10 text-center text-sm text-slate-400">
-                Bản ghi sẽ xuất hiện ở đây sau khi xử lý xong.
-              </p>
-            ) : (
-              <TranscriptList
-                segments={state.result.segments}
-                speakerOrder={speakerOrder}
-                speakerNames={speakerNames}
-                onRenameSpeaker={handleRenameSpeaker}
-                searchQuery={search}
-                mergeBySpeaker={!splitSpeakers}
+        <div className="flex flex-col gap-4">
+          <Card className="space-y-4">
+            <h2 className="font-semibold text-slate-900">Tùy chọn</h2>
+            <Field label="Tiêu đề" hint="Để trống sẽ lấy theo tên file.">
+              <input
+                className={inputClass}
+                value={title}
+                maxLength={200}
+                disabled={busy}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="Ví dụ: Họp kế hoạch quý"
               />
-            )}
-
-            {notes.length > 0 && (
-              <div className="mt-5 flex flex-col gap-2 border-t border-slate-100 pt-4">
-                {notes.map((note, i) => (
-                  <p key={i} className="rounded-lg bg-amber-50 px-3 py-2 text-sm italic text-amber-800">
-                    <span className="mr-2 font-mono text-xs not-italic text-amber-500">{note.addedAt}</span>
-                    {note.text}
-                  </p>
+            </Field>
+            <Field label="Lưu vào thư mục">
+              <select
+                className={inputClass}
+                value={folderId}
+                disabled={busy}
+                onChange={(e) => setFolderId(e.target.value)}
+              >
+                <option value="">Chưa phân loại</option>
+                {folders.data?.map((f) => (
+                  <option key={f.id} value={f.id}>
+                    {f.name}
+                  </option>
                 ))}
-              </div>
+              </select>
+            </Field>
+            {config?.diarizationEnabled && (
+              <Field label="Số người nói (tùy chọn)" hint="Nhập đúng số người giúp tách giọng chính xác hơn.">
+                <input
+                  type="number"
+                  min={1}
+                  max={20}
+                  className={inputClass}
+                  value={numSpeakers}
+                  disabled={busy}
+                  onChange={(e) => setNumSpeakers(e.target.value)}
+                  placeholder="Tự động"
+                />
+              </Field>
             )}
-            <div ref={transcriptEndRef} />
-          </div>
+          </Card>
 
-          <div className="mt-5 flex gap-2 border-t border-slate-100 pt-4">
-            <input
-              value={noteDraft}
-              onChange={(e) => setNoteDraft(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && addNote()}
-              placeholder="Thêm ghi chú tại thời điểm này..."
-              className="flex-1 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-indigo-400"
-            />
-            <button
-              onClick={addNote}
-              className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white hover:bg-indigo-500"
-            >
-              Thêm
-            </button>
-          </div>
+          <Card className="text-sm text-slate-500">
+            <h2 className="mb-2 font-semibold text-slate-900">Lưu ý</h2>
+            <ul className="list-disc space-y-1 pl-5">
+              <li>Hỗ trợ mp3, m4a, wav, mp4, webm.</li>
+              <li>Tối đa {maxUploadMb}MB mỗi file.</li>
+              <li>Bản ghi được lưu riêng cho tài khoản của bạn.</li>
+            </ul>
+          </Card>
         </div>
       </div>
     </div>

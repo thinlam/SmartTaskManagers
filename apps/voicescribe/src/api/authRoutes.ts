@@ -29,9 +29,13 @@ export function createAuthRouter(config: AppConfig, db: Db): Router {
   const auth = requireAuth(config.jwtSecret);
   const credentialLimit = rateLimit(20, 15 * 60 * 1000);
 
-  // Public: lets the sign-up form know whether to ask for an invite code.
+  // Public: lets the client adapt its UI (invite code field, speaker options, upload limit).
   router.get('/config', (_req, res) => {
-    res.json({ signupCodeRequired: config.signupCode !== undefined });
+    res.json({
+      signupCodeRequired: config.signupCode !== undefined,
+      diarizationEnabled: config.diarizationEnabled,
+      maxUploadMb: config.maxUploadMb,
+    });
   });
 
   router.post('/auth/register', credentialLimit, async (req, res) => {
