@@ -1,0 +1,25 @@
+# VoiceScribe — local PostgreSQL for development.
+#   docker compose -f docker-compose.voicescribe.yml up -d
+# DATABASE_URL=postgres://vs:vs_dev_password@localhost:5434/voicescribe
+name: voicescribe
+
+services:
+  db:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: voicescribe
+      POSTGRES_USER: vs
+      POSTGRES_PASSWORD: ${VS_DB_PASSWORD:-vs_dev_password}
+    ports:
+      - "5434:5432"
+    volumes:
+      - vs-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vs -d voicescribe"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  vs-pgdata:

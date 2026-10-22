@@ -5,6 +5,10 @@ import { diarizeAudio } from '../services/diarization.js';
 import { mergeTranscriptWithSpeakers } from '../utils/mergeSpeakers.js';
 import { TranscriptionError } from '../types/transcription.js';
 import type { AppConfig } from '../config/env.js';
+import type { Db } from '../db/pool.js';
+import { userIdOf } from '../auth/middleware.js';
+import { insertRecording, toDetailDto } from '../services/recordings.js';
+import { isUuid } from '../utils/validation.js';
 
 const ALLOWED_EXTENSIONS = new Set(['mp3', 'm4a', 'wav', 'mp4', 'webm']);
 
@@ -12,7 +16,7 @@ function extensionOf(fileName: string): string {
   return fileName.toLowerCase().split('.').pop() ?? '';
 }
 
-export function createTranscribeRouter(config: AppConfig): Router {
+export function createTranscribeRouter(config: AppConfig, db: Db): Router {
   const upload = multer({
     storage: multer.memoryStorage(),
     limits: { fileSize: config.maxUploadMb * 1024 * 1024 },
@@ -31,7 +35,7 @@ export function createTranscribeRouter(config: AppConfig): Router {
 
   const router = Router();
 
-  router.post('/transcribe', (req: Request, res: Response) => {
+  router.post('/', (req: Request, res: Response) => {
     upload.single('audio')(req, res, async (uploadErr: unknown) => {
       if (uploadErr) {
         if (uploadErr instanceof TranscriptionError) {
@@ -56,6 +60,23 @@ export function createTranscribeRouter(config: AppConfig): Router {
         typeof numSpeakersRaw === 'string' && numSpeakersRaw.trim() !== ''
           ? Number.parseInt(numSpeakersRaw, 10)
           : undefined;
+
+      // Validate the destination folder before spending the (slow, quota-metered) transcription.
+      const userId = userIdOf(res);
+      const folderRaw = req.body.folder_id;
+      let folderId: string | null = null;
+      if (typeof folderRaw === 'string' && folderRaw.trim() !== '') {
+        const owns = isUuid(folderRaw)
+          ? await db.query('SELECT 1 FROM folders WHERE id = $1 AND user_id = $2', [folderRaw, userId])
+          : null;
+        if (!owns?.rowCount) {
+          res.status(400).json({ error: 'Thư mục không tồn tại.' });
+          return;
+        }
+        folderId = folderRaw;
+      }
+      const titleRaw = typeof req.body.title === 'string' ? req.body.title.trim() : '';
+      const title = (titleRaw || req.file.originalname.replace(/\.[^.]+$/, '') || 'Bản ghi').slice(0, 200);
 
       try {
         const result = await transcribeLongAudio({
@@ -83,12 +104,17 @@ export function createTranscribeRouter(config: AppConfig): Router {
           labeledSegments = result.segments.map((seg) => ({ ...seg, speaker: 'Người nói 1' }));
         }
 
-        res.status(200).json({
+        const saved = await insertRecording(db, {
+          userId,
+          folderId,
+          title,
+          fileName: req.file.originalname,
           text: result.text,
           segments: labeledSegments,
-          processingTimeMs: result.processingTimeMs,
+          processingMs: result.processingTimeMs,
           diarizationError,
         });
+        res.status(201).json(toDetailDto(saved));
       } catch (err) {
         if (err instanceof TranscriptionError) {
           res.status(502).json({ error: err.message });
