@@ -1,140 +1,137 @@
 import { useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Search } from 'lucide-react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { SearchX } from 'lucide-react';
 import { Button } from '@stm/ui';
 import { getCategories, getFeaturedApp } from '../data/apps';
 import { useAppsManifest } from '../data/useAppsManifest';
 import { AppCard } from '../components/AppCard';
-import { StatusBadge } from '../components/StatusBadge';
+import { AppIcon } from '../components/AppIcon';
+import { InstallButton } from '../components/InstallButton';
+
+const ALL = 'Tất cả';
+
+function normalize(text: string): string {
+  return text
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[̀-ͯ]/g, '')
+    .replace(/đ/g, 'd');
+}
 
 export function HubPage() {
   const { apps } = useAppsManifest();
-  const [category, setCategory] = useState('Tất cả');
-  const [search, setSearch] = useState('');
+  const navigate = useNavigate();
+  const [params] = useSearchParams();
+  const search = params.get('q') ?? '';
+  const [category, setCategory] = useState(ALL);
   const featured = getFeaturedApp(apps);
   const categories = useMemo(() => getCategories(apps), [apps]);
 
   const filtered = useMemo(() => {
+    const needle = normalize(search.trim());
     return apps.filter((app) => {
-      const matchesCategory = category === 'Tất cả' || app.category === category;
-      const matchesSearch = app.name.toLowerCase().includes(search.trim().toLowerCase());
-      return matchesCategory && matchesSearch;
+      const matchesCategory = category === ALL || app.category === category;
+      const haystack = normalize(`${app.name} ${app.shortDesc} ${app.tags.join(' ')}`);
+      return matchesCategory && (!needle || haystack.includes(needle));
     });
   }, [apps, category, search]);
 
+  const showFeatured = featured && !search && category === ALL;
+
   return (
-    <div className="mx-auto max-w-6xl px-6 py-10">
-      <p className="text-xs font-semibold tracking-wide text-primary">KHO ỨNG DỤNG</p>
-      <h1 className="mt-2 text-4xl font-bold text-ink-primary">
-        Chọn ứng dụng bạn cần, tải về và dùng ngay.
-      </h1>
-      <p className="mt-3 max-w-2xl text-ink-secondary">
-        Bộ công cụ cho Word, Excel và Google Sheets: quản lý công việc, nội dung, công thức và dữ
-        liệu. Mỗi ứng dụng có hướng dẫn cài đặt riêng.
+    <main className="mx-auto max-w-6xl px-6 py-8">
+      <h1 className="text-2xl font-bold text-ink-primary">Ứng dụng</h1>
+      <p className="mt-1 text-sm text-ink-secondary">
+        Chọn ứng dụng, bấm <strong className="font-semibold text-ink-primary">Tải về</strong> — Hub
+        tự cài đặt cho bạn.{' '}
+        <Link to="/guide" className="font-medium text-primary hover:underline">
+          Xem hướng dẫn
+        </Link>
       </p>
 
-      {featured && (
-        <div className="mt-8 flex flex-col gap-6 rounded-xl border border-border bg-surface p-8 md:flex-row md:items-center md:justify-between">
-          <div>
-            <div className="flex gap-2">
-              <span className="rounded-full bg-primary-light px-2.5 py-1 text-xs font-semibold text-primary">
-                NỔI BẬT
-              </span>
-              <StatusBadge status={featured.status} />
-            </div>
-            <h2 className="mt-3 text-2xl font-bold text-ink-primary">{featured.name}</h2>
-            <p className="mt-2 max-w-xl text-ink-secondary">{featured.longDesc}</p>
-            <div className="mt-3 flex flex-wrap gap-2">
-              {featured.tags.map((tag) => (
-                <span
-                  key={tag}
-                  className="rounded-md bg-surface-secondary px-2 py-1 text-xs font-medium text-ink-secondary"
-                >
-                  {tag}
-                </span>
-              ))}
-            </div>
-            <div className="mt-5 flex gap-3">
-              <Link to={`/apps/${featured.id}`}>
-                <Button>Xem & tải về</Button>
-              </Link>
-              <Link to={`/apps/${featured.id}`}>
-                <Button variant="secondary">Hướng dẫn cài đặt</Button>
-              </Link>
-            </div>
+      {showFeatured && (
+        <section
+          aria-label="Ứng dụng nổi bật"
+          className="mt-6 flex flex-col gap-5 rounded-2xl border border-primary/20 bg-gradient-to-br from-primary-light to-surface p-6 sm:flex-row sm:items-center"
+        >
+          <AppIcon id={featured.id} badge={featured.badge} size="xl" />
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-semibold uppercase tracking-wide text-primary">Nổi bật</p>
+            <h2 className="mt-1 text-xl font-bold text-ink-primary">{featured.name}</h2>
+            <p className="mt-1 line-clamp-2 text-sm text-ink-secondary">{featured.longDesc}</p>
           </div>
-
-          <div
-            className="hidden shrink-0 grid-cols-4 gap-3 rounded-lg bg-surface-secondary p-4 md:grid md:w-80"
-            aria-hidden="true"
-          >
-            <div className="col-span-1 row-span-2 rounded-md bg-primary" />
-            <div className="col-span-3 h-8 rounded-md bg-surface" />
-            <div className="col-span-3 h-8 rounded-md bg-surface" />
-            <div className="col-span-3 flex items-end gap-1.5 rounded-md bg-surface p-2">
-              <div className="h-6 w-full rounded-sm bg-primary-light" />
-              <div className="h-10 w-full rounded-sm bg-primary/60" />
-              <div className="h-5 w-full rounded-sm bg-primary-light" />
-              <div className="h-14 w-full rounded-sm bg-primary" />
-              <div className="h-8 w-full rounded-sm bg-primary/60" />
-            </div>
-            <div className="col-span-1 flex flex-col justify-center gap-1.5 rounded-md bg-surface p-2">
-              <div className="h-1.5 w-full rounded-full bg-danger" />
-              <div className="h-1.5 w-full rounded-full bg-warning" />
-              <div className="h-1.5 w-full rounded-full bg-success" />
-            </div>
+          <div className="flex shrink-0 flex-col items-stretch gap-2 sm:w-44">
+            <InstallButton
+              app={featured}
+              className="w-full"
+              fallback={
+                <Link to={`/apps/${featured.id}`}>
+                  <Button className="w-full">Tải về</Button>
+                </Link>
+              }
+            />
+            <Link
+              to={`/apps/${featured.id}`}
+              className="text-center text-xs font-medium text-ink-secondary hover:text-primary"
+            >
+              Xem chi tiết
+            </Link>
           </div>
-        </div>
+        </section>
       )}
 
-      <div className="mt-12 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <h3 className="text-lg font-semibold text-ink-primary">Tất cả ứng dụng</h3>
-        <div className="relative w-full sm:w-72">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-muted" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Tìm ứng dụng..."
-            className="w-full rounded-md border border-border bg-surface py-2 pl-9 pr-3 text-sm text-ink-primary outline-none focus:ring-2 focus:ring-primary"
-          />
-        </div>
-      </div>
-
-      <div className="mt-4 flex flex-wrap gap-2">
+      <div className="mt-8 flex flex-wrap items-center gap-2" role="tablist" aria-label="Danh mục">
         {categories.map((cat) => {
-          const count = cat === 'Tất cả' ? apps.length : apps.filter((a) => a.category === cat).length;
+          const count = cat === ALL ? apps.length : apps.filter((a) => a.category === cat).length;
           const active = category === cat;
           return (
             <button
               key={cat}
+              role="tab"
+              aria-selected={active}
               onClick={() => setCategory(cat)}
-              className={`rounded-full px-3 py-1.5 text-sm font-medium transition-colors ${
+              className={`rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors ${
                 active
-                  ? 'bg-primary text-white'
-                  : 'bg-surface-secondary text-ink-secondary hover:bg-border'
+                  ? 'bg-ink-primary text-white'
+                  : 'bg-surface text-ink-secondary ring-1 ring-border hover:bg-surface-secondary'
               }`}
             >
-              {cat} · {count}
+              {cat}
+              <span className={`ml-1.5 ${active ? 'text-white/60' : 'text-ink-muted'}`}>{count}</span>
             </button>
           );
         })}
       </div>
 
-      <div className="mt-6 grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-        {filtered.map((app) => (
-          <AppCard key={app.id} app={app} />
-        ))}
-      </div>
+      {search && (
+        <p className="mt-4 text-sm text-ink-secondary">
+          {filtered.length} kết quả cho “{search}”
+        </p>
+      )}
 
-      <div className="mt-12 flex flex-col items-start justify-between gap-4 rounded-lg border border-border bg-surface p-6 sm:flex-row sm:items-center">
-        <div>
-          <p className="font-semibold text-ink-primary">Bạn cần một ứng dụng chưa có trong danh sách?</p>
-          <p className="text-sm text-ink-secondary">Gửi ý tưởng để được đưa vào kế hoạch phát triển.</p>
+      {filtered.length > 0 ? (
+        <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {filtered.map((app) => (
+            <AppCard key={app.id} app={app} />
+          ))}
         </div>
-        <a href="mailto:thinlam6@gmail.com?subject=Đề xuất ứng dụng">
-          <Button variant="secondary">Đề xuất ứng dụng</Button>
-        </a>
-      </div>
-    </div>
+      ) : (
+        <div className="mt-10 flex flex-col items-center rounded-xl border border-dashed border-border-strong py-14 text-center">
+          <SearchX className="h-8 w-8 text-ink-muted" />
+          <p className="mt-3 font-medium text-ink-primary">Không tìm thấy ứng dụng phù hợp</p>
+          <p className="mt-1 text-sm text-ink-secondary">Thử từ khóa khác hoặc xem tất cả ứng dụng.</p>
+          <Button
+            variant="secondary"
+            className="mt-4"
+            onClick={() => {
+              setCategory(ALL);
+              navigate('/');
+            }}
+          >
+            Xem tất cả
+          </Button>
+        </div>
+      )}
+    </main>
   );
 }

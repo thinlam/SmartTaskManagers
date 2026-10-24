@@ -4,6 +4,7 @@ import { getAppById } from '../data/apps';
 import { useAppsManifest } from '../data/useAppsManifest';
 import { StatusBadge } from '../components/StatusBadge';
 import { InstallButton } from '../components/InstallButton';
+import { AppIcon } from '../components/AppIcon';
 import { openExternal } from '../lib/openExternal';
 
 export function AppDetailPage() {
@@ -24,14 +25,16 @@ export function AppDetailPage() {
 
   return (
     <div className="mx-auto max-w-6xl px-6 py-10">
-      <Link to="/" className="text-sm text-primary hover:underline">
-        ← Quay lại App Hub
-      </Link>
+      <nav className="flex items-center gap-1.5 text-sm text-ink-muted" aria-label="Breadcrumb">
+        <Link to="/" className="font-medium text-ink-secondary hover:text-primary">
+          Ứng dụng
+        </Link>
+        <span>/</span>
+        <span className="text-ink-primary">{app.name}</span>
+      </nav>
 
-      <div className="mt-4 flex items-start gap-4">
-        <span className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-primary-light text-base font-bold text-primary">
-          {app.badge}
-        </span>
+      <div className="mt-5 flex items-start gap-5">
+        <AppIcon id={app.id} badge={app.badge} size="xl" />
         <div>
           <h1 className="text-3xl font-bold text-ink-primary">{app.name}</h1>
           <div className="mt-2 flex flex-wrap items-center gap-2">
