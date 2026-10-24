@@ -11,7 +11,12 @@ interface FolderRow {
 }
 
 function toDto(f: FolderRow) {
-  return { id: f.id, name: f.name, createdAt: f.created_at, recordingCount: Number(f.recording_count) };
+  return {
+    id: f.id,
+    name: f.name,
+    createdAt: f.created_at,
+    recordingCount: Number(f.recording_count),
+  };
 }
 
 function cleanName(value: unknown): string | null {
@@ -49,7 +54,9 @@ export function createFoldersRouter(db: Db): Router {
         'INSERT INTO folders (user_id, name) VALUES ($1, $2) RETURNING id',
         [userIdOf(res), name],
       );
-      const created = await db.query<FolderRow>(`${SELECT_WITH_COUNT} WHERE f.id = $1`, [rows[0]!.id]);
+      const created = await db.query<FolderRow>(`${SELECT_WITH_COUNT} WHERE f.id = $1`, [
+        rows[0]!.id,
+      ]);
       res.status(201).json(toDto(created.rows[0]!));
     } catch (err) {
       if ((err as { code?: string }).code === '23505') {

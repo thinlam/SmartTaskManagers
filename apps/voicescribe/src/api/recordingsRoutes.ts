@@ -8,6 +8,7 @@ import {
   type RecordingNote,
   type RecordingRow,
 } from '../services/recordings.js';
+import type { TranscriptionJobs } from '../services/jobs.js';
 import { isUuid } from '../utils/validation.js';
 
 const NOT_FOUND = { error: 'Không tìm thấy bản ghi.' };
@@ -50,12 +51,12 @@ function parseSpeakerNames(value: unknown): Record<string, string> | null {
   return names;
 }
 
-export function createRecordingsRouter(db: Db): Router {
+export function createRecordingsRouter(db: Db, jobs: TranscriptionJobs): Router {
   const router = Router();
 
   router.get('/stats', async (_req, res) => {
     const { rows } = await db.query<{ count: string; total_sec: number | null }>(
-      'SELECT count(*) AS count, sum(duration_sec) AS total_sec FROM recordings WHERE user_id = $1',
+      "SELECT count(*) AS count, sum(duration_sec) AS total_sec FROM recordings WHERE user_id = $1 AND status = 'done'",
       [userIdOf(res)],
     );
     res.json({ count: Number(rows[0]!.count), totalDurationSec: rows[0]!.total_sec ?? 0 });
@@ -100,6 +101,7 @@ export function createRecordingsRouter(db: Db): Router {
     const { rows } = await db.query(
       `SELECT r.id, r.title, r.file_name, r.folder_id, f.name AS folder_name, r.duration_sec,
               r.created_at, r.diarization_error, left(r.text, 160) AS preview,
+              r.status, r.progress_done, r.progress_total, r.error,
               (SELECT count(DISTINCT s->>'speaker') FROM jsonb_array_elements(r.segments) s) AS speaker_count
        FROM recordings r
        LEFT JOIN folders f ON f.id = r.folder_id
@@ -119,6 +121,10 @@ export function createRecordingsRouter(db: Db): Router {
         durationSec: r.duration_sec,
         speakerCount: Number(r.speaker_count),
         preview: r.preview,
+        status: r.status,
+        progressDone: r.progress_done,
+        progressTotal: r.progress_total,
+        error: r.error,
         createdAt: r.created_at,
       })),
       total: Number(total.rows[0]!.count),
@@ -199,7 +205,9 @@ export function createRecordingsRouter(db: Db): Router {
     if ('notes' in body) {
       const notes = parseNotes(body.notes);
       if (!notes) {
-        res.status(400).json({ error: 'Ghi chú không hợp lệ (tối đa 200 ghi chú, mỗi ghi chú 2000 ký tự).' });
+        res
+          .status(400)
+          .json({ error: 'Ghi chú không hợp lệ (tối đa 200 ghi chú, mỗi ghi chú 2000 ký tự).' });
         return;
       }
       params.push(JSON.stringify(notes));
@@ -236,6 +244,8 @@ export function createRecordingsRouter(db: Db): Router {
       res.status(404).json(NOT_FOUND);
       return;
     }
+    // Deleting a recording that is still being transcribed also stops its job.
+    jobs.cancel(req.params.id);
     res.status(204).end();
   });
 

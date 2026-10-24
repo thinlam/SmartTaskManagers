@@ -196,6 +196,9 @@ npm run build:vs-tauri                                   # build .exe/.msi
 
 Tính năng: đăng ký/đăng nhập (dữ liệu tách theo tài khoản), chuyển giọng nói thành văn bản, thư viện
 bản ghi có tìm kiếm và phân trang, thư mục, đổi tên người nói, ghi chú, xuất Word/TXT/SRT.
+File dài được xử lý nền: tải lên trả về ngay, giao diện hiện tiến độ theo từng đoạn; máy chủ giới hạn
+số bản ghi xử lý cùng lúc (`MAX_CONCURRENT_JOBS`) và tối đa 3 bản đang xử lý mỗi người. Việc đang chạy bị
+đánh dấu lỗi nếu máy chủ khởi động lại.
 
 Nhận diện người nói là dịch vụ Python tùy chọn (`apps/voicescribe/diarization-service`, cổng 8008).
 Khi deploy (production) tính năng này tắt trừ khi đặt `DIARIZATION_SERVICE_URL`. Dockerfile build từ

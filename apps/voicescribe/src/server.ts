@@ -10,10 +10,13 @@ import { createAuthRouter } from './api/authRoutes.js';
 import { createFoldersRouter } from './api/foldersRoutes.js';
 import { createRecordingsRouter } from './api/recordingsRoutes.js';
 import { createTranscribeRouter } from './api/transcribeRoute.js';
+import { TranscriptionJobs } from './services/jobs.js';
 
 const config = loadConfig();
 const db = createPool(config.databaseUrl);
 await migrate(db);
+const jobs = new TranscriptionJobs(config, db);
+await jobs.recoverInterrupted();
 
 const app = express();
 // Railway terminates TLS in front of the container; trust it so req.ip is the client.
@@ -34,8 +37,8 @@ api.use(express.json({ limit: '256kb' }));
 api.use(createAuthRouter(config, db));
 
 const auth = requireAuth(config.jwtSecret);
-api.use('/transcribe', auth, createTranscribeRouter(config, db));
-api.use('/recordings', auth, createRecordingsRouter(db));
+api.use('/transcribe', auth, createTranscribeRouter(config, db, jobs));
+api.use('/recordings', auth, createRecordingsRouter(db, jobs));
 api.use('/folders', auth, createFoldersRouter(db));
 api.use((_req, res) => {
   res.status(404).json({ error: 'Không tìm thấy.' });

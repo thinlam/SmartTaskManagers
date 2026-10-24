@@ -23,7 +23,10 @@ export function Spinner({ label }: { label?: string }) {
 
 export function ErrorNotice({ message, onRetry }: { message: string; onRetry?: () => void }) {
   return (
-    <div role="alert" className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+    <div
+      role="alert"
+      className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700"
+    >
       {message}
       {onRetry && (
         <button onClick={onRetry} className="ml-3 font-medium underline">
@@ -55,7 +58,11 @@ export function PageHeader({
 }
 
 export function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
-  return <div className={`rounded-2xl border border-slate-200 bg-white p-6 ${className}`}>{children}</div>;
+  return (
+    <div className={`rounded-2xl border border-slate-200 bg-white p-6 ${className}`}>
+      {children}
+    </div>
+  );
 }
 
 export function Field({
@@ -120,6 +127,23 @@ export function ConfirmDialog({
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+export function ProgressBar({ percent, className = '' }: { percent: number; className?: string }) {
+  return (
+    <div
+      role="progressbar"
+      aria-valuemin={0}
+      aria-valuemax={100}
+      aria-valuenow={percent}
+      className={`h-1.5 overflow-hidden rounded-full bg-slate-100 ${className}`}
+    >
+      <div
+        className="h-full rounded-full bg-indigo-600 transition-[width] duration-500"
+        style={{ width: `${percent}%` }}
+      />
     </div>
   );
 }

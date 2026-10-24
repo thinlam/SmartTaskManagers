@@ -27,3 +27,11 @@ export class TranscriptionError extends Error {
     this.name = 'TranscriptionError';
   }
 }
+
+/** Thrown when a job is cancelled (e.g. the user deleted the recording while it was processing). */
+export class CancelledError extends Error {
+  constructor() {
+    super('Đã hủy xử lý.');
+    this.name = 'CancelledError';
+  }
+}

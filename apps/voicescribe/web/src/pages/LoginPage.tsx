@@ -52,7 +52,10 @@ export function LoginPage() {
           <span className="text-2xl font-bold text-slate-900">VoiceScribe</span>
         </div>
 
-        <form onSubmit={submit} className="rounded-2xl border border-slate-200 bg-white p-7 shadow-sm">
+        <form
+          onSubmit={submit}
+          className="rounded-2xl border border-slate-200 bg-white p-7 shadow-sm"
+        >
           <h1 className="text-xl font-semibold text-slate-900">
             {registering ? 'Tạo tài khoản' : 'Đăng nhập'}
           </h1>
@@ -99,14 +102,19 @@ export function LoginPage() {
               <>
                 <ul className="grid grid-cols-2 gap-1 text-xs" aria-label="Yêu cầu mật khẩu">
                   {RULES.map(([label, ok]) => (
-                    <li key={label} className={ok(password) ? 'text-emerald-600' : 'text-slate-400'}>
+                    <li
+                      key={label}
+                      className={ok(password) ? 'text-emerald-600' : 'text-slate-400'}
+                    >
                       {ok(password) ? '✓' : '○'} {label}
                     </li>
                   ))}
                 </ul>
                 <Field
                   label="Nhập lại mật khẩu"
-                  error={confirm && confirm !== password ? 'Mật khẩu nhập lại chưa khớp.' : undefined}
+                  error={
+                    confirm && confirm !== password ? 'Mật khẩu nhập lại chưa khớp.' : undefined
+                  }
                 >
                   <input
                     type="password"
@@ -138,7 +146,11 @@ export function LoginPage() {
             </p>
           )}
 
-          <button type="submit" disabled={busy} className={`${primaryButtonClass} mt-5 w-full py-2.5`}>
+          <button
+            type="submit"
+            disabled={busy}
+            className={`${primaryButtonClass} mt-5 w-full py-2.5`}
+          >
             {busy && <Loader2 className="h-4 w-4 animate-spin" />}
             {registering ? 'Tạo tài khoản' : 'Đăng nhập'}
           </button>
@@ -181,12 +193,21 @@ function ServerPicker() {
 
   return (
     <div className="mt-4 text-center text-xs text-slate-400">
-      <button type="button" onClick={() => setOpen((o) => !o)} className="hover:text-slate-600 hover:underline">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="hover:text-slate-600 hover:underline"
+      >
         Máy chủ: {getServerUrl()}
       </button>
       {open && (
         <div className="mt-2 rounded-xl border border-slate-200 bg-white p-3 text-left">
-          <input className={inputClass} value={value} onChange={(e) => setValue(e.target.value)} spellCheck={false} />
+          <input
+            className={inputClass}
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            spellCheck={false}
+          />
           {error && <p className="mt-1 text-rose-600">{error}</p>}
           <div className="mt-2 flex justify-end gap-2">
             <button

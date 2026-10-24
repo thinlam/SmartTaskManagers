@@ -25,6 +25,8 @@ export interface Folder {
   recordingCount: number;
 }
 
+export type RecordingStatus = 'processing' | 'done' | 'failed';
+
 export interface RecordingSummary {
   id: string;
   title: string;
@@ -34,6 +36,10 @@ export interface RecordingSummary {
   durationSec: number;
   speakerCount: number;
   preview: string;
+  status: RecordingStatus;
+  progressDone: number;
+  progressTotal: number;
+  error: string | null;
   createdAt: string;
 }
 
@@ -56,6 +62,10 @@ export interface Recording {
   notes: RecordingNote[];
   processingTimeMs: number;
   diarizationError: string | null;
+  status: RecordingStatus;
+  progressDone: number;
+  progressTotal: number;
+  error: string | null;
   createdAt: string;
   updatedAt: string;
 }

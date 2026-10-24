@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ChevronLeft, ChevronRight, Plus, Trash2 } from 'lucide-react';
 import { api } from '../lib/api';
-import { errorText, formatDate, formatDuration } from '../lib/format';
+import { errorText, formatDate, formatDuration, progressPercent } from '../lib/format';
 import {
   ConfirmDialog,
   ErrorNotice,
@@ -51,6 +51,19 @@ export function LibraryPage({
   );
 
   const data = list.data;
+  const hasProcessing = data?.items.some((r) => r.status === 'processing') ?? false;
+
+  // Refresh while any recording is still being transcribed; tell the app when one settles
+  // so the sidebar totals update.
+  useEffect(() => {
+    if (!hasProcessing) return;
+    const timer = setTimeout(() => {
+      list.reload();
+      onChanged();
+    }, 4000);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasProcessing, data]);
   const totalPages = data ? Math.max(1, Math.ceil(data.total / data.pageSize)) : 1;
   const filtering = Boolean(query || folderFilter);
 
@@ -141,11 +154,28 @@ export function LibraryPage({
                 >
                   <td className="px-6 py-4">
                     <p className="font-semibold text-slate-900">{r.title}</p>
-                    <p className="mt-0.5 max-w-xl truncate text-slate-400">{r.preview || r.fileName}</p>
+                    {r.status === 'processing' ? (
+                      <p className="mt-0.5 text-amber-600">
+                        Đang xử lý
+                        {r.progressTotal > 0
+                          ? ` · ${r.progressDone}/${r.progressTotal} đoạn (${progressPercent(r.progressDone, r.progressTotal)}%)`
+                          : '...'}
+                      </p>
+                    ) : r.status === 'failed' ? (
+                      <p className="mt-0.5 max-w-xl truncate text-rose-600">
+                        Lỗi: {r.error ?? 'không xử lý được'}
+                      </p>
+                    ) : (
+                      <p className="mt-0.5 max-w-xl truncate text-slate-400">
+                        {r.preview || r.fileName}
+                      </p>
+                    )}
                   </td>
                   <td className="px-6 py-4 text-slate-600">{r.folderName ?? '—'}</td>
                   <td className="px-6 py-4 text-slate-600">{formatDate(r.createdAt)}</td>
-                  <td className="px-6 py-4 font-mono text-slate-600">{formatDuration(r.durationSec)}</td>
+                  <td className="px-6 py-4 font-mono text-slate-600">
+                    {r.status === 'done' ? formatDuration(r.durationSec) : '—'}
+                  </td>
                   <td className="px-3 py-4">
                     <button
                       onClick={(e) => {

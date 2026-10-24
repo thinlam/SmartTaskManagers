@@ -3,7 +3,14 @@ import { AlertCircle, Loader2, X } from 'lucide-react';
 import { api, transcribeFile } from '../lib/api';
 import { errorText } from '../lib/format';
 import { UploadZone } from '../components/UploadZone';
-import { Card, Field, PageHeader, inputClass, primaryButtonClass, secondaryButtonClass } from '../components/ui';
+import {
+  Card,
+  Field,
+  PageHeader,
+  inputClass,
+  primaryButtonClass,
+  secondaryButtonClass,
+} from '../components/ui';
 import { useAsync, useAuth, useToast } from '../state/AppState';
 
 type State =
@@ -43,13 +50,15 @@ export function NewRecordingPage({ onSaved }: { onSaved: (id: string) => void })
       (percent) => {
         setState((prev) => {
           if (prev.kind !== 'uploading') return prev;
-          return percent >= 100 ? { kind: 'processing', fileName: file.name } : { ...prev, percent };
+          return percent >= 100
+            ? { kind: 'processing', fileName: file.name }
+            : { ...prev, percent };
         });
       },
       controller.signal,
     )
       .then((recording) => {
-        toast.success('Đã lưu bản ghi vào thư viện.');
+        toast.success('Đã tải lên. VoiceScribe đang xử lý nền, bạn có thể làm việc khác.');
         onSaved(recording.id);
       })
       .catch((err: unknown) => {
@@ -67,7 +76,7 @@ export function NewRecordingPage({ onSaved }: { onSaved: (id: string) => void })
     <div className="flex-1 overflow-y-auto p-8">
       <PageHeader
         title="Ghi âm mới"
-        subtitle="Tải lên file âm thanh — VoiceScribe chuyển thành văn bản và lưu vào thư viện của bạn."
+        subtitle="Tải lên file âm thanh — VoiceScribe xử lý nền, chuyển thành văn bản và lưu vào thư viện của bạn."
       />
 
       <div className="mx-auto grid max-w-5xl grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
@@ -80,18 +89,24 @@ export function NewRecordingPage({ onSaved }: { onSaved: (id: string) => void })
               <p className="font-medium text-slate-900">
                 {state.kind === 'uploading'
                   ? `Đang tải lên "${state.fileName}"...`
-                  : `Đang nhận dạng giọng nói trong "${state.fileName}"...`}
+                  : `Đang gửi "${state.fileName}" cho máy chủ...`}
               </p>
               {state.kind === 'uploading' ? (
                 <div className="h-1.5 w-64 overflow-hidden rounded-full bg-slate-100">
-                  <div className="h-full bg-indigo-600 transition-[width]" style={{ width: `${state.percent}%` }} />
+                  <div
+                    className="h-full bg-indigo-600 transition-[width]"
+                    style={{ width: `${state.percent}%` }}
+                  />
                 </div>
               ) : (
                 <p className="max-w-sm text-xs text-slate-400">
-                  Có thể mất vài phút với file dài. Bạn có thể giữ cửa sổ này mở cho đến khi xong.
+                  Sắp xong bước tải lên. Việc nhận dạng sẽ chạy nền trên máy chủ.
                 </p>
               )}
-              <button onClick={() => abortRef.current?.abort()} className={`${secondaryButtonClass} text-xs`}>
+              <button
+                onClick={() => abortRef.current?.abort()}
+                className={`${secondaryButtonClass} text-xs`}
+              >
                 <X className="h-3 w-3" /> Hủy
               </button>
             </div>
@@ -102,7 +117,10 @@ export function NewRecordingPage({ onSaved }: { onSaved: (id: string) => void })
               <AlertCircle className="h-10 w-10 text-rose-500" />
               <p className="font-medium text-slate-900">Không xử lý được file âm thanh</p>
               <p className="max-w-md text-sm text-slate-500">{state.message}</p>
-              <button onClick={() => setState({ kind: 'idle' })} className={`${primaryButtonClass} mt-2`}>
+              <button
+                onClick={() => setState({ kind: 'idle' })}
+                className={`${primaryButtonClass} mt-2`}
+              >
                 Thử lại
               </button>
             </div>
@@ -138,7 +156,10 @@ export function NewRecordingPage({ onSaved }: { onSaved: (id: string) => void })
               </select>
             </Field>
             {config?.diarizationEnabled && (
-              <Field label="Số người nói (tùy chọn)" hint="Nhập đúng số người giúp tách giọng chính xác hơn.">
+              <Field
+                label="Số người nói (tùy chọn)"
+                hint="Nhập đúng số người giúp tách giọng chính xác hơn."
+              >
                 <input
                   type="number"
                   min={1}
@@ -158,6 +179,10 @@ export function NewRecordingPage({ onSaved }: { onSaved: (id: string) => void })
             <ul className="list-disc space-y-1 pl-5">
               <li>Hỗ trợ mp3, m4a, wav, mp4, webm.</li>
               <li>Tối đa {maxUploadMb}MB mỗi file.</li>
+              <li>
+                File dài được xử lý nền: bạn theo dõi tiến độ trong Thư viện và có thể đóng trang
+                này.
+              </li>
               <li>Bản ghi được lưu riêng cho tài khoản của bạn.</li>
             </ul>
           </Card>

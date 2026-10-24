@@ -44,7 +44,9 @@ export function Sidebar({
               onClick={() => onNavigate(itemPage)}
               aria-current={active ? 'page' : undefined}
               className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium transition-colors ${
-                active ? 'bg-white/10 text-white' : 'text-white/60 hover:bg-white/5 hover:text-white'
+                active
+                  ? 'bg-white/10 text-white'
+                  : 'text-white/60 hover:bg-white/5 hover:text-white'
               }`}
             >
               <Icon className="h-4 w-4 shrink-0" />
@@ -59,7 +61,9 @@ export function Sidebar({
       {stats.data && (
         <div className="mb-3 rounded-2xl bg-white/5 p-4">
           <p className="text-xs text-white/50">Đã chuyển thành văn bản</p>
-          <p className="mt-1 text-2xl font-bold">{formatTotalDuration(stats.data.totalDurationSec)}</p>
+          <p className="mt-1 text-2xl font-bold">
+            {formatTotalDuration(stats.data.totalDurationSec)}
+          </p>
           <p className="mt-1 text-xs text-white/50">{stats.data.count} bản ghi</p>
         </div>
       )}

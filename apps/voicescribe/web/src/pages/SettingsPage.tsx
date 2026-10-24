@@ -49,7 +49,12 @@ function ProfileSection() {
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="Họ và tên">
-            <input className={inputClass} value={name} maxLength={100} onChange={(e) => setName(e.target.value)} />
+            <input
+              className={inputClass}
+              value={name}
+              maxLength={100}
+              onChange={(e) => setName(e.target.value)}
+            />
           </Field>
           <Field label="Email" hint="Email dùng để đăng nhập, không thể thay đổi.">
             <input className={inputClass} value={user.email} disabled />
@@ -98,7 +103,9 @@ function PasswordSection() {
       <form onSubmit={submit} className="space-y-4">
         <div>
           <h2 className="font-semibold text-slate-900">Đổi mật khẩu</h2>
-          <p className="text-sm text-slate-500">Dùng mật khẩu mạnh và không trùng với dịch vụ khác.</p>
+          <p className="text-sm text-slate-500">
+            Dùng mật khẩu mạnh và không trùng với dịch vụ khác.
+          </p>
         </div>
         <Field label="Mật khẩu hiện tại">
           <input
@@ -136,7 +143,10 @@ function PasswordSection() {
           {RULES.map(([label, ok]) => {
             const pass = ok(next);
             return (
-              <li key={label} className={`flex items-center gap-2 ${pass ? 'text-emerald-600' : 'text-slate-400'}`}>
+              <li
+                key={label}
+                className={`flex items-center gap-2 ${pass ? 'text-emerald-600' : 'text-slate-400'}`}
+              >
                 {pass ? <Check className="h-4 w-4" /> : <X className="h-4 w-4" />} {label}
               </li>
             );
@@ -148,7 +158,11 @@ function PasswordSection() {
           </p>
         )}
         <div className="flex justify-end">
-          <button type="submit" disabled={!current || !rulesOk || !matches || saving} className={primaryButtonClass}>
+          <button
+            type="submit"
+            disabled={!current || !rulesOk || !matches || saving}
+            className={primaryButtonClass}
+          >
             Cập nhật mật khẩu
           </button>
         </div>
@@ -177,7 +191,9 @@ function ServerSection() {
     <Card className="space-y-4">
       <div>
         <h2 className="font-semibold text-slate-900">Máy chủ</h2>
-        <p className="text-sm text-slate-500">Địa chỉ máy chủ VoiceScribe mà ứng dụng này kết nối tới.</p>
+        <p className="text-sm text-slate-500">
+          Địa chỉ máy chủ VoiceScribe mà ứng dụng này kết nối tới.
+        </p>
       </div>
       <Field label="Địa chỉ máy chủ" error={error} hint={`Mặc định: ${getDefaultServerUrl()}`}>
         <input

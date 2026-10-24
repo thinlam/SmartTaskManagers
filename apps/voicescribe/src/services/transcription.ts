@@ -1,9 +1,15 @@
 import { InferenceClient, InferenceClientProviderApiError } from '@huggingface/inference';
-import { TranscriptionError, type TranscriptionResult } from '../types/transcription.js';
+import {
+  CancelledError,
+  TranscriptionError,
+  type TranscriptionResult,
+} from '../types/transcription.js';
 
 const MODEL = 'openai/whisper-large-v3';
-const MAX_503_RETRIES = 3;
+const MAX_RETRIES = 4;
 const RETRY_BASE_DELAY_MS = 2000;
+// Rate limits, provider hiccups and cold-starting models are all worth another try.
+const RETRYABLE_STATUSES = new Set([429, 500, 502, 503, 504]);
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -74,6 +80,11 @@ export interface TranscribeOptions {
   /** Used only to infer the MIME type from the extension. */
   fileName: string;
   signal?: AbortSignal;
+  /**
+   * Return an empty result instead of throwing when no speech is detected. Needed for
+   * chunked long audio, where a silent 30s stretch must not fail the whole file.
+   */
+  allowEmpty?: boolean;
 }
 
 export async function transcribeAudio(options: TranscribeOptions): Promise<TranscriptionResult> {
@@ -84,7 +95,8 @@ export async function transcribeAudio(options: TranscribeOptions): Promise<Trans
   const startedAt = Date.now();
   let lastError: unknown;
 
-  for (let attempt = 0; attempt <= MAX_503_RETRIES; attempt++) {
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    if (options.signal?.aborted) throw new CancelledError();
     try {
       const output = await client.automaticSpeechRecognition({
         model: MODEL,
@@ -95,7 +107,10 @@ export async function transcribeAudio(options: TranscribeOptions): Promise<Trans
       const processingTimeMs = Date.now() - startedAt;
 
       if (!output.text || output.text.trim().length === 0) {
-        throw new TranscriptionError('Kết quả nhận dạng trống — không phát hiện lời nói trong file âm thanh.');
+        if (options.allowEmpty) return { text: '', segments: [], processingTimeMs };
+        throw new TranscriptionError(
+          'Kết quả nhận dạng trống — không phát hiện lời nói trong file âm thanh.',
+        );
       }
 
       const segments = (output.chunks ?? []).map((chunk) => {
@@ -110,13 +125,16 @@ export async function transcribeAudio(options: TranscribeOptions): Promise<Trans
       return { text: output.text, segments, processingTimeMs };
     } catch (err) {
       lastError = err;
-      const is503 =
-        err instanceof InferenceClientProviderApiError && err.httpResponse.status === 503;
-      if (is503 && attempt < MAX_503_RETRIES) {
+      if (err instanceof TranscriptionError || err instanceof CancelledError) throw err;
+      const retryable =
+        err instanceof InferenceClientProviderApiError
+          ? RETRYABLE_STATUSES.has(err.httpResponse.status)
+          : // Network-level failures (reset connection, DNS) surface as plain errors, not API errors.
+            err instanceof TypeError || (err instanceof Error && err.name === 'AbortError');
+      if (retryable && attempt < MAX_RETRIES) {
         await sleep(RETRY_BASE_DELAY_MS * 2 ** attempt);
         continue;
       }
-      if (err instanceof TranscriptionError) throw err;
       throw new TranscriptionError(toUserMessage(err), err);
     }
   }

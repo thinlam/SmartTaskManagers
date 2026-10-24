@@ -2,20 +2,24 @@ import { writeFile, rm, mkdtemp } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { transcribeAudio } from './transcription.js';
+import { CHUNK_OVERLAP_SEC, splitAudioIntoChunks, type AudioChunk } from '../utils/audioChunker.js';
 import {
-  CHUNK_OVERLAP_SEC,
-  splitAudioIntoChunks,
-  type AudioChunk,
-} from '../utils/audioChunker.js';
-import type { TranscriptSegment, TranscriptionResult } from '../types/transcription.js';
+  CancelledError,
+  TranscriptionError,
+  type TranscriptSegment,
+  type TranscriptionResult,
+} from '../types/transcription.js';
 
 export interface TranscribeLongAudioOptions {
   hfToken: string;
   audio: Buffer;
   /** Original filename, used only to pick a temp-file extension for ffprobe/ffmpeg. */
   fileName: string;
-  /** Called after each chunk finishes, with how many of `total` are done. */
+  /** Called after each chunk finishes, with how many of `total` are done (also once with 0 when the total is known). */
   onProgress?: (done: number, total: number) => void;
+  /** How many chunks to send to the provider at once. */
+  concurrency?: number;
+  signal?: AbortSignal;
 }
 
 /**
@@ -52,10 +56,11 @@ function extensionFor(fileName: string): string {
 }
 
 /**
- * Transcribes audio of any length: short files go straight to
- * transcribeAudio(); long files are split into overlapping ~30s chunks
- * (see audioChunker.ts), transcribed independently, and merged back
- * into one segment list with absolute timestamps.
+ * Transcribes audio of any length: the file is split into overlapping ~30s
+ * chunks (see audioChunker.ts), a few chunks are transcribed at a time, and
+ * the results are merged back into one segment list with absolute timestamps.
+ * A silent chunk yields no text rather than failing the whole file; only a file
+ * with no speech at all is an error.
  */
 export async function transcribeLongAudio(
   options: TranscribeLongAudioOptions,
@@ -66,29 +71,64 @@ export async function transcribeLongAudio(
 
   try {
     await writeFile(inputPath, options.audio);
+    if (options.signal?.aborted) throw new CancelledError();
     const chunks: AudioChunk[] = await splitAudioIntoChunks(inputPath);
 
-    const chunkResults: { startSec: number; result: TranscriptionResult }[] = [];
-    for (let i = 0; i < chunks.length; i++) {
-      const chunk = chunks[i];
-      if (!chunk) continue;
-      const result = await transcribeAudio({
-        hfToken: options.hfToken,
-        audio: chunk.data,
-        fileName: 'chunk.wav',
-      });
-      chunkResults.push({ startSec: chunk.startSec, result });
-      options.onProgress?.(i + 1, chunks.length);
+    const total = chunks.length;
+    const results: (TranscriptionResult | undefined)[] = new Array(total).fill(undefined);
+    let next = 0;
+    let done = 0;
+    let failure: unknown;
+    options.onProgress?.(0, total);
+
+    const worker = async (): Promise<void> => {
+      while (failure === undefined) {
+        const index = next++;
+        const chunk = chunks[index];
+        if (!chunk) return;
+        if (options.signal?.aborted) {
+          failure = new CancelledError();
+          return;
+        }
+        try {
+          results[index] = await transcribeAudio({
+            hfToken: options.hfToken,
+            audio: chunk.data,
+            fileName: 'chunk.wav',
+            signal: options.signal,
+            allowEmpty: true,
+          });
+          // Free the decoded audio as soon as it has been sent.
+          chunk.data = Buffer.alloc(0);
+          options.onProgress?.(++done, total);
+        } catch (err) {
+          failure ??= err;
+          return;
+        }
+      }
+    };
+
+    const workers = Math.max(1, Math.min(options.concurrency ?? 3, total));
+    await Promise.all(Array.from({ length: workers }, () => worker()));
+    if (failure !== undefined) throw failure;
+
+    const chunkResults = chunks.map((chunk, i) => ({
+      startSec: chunk.startSec,
+      result: results[i] ?? { text: '', segments: [], processingTimeMs: 0 },
+    }));
+    const segments = mergeChunkSegments(chunkResults);
+    const text = chunkResults
+      .map((c) => c.result.text)
+      .join(' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (!text) {
+      throw new TranscriptionError(
+        'Kết quả nhận dạng trống — không phát hiện lời nói trong file âm thanh.',
+      );
     }
 
-    const segments = mergeChunkSegments(chunkResults);
-    const text = chunkResults.map((c) => c.result.text).join(' ').replace(/\s+/g, ' ').trim();
-
-    return {
-      text,
-      segments,
-      processingTimeMs: Date.now() - startedAt,
-    };
+    return { text, segments, processingTimeMs: Date.now() - startedAt };
   } finally {
     await rm(tmpDir, { recursive: true, force: true });
   }

@@ -88,7 +88,11 @@ export function FoldersPage({
           placeholder="Tên thư mục mới"
           aria-label="Tên thư mục mới"
         />
-        <button type="submit" disabled={creating || !name.trim()} className={`${primaryButtonClass} shrink-0`}>
+        <button
+          type="submit"
+          disabled={creating || !name.trim()}
+          className={`${primaryButtonClass} shrink-0`}
+        >
           <Plus className="h-4 w-4" /> Tạo
         </button>
       </form>

@@ -21,7 +21,9 @@ function Shell() {
       <Sidebar
         page={route.page}
         refreshKey={dataVersion}
-        onNavigate={(page) => setRoute(page === 'detail' ? { page: 'library' } : ({ page } as Route))}
+        onNavigate={(page) =>
+          setRoute(page === 'detail' ? { page: 'library' } : ({ page } as Route))
+        }
       />
 
       {route.page === 'new' && (

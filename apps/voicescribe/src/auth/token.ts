@@ -3,7 +3,11 @@ import jwt from 'jsonwebtoken';
 const EXPIRES_IN_SECONDS = 30 * 24 * 60 * 60;
 
 export function signToken(userId: string, secret: string): string {
-  return jwt.sign({}, secret, { subject: userId, expiresIn: EXPIRES_IN_SECONDS, algorithm: 'HS256' });
+  return jwt.sign({}, secret, {
+    subject: userId,
+    expiresIn: EXPIRES_IN_SECONDS,
+    algorithm: 'HS256',
+  });
 }
 
 /** Returns the user id, or null for a missing/invalid/expired token. */

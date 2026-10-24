@@ -17,9 +17,18 @@ export interface AppConfig {
    * the speaker step instead of failing it on every request.
    */
   diarizationEnabled: boolean;
+  /** Recordings transcribed at the same time across all users (bounds RAM and Hugging Face load). */
+  maxConcurrentJobs: number;
+  /** Audio chunks sent to Hugging Face in parallel for a single recording. */
+  chunkConcurrency: number;
 }
 
 const DEV_JWT_SECRET = 'voicescribe-dev-only-secret-change-before-deploying';
+
+function positiveInt(raw: string | undefined, fallback: number): number {
+  const value = Number.parseInt(raw ?? '', 10);
+  return Number.isFinite(value) && value > 0 ? value : fallback;
+}
 
 export function loadConfig(): AppConfig {
   const hfToken = process.env.HF_TOKEN;
@@ -50,5 +59,17 @@ export function loadConfig(): AppConfig {
   const maxUploadMb = Number.parseInt(process.env.MAX_UPLOAD_MB ?? '100', 10);
   const signupCode = process.env.SIGNUP_CODE?.trim() || undefined;
   const diarizationEnabled = !production || Boolean(process.env.DIARIZATION_SERVICE_URL);
-  return { hfToken, port, maxUploadMb, databaseUrl, jwtSecret, signupCode, diarizationEnabled };
+  const maxConcurrentJobs = positiveInt(process.env.MAX_CONCURRENT_JOBS, 2);
+  const chunkConcurrency = positiveInt(process.env.CHUNK_CONCURRENCY, 3);
+  return {
+    hfToken,
+    port,
+    maxUploadMb,
+    databaseUrl,
+    jwtSecret,
+    signupCode,
+    diarizationEnabled,
+    maxConcurrentJobs,
+    chunkConcurrency,
+  };
 }

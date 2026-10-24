@@ -1,22 +1,25 @@
+import { writeFile } from 'node:fs/promises';
+import { extname, join } from 'node:path';
+import { randomUUID } from 'node:crypto';
 import { Router, type Request, type Response } from 'express';
 import multer from 'multer';
-import { transcribeLongAudio } from '../services/longAudioTranscription.js';
-import { diarizeAudio } from '../services/diarization.js';
-import { mergeTranscriptWithSpeakers } from '../utils/mergeSpeakers.js';
-import { TranscriptionError } from '../types/transcription.js';
+import { userIdOf } from '../auth/middleware.js';
 import type { AppConfig } from '../config/env.js';
 import type { Db } from '../db/pool.js';
-import { userIdOf } from '../auth/middleware.js';
-import { insertRecording, toDetailDto } from '../services/recordings.js';
+import { UPLOAD_DIR, type TranscriptionJobs } from '../services/jobs.js';
+import { insertPendingRecording, toDetailDto } from '../services/recordings.js';
+import { TranscriptionError } from '../types/transcription.js';
 import { isUuid } from '../utils/validation.js';
 
 const ALLOWED_EXTENSIONS = new Set(['mp3', 'm4a', 'wav', 'mp4', 'webm']);
+/** Recordings one user may have in "processing" at once. */
+const MAX_ACTIVE_PER_USER = 3;
 
 function extensionOf(fileName: string): string {
   return fileName.toLowerCase().split('.').pop() ?? '';
 }
 
-export function createTranscribeRouter(config: AppConfig, db: Db): Router {
+export function createTranscribeRouter(config: AppConfig, db: Db, jobs: TranscriptionJobs): Router {
   const upload = multer({
     storage: multer.memoryStorage(),
     limits: { fileSize: config.maxUploadMb * 1024 * 1024 },
@@ -35,6 +38,11 @@ export function createTranscribeRouter(config: AppConfig, db: Db): Router {
 
   const router = Router();
 
+  /**
+   * Accepts the upload and returns 202 right away with the new library entry
+   * (status "processing"); transcription continues in the background and the
+   * client polls GET /api/recordings/:id for progress.
+   */
   router.post('/', (req: Request, res: Response) => {
     upload.single('audio')(req, res, async (uploadErr: unknown) => {
       if (uploadErr) {
@@ -43,91 +51,89 @@ export function createTranscribeRouter(config: AppConfig, db: Db): Router {
           return;
         }
         if (uploadErr instanceof multer.MulterError && uploadErr.code === 'LIMIT_FILE_SIZE') {
-          res.status(413).json({ error: `File vượt quá dung lượng tối đa ${config.maxUploadMb}MB.` });
+          res
+            .status(413)
+            .json({ error: `File vượt quá dung lượng tối đa ${config.maxUploadMb}MB.` });
           return;
         }
         res.status(400).json({ error: 'Không đọc được file tải lên.' });
         return;
       }
 
-      if (!req.file) {
+      const file = req.file;
+      if (!file) {
         res.status(400).json({ error: 'Thiếu file âm thanh (field "audio").' });
         return;
       }
 
-      const numSpeakersRaw = req.body.num_speakers;
-      const numSpeakers =
-        typeof numSpeakersRaw === 'string' && numSpeakersRaw.trim() !== ''
-          ? Number.parseInt(numSpeakersRaw, 10)
-          : undefined;
+      try {
+        const userId = userIdOf(res);
 
-      // Validate the destination folder before spending the (slow, quota-metered) transcription.
-      const userId = userIdOf(res);
-      const folderRaw = req.body.folder_id;
-      let folderId: string | null = null;
-      if (typeof folderRaw === 'string' && folderRaw.trim() !== '') {
-        const owns = isUuid(folderRaw)
-          ? await db.query('SELECT 1 FROM folders WHERE id = $1 AND user_id = $2', [folderRaw, userId])
-          : null;
-        if (!owns?.rowCount) {
-          res.status(400).json({ error: 'Thư mục không tồn tại.' });
+        const folderRaw = req.body.folder_id;
+        let folderId: string | null = null;
+        if (typeof folderRaw === 'string' && folderRaw.trim() !== '') {
+          const owns = isUuid(folderRaw)
+            ? await db.query('SELECT 1 FROM folders WHERE id = $1 AND user_id = $2', [
+                folderRaw,
+                userId,
+              ])
+            : null;
+          if (!owns?.rowCount) {
+            res.status(400).json({ error: 'Thư mục không tồn tại.' });
+            return;
+          }
+          folderId = folderRaw;
+        }
+
+        const active = await db.query<{ count: string }>(
+          `SELECT count(*) AS count FROM recordings WHERE user_id = $1 AND status = 'processing'`,
+          [userId],
+        );
+        if (Number(active.rows[0]!.count) >= MAX_ACTIVE_PER_USER) {
+          res.status(429).json({
+            error: `Bạn đang có ${MAX_ACTIVE_PER_USER} bản ghi đang xử lý. Vui lòng đợi một bản hoàn tất rồi tải thêm.`,
+          });
           return;
         }
-        folderId = folderRaw;
-      }
-      const titleRaw = typeof req.body.title === 'string' ? req.body.title.trim() : '';
-      const title = (titleRaw || req.file.originalname.replace(/\.[^.]+$/, '') || 'Bản ghi').slice(0, 200);
 
-      try {
-        const result = await transcribeLongAudio({
-          hfToken: config.hfToken,
-          audio: req.file.buffer,
-          fileName: req.file.originalname,
-        });
+        const numSpeakersRaw = req.body.num_speakers;
+        const parsedSpeakers =
+          typeof numSpeakersRaw === 'string' && numSpeakersRaw.trim() !== ''
+            ? Number.parseInt(numSpeakersRaw, 10)
+            : undefined;
+        const numSpeakers =
+          parsedSpeakers !== undefined && Number.isFinite(parsedSpeakers) && parsedSpeakers > 0
+            ? parsedSpeakers
+            : undefined;
 
-        // Diarization is best-effort: a sidecar that isn't running (or
-        // fails for this file) shouldn't block the transcript the user
-        // actually asked for — fall back to a single "Người nói 1"
-        // label and report the failure separately instead.
-        let diarizationError: string | null = null;
-        let labeledSegments;
-        if (!config.diarizationEnabled) {
-          labeledSegments = result.segments.map((seg) => ({ ...seg, speaker: 'Người nói 1' }));
-        } else {
-          try {
-            const speakerSegments = await diarizeAudio({
-              audio: req.file.buffer,
-              fileName: req.file.originalname,
-              numSpeakers,
-            });
-            labeledSegments = mergeTranscriptWithSpeakers(result.segments, speakerSegments);
-          } catch (err) {
-            diarizationError =
-              err instanceof TranscriptionError
-                ? err.message
-                : 'Lỗi không xác định khi nhận dạng người nói.';
-            labeledSegments = result.segments.map((seg) => ({ ...seg, speaker: 'Người nói 1' }));
-          }
-        }
+        const titleRaw = typeof req.body.title === 'string' ? req.body.title.trim() : '';
+        const title = (titleRaw || file.originalname.replace(/\.[^.]+$/, '') || 'Bản ghi').slice(
+          0,
+          200,
+        );
 
-        const saved = await insertRecording(db, {
+        const pending = await insertPendingRecording(db, {
           userId,
           folderId,
           title,
-          fileName: req.file.originalname,
-          text: result.text,
-          segments: labeledSegments,
-          processingMs: result.processingTimeMs,
-          diarizationError,
+          fileName: file.originalname,
         });
-        res.status(201).json(toDetailDto(saved));
+        const audioPath = join(
+          UPLOAD_DIR,
+          `${randomUUID()}${extname(file.originalname).toLowerCase()}`,
+        );
+        await writeFile(audioPath, file.buffer);
+        jobs.enqueue({
+          recordingId: pending.id,
+          audioPath,
+          fileName: file.originalname,
+          numSpeakers,
+        });
+
+        res.status(202).json(toDetailDto(pending));
       } catch (err) {
-        if (err instanceof TranscriptionError) {
-          res.status(502).json({ error: err.message });
-          return;
-        }
         console.error('[POST /api/transcribe] unexpected error:', err);
-        res.status(500).json({ error: 'Đã xảy ra lỗi không xác định khi xử lý âm thanh.' });
+        res.status(500).json({ error: 'Không nhận được file tải lên. Vui lòng thử lại.' });
       }
     });
   });

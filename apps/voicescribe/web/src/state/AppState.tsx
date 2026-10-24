@@ -25,7 +25,11 @@ interface AuthState {
 
 const AuthContext = createContext<AuthState | null>(null);
 
-const DEFAULT_CONFIG: AppConfig = { signupCodeRequired: false, diarizationEnabled: false, maxUploadMb: 100 };
+const DEFAULT_CONFIG: AppConfig = {
+  signupCodeRequired: false,
+  diarizationEnabled: false,
+  maxUploadMb: 100,
+};
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);

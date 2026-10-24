@@ -1,6 +1,8 @@
 import type { Db } from '../db/pool.js';
 import type { LabeledSegment } from '../types/diarization.js';
 
+export type RecordingStatus = 'processing' | 'done' | 'failed';
+
 export interface RecordingNote {
   id: string;
   text: string;
@@ -21,6 +23,10 @@ export interface RecordingRow {
   notes: RecordingNote[];
   processing_ms: number;
   diarization_error: string | null;
+  status: RecordingStatus;
+  progress_done: number;
+  progress_total: number;
+  error: string | null;
   created_at: Date;
   updated_at: Date;
 }
@@ -45,41 +51,80 @@ export function toDetailDto(r: RecordingRow) {
     notes: r.notes,
     processingTimeMs: r.processing_ms,
     diarizationError: r.diarization_error,
+    status: r.status,
+    progressDone: r.progress_done,
+    progressTotal: r.progress_total,
+    error: r.error,
     createdAt: r.created_at,
     updatedAt: r.updated_at,
   };
 }
 
-export interface NewRecording {
+export interface PendingRecording {
   userId: string;
   folderId: string | null;
   title: string;
   fileName: string;
+}
+
+/** Creates the library entry up front so the user sees it (as "processing") while the job runs. */
+export async function insertPendingRecording(
+  db: Db,
+  input: PendingRecording,
+): Promise<RecordingRow> {
+  const { rows } = await db.query<{ id: string }>(
+    `INSERT INTO recordings (user_id, folder_id, title, file_name, status)
+     VALUES ($1, $2, $3, $4, 'processing')
+     RETURNING id`,
+    [input.userId, input.folderId, input.title, input.fileName],
+  );
+  const created = await db.query<RecordingRow>(`${RECORDING_SELECT} WHERE r.id = $1`, [
+    rows[0]!.id,
+  ]);
+  return created.rows[0]!;
+}
+
+export interface CompletedRecording {
   text: string;
   segments: LabeledSegment[];
   processingMs: number;
   diarizationError: string | null;
 }
 
-export async function insertRecording(db: Db, input: NewRecording): Promise<RecordingRow> {
-  const durationSec = input.segments.reduce((max, s) => Math.max(max, s.end), 0);
-  const { rows } = await db.query<{ id: string }>(
-    `INSERT INTO recordings
-       (user_id, folder_id, title, file_name, duration_sec, text, segments, processing_ms, diarization_error)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-     RETURNING id`,
+export async function completeRecording(
+  db: Db,
+  id: string,
+  done: CompletedRecording,
+): Promise<void> {
+  const durationSec = done.segments.reduce((max, s) => Math.max(max, s.end), 0);
+  await db.query(
+    `UPDATE recordings
+        SET status = 'done', text = $2, segments = $3, duration_sec = $4, processing_ms = $5,
+            diarization_error = $6, error = NULL, progress_done = progress_total, updated_at = now()
+      WHERE id = $1`,
     [
-      input.userId,
-      input.folderId,
-      input.title,
-      input.fileName,
+      id,
+      done.text,
+      JSON.stringify(done.segments),
       durationSec,
-      input.text,
-      JSON.stringify(input.segments),
-      Math.round(input.processingMs),
-      input.diarizationError,
+      Math.round(done.processingMs),
+      done.diarizationError,
     ],
   );
-  const created = await db.query<RecordingRow>(`${RECORDING_SELECT} WHERE r.id = $1`, [rows[0]!.id]);
-  return created.rows[0]!;
+}
+
+export async function failRecording(db: Db, id: string, message: string): Promise<void> {
+  await db.query(
+    `UPDATE recordings SET status = 'failed', error = $2, updated_at = now()
+      WHERE id = $1 AND status = 'processing'`,
+    [id, message],
+  );
+}
+
+export async function setProgress(db: Db, id: string, done: number, total: number): Promise<void> {
+  await db.query(
+    `UPDATE recordings SET progress_done = $2, progress_total = $3
+      WHERE id = $1 AND status = 'processing'`,
+    [id, done, total],
+  );
 }

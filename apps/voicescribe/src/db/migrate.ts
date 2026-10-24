@@ -46,6 +46,18 @@ const MIGRATIONS: Migration[] = [
       CREATE INDEX recordings_folder_idx ON recordings (folder_id);
     `,
   },
+  {
+    id: '002_recording_jobs',
+    sql: `
+      ALTER TABLE recordings
+        ADD COLUMN status         text    NOT NULL DEFAULT 'done'
+          CHECK (status IN ('processing', 'done', 'failed')),
+        ADD COLUMN progress_done  integer NOT NULL DEFAULT 0,
+        ADD COLUMN progress_total integer NOT NULL DEFAULT 0,
+        ADD COLUMN error          text;
+      CREATE INDEX recordings_status_idx ON recordings (user_id, status);
+    `,
+  },
 ];
 
 /** Applies pending migrations in order, each in its own transaction. Safe to run on every start. */

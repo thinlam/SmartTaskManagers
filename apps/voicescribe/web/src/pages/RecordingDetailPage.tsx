@@ -1,13 +1,31 @@
-import { useMemo, useState } from 'react';
-import { ArrowLeft, Check, Copy, FileDown, Pencil, Search, Trash2, X } from 'lucide-react';
+import { useEffect, useMemo, useState } from 'react';
+import {
+  AlertCircle,
+  ArrowLeft,
+  Check,
+  Copy,
+  FileDown,
+  Loader2,
+  Pencil,
+  Search,
+  Trash2,
+  X,
+} from 'lucide-react';
 import { api } from '../lib/api';
-import { countWords, errorText, formatDateTime, formatDuration } from '../lib/format';
+import {
+  countWords,
+  errorText,
+  formatDateTime,
+  formatDuration,
+  progressPercent,
+} from '../lib/format';
 import { exportDocx, exportSrt, exportTxt } from '../lib/export';
 import { TranscriptList } from '../components/TranscriptList';
 import {
   Card,
   ConfirmDialog,
   ErrorNotice,
+  ProgressBar,
   Spinner,
   inputClass,
   primaryButtonClass,
@@ -16,7 +34,13 @@ import {
 import { useAsync, useToast } from '../state/AppState';
 import type { LabeledSegment, Recording } from '../types';
 
-const BAR_COLORS = ['bg-indigo-500', 'bg-emerald-500', 'bg-amber-500', 'bg-fuchsia-500', 'bg-rose-500'];
+const BAR_COLORS = [
+  'bg-indigo-500',
+  'bg-emerald-500',
+  'bg-amber-500',
+  'bg-fuchsia-500',
+  'bg-rose-500',
+];
 
 function baseNameOf(title: string): string {
   return title.replace(/[\\/:*?"<>|]+/g, ' ').trim() || 'ban-ghi';
@@ -43,6 +67,23 @@ export function RecordingDetailPage({
   const [deleting, setDeleting] = useState(false);
 
   const rec = recording.data;
+  const processing = rec?.status === 'processing';
+
+  // While the server transcribes in the background, poll for progress until it settles.
+  useEffect(() => {
+    if (!processing) return;
+    const timer = setInterval(() => {
+      api.recordings
+        .get(id)
+        .then((fresh) => {
+          recording.setData(fresh);
+          if (fresh.status !== 'processing') onChanged();
+        })
+        .catch(() => undefined); // transient network errors: keep polling
+    }, 2500);
+    return () => clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [processing, id]);
 
   const speakerOrder = useMemo(() => {
     const seen: string[] = [];
@@ -66,14 +107,25 @@ export function RecordingDetailPage({
     }));
   }, [rec, speakerOrder]);
 
-  if (recording.loading && !rec) return <div className="flex-1"><Spinner /></div>;
+  if (recording.loading && !rec)
+    return (
+      <div className="flex-1">
+        <Spinner />
+      </div>
+    );
   if (!rec) {
     return (
       <div className="flex-1 p-8">
-        <button onClick={onBack} className="mb-4 text-sm font-medium text-indigo-600 hover:underline">
+        <button
+          onClick={onBack}
+          className="mb-4 text-sm font-medium text-indigo-600 hover:underline"
+        >
           ← Thư viện
         </button>
-        <ErrorNotice message={recording.error ?? 'Không tìm thấy bản ghi.'} onRetry={recording.reload} />
+        <ErrorNotice
+          message={recording.error ?? 'Không tìm thấy bản ghi.'}
+          onRetry={recording.reload}
+        />
       </div>
     );
   }
@@ -128,7 +180,12 @@ export function RecordingDetailPage({
     const text = noteDraft.trim();
     if (!text) return;
     setNoteDraft('');
-    void save({ notes: [...rec!.notes, { id: crypto.randomUUID(), text, createdAt: new Date().toISOString() }] });
+    void save({
+      notes: [
+        ...rec!.notes,
+        { id: crypto.randomUUID(), text, createdAt: new Date().toISOString() },
+      ],
+    });
   }
 
   const base = baseNameOf(rec.title);
@@ -158,10 +215,18 @@ export function RecordingDetailPage({
                   if (e.key === 'Escape') setEditingTitle(false);
                 }}
               />
-              <button onClick={commitTitle} aria-label="Lưu tiêu đề" className="rounded p-2 text-emerald-600 hover:bg-emerald-50">
+              <button
+                onClick={commitTitle}
+                aria-label="Lưu tiêu đề"
+                className="rounded p-2 text-emerald-600 hover:bg-emerald-50"
+              >
                 <Check className="h-5 w-5" />
               </button>
-              <button onClick={() => setEditingTitle(false)} aria-label="Hủy" className="rounded p-2 text-slate-400 hover:bg-slate-100">
+              <button
+                onClick={() => setEditingTitle(false)}
+                aria-label="Hủy"
+                className="rounded p-2 text-slate-400 hover:bg-slate-100"
+              >
                 <X className="h-5 w-5" />
               </button>
             </div>
@@ -182,24 +247,38 @@ export function RecordingDetailPage({
             </div>
           )}
           <p className="mt-1 text-sm text-slate-400">
-            {formatDateTime(rec.createdAt)} · {formatDuration(rec.durationSec)} · {speakerOrder.length || 1} người nói ·{' '}
-            {countWords(rec.text)} từ
+            {rec.status === 'done'
+              ? `${formatDateTime(rec.createdAt)} · ${formatDuration(rec.durationSec)} · ${speakerOrder.length || 1} người nói · ${countWords(rec.text)} từ`
+              : `${formatDateTime(rec.createdAt)} · ${rec.fileName}`}
           </p>
         </div>
 
         <div className="flex shrink-0 flex-wrap gap-2">
-          <button onClick={() => void copyText(rec)} className={secondaryButtonClass}>
-            <Copy className="h-3.5 w-3.5" /> Sao chép
-          </button>
-          <button onClick={() => exportTxt(namedSegments(rec), base)} className={secondaryButtonClass}>
-            .txt
-          </button>
-          <button onClick={() => exportSrt(namedSegments(rec), base)} className={secondaryButtonClass}>
-            .srt
-          </button>
-          <button onClick={() => void exportDocx(namedSegments(rec), base)} className={primaryButtonClass}>
-            <FileDown className="h-3.5 w-3.5" /> .docx
-          </button>
+          {rec.status === 'done' && (
+            <>
+              <button onClick={() => void copyText(rec)} className={secondaryButtonClass}>
+                <Copy className="h-3.5 w-3.5" /> Sao chép
+              </button>
+              <button
+                onClick={() => exportTxt(namedSegments(rec), base)}
+                className={secondaryButtonClass}
+              >
+                .txt
+              </button>
+              <button
+                onClick={() => exportSrt(namedSegments(rec), base)}
+                className={secondaryButtonClass}
+              >
+                .srt
+              </button>
+              <button
+                onClick={() => void exportDocx(namedSegments(rec), base)}
+                className={primaryButtonClass}
+              >
+                <FileDown className="h-3.5 w-3.5" /> .docx
+              </button>
+            </>
+          )}
           <button
             onClick={() => setConfirmDelete(true)}
             aria-label="Xóa bản ghi"
@@ -211,148 +290,201 @@ export function RecordingDetailPage({
         </div>
       </div>
 
-      {rec.diarizationError && (
+      {rec.status === 'processing' && (
+        <Card className="mx-auto max-w-xl py-10 text-center">
+          <Loader2 className="mx-auto h-8 w-8 animate-spin text-indigo-600" />
+          <h2 className="mt-4 text-lg font-semibold text-slate-900">
+            Đang chuyển thành văn bản...
+          </h2>
+          <p className="mt-1 text-sm text-slate-500">
+            {rec.progressTotal > 0
+              ? `Đã xử lý ${rec.progressDone}/${rec.progressTotal} đoạn (${progressPercent(rec.progressDone, rec.progressTotal)}%)`
+              : 'Đang chuẩn bị file âm thanh...'}
+          </p>
+          <ProgressBar
+            percent={progressPercent(rec.progressDone, rec.progressTotal)}
+            className="mx-auto mt-4 max-w-sm"
+          />
+          <p className="mt-4 text-xs text-slate-400">
+            Quá trình chạy nền trên máy chủ. Bạn có thể rời trang này, bản ghi sẽ hiện trong Thư
+            viện khi xong.
+          </p>
+        </Card>
+      )}
+
+      {rec.status === 'failed' && (
+        <Card className="mx-auto max-w-xl py-10 text-center">
+          <AlertCircle className="mx-auto h-10 w-10 text-rose-500" />
+          <h2 className="mt-4 text-lg font-semibold text-slate-900">Không xử lý được file này</h2>
+          <p className="mx-auto mt-1 max-w-md text-sm text-slate-500">
+            {rec.error ?? 'Đã xảy ra lỗi không xác định.'}
+          </p>
+          <p className="mt-4 text-xs text-slate-400">Hãy xóa bản ghi này và tải file lên lại.</p>
+        </Card>
+      )}
+
+      {rec.status === 'done' && rec.diarizationError && (
         <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          Không nhận dạng được người nói ({rec.diarizationError}). Toàn bộ nội dung được gán cho "Người nói 1".
+          Không nhận dạng được người nói ({rec.diarizationError}). Toàn bộ nội dung được gán cho
+          "Người nói 1".
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
-        <Card className="p-5">
-          <div className="mb-4 flex flex-wrap items-center gap-3">
-            <div className="relative min-w-[200px] flex-1">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-              <input
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="Tìm trong bản ghi..."
-                className={`${inputClass} bg-slate-50 py-2 pl-9`}
-              />
+      {rec.status === 'done' && (
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
+          <Card className="p-5">
+            <div className="mb-4 flex flex-wrap items-center gap-3">
+              <div className="relative min-w-[200px] flex-1">
+                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Tìm trong bản ghi..."
+                  className={`${inputClass} bg-slate-50 py-2 pl-9`}
+                />
+              </div>
+              {multiSpeaker && (
+                <button
+                  onClick={() => setMergeBySpeaker((v) => !v)}
+                  className={`rounded-lg border px-3 py-2 text-sm font-medium ${
+                    mergeBySpeaker
+                      ? 'border-indigo-200 bg-indigo-50 text-indigo-700'
+                      : 'border-slate-200 text-slate-600 hover:bg-slate-50'
+                  }`}
+                >
+                  Gộp theo người nói
+                </button>
+              )}
             </div>
-            {multiSpeaker && (
-              <button
-                onClick={() => setMergeBySpeaker((v) => !v)}
-                className={`rounded-lg border px-3 py-2 text-sm font-medium ${
-                  mergeBySpeaker
-                    ? 'border-indigo-200 bg-indigo-50 text-indigo-700'
-                    : 'border-slate-200 text-slate-600 hover:bg-slate-50'
-                }`}
-              >
-                Gộp theo người nói
-              </button>
-            )}
-          </div>
 
-          {rec.segments.length === 0 ? (
-            <p className="py-10 text-center text-sm text-slate-400">Bản ghi không có nội dung nhận dạng được.</p>
-          ) : (
-            <TranscriptList
-              segments={rec.segments}
-              speakerOrder={speakerOrder}
-              speakerNames={rec.speakerNames}
-              onRenameSpeaker={(raw, name) =>
-                void save({ speakerNames: { ...rec.speakerNames, [raw]: name } })
-              }
-              searchQuery={search}
-              mergeBySpeaker={mergeBySpeaker}
-            />
-          )}
-        </Card>
-
-        <div className="flex flex-col gap-5">
-          <Card className="p-5">
-            <h3 className="mb-3 font-semibold text-slate-900">Thông tin</h3>
-            <dl className="space-y-2 text-sm">
-              <div className="flex justify-between gap-3">
-                <dt className="text-slate-500">File gốc</dt>
-                <dd className="truncate text-right text-slate-800" title={rec.fileName}>{rec.fileName}</dd>
-              </div>
-              <div className="flex justify-between gap-3">
-                <dt className="text-slate-500">Xử lý trong</dt>
-                <dd className="text-slate-800">{(rec.processingTimeMs / 1000).toFixed(1)}s</dd>
-              </div>
-              <div className="flex items-center justify-between gap-3">
-                <dt className="text-slate-500">Thư mục</dt>
-                <dd>
-                  <select
-                    className="max-w-[160px] rounded-lg border border-slate-200 bg-white px-2 py-1 text-sm"
-                    value={rec.folderId ?? ''}
-                    onChange={(e) => void save({ folderId: e.target.value || null }, 'Đã chuyển thư mục.')}
-                    aria-label="Thư mục"
-                  >
-                    <option value="">Chưa phân loại</option>
-                    {folders.data?.map((f) => (
-                      <option key={f.id} value={f.id}>
-                        {f.name}
-                      </option>
-                    ))}
-                  </select>
-                </dd>
-              </div>
-            </dl>
-          </Card>
-
-          {multiSpeaker && (
-            <Card className="p-5">
-              <h3 className="mb-3 font-semibold text-slate-900">Thời gian nói</h3>
-              <div className="space-y-3">
-                {speakerStats.map((s) => (
-                  <div key={s.raw}>
-                    <div className="mb-1 flex justify-between text-sm">
-                      <span className="truncate font-medium text-slate-700">{s.name}</span>
-                      <span className="shrink-0 text-slate-400">
-                        {formatDuration(s.seconds)} · {s.percent}%
-                      </span>
-                    </div>
-                    <div className="h-1.5 overflow-hidden rounded-full bg-slate-100">
-                      <div className={`h-full ${s.color}`} style={{ width: `${s.percent}%` }} />
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <p className="mt-3 text-xs text-slate-400">Bấm vào tên người nói trong bản ghi để đổi tên.</p>
-            </Card>
-          )}
-
-          <Card className="p-5">
-            <h3 className="mb-3 font-semibold text-slate-900">Ghi chú</h3>
-            {rec.notes.length === 0 ? (
-              <p className="mb-3 text-sm text-slate-400">Chưa có ghi chú.</p>
+            {rec.segments.length === 0 ? (
+              <p className="py-10 text-center text-sm text-slate-400">
+                Bản ghi không có nội dung nhận dạng được.
+              </p>
             ) : (
-              <div className="mb-3 flex flex-col gap-2">
-                {rec.notes.map((n) => (
-                  <div key={n.id} className="group flex items-start gap-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900">
-                    <p className="min-w-0 flex-1 whitespace-pre-wrap break-words">
-                      {n.text}
-                      <span className="mt-0.5 block text-xs text-amber-600">{formatDateTime(n.createdAt)}</span>
-                    </p>
-                    <button
-                      onClick={() => void save({ notes: rec.notes.filter((x) => x.id !== n.id) })}
-                      aria-label="Xóa ghi chú"
-                      className="rounded p-1 text-amber-500 opacity-60 hover:bg-amber-100 hover:opacity-100"
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-            <div className="flex gap-2">
-              <input
-                value={noteDraft}
-                maxLength={2000}
-                onChange={(e) => setNoteDraft(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && addNote()}
-                placeholder="Thêm ghi chú..."
-                className={inputClass}
+              <TranscriptList
+                segments={rec.segments}
+                speakerOrder={speakerOrder}
+                speakerNames={rec.speakerNames}
+                onRenameSpeaker={(raw, name) =>
+                  void save({ speakerNames: { ...rec.speakerNames, [raw]: name } })
+                }
+                searchQuery={search}
+                mergeBySpeaker={mergeBySpeaker}
               />
-              <button onClick={addNote} disabled={!noteDraft.trim()} className={primaryButtonClass}>
-                Thêm
-              </button>
-            </div>
+            )}
           </Card>
+
+          <div className="flex flex-col gap-5">
+            <Card className="p-5">
+              <h3 className="mb-3 font-semibold text-slate-900">Thông tin</h3>
+              <dl className="space-y-2 text-sm">
+                <div className="flex justify-between gap-3">
+                  <dt className="text-slate-500">File gốc</dt>
+                  <dd className="truncate text-right text-slate-800" title={rec.fileName}>
+                    {rec.fileName}
+                  </dd>
+                </div>
+                <div className="flex justify-between gap-3">
+                  <dt className="text-slate-500">Xử lý trong</dt>
+                  <dd className="text-slate-800">{(rec.processingTimeMs / 1000).toFixed(1)}s</dd>
+                </div>
+                <div className="flex items-center justify-between gap-3">
+                  <dt className="text-slate-500">Thư mục</dt>
+                  <dd>
+                    <select
+                      className="max-w-[160px] rounded-lg border border-slate-200 bg-white px-2 py-1 text-sm"
+                      value={rec.folderId ?? ''}
+                      onChange={(e) =>
+                        void save({ folderId: e.target.value || null }, 'Đã chuyển thư mục.')
+                      }
+                      aria-label="Thư mục"
+                    >
+                      <option value="">Chưa phân loại</option>
+                      {folders.data?.map((f) => (
+                        <option key={f.id} value={f.id}>
+                          {f.name}
+                        </option>
+                      ))}
+                    </select>
+                  </dd>
+                </div>
+              </dl>
+            </Card>
+
+            {multiSpeaker && (
+              <Card className="p-5">
+                <h3 className="mb-3 font-semibold text-slate-900">Thời gian nói</h3>
+                <div className="space-y-3">
+                  {speakerStats.map((s) => (
+                    <div key={s.raw}>
+                      <div className="mb-1 flex justify-between text-sm">
+                        <span className="truncate font-medium text-slate-700">{s.name}</span>
+                        <span className="shrink-0 text-slate-400">
+                          {formatDuration(s.seconds)} · {s.percent}%
+                        </span>
+                      </div>
+                      <div className="h-1.5 overflow-hidden rounded-full bg-slate-100">
+                        <div className={`h-full ${s.color}`} style={{ width: `${s.percent}%` }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                <p className="mt-3 text-xs text-slate-400">
+                  Bấm vào tên người nói trong bản ghi để đổi tên.
+                </p>
+              </Card>
+            )}
+
+            <Card className="p-5">
+              <h3 className="mb-3 font-semibold text-slate-900">Ghi chú</h3>
+              {rec.notes.length === 0 ? (
+                <p className="mb-3 text-sm text-slate-400">Chưa có ghi chú.</p>
+              ) : (
+                <div className="mb-3 flex flex-col gap-2">
+                  {rec.notes.map((n) => (
+                    <div
+                      key={n.id}
+                      className="group flex items-start gap-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900"
+                    >
+                      <p className="min-w-0 flex-1 whitespace-pre-wrap break-words">
+                        {n.text}
+                        <span className="mt-0.5 block text-xs text-amber-600">
+                          {formatDateTime(n.createdAt)}
+                        </span>
+                      </p>
+                      <button
+                        onClick={() => void save({ notes: rec.notes.filter((x) => x.id !== n.id) })}
+                        aria-label="Xóa ghi chú"
+                        className="rounded p-1 text-amber-500 opacity-60 hover:bg-amber-100 hover:opacity-100"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <div className="flex gap-2">
+                <input
+                  value={noteDraft}
+                  maxLength={2000}
+                  onChange={(e) => setNoteDraft(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && addNote()}
+                  placeholder="Thêm ghi chú..."
+                  className={inputClass}
+                />
+                <button
+                  onClick={addNote}
+                  disabled={!noteDraft.trim()}
+                  className={primaryButtonClass}
+                >
+                  Thêm
+                </button>
+              </div>
+            </Card>
+          </div>
         </div>
-      </div>
+      )}
 
       {confirmDelete && (
         <ConfirmDialog

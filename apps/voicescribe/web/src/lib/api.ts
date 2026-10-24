@@ -61,7 +61,8 @@ export function setUnauthorizedHandler(handler: (() => void) | null): void {
 }
 
 function errorMessage(body: unknown, status: number): string {
-  if (body && typeof body === 'object' && 'error' in body) return String((body as { error: unknown }).error);
+  if (body && typeof body === 'object' && 'error' in body)
+    return String((body as { error: unknown }).error);
   return `Lỗi máy chủ (${status}).`;
 }
 
@@ -89,7 +90,10 @@ async function request<T>(method: string, path: string, options: RequestOptions 
       body: options.body === undefined ? undefined : JSON.stringify(options.body),
     });
   } catch {
-    throw new ApiError(`Không kết nối được máy chủ (${getServerUrl() || window.location.origin}).`, 0);
+    throw new ApiError(
+      `Không kết nối được máy chủ (${getServerUrl() || window.location.origin}).`,
+      0,
+    );
   }
 
   if (response.status === 204) return undefined as T;
@@ -133,7 +137,8 @@ export const api = {
   folders: {
     list: () => request<Folder[]>('GET', '/api/folders'),
     create: (name: string) => request<Folder>('POST', '/api/folders', { body: { name } }),
-    rename: (id: string, name: string) => request<Folder>('PUT', `/api/folders/${id}`, { body: { name } }),
+    rename: (id: string, name: string) =>
+      request<Folder>('PUT', `/api/folders/${id}`, { body: { name } }),
     remove: (id: string) => request<void>('DELETE', `/api/folders/${id}`),
   },
 

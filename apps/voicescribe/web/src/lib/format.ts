@@ -37,3 +37,8 @@ export function countWords(text: string): number {
 export function errorText(err: unknown): string {
   return err instanceof Error ? err.message : 'Đã xảy ra lỗi không xác định.';
 }
+
+/** Percent of chunks finished; 0 while the server is still preparing the file (total unknown). */
+export function progressPercent(done: number, total: number): number {
+  return total > 0 ? Math.min(100, Math.round((done / total) * 100)) : 0;
+}

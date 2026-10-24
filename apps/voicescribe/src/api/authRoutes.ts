@@ -2,7 +2,12 @@ import { Router } from 'express';
 import type { AppConfig } from '../config/env.js';
 import type { Db } from '../db/pool.js';
 import { requireAuth, userIdOf } from '../auth/middleware.js';
-import { PASSWORD_RULE_MESSAGE, checkPassword, hashPassword, passwordOk } from '../auth/password.js';
+import {
+  PASSWORD_RULE_MESSAGE,
+  checkPassword,
+  hashPassword,
+  passwordOk,
+} from '../auth/password.js';
 import { rateLimit } from '../auth/rateLimit.js';
 import { signToken } from '../auth/token.js';
 
