@@ -72,7 +72,20 @@ export async function transcribeLongAudio(
   try {
     await writeFile(inputPath, options.audio);
     if (options.signal?.aborted) throw new CancelledError();
-    const chunks: AudioChunk[] = await splitAudioIntoChunks(inputPath);
+    let chunks: AudioChunk[];
+    try {
+      chunks = await splitAudioIntoChunks(inputPath);
+    } catch (err) {
+      // Turn ffmpeg/ffprobe failures into messages a user can act on; the raw error
+      // stays on TranscriptionError.cause_ for the server log.
+      const missingBinary = (err as NodeJS.ErrnoException).code === 'ENOENT';
+      throw new TranscriptionError(
+        missingBinary
+          ? 'Máy chủ thiếu công cụ xử lý âm thanh (ffmpeg). Vui lòng báo quản trị viên.'
+          : 'Không đọc được file âm thanh. File có thể bị hỏng hoặc không đúng định dạng.',
+        err,
+      );
+    }
 
     const total = chunks.length;
     const results: (TranscriptionResult | undefined)[] = new Array(total).fill(undefined);

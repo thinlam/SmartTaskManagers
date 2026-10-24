@@ -125,7 +125,11 @@ export class TranscriptionJobs {
         err instanceof TranscriptionError
           ? err.message
           : 'Đã xảy ra lỗi không xác định khi xử lý âm thanh.';
-      if (!(err instanceof TranscriptionError)) console.error('[jobs] unexpected error:', err);
+      // Always log the underlying cause (TranscriptionError hides it from the user message).
+      console.error(
+        `[jobs] recording ${job.recordingId} failed:`,
+        err instanceof TranscriptionError ? (err.cause_ ?? err.message) : err,
+      );
       await failRecording(this.db, job.recordingId, message).catch((e: unknown) =>
         console.error('[jobs] could not record failure:', e),
       );

@@ -48,15 +48,38 @@ export async function getAudioDurationSec(filePath: string): Promise<number> {
  * overlap region afterward.
  */
 export async function splitAudioIntoChunks(filePath: string): Promise<AudioChunk[]> {
-  const durationSec = await getAudioDurationSec(filePath);
-
-  if (durationSec <= CHUNK_LENGTH_SEC + 5) {
-    const data = await readFile(filePath);
-    return [{ startSec: 0, data }];
-  }
-
   const tmpDir = await mkdtemp(join(tmpdir(), 'voicescribe-chunks-'));
   try {
+    let sourcePath = filePath;
+    let durationSec: number;
+    try {
+      durationSec = await getAudioDurationSec(sourcePath);
+    } catch (err) {
+      // Missing binaries are a deployment problem, not a bad file: do not mask them.
+      if ((err as NodeJS.ErrnoException).code === 'ENOENT') throw err;
+      // Some containers (notably browser-recorded .webm) carry no duration header, so
+      // ffprobe reports "N/A". Decode once to WAV, which always has one, and carry on.
+      sourcePath = join(tmpDir, 'normalized.wav');
+      await execFileAsync('ffmpeg', [
+        '-y',
+        '-i',
+        filePath,
+        '-ac',
+        '1',
+        '-ar',
+        '16000',
+        '-c:a',
+        'pcm_s16le',
+        sourcePath,
+      ]);
+      durationSec = await getAudioDurationSec(sourcePath);
+    }
+
+    if (durationSec <= CHUNK_LENGTH_SEC + 5) {
+      const data = await readFile(sourcePath);
+      return [{ startSec: 0, data }];
+    }
+
     const chunks: AudioChunk[] = [];
     let startSec = 0;
     let index = 0;
@@ -73,7 +96,7 @@ export async function splitAudioIntoChunks(filePath: string): Promise<AudioChunk
         '-t',
         String(CHUNK_LENGTH_SEC),
         '-i',
-        filePath,
+        sourcePath,
         '-ac',
         '1',
         '-ar',
