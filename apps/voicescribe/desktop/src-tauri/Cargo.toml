@@ -1,6 +1,6 @@
 [package]
 name = "voicescribe"
-version = "0.2.1"
+version = "0.2.2"
 description = "VoiceScribe — Windows desktop client"
 repository = "https://github.com/thinlam/SmartTaskManagers"
 edition = "2021"

@@ -15,8 +15,6 @@ const SERVER_KEY = 'voicescribe.serverUrl';
 /** Set only for the desktop build (see .env.desktop); empty in the browser = same origin. */
 const DEFAULT_SERVER = (import.meta.env.VITE_API_URL ?? '').replace(/\/+$/, '');
 
-export const isDesktopBuild = DEFAULT_SERVER !== '';
-
 function readStorage(key: string): string | null {
   try {
     return localStorage.getItem(key);
@@ -34,13 +32,12 @@ function writeStorage(key: string, value: string | null): void {
   }
 }
 
-export const getDefaultServerUrl = (): string => DEFAULT_SERVER;
-export const getServerUrl = (): string => readStorage(SERVER_KEY) || DEFAULT_SERVER;
+/** The server is fixed at build time; users cannot point the app elsewhere. */
+export const getServerUrl = (): string => DEFAULT_SERVER;
 
-export function setServerUrl(url: string): void {
-  const clean = url.trim().replace(/\/+$/, '');
-  writeStorage(SERVER_KEY, clean && clean !== DEFAULT_SERVER ? clean : null);
-}
+// Earlier builds let the user override the server. Drop any saved override so an
+// old value cannot keep the app talking to a wrong or retired address.
+writeStorage(SERVER_KEY, null);
 
 export const getToken = (): string | null => readStorage(TOKEN_KEY);
 export const setToken = (token: string | null): void => writeStorage(TOKEN_KEY, token);

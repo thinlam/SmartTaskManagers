@@ -1,6 +1,5 @@
 import { useState, type FormEvent } from 'react';
 import { Loader2, Mic } from 'lucide-react';
-import { getDefaultServerUrl, getServerUrl, isDesktopBuild, setServerUrl } from '../lib/api';
 import { errorText } from '../lib/format';
 import { Field, inputClass, primaryButtonClass } from '../components/ui';
 import { useAuth } from '../state/AppState';
@@ -169,60 +168,7 @@ export function LoginPage() {
             </button>
           </p>
         </form>
-
-        {isDesktopBuild && <ServerPicker />}
       </div>
-    </div>
-  );
-}
-
-/** Desktop only: lets a user whose server moved (or who self-hosts) point the app elsewhere before signing in. */
-function ServerPicker() {
-  const [open, setOpen] = useState(false);
-  const [value, setValue] = useState(getServerUrl());
-  const [error, setError] = useState('');
-
-  function save() {
-    if (!/^https?:\/\//i.test(value.trim())) {
-      setError('Địa chỉ phải bắt đầu bằng http:// hoặc https://');
-      return;
-    }
-    setServerUrl(value);
-    window.location.reload();
-  }
-
-  return (
-    <div className="mt-4 text-center text-xs text-slate-400">
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        className="hover:text-slate-600 hover:underline"
-      >
-        Máy chủ: {getServerUrl()}
-      </button>
-      {open && (
-        <div className="mt-2 rounded-xl border border-slate-200 bg-white p-3 text-left">
-          <input
-            className={inputClass}
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            spellCheck={false}
-          />
-          {error && <p className="mt-1 text-rose-600">{error}</p>}
-          <div className="mt-2 flex justify-end gap-2">
-            <button
-              type="button"
-              className="rounded-md px-3 py-1 text-slate-500 hover:bg-slate-50"
-              onClick={() => setValue(getDefaultServerUrl())}
-            >
-              Mặc định
-            </button>
-            <button type="button" className={primaryButtonClass} onClick={save}>
-              Lưu và kết nối
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

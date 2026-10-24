@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { Check, X } from 'lucide-react';
-import { api, getDefaultServerUrl, getServerUrl, isDesktopBuild, setServerUrl } from '../lib/api';
+import { api } from '../lib/api';
 import { errorText } from '../lib/format';
 import {
   Card,
@@ -171,51 +171,6 @@ function PasswordSection() {
   );
 }
 
-function ServerSection() {
-  const toast = useToast();
-  const [server, setServer] = useState(getServerUrl());
-  const [error, setError] = useState('');
-
-  function save() {
-    if (!/^https?:\/\//i.test(server.trim())) {
-      setError('Địa chỉ phải bắt đầu bằng http:// hoặc https://');
-      return;
-    }
-    setError('');
-    setServerUrl(server);
-    toast.success('Đã lưu. Đang tải lại để kết nối máy chủ mới...');
-    setTimeout(() => window.location.reload(), 700);
-  }
-
-  return (
-    <Card className="space-y-4">
-      <div>
-        <h2 className="font-semibold text-slate-900">Máy chủ</h2>
-        <p className="text-sm text-slate-500">
-          Địa chỉ máy chủ VoiceScribe mà ứng dụng này kết nối tới.
-        </p>
-      </div>
-      <Field label="Địa chỉ máy chủ" error={error} hint={`Mặc định: ${getDefaultServerUrl()}`}>
-        <input
-          className={inputClass}
-          value={server}
-          onChange={(e) => setServer(e.target.value)}
-          spellCheck={false}
-          inputMode="url"
-        />
-      </Field>
-      <div className="flex justify-end gap-2">
-        <button className={secondaryButtonClass} onClick={() => setServer(getDefaultServerUrl())}>
-          Dùng mặc định
-        </button>
-        <button className={primaryButtonClass} onClick={save}>
-          Lưu và kết nối
-        </button>
-      </div>
-    </Card>
-  );
-}
-
 export function SettingsPage() {
   const { signOut } = useAuth();
   return (
@@ -224,7 +179,6 @@ export function SettingsPage() {
       <div className="max-w-3xl space-y-6">
         <ProfileSection />
         <PasswordSection />
-        {isDesktopBuild && <ServerSection />}
         <Card className="flex flex-wrap items-center justify-between gap-3">
           <div>
             <h2 className="font-semibold text-slate-900">Phiên đăng nhập</h2>
@@ -234,7 +188,7 @@ export function SettingsPage() {
             Đăng xuất
           </button>
         </Card>
-        <p className="text-xs text-slate-400">VoiceScribe 0.2.1</p>
+        <p className="text-xs text-slate-400">VoiceScribe 0.2.2</p>
       </div>
     </div>
   );
