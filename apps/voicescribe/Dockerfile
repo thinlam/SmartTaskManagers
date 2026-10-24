@@ -17,6 +17,11 @@ RUN npm run build --workspace=@voicescribe/web
 FROM node:22-slim AS runtime
 WORKDIR /repo
 ENV NODE_ENV=production
+# ffmpeg + ffprobe: audioChunker shells out to them to split long audio, so every
+# transcription fails without them ("Đã xảy ra lỗi không xác định khi xử lý âm thanh").
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
 COPY package.json package-lock.json ./
 COPY apps/voicescribe/package.json apps/voicescribe/package.json
 COPY apps/voicescribe/web/package.json apps/voicescribe/web/package.json
