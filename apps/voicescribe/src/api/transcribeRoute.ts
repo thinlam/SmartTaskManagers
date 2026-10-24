@@ -9,6 +9,7 @@ import type { Db } from '../db/pool.js';
 import { UPLOAD_DIR, type TranscriptionJobs } from '../services/jobs.js';
 import { insertPendingRecording, toDetailDto } from '../services/recordings.js';
 import { TranscriptionError } from '../types/transcription.js';
+import { fixFilenameEncoding } from '../utils/filename.js';
 import { isUuid } from '../utils/validation.js';
 
 const ALLOWED_EXTENSIONS = new Set(['mp3', 'm4a', 'wav', 'mp4', 'webm']);
@@ -60,11 +61,12 @@ export function createTranscribeRouter(config: AppConfig, db: Db, jobs: Transcri
         return;
       }
 
-      const file = req.file;
-      if (!file) {
+      const uploaded = req.file;
+      if (!uploaded) {
         res.status(400).json({ error: 'Thiếu file âm thanh (field "audio").' });
         return;
       }
+      const file = { ...uploaded, originalname: fixFilenameEncoding(uploaded.originalname) };
 
       try {
         const userId = userIdOf(res);

@@ -6,6 +6,12 @@ import { promisify } from 'node:util';
 
 const execFileAsync = promisify(execFile);
 
+// ffmpeg logs a line per corrupt frame by default; on a damaged multi-hour recording that
+// overflows execFile's 1MB output buffer and kills the process. Keep only real errors and
+// allow a larger buffer so a noisy file is still decoded.
+const FFMPEG_QUIET = ['-v', 'error', '-nostdin'];
+const EXEC_OPTIONS = { maxBuffer: 16 * 1024 * 1024 };
+
 export const CHUNK_LENGTH_SEC = 30;
 export const CHUNK_OVERLAP_SEC = 2;
 const CHUNK_STEP_SEC = CHUNK_LENGTH_SEC - CHUNK_OVERLAP_SEC;
@@ -60,18 +66,23 @@ export async function splitAudioIntoChunks(filePath: string): Promise<AudioChunk
       // Some containers (notably browser-recorded .webm) carry no duration header, so
       // ffprobe reports "N/A". Decode once to WAV, which always has one, and carry on.
       sourcePath = join(tmpDir, 'normalized.wav');
-      await execFileAsync('ffmpeg', [
-        '-y',
-        '-i',
-        filePath,
-        '-ac',
-        '1',
-        '-ar',
-        '16000',
-        '-c:a',
-        'pcm_s16le',
-        sourcePath,
-      ]);
+      await execFileAsync(
+        'ffmpeg',
+        [
+          ...FFMPEG_QUIET,
+          '-y',
+          '-i',
+          filePath,
+          '-ac',
+          '1',
+          '-ar',
+          '16000',
+          '-c:a',
+          'pcm_s16le',
+          sourcePath,
+        ],
+        EXEC_OPTIONS,
+      );
       durationSec = await getAudioDurationSec(sourcePath);
     }
 
@@ -89,22 +100,27 @@ export async function splitAudioIntoChunks(filePath: string): Promise<AudioChunk
     // empty output) instead of just yielding a short clip.
     while (startSec < durationSec - 1) {
       const outPath = join(tmpDir, `chunk-${index}.wav`);
-      await execFileAsync('ffmpeg', [
-        '-y',
-        '-ss',
-        String(startSec),
-        '-t',
-        String(CHUNK_LENGTH_SEC),
-        '-i',
-        sourcePath,
-        '-ac',
-        '1',
-        '-ar',
-        '16000',
-        '-c:a',
-        'pcm_s16le',
-        outPath,
-      ]);
+      await execFileAsync(
+        'ffmpeg',
+        [
+          ...FFMPEG_QUIET,
+          '-y',
+          '-ss',
+          String(startSec),
+          '-t',
+          String(CHUNK_LENGTH_SEC),
+          '-i',
+          sourcePath,
+          '-ac',
+          '1',
+          '-ar',
+          '16000',
+          '-c:a',
+          'pcm_s16le',
+          outPath,
+        ],
+        EXEC_OPTIONS,
+      );
       const data = await readFile(outPath);
       chunks.push({ startSec, data });
       startSec += CHUNK_STEP_SEC;
