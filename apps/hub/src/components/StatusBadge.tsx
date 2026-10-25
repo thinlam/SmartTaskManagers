@@ -7,16 +7,14 @@ const STATUS_CLASSES: Record<AppStatus, string> = {
 };
 
 const STATUS_LABELS: Record<AppStatus, string> = {
-  ready: 'SẴN SÀNG',
-  beta: 'BETA',
-  soon: 'SẮP RA MẮT',
+  ready: 'Sẵn sàng',
+  beta: 'Beta',
+  soon: 'Sắp ra mắt',
 };
 
 export function StatusBadge({ status }: { status: AppStatus }) {
   return (
-    <span
-      className={`rounded-full px-2.5 py-1 text-xs font-semibold tracking-wide ${STATUS_CLASSES[status]}`}
-    >
+    <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${STATUS_CLASSES[status]}`}>
       {STATUS_LABELS[status]}
     </span>
   );

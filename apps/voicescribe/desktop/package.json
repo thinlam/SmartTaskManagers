@@ -1,0 +1,13 @@
+{
+  "name": "@voicescribe/desktop",
+  "version": "0.2.2",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "node -e 0",
+    "tauri": "tauri"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.11.5"
+  }
+}

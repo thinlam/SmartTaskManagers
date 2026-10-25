@@ -12,6 +12,10 @@ apps/desktop/src-tauri/target/
 apps/desktop/src-tauri/gen/schemas/
 apps/hub/src-tauri/target/
 apps/hub/src-tauri/gen/schemas/
+apps/content-desktop/src-tauri/target/
+apps/voicescribe/desktop/src-tauri/target/
+apps/voicescribe/desktop/src-tauri/gen/schemas/
+apps/content-desktop/src-tauri/gen/schemas/
 # Cargo.lock IS committed on purpose — src-tauri builds a binary application,
 # not a library, so the lockfile should be reproducible across machines.
 
@@ -19,12 +23,15 @@ apps/hub/src-tauri/gen/schemas/
 bin/
 obj/
 *.user
+uploads/
 .vs/
 
 # ── Env / secrets ─────────────────────────────────────────────────────────────
 .env
 .env.*
 !.env.example
+!apps/content-desktop/.env.production
+!apps/voicescribe/web/.env.desktop
 *.pem
 *.key
 appsettings.*.local.json

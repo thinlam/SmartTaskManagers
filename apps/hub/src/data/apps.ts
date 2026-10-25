@@ -125,20 +125,149 @@ export const DEFAULT_APPS: AppEntry[] = [
     badge: 'CM',
     name: 'Content Manager',
     shortDesc: 'Lên lịch, theo dõi trạng thái và quản lý nội dung từ ý tưởng đến xuất bản.',
-    longDesc: 'Lên lịch, theo dõi trạng thái và quản lý nội dung từ ý tưởng đến xuất bản.',
-    tags: ['Excel', 'Google Sheets'],
+    longDesc:
+      'Ứng dụng quản lý nội dung cho đội ngũ marketing: Dashboard, danh sách nội dung, Kanban kéo thả, lịch đăng bài, thư viện media, chiến dịch và báo cáo cho Facebook, TikTok, YouTube, Website và Zalo. Có bản Web, Mobile (Android/iOS) và Windows Desktop, dùng chung backend Content Manager (ASP.NET Core + PostgreSQL).',
+    tags: ['Windows Desktop', 'Web App', 'Mobile'],
     category: 'Nội dung',
-    status: 'soon',
-    platforms: [],
+    status: 'ready',
+    platforms: [
+      {
+        label: 'Windows Desktop (khuyên dùng)',
+        note: 'Setup.exe · kết nối sẵn tới máy chủ Content Manager (Railway)',
+        actionLabel: 'Tải Setup.exe',
+        downloadUrl:
+          'https://github.com/thinlam/SmartTaskManagers/releases/download/Content-v0.1.0/content-manager_0.1.0_x64-setup.exe',
+        installer: {
+          version: '0.1.0',
+          sha256: 'b7b84fc1d713f0dafb7bbb7f35e2bc007dc1713ff6f067190164237f6d7b5367',
+          installerType: 'nsis',
+          silentArgs: ['/S'],
+          startMenuShortcut: 'Content Manager\\content-manager.lnk',
+        },
+      },
+      {
+        label: 'Windows Desktop (.msi)',
+        note: 'Dùng nếu công ty/tổ chức bạn yêu cầu cài qua MSI',
+        actionLabel: 'Tải .msi',
+        downloadUrl:
+          'https://github.com/thinlam/SmartTaskManagers/releases/download/Content-v0.1.0/content-manager_0.1.0_x64_en-US.msi',
+        installer: {
+          version: '0.1.0',
+          sha256: '7b420f8a51ab7dd6fbae3052e27d891428a84fe2603e7f1caeb340454bdb35b8',
+          installerType: 'msi',
+          silentArgs: ['/qn'],
+          startMenuShortcut: 'Content Manager\\content-manager.lnk',
+        },
+      },
+    ],
+    features: [
+      {
+        title: 'Tổng quan',
+        desc: 'KPI tuần/tháng, việc cần tập trung hôm nay và hoạt động gần đây.',
+      },
+      {
+        title: 'Kanban kéo thả',
+        desc: 'Chuyển trạng thái từ Ý tưởng đến Đã đăng chỉ bằng một lần kéo.',
+      },
+      {
+        title: 'Lịch đăng bài',
+        desc: 'Xem theo tháng, tuần hoặc danh sách, lọc theo kênh.',
+      },
+      {
+        title: 'Thư viện media',
+        desc: 'Tải lên ảnh/video và đính kèm vào nội dung.',
+      },
+      {
+        title: 'Chiến dịch & Báo cáo',
+        desc: 'Nhóm nội dung theo chiến dịch, xuất báo cáo CSV.',
+      },
+      {
+        title: 'Web, Mobile, Desktop',
+        desc: 'Một codebase chạy trên trình duyệt, Android/iOS và Windows.',
+      },
+    ],
+    installSteps: [
+      'Tải Setup.exe và chạy trình cài đặt.',
+      'Mở Content Manager vừa cài — ứng dụng kết nối sẵn tới máy chủ Railway, không cần chạy backend local.',
+      'Đăng ký tài khoản đầu tiên (hoặc đăng nhập) — tài khoản đầu tiên là Quản trị viên.',
+      'Có thể đổi địa chỉ máy chủ trong Cài đặt → Máy chủ nếu dùng backend riêng.',
+    ],
+  },
+  {
+    id: 'voicescribe',
+    badge: 'VS',
+    name: 'VoiceScribe',
+    shortDesc: 'Chuyển file ghi âm thành văn bản có mốc thời gian, xuất ra Word.',
+    longDesc:
+      'Ứng dụng chuyển giọng nói thành văn bản: tải lên file ghi âm (mp3, m4a, wav, mp4, webm), nhận bản chép lời có mốc thời gian, lưu thư viện bản ghi theo tài khoản, sắp xếp theo thư mục và xuất ra Word/TXT/SRT. Có bản Web và Windows Desktop, dùng chung máy chủ VoiceScribe (Node.js + Hugging Face).',
+    tags: ['Windows Desktop', 'Web App'],
+    category: 'Ghi âm & Văn bản',
+    status: 'ready',
+    platforms: [
+      {
+        label: 'Windows Desktop (khuyên dùng)',
+        note: 'Setup.exe · kết nối sẵn tới máy chủ VoiceScribe (Railway)',
+        actionLabel: 'Tải Setup.exe',
+        downloadUrl:
+          'https://github.com/thinlam/SmartTaskManagers/releases/download/voicescribe-v0.2.2/voicescribe_0.2.2_x64-setup.exe',
+        installer: {
+          version: '0.2.2',
+          sha256: 'c7e6b0f45e75afa3825c0805eca208a63377c479085760080de32fa984919f35',
+          installerType: 'nsis',
+          silentArgs: ['/S'],
+          startMenuShortcut: 'VoiceScribe\\voicescribe.lnk',
+        },
+      },
+      {
+        label: 'Windows Desktop (.msi)',
+        note: 'Dùng nếu công ty/tổ chức bạn yêu cầu cài qua MSI',
+        actionLabel: 'Tải .msi',
+        downloadUrl:
+          'https://github.com/thinlam/SmartTaskManagers/releases/download/voicescribe-v0.2.2/voicescribe_0.2.2_x64_en-US.msi',
+        installer: {
+          version: '0.2.2',
+          sha256: '7d485e2039468eeabb22b3c625d66e48085916075d20d1cac4a964b7e9ddbf3e',
+          installerType: 'msi',
+          silentArgs: ['/qn'],
+          startMenuShortcut: 'VoiceScribe\\voicescribe.lnk',
+        },
+      },
+    ],
+    features: [
+      {
+        title: 'Chép lời tự động',
+        desc: 'Chuyển giọng nói thành văn bản kèm mốc thời gian từng đoạn.',
+      },
+      {
+        title: 'File dài',
+        desc: 'Tự chia file âm thanh dài thành nhiều đoạn rồi ghép lại.',
+      },
+      {
+        title: 'Thư viện bản ghi',
+        desc: 'Mọi bản ghi được lưu theo tài khoản, có tìm kiếm và thư mục.',
+      },
+      {
+        title: 'Xuất Word',
+        desc: 'Tải bản chép lời về dạng tài liệu .docx.',
+      },
+      {
+        title: 'Web & Desktop',
+        desc: 'Dùng trên trình duyệt hoặc cài ứng dụng Windows.',
+      },
+    ],
+    installSteps: [
+      'Tải Setup.exe và chạy trình cài đặt.',
+      'Mở VoiceScribe vừa cài — ứng dụng kết nối sẵn tới máy chủ Railway.',
+      'Tạo tài khoản (cần mã mời nếu máy chủ yêu cầu) hoặc đăng nhập.',
+      'Tải file ghi âm lên để nhận bản chép lời, tự lưu vào thư viện.',
+    ],
   },
   {
     id: 'giao-trinh-word',
     badge: 'W',
     name: 'Giáo Trình Word Add-in',
-    shortDesc:
-      'Task Pane hỗ trợ định dạng, chuẩn hóa văn bản và tra cứu phím tắt ngay trong Word.',
-    longDesc:
-      'Task Pane hỗ trợ định dạng, chuẩn hóa văn bản và tra cứu phím tắt ngay trong Word.',
+    shortDesc: 'Task Pane hỗ trợ định dạng, chuẩn hóa văn bản và tra cứu phím tắt ngay trong Word.',
+    longDesc: 'Task Pane hỗ trợ định dạng, chuẩn hóa văn bản và tra cứu phím tắt ngay trong Word.',
     tags: ['Word', 'Office Add-in'],
     category: 'Word',
     status: 'ready',
@@ -157,8 +286,7 @@ export const DEFAULT_APPS: AppEntry[] = [
     badge: 'X',
     name: 'Giáo Trình Excel Add-in',
     shortDesc: 'Công cụ công thức, làm sạch dữ liệu và bài học thực hành tích hợp trong Excel.',
-    longDesc:
-      'Công cụ công thức, làm sạch dữ liệu và bài học thực hành tích hợp trong Excel.',
+    longDesc: 'Công cụ công thức, làm sạch dữ liệu và bài học thực hành tích hợp trong Excel.',
     tags: ['Excel', 'Office Add-in'],
     category: 'Excel',
     status: 'ready',
@@ -207,8 +335,7 @@ export const DEFAULT_APPS: AppEntry[] = [
     badge: 'DC',
     name: 'Data Cleaner',
     shortDesc: 'Xóa trùng lặp, cắt khoảng trắng, phát hiện ô lỗi và chuẩn hóa dữ liệu hàng loạt.',
-    longDesc:
-      'Xóa trùng lặp, cắt khoảng trắng, phát hiện ô lỗi và chuẩn hóa dữ liệu hàng loạt.',
+    longDesc: 'Xóa trùng lặp, cắt khoảng trắng, phát hiện ô lỗi và chuẩn hóa dữ liệu hàng loạt.',
     tags: ['Excel'],
     category: 'Excel',
     status: 'soon',

@@ -1,0 +1,33 @@
+{
+  "name": "voicescribe",
+  "version": "1.0.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "smoke-test": "node --env-file=.env --import tsx src/scripts/smoke-test.ts",
+    "dev": "node --env-file=.env --import tsx src/server.ts",
+    "start": "node --import tsx src/server.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@huggingface/inference": "^4.13.32",
+    "@types/node": "^26.6.5",
+    "bcryptjs": "^3.0.3",
+    "express": "^5.3.0",
+    "jsonwebtoken": "^9.0.3",
+    "multer": "^2.4.0",
+    "pg": "^8.23.1",
+    "tsx": "^4.23.15",
+    "typescript": "^7.0.2"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/multer": "^2.3.0",
+    "@types/pg": "^8.23.1"
+  }
+}

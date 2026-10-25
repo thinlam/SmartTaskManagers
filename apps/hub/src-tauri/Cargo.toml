@@ -1,6 +1,6 @@
 [package]
 name = "hub"
-version = "0.1.0"
+version = "0.1.1"
 description = "GiaoTrinh Code App Hub — desktop launcher for downloading apps"
 repository = "https://github.com/thinlam/SmartTaskManagers"
 edition = "2021"
