@@ -50,7 +50,7 @@ public static class MiscEndpoints
             db.Campaigns.Add(c);
             await db.SaveChangesAsync();
             return Results.Created($"/api/campaigns/{c.Id}", new CampaignDto(c.Id, c.Name, c.Description, c.StartDate, c.EndDate, c.Status, 0, 0));
-        });
+        }).RequireRole(RoleAccess.CanEdit);
 
         g.MapPut("/{id:guid}", async (Guid id, CampaignInput i, AppDbContext db) =>
         {
@@ -69,7 +69,7 @@ public static class MiscEndpoints
             var total = await db.Contents.CountAsync(x => x.CampaignId == id);
             var pub = await db.Contents.CountAsync(x => x.CampaignId == id && x.Status == ContentStatus.Published);
             return Results.Ok(new CampaignDto(c.Id, c.Name, c.Description, c.StartDate, c.EndDate, c.Status, total, pub));
-        });
+        }).RequireRole(RoleAccess.CanEdit);
 
         g.MapDelete("/{id:guid}", async (Guid id, AppDbContext db) =>
         {
@@ -78,7 +78,7 @@ public static class MiscEndpoints
             db.Campaigns.Remove(c);
             await db.SaveChangesAsync();
             return Results.NoContent();
-        });
+        }).RequireRole(RoleAccess.AdminOnly);
     }
 
     private static void MapMembers(IEndpointRouteBuilder app)
@@ -196,7 +196,7 @@ public static class MiscEndpoints
             }
             await db.SaveChangesAsync();
             return Results.Ok(created);
-        }).RequireAuthorization().DisableAntiforgery();
+        }).RequireAuthorization().DisableAntiforgery().RequireRole(RoleAccess.CanEdit);
 
         // Anonymous on purpose: <img>/<video> tags cannot send an Authorization
         // header, and the file id is an unguessable GUID.
@@ -218,6 +218,6 @@ public static class MiscEndpoints
             db.Media.Remove(m);
             await db.SaveChangesAsync();
             return Results.NoContent();
-        }).RequireAuthorization();
+        }).RequireAuthorization().RequireRole(RoleAccess.AdminOnly);
     }
 }

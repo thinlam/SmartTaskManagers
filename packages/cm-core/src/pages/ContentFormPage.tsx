@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
+import { Navigate, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
   CalendarDays,
   Check,
@@ -37,7 +37,7 @@ import {
 } from '../components/ui';
 import { cn, fmtBytes, fromLocalInput, toLocalInput } from '../lib/format';
 import { PRIORITY_META, STATUS_META } from '../lib/meta';
-import { errMsg, useAsync, useAuth, useLookups, useToast } from '../state/AppState';
+import { errMsg, useAsync, useAuth, useLookups, usePermissions, useToast } from '../state/AppState';
 
 const ACCEPT = '.png,.jpg,.jpeg,.gif,.webp,.mp4,.mov';
 
@@ -60,6 +60,7 @@ export function ContentFormPage() {
   const [params] = useSearchParams();
   const toast = useToast();
   const { user } = useAuth();
+  const { canEdit, canDelete } = usePermissions();
   const { members, campaigns } = useLookups();
 
   const [form, setForm] = useState<Form>(() => ({
@@ -168,6 +169,7 @@ export function ContentFormPage() {
     }
   };
 
+  if (!editing && !canEdit) return <Navigate to="/contents" replace />;
   if (editing && existing.loading && !existing.data) return <Spinner />;
   if (editing && existing.error)
     return <ErrorState message={existing.error} onRetry={existing.reload} />;
@@ -186,15 +188,22 @@ export function ContentFormPage() {
       <div className="grid gap-5 xl:grid-cols-[1fr_360px]">
         <Card className="p-5 md:p-7">
           <PageHeader
-            title={editing ? 'Chỉnh sửa nội dung' : 'Tạo nội dung mới'}
+            title={
+              !canEdit ? 'Chi tiết nội dung' : editing ? 'Chỉnh sửa nội dung' : 'Tạo nội dung mới'
+            }
             subtitle={
-              editing
-                ? 'Cập nhật thông tin, trạng thái và lịch đăng của nội dung'
-                : 'Tạo và lên lịch nội dung cho chiến dịch của bạn'
+              !canEdit
+                ? 'Bạn có vai trò Người xem nên chỉ xem được, không chỉnh sửa'
+                : editing
+                  ? 'Cập nhật thông tin, trạng thái và lịch đăng của nội dung'
+                  : 'Tạo và lên lịch nội dung cho chiến dịch của bạn'
             }
           />
 
-          <div className="grid gap-x-5 gap-y-4 md:grid-cols-2">
+          <fieldset
+            disabled={!canEdit}
+            className="grid min-w-0 gap-x-5 gap-y-4 border-0 p-0 md:grid-cols-2"
+          >
             <Field label="Tiêu đề" required error={errors.title}>
               <input
                 className={cn(inputClass, errors.title && 'border-bad')}
@@ -362,11 +371,11 @@ export function ContentFormPage() {
                 </ul>
               )}
             </div>
-          </div>
+          </fieldset>
 
           <div className="sticky bottom-0 -mx-5 -mb-5 mt-6 flex flex-wrap items-center justify-between gap-3 rounded-b-lg border-t border-line bg-surface/95 px-5 py-3 backdrop-blur md:-mx-7 md:-mb-7 md:px-7">
             <div>
-              {editing && (
+              {editing && canDelete && (
                 <Button
                   variant="ghost"
                   className="text-bad hover:bg-bad-soft"
@@ -379,9 +388,9 @@ export function ContentFormPage() {
             </div>
             <div className="flex gap-2">
               <Button variant="secondary" onClick={() => navigate(-1)}>
-                Hủy
+                {canEdit ? 'Hủy' : 'Quay lại'}
               </Button>
-              {!editing && (
+              {canEdit && !editing && (
                 <Button
                   variant="secondary"
                   loading={saving === 'draft'}
@@ -391,13 +400,15 @@ export function ContentFormPage() {
                   Lưu nháp
                 </Button>
               )}
-              <Button
-                loading={saving === 'save'}
-                disabled={saving !== null}
-                onClick={() => save(false)}
-              >
-                {editing ? 'Lưu thay đổi' : 'Thêm nội dung'}
-              </Button>
+              {canEdit && (
+                <Button
+                  loading={saving === 'save'}
+                  disabled={saving !== null}
+                  onClick={() => save(false)}
+                >
+                  {editing ? 'Lưu thay đổi' : 'Thêm nội dung'}
+                </Button>
+              )}
             </div>
           </div>
         </Card>

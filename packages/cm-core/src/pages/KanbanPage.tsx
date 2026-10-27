@@ -14,11 +14,12 @@ import { Avatar, ChannelIcon, ErrorState, PageHeader, Select, Spinner } from '..
 import { MenuItem, PopoverMenu } from '../components/PopoverMenu';
 import { cn, fmtShortDate, isOverdue } from '../lib/format';
 import { PRIORITY_META, STATUS_META } from '../lib/meta';
-import { errMsg, useAsync, useLookups, useToast } from '../state/AppState';
+import { errMsg, useAsync, useLookups, usePermissions, useToast } from '../state/AppState';
 
 export function KanbanPage() {
   const navigate = useNavigate();
   const toast = useToast();
+  const { canEdit } = usePermissions();
   const { members, campaigns } = useLookups();
   const [channel, setChannel] = useState('');
   const [campaignId, setCampaignId] = useState('');
@@ -66,7 +67,11 @@ export function KanbanPage() {
     <>
       <PageHeader
         title="Kanban"
-        subtitle="Kéo thẻ sang cột khác, hoặc bấm ⋯ trên thẻ để chuyển trạng thái"
+        subtitle={
+          canEdit
+            ? 'Kéo thẻ sang cột khác, hoặc bấm ⋯ trên thẻ để chuyển trạng thái'
+            : 'Theo dõi tiến độ nội dung theo trạng thái'
+        }
       />
 
       <div className="mb-4 flex flex-wrap items-center gap-2">
@@ -138,6 +143,7 @@ export function KanbanPage() {
                 key={status}
                 aria-label={STATUS_META[status].label}
                 onDragOver={(e) => {
+                  if (!canEdit) return;
                   e.preventDefault();
                   e.dataTransfer.dropEffect = 'move';
                   if (overCol !== status) setOverCol(status);
@@ -146,6 +152,7 @@ export function KanbanPage() {
                   if (!e.currentTarget.contains(e.relatedTarget as Node)) setOverCol(null);
                 }}
                 onDrop={(e) => {
+                  if (!canEdit) return;
                   e.preventDefault();
                   const id = e.dataTransfer.getData('text/plain') || dragId;
                   setOverCol(null);
@@ -165,15 +172,17 @@ export function KanbanPage() {
                       {cards.length}
                     </span>
                   </h2>
-                  <button
-                    type="button"
-                    aria-label={`Thêm nội dung vào ${STATUS_META[status].label}`}
-                    title="Thêm nội dung"
-                    onClick={() => navigate(`/contents/new?status=${status}`)}
-                    className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md text-ink-2 hover:bg-surface"
-                  >
-                    <Plus className="h-4 w-4" />
-                  </button>
+                  {canEdit && (
+                    <button
+                      type="button"
+                      aria-label={`Thêm nội dung vào ${STATUS_META[status].label}`}
+                      title="Thêm nội dung"
+                      onClick={() => navigate(`/contents/new?status=${status}`)}
+                      className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md text-ink-2 hover:bg-surface"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </button>
+                  )}
                 </header>
 
                 <div className="flex min-h-28 flex-1 flex-col gap-2.5">
@@ -181,6 +190,7 @@ export function KanbanPage() {
                     <KanbanCard
                       key={c.id}
                       c={c}
+                      canEdit={canEdit}
                       dragging={dragId === c.id}
                       onDragStart={(e) => {
                         e.dataTransfer.setData('text/plain', c.id);
@@ -217,6 +227,7 @@ export function KanbanPage() {
 
 function KanbanCard({
   c,
+  canEdit,
   dragging,
   onDragStart,
   onDragEnd,
@@ -224,6 +235,7 @@ function KanbanCard({
   onMove,
 }: {
   c: Content;
+  canEdit: boolean;
   dragging: boolean;
   onDragStart: (e: React.DragEvent) => void;
   onDragEnd: () => void;
@@ -233,11 +245,12 @@ function KanbanCard({
   const overdue = isOverdue(c);
   return (
     <article
-      draggable
+      draggable={canEdit}
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
       className={cn(
-        'group relative cursor-grab rounded-md border border-line bg-surface p-3 shadow-card transition hover:border-brand-line active:cursor-grabbing',
+        'group relative rounded-md border border-line bg-surface p-3 shadow-card transition hover:border-brand-line',
+        canEdit && 'cursor-grab active:cursor-grabbing',
         dragging && 'opacity-40',
       )}
     >
@@ -250,50 +263,52 @@ function KanbanCard({
         >
           <span className="line-clamp-2">{c.title}</span>
         </button>
-        <PopoverMenu
-          align="end"
-          width={196}
-          trigger={(t) => (
-            <button
-              {...t}
-              type="button"
-              aria-label="Tùy chọn thẻ"
-              className="-mr-1 -mt-1 flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-md text-ink-3 opacity-0 hover:bg-sunken focus:opacity-100 group-hover:opacity-100 [@media(pointer:coarse)]:opacity-100"
-            >
-              <MoreHorizontal className="h-4 w-4" />
-            </button>
-          )}
-        >
-          {(close) => (
-            <>
-              <p className="flex items-center gap-1.5 px-2 pb-1 pt-1.5 text-[11px] font-semibold uppercase tracking-wide text-ink-3">
-                <ArrowRightLeft className="h-3 w-3" /> Chuyển sang
-              </p>
-              {STATUSES.filter((s) => s !== c.status).map((s) => (
+        {canEdit && (
+          <PopoverMenu
+            align="end"
+            width={196}
+            trigger={(t) => (
+              <button
+                {...t}
+                type="button"
+                aria-label="Tùy chọn thẻ"
+                className="-mr-1 -mt-1 flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-md text-ink-3 opacity-0 hover:bg-sunken focus:opacity-100 group-hover:opacity-100 [@media(pointer:coarse)]:opacity-100"
+              >
+                <MoreHorizontal className="h-4 w-4" />
+              </button>
+            )}
+          >
+            {(close) => (
+              <>
+                <p className="flex items-center gap-1.5 px-2 pb-1 pt-1.5 text-[11px] font-semibold uppercase tracking-wide text-ink-3">
+                  <ArrowRightLeft className="h-3 w-3" /> Chuyển sang
+                </p>
+                {STATUSES.filter((s) => s !== c.status).map((s) => (
+                  <MenuItem
+                    key={s}
+                    icon={<span className={cn('h-2 w-2 rounded-full', STATUS_META[s].dot)} />}
+                    onClick={() => {
+                      close();
+                      onMove(s);
+                    }}
+                  >
+                    {STATUS_META[s].label}
+                  </MenuItem>
+                ))}
+                <div className="my-1 border-t border-line" />
                 <MenuItem
-                  key={s}
-                  icon={<span className={cn('h-2 w-2 rounded-full', STATUS_META[s].dot)} />}
+                  icon={<Pencil className="h-4 w-4" />}
                   onClick={() => {
                     close();
-                    onMove(s);
+                    onOpen();
                   }}
                 >
-                  {STATUS_META[s].label}
+                  Mở và chỉnh sửa
                 </MenuItem>
-              ))}
-              <div className="my-1 border-t border-line" />
-              <MenuItem
-                icon={<Pencil className="h-4 w-4" />}
-                onClick={() => {
-                  close();
-                  onOpen();
-                }}
-              >
-                Mở và chỉnh sửa
-              </MenuItem>
-            </>
-          )}
-        </PopoverMenu>
+              </>
+            )}
+          </PopoverMenu>
+        )}
       </div>
 
       <div className="mt-3 flex items-center gap-2 text-xs">

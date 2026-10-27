@@ -4,6 +4,7 @@ import {
   Check,
   ChevronLeft,
   ChevronRight,
+  Eye,
   FileSearch,
   LayoutGrid,
   List,
@@ -36,13 +37,14 @@ import { MenuItem, PopoverMenu } from '../components/PopoverMenu';
 import { cn, fmtDate, isOverdue } from '../lib/format';
 import { STATUS_META } from '../lib/meta';
 import { getPrefs } from '../lib/prefs';
-import { errMsg, useAsync, useLookups, useToast } from '../state/AppState';
+import { errMsg, useAsync, useLookups, usePermissions, useToast } from '../state/AppState';
 
 const PAGE_SIZES = [10, 20, 50];
 
 export function ContentsPage() {
   const navigate = useNavigate();
   const toast = useToast();
+  const { canEdit, canDelete } = usePermissions();
   const { members, campaigns } = useLookups();
   const [params, setParams] = useSearchParams();
 
@@ -159,13 +161,15 @@ export function ContentsPage() {
         title="Danh sách nội dung"
         subtitle="Quản lý toàn bộ nội dung trong một nơi"
         actions={
-          <Button
-            icon={<Plus className="h-4 w-4" />}
-            onClick={() => navigate('/contents/new')}
-            className="sm:hidden"
-          >
-            Tạo nội dung
-          </Button>
+          canEdit && (
+            <Button
+              icon={<Plus className="h-4 w-4" />}
+              onClick={() => navigate('/contents/new')}
+              className="sm:hidden"
+            >
+              Tạo nội dung
+            </Button>
+          )
         }
       />
 
@@ -329,21 +333,23 @@ export function ContentsPage() {
             hint={
               filtered
                 ? 'Thử thay đổi hoặc xóa bộ lọc để xem kết quả.'
-                : 'Bắt đầu bằng việc tạo nội dung đầu tiên.'
+                : canEdit
+                  ? 'Bắt đầu bằng việc tạo nội dung đầu tiên.'
+                  : 'Chưa có nội dung nào được tạo.'
             }
             action={
               filtered ? (
                 <Button variant="secondary" onClick={clear}>
                   Xóa bộ lọc
                 </Button>
-              ) : (
+              ) : canEdit ? (
                 <Button
                   icon={<Plus className="h-4 w-4" />}
                   onClick={() => navigate('/contents/new')}
                 >
                   Tạo nội dung
                 </Button>
-              )
+              ) : undefined
             }
           />
         ) : view === 'list' ? (
@@ -352,15 +358,17 @@ export function ContentsPage() {
               <thead>
                 <tr className="border-b border-line text-left text-xs font-semibold uppercase tracking-wide text-ink-2">
                   <th className="w-10 py-3 pl-4">
-                    <input
-                      type="checkbox"
-                      aria-label="Chọn tất cả"
-                      checked={allChecked}
-                      onChange={() =>
-                        setSelected(allChecked ? new Set() : new Set(items.map((c) => c.id)))
-                      }
-                      className="h-4 w-4 cursor-pointer accent-brand"
-                    />
+                    {canDelete && (
+                      <input
+                        type="checkbox"
+                        aria-label="Chọn tất cả"
+                        checked={allChecked}
+                        onChange={() =>
+                          setSelected(allChecked ? new Set() : new Set(items.map((c) => c.id)))
+                        }
+                        className="h-4 w-4 cursor-pointer accent-brand"
+                      />
+                    )}
                   </th>
                   {[
                     'Tiêu đề',
@@ -388,6 +396,8 @@ export function ContentsPage() {
                     onOpen={() => navigate(`/contents/${c.id}`)}
                     onDelete={() => setToDelete([c.id])}
                     onStatus={(next) => changeStatus(c, next)}
+                    canEdit={canEdit}
+                    canDelete={canDelete}
                   />
                 ))}
               </tbody>
@@ -537,6 +547,8 @@ function Row({
   onOpen,
   onDelete,
   onStatus,
+  canEdit,
+  canDelete,
 }: {
   c: Content;
   checked: boolean;
@@ -544,17 +556,21 @@ function Row({
   onOpen: () => void;
   onDelete: () => void;
   onStatus: (status: Content['status']) => void;
+  canEdit: boolean;
+  canDelete: boolean;
 }) {
   return (
     <tr className="border-b border-line last:border-0 hover:bg-canvas/70">
       <td className="py-3 pl-4">
-        <input
-          type="checkbox"
-          aria-label={`Chọn ${c.code}`}
-          checked={checked}
-          onChange={onCheck}
-          className="h-4 w-4 cursor-pointer accent-brand"
-        />
+        {canDelete && (
+          <input
+            type="checkbox"
+            aria-label={`Chọn ${c.code}`}
+            checked={checked}
+            onChange={onCheck}
+            className="h-4 w-4 cursor-pointer accent-brand"
+          />
+        )}
       </td>
       <td className="max-w-[300px] px-3 py-3">
         <button
@@ -581,36 +597,40 @@ function Row({
         </span>
       </td>
       <td className="px-3">
-        <PopoverMenu
-          width={184}
-          trigger={(t) => (
-            <button
-              {...t}
-              type="button"
-              aria-label={`Đổi trạng thái ${c.code}`}
-              className="cursor-pointer rounded-full hover:ring-2 hover:ring-brand/20"
-            >
-              <StatusBadge status={c.status} />
-            </button>
-          )}
-        >
-          {(close) =>
-            STATUSES.map((st) => (
-              <MenuItem
-                key={st}
-                selected={st === c.status}
-                icon={<span className={cn('h-2 w-2 rounded-full', STATUS_META[st].dot)} />}
-                onClick={() => {
-                  close();
-                  onStatus(st);
-                }}
+        {!canEdit ? (
+          <StatusBadge status={c.status} />
+        ) : (
+          <PopoverMenu
+            width={184}
+            trigger={(t) => (
+              <button
+                {...t}
+                type="button"
+                aria-label={`Đổi trạng thái ${c.code}`}
+                className="cursor-pointer rounded-full hover:ring-2 hover:ring-brand/20"
               >
-                {STATUS_META[st].label}
-                {st === c.status && <Check className="ml-auto inline h-4 w-4 text-brand" />}
-              </MenuItem>
-            ))
-          }
-        </PopoverMenu>
+                <StatusBadge status={c.status} />
+              </button>
+            )}
+          >
+            {(close) =>
+              STATUSES.map((st) => (
+                <MenuItem
+                  key={st}
+                  selected={st === c.status}
+                  icon={<span className={cn('h-2 w-2 rounded-full', STATUS_META[st].dot)} />}
+                  onClick={() => {
+                    close();
+                    onStatus(st);
+                  }}
+                >
+                  {STATUS_META[st].label}
+                  {st === c.status && <Check className="ml-auto inline h-4 w-4 text-brand" />}
+                </MenuItem>
+              ))
+            }
+          </PopoverMenu>
+        )}
       </td>
       <td
         className={cn(
@@ -644,24 +664,26 @@ function Row({
           {(close) => (
             <>
               <MenuItem
-                icon={<Pencil className="h-4 w-4" />}
+                icon={canEdit ? <Pencil className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 onClick={() => {
                   close();
                   onOpen();
                 }}
               >
-                Chỉnh sửa
+                {canEdit ? 'Chỉnh sửa' : 'Xem chi tiết'}
               </MenuItem>
-              <MenuItem
-                danger
-                icon={<Trash2 className="h-4 w-4" />}
-                onClick={() => {
-                  close();
-                  onDelete();
-                }}
-              >
-                Xóa
-              </MenuItem>
+              {canDelete && (
+                <MenuItem
+                  danger
+                  icon={<Trash2 className="h-4 w-4" />}
+                  onClick={() => {
+                    close();
+                    onDelete();
+                  }}
+                >
+                  Xóa
+                </MenuItem>
+              )}
             </>
           )}
         </PopoverMenu>

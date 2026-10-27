@@ -36,9 +36,9 @@ const ROLE_BADGE: Record<Role, string> = {
 };
 
 const ROLE_HINT: Record<Role, string> = {
-  Admin: 'Thêm, xóa thành viên và đổi vai trò',
-  Editor: 'Thành viên làm việc thường xuyên',
-  Viewer: 'Thành viên chỉ theo dõi',
+  Admin: 'Toàn quyền, gồm xóa nội dung và quản lý thành viên',
+  Editor: 'Tạo và sửa nội dung, chiến dịch, media; không xóa được',
+  Viewer: 'Chỉ xem và xuất báo cáo, không chỉnh sửa',
 };
 
 /** 12 characters with upper, lower and digits (the server's rule), without look-alike letters. */

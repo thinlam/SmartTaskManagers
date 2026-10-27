@@ -19,7 +19,7 @@ import {
 import { MenuItem, PopoverMenu } from '../components/PopoverMenu';
 import { cn, fmtDate } from '../lib/format';
 import { CAMPAIGN_STATUS } from '../lib/meta';
-import { errMsg, useLookups, useToast } from '../state/AppState';
+import { errMsg, useLookups, usePermissions, useToast } from '../state/AppState';
 
 interface Draft {
   id: string;
@@ -55,6 +55,7 @@ const TONE = { ok: 'text-ok', warn: 'text-warn', bad: 'text-bad', muted: 'text-i
 export function CampaignsPage() {
   const toast = useToast();
   const navigate = useNavigate();
+  const { canEdit, canDelete } = usePermissions();
   const { campaigns, refresh } = useLookups();
   const [name, setName] = useState('');
   const [adding, setAdding] = useState(false);
@@ -183,22 +184,24 @@ export function CampaignsPage() {
         }
       />
 
-      <form onSubmit={quickCreate} className="mb-4 flex gap-2">
-        <div className="relative flex-1">
-          <Plus className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-3" />
-          <input
-            className={cn(inputClass, 'pl-9')}
-            placeholder="Tên chiến dịch mới, nhấn Enter để tạo"
-            aria-label="Tên chiến dịch mới"
-            maxLength={200}
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
-        </div>
-        <Button type="submit" loading={adding} disabled={!name.trim()}>
-          Tạo
-        </Button>
-      </form>
+      {canEdit && (
+        <form onSubmit={quickCreate} className="mb-4 flex gap-2">
+          <div className="relative flex-1">
+            <Plus className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-3" />
+            <input
+              className={cn(inputClass, 'pl-9')}
+              placeholder="Tên chiến dịch mới, nhấn Enter để tạo"
+              aria-label="Tên chiến dịch mới"
+              maxLength={200}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+          </div>
+          <Button type="submit" loading={adding} disabled={!name.trim()}>
+            Tạo
+          </Button>
+        </form>
+      )}
 
       {campaigns.length > 0 && (
         <div className="mb-3 flex flex-wrap items-center gap-3">
@@ -242,7 +245,11 @@ export function CampaignsPage() {
           <EmptyState
             icon={<Megaphone className="h-8 w-8" />}
             title="Chưa có chiến dịch nào"
-            hint="Nhập tên vào ô phía trên rồi nhấn Enter để tạo chiến dịch đầu tiên."
+            hint={
+              canEdit
+                ? 'Nhập tên vào ô phía trên rồi nhấn Enter để tạo chiến dịch đầu tiên.'
+                : 'Chưa có chiến dịch nào được tạo.'
+            }
           />
         </Card>
       ) : visible.length === 0 ? (
@@ -307,78 +314,90 @@ export function CampaignsPage() {
                   <ProgressBar value={pct} />
                 </div>
 
-                <PopoverMenu
-                  width={168}
-                  align="end"
-                  trigger={(t) => (
-                    <button
-                      {...t}
-                      type="button"
-                      aria-label={`Đổi trạng thái ${c.name}`}
-                      title="Đổi trạng thái"
-                      className="cursor-pointer rounded-full hover:ring-2 hover:ring-brand/20"
-                    >
-                      <Pill className={CAMPAIGN_STATUS[c.status].badge}>
-                        {CAMPAIGN_STATUS[c.status].label}
-                      </Pill>
-                    </button>
-                  )}
-                >
-                  {(close) =>
-                    STATUS_ORDER.map((s) => (
-                      <MenuItem
-                        key={s}
-                        selected={s === c.status}
-                        onClick={() => {
-                          close();
-                          void setStatus(c, s);
-                        }}
+                {!canEdit ? (
+                  <Pill className={CAMPAIGN_STATUS[c.status].badge}>
+                    {CAMPAIGN_STATUS[c.status].label}
+                  </Pill>
+                ) : (
+                  <PopoverMenu
+                    width={168}
+                    align="end"
+                    trigger={(t) => (
+                      <button
+                        {...t}
+                        type="button"
+                        aria-label={`Đổi trạng thái ${c.name}`}
+                        title="Đổi trạng thái"
+                        className="cursor-pointer rounded-full hover:ring-2 hover:ring-brand/20"
                       >
-                        {CAMPAIGN_STATUS[s].label}
-                        {s === c.status && <Check className="ml-auto inline h-4 w-4 text-brand" />}
-                      </MenuItem>
-                    ))
-                  }
-                </PopoverMenu>
+                        <Pill className={CAMPAIGN_STATUS[c.status].badge}>
+                          {CAMPAIGN_STATUS[c.status].label}
+                        </Pill>
+                      </button>
+                    )}
+                  >
+                    {(close) =>
+                      STATUS_ORDER.map((s) => (
+                        <MenuItem
+                          key={s}
+                          selected={s === c.status}
+                          onClick={() => {
+                            close();
+                            void setStatus(c, s);
+                          }}
+                        >
+                          {CAMPAIGN_STATUS[s].label}
+                          {s === c.status && (
+                            <Check className="ml-auto inline h-4 w-4 text-brand" />
+                          )}
+                        </MenuItem>
+                      ))
+                    }
+                  </PopoverMenu>
+                )}
 
-                <PopoverMenu
-                  width={176}
-                  align="end"
-                  trigger={(t) => (
-                    <button
-                      {...t}
-                      type="button"
-                      aria-label={`Tùy chọn ${c.name}`}
-                      className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-md text-ink-3 hover:bg-sunken"
-                    >
-                      <MoreHorizontal className="h-4 w-4" />
-                    </button>
-                  )}
-                >
-                  {(close) => (
-                    <>
-                      <MenuItem
-                        icon={<Pencil className="h-4 w-4" />}
-                        onClick={() => {
-                          close();
-                          edit(c);
-                        }}
+                {canEdit && (
+                  <PopoverMenu
+                    width={176}
+                    align="end"
+                    trigger={(t) => (
+                      <button
+                        {...t}
+                        type="button"
+                        aria-label={`Tùy chọn ${c.name}`}
+                        className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-md text-ink-3 hover:bg-sunken"
                       >
-                        Sửa chi tiết
-                      </MenuItem>
-                      <MenuItem
-                        danger
-                        icon={<Trash2 className="h-4 w-4" />}
-                        onClick={() => {
-                          close();
-                          setToDelete(c);
-                        }}
-                      >
-                        Xóa
-                      </MenuItem>
-                    </>
-                  )}
-                </PopoverMenu>
+                        <MoreHorizontal className="h-4 w-4" />
+                      </button>
+                    )}
+                  >
+                    {(close) => (
+                      <>
+                        <MenuItem
+                          icon={<Pencil className="h-4 w-4" />}
+                          onClick={() => {
+                            close();
+                            edit(c);
+                          }}
+                        >
+                          Sửa chi tiết
+                        </MenuItem>
+                        {canDelete && (
+                          <MenuItem
+                            danger
+                            icon={<Trash2 className="h-4 w-4" />}
+                            onClick={() => {
+                              close();
+                              setToDelete(c);
+                            }}
+                          >
+                            Xóa
+                          </MenuItem>
+                        )}
+                      </>
+                    )}
+                  </PopoverMenu>
+                )}
               </div>
             );
           })}

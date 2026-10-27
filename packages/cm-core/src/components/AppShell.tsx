@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { api } from '../api/client';
 import type { Activity } from '../api/types';
-import { useAsync, useAuth } from '../state/AppState';
+import { useAsync, useAuth, usePermissions } from '../state/AppState';
 import { cn, fmtBytes, timeAgo } from '../lib/format';
 import { Avatar, Button, IconButton, ProgressBar } from './ui';
 import { activityText } from '../lib/activity';
@@ -253,6 +253,7 @@ function SearchBox() {
 export function AppShell({ footer }: { footer?: ReactNode }) {
   const { pathname } = useLocation();
   const navigate = useNavigate();
+  const { canEdit } = usePermissions();
   const [drawer, setDrawer] = useState(false);
   const mainRef = useRef<HTMLElement>(null);
 
@@ -312,13 +313,15 @@ export function AppShell({ footer }: { footer?: ReactNode }) {
           <div className="flex flex-1 justify-center px-2">
             <SearchBox />
           </div>
-          <Button
-            icon={<Plus className="h-4 w-4" />}
-            onClick={() => navigate('/contents/new')}
-            className="hidden sm:inline-flex"
-          >
-            Tạo nội dung
-          </Button>
+          {canEdit && (
+            <Button
+              icon={<Plus className="h-4 w-4" />}
+              onClick={() => navigate('/contents/new')}
+              className="hidden sm:inline-flex"
+            >
+              Tạo nội dung
+            </Button>
+          )}
           <NotificationBell />
           <UserMenu />
         </header>
@@ -338,16 +341,20 @@ export function AppShell({ footer }: { footer?: ReactNode }) {
           {BOTTOM.slice(0, 2).map((n) => (
             <TabLink key={n.to} {...n} />
           ))}
-          <button
-            type="button"
-            aria-label="Tạo nội dung"
-            onClick={() => navigate('/contents/new')}
-            className="flex flex-1 cursor-pointer items-center justify-center"
-          >
-            <span className="-mt-5 flex h-12 w-12 items-center justify-center rounded-full bg-brand text-white shadow-pop">
-              <Plus className="h-6 w-6" />
-            </span>
-          </button>
+          {canEdit ? (
+            <button
+              type="button"
+              aria-label="Tạo nội dung"
+              onClick={() => navigate('/contents/new')}
+              className="flex flex-1 cursor-pointer items-center justify-center"
+            >
+              <span className="-mt-5 flex h-12 w-12 items-center justify-center rounded-full bg-brand text-white shadow-pop">
+                <Plus className="h-6 w-6" />
+              </span>
+            </button>
+          ) : (
+            <span className="flex-1" />
+          )}
           {BOTTOM.slice(2).map((n) => (
             <TabLink key={n.to} {...n} />
           ))}

@@ -15,7 +15,7 @@ import {
 import { cn, fmtTime, sameDay } from '../lib/format';
 import { CHANNEL_META } from '../lib/meta';
 import { getPrefs } from '../lib/prefs';
-import { useAsync } from '../state/AppState';
+import { useAsync, usePermissions } from '../state/AppState';
 
 type View = 'month' | 'week' | 'list';
 const DOW = ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'];
@@ -28,6 +28,7 @@ const toDateParam = (d: Date, hour = 9) =>
 
 export function CalendarPage() {
   const navigate = useNavigate();
+  const { canEdit } = usePermissions();
   const today = startOfDay(new Date());
   const [view, setView] = useState<View>(getPrefs().calendarView);
   const [cursor, setCursor] = useState(today);
@@ -208,14 +209,16 @@ export function CalendarPage() {
                           >
                             {d.getDate()}
                           </span>
-                          <button
-                            type="button"
-                            aria-label={`Thêm nội dung ngày ${d.getDate()}/${d.getMonth() + 1}`}
-                            onClick={() => create(d)}
-                            className="flex h-5 w-5 cursor-pointer items-center justify-center rounded-full text-ink-3 opacity-0 hover:bg-sunken group-hover:opacity-100 focus-visible:opacity-100 [@media(pointer:coarse)]:opacity-100"
-                          >
-                            <Plus className="h-3.5 w-3.5" />
-                          </button>
+                          {canEdit && (
+                            <button
+                              type="button"
+                              aria-label={`Thêm nội dung ngày ${d.getDate()}/${d.getMonth() + 1}`}
+                              onClick={() => create(d)}
+                              className="flex h-5 w-5 cursor-pointer items-center justify-center rounded-full text-ink-3 opacity-0 hover:bg-sunken group-hover:opacity-100 focus-visible:opacity-100 [@media(pointer:coarse)]:opacity-100"
+                            >
+                              <Plus className="h-3.5 w-3.5" />
+                            </button>
+                          )}
                         </div>
                         <div className="space-y-1">
                           {items.slice(0, view === 'week' ? 20 : 3).map((c) => (
