@@ -1,9 +1,17 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CheckCircle2, MousePointerClick, Plus } from 'lucide-react';
+import {
+  ArrowRightLeft,
+  CalendarClock,
+  CheckCircle2,
+  MoreHorizontal,
+  Pencil,
+  Plus,
+} from 'lucide-react';
 import { api } from '../api/client';
 import { CHANNELS, STATUSES, type Content, type ContentStatus } from '../api/types';
 import { Avatar, ChannelIcon, ErrorState, PageHeader, Select, Spinner } from '../components/ui';
+import { MenuItem, PopoverMenu } from '../components/PopoverMenu';
 import { cn, fmtShortDate, isOverdue } from '../lib/format';
 import { PRIORITY_META, STATUS_META } from '../lib/meta';
 import { errMsg, useAsync, useLookups, useToast } from '../state/AppState';
@@ -30,6 +38,7 @@ export function KanbanPage() {
 
   const [dragId, setDragId] = useState<string | null>(null);
   const [overCol, setOverCol] = useState<ContentStatus | null>(null);
+  const filtered = !!(channel || campaignId || assigneeId);
 
   const columns = useMemo(() => {
     const map = new Map<ContentStatus, Content[]>(STATUSES.map((s) => [s, []]));
@@ -46,6 +55,7 @@ export function KanbanPage() {
     try {
       const updated = await api.contents.setStatus(id, status);
       setData({ ...prev, items: prev.items.map((c) => (c.id === id ? updated : c)) });
+      toast.success(`Đã chuyển sang "${STATUS_META[status].label}".`);
     } catch (e) {
       setData(prev);
       toast.error(errMsg(e));
@@ -54,9 +64,12 @@ export function KanbanPage() {
 
   return (
     <>
-      <PageHeader title="Kanban nội dung" subtitle="Kéo thả để cập nhật trạng thái nội dung" />
+      <PageHeader
+        title="Kanban"
+        subtitle="Kéo thẻ sang cột khác, hoặc bấm ⋯ trên thẻ để chuyển trạng thái"
+      />
 
-      <div className="mb-4 flex flex-wrap gap-2">
+      <div className="mb-4 flex flex-wrap items-center gap-2">
         <Select
           className="w-40"
           value={channel}
@@ -96,6 +109,19 @@ export function KanbanPage() {
             </option>
           ))}
         </Select>
+        {filtered && (
+          <button
+            type="button"
+            onClick={() => {
+              setChannel('');
+              setCampaignId('');
+              setAssigneeId('');
+            }}
+            className="cursor-pointer text-sm font-medium text-brand hover:underline"
+          >
+            Xóa bộ lọc
+          </button>
+        )}
       </div>
 
       {error && !data ? (
@@ -103,7 +129,7 @@ export function KanbanPage() {
       ) : loading && !data ? (
         <Spinner />
       ) : (
-        <div className="-mx-4 flex snap-x gap-4 overflow-x-auto px-4 pb-4 md:-mx-6 md:px-6">
+        <div className="-mx-4 flex gap-3 overflow-x-auto px-4 pb-4 md:-mx-6 md:px-6">
           {STATUSES.map((status) => {
             const cards = columns.get(status) ?? [];
             const over = overCol === status && dragId !== null;
@@ -113,7 +139,8 @@ export function KanbanPage() {
                 aria-label={STATUS_META[status].label}
                 onDragOver={(e) => {
                   e.preventDefault();
-                  setOverCol(status);
+                  e.dataTransfer.dropEffect = 'move';
+                  if (overCol !== status) setOverCol(status);
                 }}
                 onDragLeave={(e) => {
                   if (!e.currentTarget.contains(e.relatedTarget as Node)) setOverCol(null);
@@ -126,11 +153,11 @@ export function KanbanPage() {
                   if (id) void move(id, status);
                 }}
                 className={cn(
-                  'flex w-[280px] shrink-0 snap-start flex-col rounded-lg bg-sunken/70 p-3 transition',
-                  over && 'bg-brand-soft ring-2 ring-brand/40',
+                  'flex w-[268px] shrink-0 flex-col rounded-lg border p-2.5 transition-colors',
+                  over ? 'border-brand bg-brand-soft' : 'border-transparent bg-sunken/70',
                 )}
               >
-                <header className="mb-3 flex items-center justify-between px-1">
+                <header className="mb-2.5 flex items-center justify-between px-1">
                   <h2 className="flex items-center gap-2 text-sm font-bold">
                     <span className={cn('h-2.5 w-2.5 rounded-full', STATUS_META[status].dot)} />
                     {STATUS_META[status].label}
@@ -141,6 +168,7 @@ export function KanbanPage() {
                   <button
                     type="button"
                     aria-label={`Thêm nội dung vào ${STATUS_META[status].label}`}
+                    title="Thêm nội dung"
                     onClick={() => navigate(`/contents/new?status=${status}`)}
                     className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md text-ink-2 hover:bg-surface"
                   >
@@ -148,7 +176,7 @@ export function KanbanPage() {
                   </button>
                 </header>
 
-                <div className="flex min-h-24 flex-1 flex-col gap-3">
+                <div className="flex min-h-28 flex-1 flex-col gap-2.5">
                   {cards.map((c) => (
                     <KanbanCard
                       key={c.id}
@@ -167,15 +195,14 @@ export function KanbanPage() {
                       onMove={(s) => void move(c.id, s)}
                     />
                   ))}
-                  {(cards.length === 0 || over) && (
+                  {cards.length === 0 && (
                     <div
                       className={cn(
-                        'flex flex-1 flex-col items-center justify-center gap-2 rounded-md border-2 border-dashed px-4 py-8 text-center text-sm',
+                        'flex flex-1 items-center justify-center rounded-md border-2 border-dashed px-3 py-6 text-center text-xs',
                         over ? 'border-brand text-brand' : 'border-line-strong text-ink-3',
                       )}
                     >
-                      <MousePointerClick className="h-6 w-6" />
-                      Kéo thả nội dung vào đây để chuyển trạng thái
+                      {over ? 'Thả vào đây' : 'Chưa có nội dung'}
                     </div>
                   )}
                 </div>
@@ -210,49 +237,95 @@ function KanbanCard({
       onDragStart={onDragStart}
       onDragEnd={onDragEnd}
       className={cn(
-        'cursor-grab rounded-md border border-line bg-surface p-3 shadow-card active:cursor-grabbing',
+        'group relative cursor-grab rounded-md border border-line bg-surface p-3 shadow-card transition hover:border-brand-line active:cursor-grabbing',
         dragging && 'opacity-40',
       )}
     >
-      <button
-        type="button"
-        onClick={onOpen}
-        className="flex w-full cursor-pointer items-start gap-2.5 text-left"
-      >
-        <ChannelIcon channel={c.channel} size={28} />
-        <span className="text-sm font-semibold leading-snug">{c.title}</span>
-      </button>
-      <div className="mt-3 flex items-center gap-2 text-xs">
-        <Avatar name={c.assignee?.fullName ?? '?'} size="sm" />
-        <span className={cn('flex-1', overdue ? 'font-semibold text-bad' : 'text-ink-2')}>
-          {c.status === 'Published'
-            ? `Đã đăng ${fmtShortDate(c.publishedAt)}`
-            : `Hạn ${fmtShortDate(c.scheduledAt)}`}
-        </span>
-        {c.status === 'Published' && <CheckCircle2 className="h-4 w-4 text-ok" />}
-      </div>
-      <div className="mt-2 flex items-center justify-between gap-2">
-        <span
-          className={cn(
-            'rounded px-1.5 py-0.5 text-[11px] font-semibold',
-            overdue ? 'bg-bad-soft text-bad' : PRIORITY_META[c.priority].badge,
+      <div className="flex items-start gap-2.5">
+        <ChannelIcon channel={c.channel} size={26} />
+        <button
+          type="button"
+          onClick={onOpen}
+          className="min-w-0 flex-1 cursor-pointer text-left text-sm font-semibold leading-snug hover:text-brand"
+        >
+          <span className="line-clamp-2">{c.title}</span>
+        </button>
+        <PopoverMenu
+          align="end"
+          width={196}
+          trigger={(t) => (
+            <button
+              {...t}
+              type="button"
+              aria-label="Tùy chọn thẻ"
+              className="-mr-1 -mt-1 flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded-md text-ink-3 opacity-0 hover:bg-sunken focus:opacity-100 group-hover:opacity-100 [@media(pointer:coarse)]:opacity-100"
+            >
+              <MoreHorizontal className="h-4 w-4" />
+            </button>
           )}
         >
-          {overdue ? 'Quá hạn' : `Ưu tiên ${PRIORITY_META[c.priority].label.toLowerCase()}`}
-        </span>
-        {/* Touch devices can't use HTML5 drag-and-drop — offer an explicit status picker there. */}
-        <select
-          aria-label="Chuyển trạng thái"
-          value={c.status}
-          onChange={(e) => onMove(e.target.value as ContentStatus)}
-          className="hidden h-7 max-w-28 rounded border border-line bg-surface text-xs [@media(pointer:coarse)]:block"
+          {(close) => (
+            <>
+              <p className="flex items-center gap-1.5 px-2 pb-1 pt-1.5 text-[11px] font-semibold uppercase tracking-wide text-ink-3">
+                <ArrowRightLeft className="h-3 w-3" /> Chuyển sang
+              </p>
+              {STATUSES.filter((s) => s !== c.status).map((s) => (
+                <MenuItem
+                  key={s}
+                  icon={<span className={cn('h-2 w-2 rounded-full', STATUS_META[s].dot)} />}
+                  onClick={() => {
+                    close();
+                    onMove(s);
+                  }}
+                >
+                  {STATUS_META[s].label}
+                </MenuItem>
+              ))}
+              <div className="my-1 border-t border-line" />
+              <MenuItem
+                icon={<Pencil className="h-4 w-4" />}
+                onClick={() => {
+                  close();
+                  onOpen();
+                }}
+              >
+                Mở và chỉnh sửa
+              </MenuItem>
+            </>
+          )}
+        </PopoverMenu>
+      </div>
+
+      <div className="mt-3 flex items-center gap-2 text-xs">
+        <Avatar name={c.assignee?.fullName ?? '?'} size="sm" />
+        <span
+          className={cn(
+            'flex flex-1 items-center gap-1',
+            overdue ? 'font-semibold text-bad' : 'text-ink-2',
+          )}
         >
-          {STATUSES.map((s) => (
-            <option key={s} value={s}>
-              {STATUS_META[s].label}
-            </option>
-          ))}
-        </select>
+          <CalendarClock className="h-3.5 w-3.5" />
+          {c.status === 'Published'
+            ? `Đã đăng ${fmtShortDate(c.publishedAt)}`
+            : fmtShortDate(c.scheduledAt)}
+        </span>
+        {c.status === 'Published' && <CheckCircle2 className="h-4 w-4 text-ok" />}
+        {overdue ? (
+          <span className="rounded bg-bad-soft px-1.5 py-0.5 text-[11px] font-semibold text-bad">
+            Quá hạn
+          </span>
+        ) : (
+          c.priority === 'High' && (
+            <span
+              className={cn(
+                'rounded px-1.5 py-0.5 text-[11px] font-semibold',
+                PRIORITY_META.High.badge,
+              )}
+            >
+              Ưu tiên cao
+            </span>
+          )
+        )}
       </div>
     </article>
   );

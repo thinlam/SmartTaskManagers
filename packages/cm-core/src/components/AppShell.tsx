@@ -254,8 +254,13 @@ export function AppShell({ footer }: { footer?: ReactNode }) {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const [drawer, setDrawer] = useState(false);
+  const mainRef = useRef<HTMLElement>(null);
 
-  useEffect(() => setDrawer(false), [pathname]);
+  useEffect(() => {
+    setDrawer(false);
+    // A new page always starts at the top instead of keeping the previous page's scroll.
+    mainRef.current?.scrollTo(0, 0);
+  }, [pathname]);
 
   const crumb = TITLES.find(([p]) => pathname.startsWith(p))?.[1] ?? 'Tổng quan';
 
@@ -318,7 +323,10 @@ export function AppShell({ footer }: { footer?: ReactNode }) {
           <UserMenu />
         </header>
 
-        <main className="flex-1 overflow-y-auto px-4 py-5 pb-24 md:px-6 md:py-6 lg:pb-8">
+        <main
+          ref={mainRef}
+          className="flex-1 overflow-y-auto px-4 py-5 pb-24 md:px-6 md:py-6 lg:pb-8"
+        >
           <Outlet />
         </main>
 

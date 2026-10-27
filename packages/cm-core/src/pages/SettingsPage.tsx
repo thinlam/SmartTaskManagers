@@ -1,9 +1,10 @@
-import { useState } from 'react';
-import { Check, Info, LayoutDashboard, Monitor, Moon, Palette, Sun } from 'lucide-react';
-import { Section, SettingsLayout } from '../components/SettingsLayout';
-import { Button, Field, Select } from '../components/ui';
+import type { ReactNode } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Check, ChevronRight, Monitor, Moon, RotateCcw, Sun } from 'lucide-react';
+import { Section } from '../components/SettingsLayout';
+import { Button, PageHeader } from '../components/ui';
 import { cn } from '../lib/format';
-import { resetPrefs, setPrefs, usePrefs, type ThemeMode } from '../lib/prefs';
+import { resetPrefs, setPrefs, usePrefs, type Prefs, type ThemeMode } from '../lib/prefs';
 import { useToast } from '../state/AppState';
 
 export const APP_VERSION = '0.1.1';
@@ -23,7 +24,7 @@ const THEMES: { id: ThemeMode; label: string; icon: typeof Sun; bg: string; bar:
 function Appearance() {
   const prefs = usePrefs();
   return (
-    <Section title="Giao diện" description="Chọn chủ đề màu cho ứng dụng trên thiết bị này.">
+    <Section title="Giao diện" description="Đổi màu ngay lập tức, áp dụng cho cả ứng dụng.">
       <div role="radiogroup" aria-label="Chủ đề" className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         {THEMES.map(({ id, label, icon: Icon, bg, bar }) => {
           const on = prefs.theme === id;
@@ -61,16 +62,89 @@ function Appearance() {
   );
 }
 
+function Segmented<T extends string | number>({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  value: T;
+  options: { value: T; label: string }[];
+  onChange: (value: T) => void;
+}) {
+  return (
+    <div role="radiogroup" aria-label={label} className="inline-flex rounded-md bg-sunken p-0.5">
+      {options.map((o) => (
+        <button
+          key={String(o.value)}
+          type="button"
+          role="radio"
+          aria-checked={value === o.value}
+          onClick={() => onChange(o.value)}
+          className={cn(
+            'cursor-pointer rounded-[6px] px-3.5 py-1.5 text-sm font-medium transition-colors',
+            value === o.value ? 'bg-surface text-ink shadow-card' : 'text-ink-2 hover:text-ink',
+          )}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function Row({
+  title,
+  hint,
+  control,
+  onPreview,
+}: {
+  title: string;
+  hint: string;
+  control: ReactNode;
+  onPreview: () => void;
+}) {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 py-4 first:pt-0 last:pb-0">
+      <div className="min-w-0 flex-1 basis-56">
+        <p className="text-sm font-semibold">{title}</p>
+        <p className="mt-0.5 text-xs text-ink-3">{hint}</p>
+      </div>
+      <div className="flex items-center gap-3">
+        {control}
+        <button
+          type="button"
+          onClick={onPreview}
+          title="Mở màn hình này để xem"
+          className="flex cursor-pointer items-center text-sm font-medium text-brand hover:underline"
+        >
+          Xem <ChevronRight className="h-4 w-4" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function Display() {
   const prefs = usePrefs();
   const toast = useToast();
+  const navigate = useNavigate();
+
+  // Each choice is saved the moment it is made; the toast says where it takes effect.
+  const change = (patch: Partial<Prefs>, screen: string) => {
+    setPrefs(patch);
+    toast.success(`Đã lưu. Áp dụng mỗi khi bạn mở ${screen}.`);
+  };
+
   return (
     <Section
       title="Hiển thị mặc định"
-      description="Chế độ xem được dùng khi bạn mở từng màn hình. Lưu trên thiết bị này."
+      description="Chọn cách mỗi màn hình mở ra. Tự lưu ngay, chỉ áp dụng trên thiết bị này."
       footer={
         <Button
           variant="secondary"
+          icon={<RotateCcw className="h-4 w-4" />}
           onClick={() => {
             resetPrefs();
             toast.success('Đã khôi phục cài đặt mặc định.');
@@ -80,49 +154,73 @@ function Display() {
         </Button>
       }
     >
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Tổng quan mở theo">
-          <Select
-            value={prefs.dashboardRange}
-            onChange={(e) => setPrefs({ dashboardRange: e.target.value as 'week' | 'month' })}
-          >
-            <option value="week">Tuần</option>
-            <option value="month">Tháng</option>
-          </Select>
-        </Field>
-        <Field label="Danh sách nội dung hiển thị">
-          <Select
-            value={prefs.contentsView}
-            onChange={(e) => setPrefs({ contentsView: e.target.value as 'list' | 'grid' })}
-          >
-            <option value="list">Dạng danh sách</option>
-            <option value="grid">Dạng lưới</option>
-          </Select>
-        </Field>
-        <Field label="Số dòng mỗi trang">
-          <Select
-            value={prefs.pageSize}
-            onChange={(e) => setPrefs({ pageSize: Number(e.target.value) as 10 | 20 | 50 })}
-          >
-            {[10, 20, 50].map((n) => (
-              <option key={n} value={n}>
-                {n} dòng
-              </option>
-            ))}
-          </Select>
-        </Field>
-        <Field label="Lịch đăng mở theo">
-          <Select
-            value={prefs.calendarView}
-            onChange={(e) =>
-              setPrefs({ calendarView: e.target.value as 'month' | 'week' | 'list' })
-            }
-          >
-            <option value="month">Tháng</option>
-            <option value="week">Tuần</option>
-            <option value="list">Danh sách</option>
-          </Select>
-        </Field>
+      <div className="divide-y divide-line">
+        <Row
+          title="Tổng quan"
+          hint="Khoảng thời gian thống kê khi mở Tổng quan"
+          onPreview={() => navigate('/')}
+          control={
+            <Segmented
+              label="Tổng quan mở theo"
+              value={prefs.dashboardRange}
+              options={[
+                { value: 'week', label: 'Tuần' },
+                { value: 'month', label: 'Tháng' },
+              ]}
+              onChange={(v) => change({ dashboardRange: v }, 'Tổng quan')}
+            />
+          }
+        />
+        <Row
+          title="Danh sách nội dung"
+          hint="Kiểu hiển thị khi mở trang Nội dung"
+          onPreview={() => navigate('/contents')}
+          control={
+            <Segmented
+              label="Kiểu danh sách nội dung"
+              value={prefs.contentsView}
+              options={[
+                { value: 'list', label: 'Danh sách' },
+                { value: 'grid', label: 'Lưới' },
+              ]}
+              onChange={(v) => change({ contentsView: v }, 'trang Nội dung')}
+            />
+          }
+        />
+        <Row
+          title="Số dòng mỗi trang"
+          hint="Số nội dung hiện cùng lúc ở trang Nội dung"
+          onPreview={() => navigate('/contents')}
+          control={
+            <Segmented
+              label="Số dòng mỗi trang"
+              value={prefs.pageSize}
+              options={[
+                { value: 10, label: '10' },
+                { value: 20, label: '20' },
+                { value: 50, label: '50' },
+              ]}
+              onChange={(v) => change({ pageSize: v }, 'trang Nội dung')}
+            />
+          }
+        />
+        <Row
+          title="Lịch đăng"
+          hint="Kiểu xem khi mở Lịch đăng"
+          onPreview={() => navigate('/calendar')}
+          control={
+            <Segmented
+              label="Lịch đăng mở theo"
+              value={prefs.calendarView}
+              options={[
+                { value: 'month', label: 'Tháng' },
+                { value: 'week', label: 'Tuần' },
+                { value: 'list', label: 'Danh sách' },
+              ]}
+              onChange={(v) => change({ calendarView: v }, 'Lịch đăng')}
+            />
+          }
+        />
       </div>
     </Section>
   );
@@ -143,19 +241,13 @@ function About() {
 
 export function SettingsPage() {
   return (
-    <SettingsLayout
-      title="Cài đặt"
-      subtitle="Giao diện và tùy chọn hiển thị trên thiết bị này"
-      tabs={[
-        { id: 'appearance', label: 'Giao diện', icon: Palette, render: () => <Appearance /> },
-        {
-          id: 'display',
-          label: 'Hiển thị mặc định',
-          icon: LayoutDashboard,
-          render: () => <Display />,
-        },
-        { id: 'about', label: 'Giới thiệu', icon: Info, render: () => <About /> },
-      ]}
-    />
+    <div className="max-w-3xl">
+      <PageHeader title="Cài đặt" subtitle="Giao diện và cách hiển thị trên thiết bị này" />
+      <div className="space-y-5">
+        <Appearance />
+        <Display />
+        <About />
+      </div>
+    </div>
   );
 }

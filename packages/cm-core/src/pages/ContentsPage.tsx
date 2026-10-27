@@ -32,6 +32,7 @@ import {
   StatusBadge,
   inputClass,
 } from '../components/ui';
+import { MenuItem, PopoverMenu } from '../components/PopoverMenu';
 import { cn, fmtDate, isOverdue } from '../lib/format';
 import { STATUS_META } from '../lib/meta';
 import { getPrefs } from '../lib/prefs';
@@ -544,25 +545,6 @@ function Row({
   onDelete: () => void;
   onStatus: (status: Content['status']) => void;
 }) {
-  const [menu, setMenu] = useState(false);
-  const [statusMenu, setStatusMenu] = useState(false);
-  const statusRef = useRef<HTMLTableCellElement>(null);
-  useEffect(() => {
-    if (!statusMenu) return;
-    const h = (e: MouseEvent) =>
-      statusRef.current && !statusRef.current.contains(e.target as Node) && setStatusMenu(false);
-    document.addEventListener('mousedown', h);
-    return () => document.removeEventListener('mousedown', h);
-  }, [statusMenu]);
-  const ref = useRef<HTMLTableCellElement>(null);
-  useEffect(() => {
-    if (!menu) return;
-    const h = (e: MouseEvent) =>
-      ref.current && !ref.current.contains(e.target as Node) && setMenu(false);
-    document.addEventListener('mousedown', h);
-    return () => document.removeEventListener('mousedown', h);
-  }, [menu]);
-
   return (
     <tr className="border-b border-line last:border-0 hover:bg-canvas/70">
       <td className="py-3 pl-4">
@@ -598,41 +580,37 @@ function Row({
           <Avatar name={c.assignee?.fullName ?? '?'} size="sm" /> {c.assignee?.fullName ?? '—'}
         </span>
       </td>
-      <td className="relative px-3" ref={statusRef}>
-        <button
-          type="button"
-          aria-label={`Đổi trạng thái ${c.code}`}
-          aria-haspopup="menu"
-          aria-expanded={statusMenu}
-          onClick={() => setStatusMenu((m) => !m)}
-          className="cursor-pointer rounded-full hover:ring-2 hover:ring-brand/20"
+      <td className="px-3">
+        <PopoverMenu
+          width={184}
+          trigger={(t) => (
+            <button
+              {...t}
+              type="button"
+              aria-label={`Đổi trạng thái ${c.code}`}
+              className="cursor-pointer rounded-full hover:ring-2 hover:ring-brand/20"
+            >
+              <StatusBadge status={c.status} />
+            </button>
+          )}
         >
-          <StatusBadge status={c.status} />
-        </button>
-        {statusMenu && (
-          <div
-            role="menu"
-            className="absolute left-3 top-11 z-20 w-44 rounded-md border border-line bg-surface p-1 shadow-pop"
-          >
-            {STATUSES.map((st) => (
-              <button
+          {(close) =>
+            STATUSES.map((st) => (
+              <MenuItem
                 key={st}
-                type="button"
-                role="menuitemradio"
-                aria-checked={st === c.status}
+                selected={st === c.status}
+                icon={<span className={cn('h-2 w-2 rounded-full', STATUS_META[st].dot)} />}
                 onClick={() => {
-                  setStatusMenu(false);
+                  close();
                   onStatus(st);
                 }}
-                className="flex h-9 w-full cursor-pointer items-center gap-2 rounded-sm px-2 text-sm hover:bg-sunken"
               >
-                <span className={cn('h-2 w-2 rounded-full', STATUS_META[st].dot)} />
-                <span className="flex-1 text-left">{STATUS_META[st].label}</span>
-                {st === c.status && <Check className="h-4 w-4 text-brand" />}
-              </button>
-            ))}
-          </div>
-        )}
+                {STATUS_META[st].label}
+                {st === c.status && <Check className="ml-auto inline h-4 w-4 text-brand" />}
+              </MenuItem>
+            ))
+          }
+        </PopoverMenu>
       </td>
       <td
         className={cn(
@@ -648,36 +626,45 @@ function Row({
           <ProgressBar value={c.progress} />
         </div>
       </td>
-      <td className="relative pr-3" ref={ref}>
-        <button
-          type="button"
-          aria-label={`Tùy chọn ${c.code}`}
-          onClick={() => setMenu((m) => !m)}
-          className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-md text-ink-3 hover:bg-sunken"
+      <td className="pr-3">
+        <PopoverMenu
+          align="end"
+          width={160}
+          trigger={(t) => (
+            <button
+              {...t}
+              type="button"
+              aria-label={`Tùy chọn ${c.code}`}
+              className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-md text-ink-3 hover:bg-sunken"
+            >
+              <MoreHorizontal className="h-4 w-4" />
+            </button>
+          )}
         >
-          <MoreHorizontal className="h-4 w-4" />
-        </button>
-        {menu && (
-          <div className="absolute right-3 top-10 z-20 w-36 rounded-md border border-line bg-surface p-1 shadow-pop">
-            <button
-              type="button"
-              onClick={onOpen}
-              className="flex h-9 w-full cursor-pointer items-center gap-2 rounded-sm px-2 text-sm hover:bg-sunken"
-            >
-              <Pencil className="h-4 w-4" /> Chỉnh sửa
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setMenu(false);
-                onDelete();
-              }}
-              className="flex h-9 w-full cursor-pointer items-center gap-2 rounded-sm px-2 text-sm text-bad hover:bg-bad-soft"
-            >
-              <Trash2 className="h-4 w-4" /> Xóa
-            </button>
-          </div>
-        )}
+          {(close) => (
+            <>
+              <MenuItem
+                icon={<Pencil className="h-4 w-4" />}
+                onClick={() => {
+                  close();
+                  onOpen();
+                }}
+              >
+                Chỉnh sửa
+              </MenuItem>
+              <MenuItem
+                danger
+                icon={<Trash2 className="h-4 w-4" />}
+                onClick={() => {
+                  close();
+                  onDelete();
+                }}
+              >
+                Xóa
+              </MenuItem>
+            </>
+          )}
+        </PopoverMenu>
       </td>
     </tr>
   );

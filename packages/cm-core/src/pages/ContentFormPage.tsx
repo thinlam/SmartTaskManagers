@@ -364,7 +364,7 @@ export function ContentFormPage() {
             </div>
           </div>
 
-          <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4">
+          <div className="sticky bottom-0 -mx-5 -mb-5 mt-6 flex flex-wrap items-center justify-between gap-3 rounded-b-lg border-t border-line bg-surface/95 px-5 py-3 backdrop-blur md:-mx-7 md:-mb-7 md:px-7">
             <div>
               {editing && (
                 <Button
