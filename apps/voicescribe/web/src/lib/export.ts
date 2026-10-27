@@ -27,7 +27,24 @@ function srtTimestamp(seconds: number): string {
   return `${pad(h)}:${pad(m)}:${pad(s)},${pad(ms, 3)}`;
 }
 
-function downloadBlob(blob: Blob, fileName: string): void {
+/**
+ * Saves a file and resolves to a short message for the user. The desktop webview ignores
+ * <a download>, so there the file is written straight into the Downloads folder (no dialog;
+ * an existing name gets " (1)", " (2)"...). In a browser it is a normal download.
+ */
+async function saveBlob(blob: Blob, fileName: string): Promise<string> {
+  if ('__TAURI_INTERNALS__' in window) {
+    const { downloadDir, join } = await import('@tauri-apps/api/path');
+    const { exists, writeFile } = await import('@tauri-apps/plugin-fs');
+    const dir = await downloadDir();
+    const dot = fileName.lastIndexOf('.');
+    const stem = dot > 0 ? fileName.slice(0, dot) : fileName;
+    const ext = dot > 0 ? fileName.slice(dot) : '';
+    let name = fileName;
+    for (let n = 1; await exists(await join(dir, name)); n += 1) name = `${stem} (${n})${ext}`;
+    await writeFile(await join(dir, name), new Uint8Array(await blob.arrayBuffer()));
+    return `Đã lưu vào thư mục Tải xuống: ${name}`;
+  }
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -36,6 +53,7 @@ function downloadBlob(blob: Blob, fileName: string): void {
   a.click();
   a.remove();
   URL.revokeObjectURL(url);
+  return `Đã tải xuống: ${fileName}`;
 }
 
 /** Plain text of the current view; also what "Sao chép" puts on the clipboard. */
@@ -44,12 +62,12 @@ export function toPlainText(doc: ExportDoc): string {
   return doc.blocks.map((b) => `${b.speaker} [${clock(b.start)}]\n${b.text}`).join('\n\n');
 }
 
-export function exportTxt(doc: ExportDoc): void {
+export function exportTxt(doc: ExportDoc): Promise<string> {
   const blob = new Blob([`${toPlainText(doc)}\n`], { type: 'text/plain;charset=utf-8' });
-  downloadBlob(blob, `${doc.fileBase}.txt`);
+  return saveBlob(blob, `${doc.fileBase}.txt`);
 }
 
-export function exportSrt(doc: ExportDoc): void {
+export function exportSrt(doc: ExportDoc): Promise<string> {
   const withSpeaker = doc.mode === 'speakers';
   const lines = doc.segments.flatMap((seg, i) => [
     String(i + 1),
@@ -58,10 +76,10 @@ export function exportSrt(doc: ExportDoc): void {
     '',
   ]);
   const blob = new Blob([lines.join('\n')], { type: 'application/x-subrip;charset=utf-8' });
-  downloadBlob(blob, `${doc.fileBase}.srt`);
+  return saveBlob(blob, `${doc.fileBase}.srt`);
 }
 
-export async function exportDocx(doc: ExportDoc): Promise<void> {
+export async function exportDocx(doc: ExportDoc): Promise<string> {
   const heading = new Paragraph({
     text: doc.title,
     heading: HeadingLevel.HEADING_1,
@@ -92,5 +110,5 @@ export async function exportDocx(doc: ExportDoc): Promise<void> {
         ]);
 
   const file = new Document({ sections: [{ children: [heading, ...body] }] });
-  downloadBlob(await Packer.toBlob(file), `${doc.fileBase}.docx`);
+  return saveBlob(await Packer.toBlob(file), `${doc.fileBase}.docx`);
 }

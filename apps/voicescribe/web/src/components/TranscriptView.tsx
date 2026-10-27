@@ -60,12 +60,19 @@ export function AutoTextarea({
   autoFocus?: boolean;
 }) {
   const ref = useRef<HTMLTextAreaElement>(null);
-  useLayoutEffect(() => {
+  // Grow with the text, but cap at most of the viewport and scroll inside, so a long
+  // transcript never ends up taller than what the page (or the textarea) can scroll.
+  const fit = () => {
     const el = ref.current;
     if (!el) return;
     el.style.height = 'auto';
-    el.style.height = `${el.scrollHeight}px`;
-  }, [value]);
+    el.style.height = `${Math.min(el.scrollHeight + 2, Math.round(window.innerHeight * 0.7))}px`;
+  };
+  useLayoutEffect(fit, [value]);
+  useEffect(() => {
+    window.addEventListener('resize', fit);
+    return () => window.removeEventListener('resize', fit);
+  }, []);
   useEffect(() => {
     if (autoFocus) {
       const el = ref.current;
@@ -80,7 +87,7 @@ export function AutoTextarea({
       onChange={(e) => onChange(e.target.value)}
       onKeyDown={onKeyDown}
       onBlur={onBlur}
-      className={`block w-full resize-none overflow-hidden ${className}`}
+      className={`block w-full resize-none overflow-y-auto ${className}`}
     />
   );
 }
