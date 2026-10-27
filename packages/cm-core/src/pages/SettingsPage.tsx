@@ -6,7 +6,7 @@ import { cn } from '../lib/format';
 import { resetPrefs, setPrefs, usePrefs, type ThemeMode } from '../lib/prefs';
 import { useToast } from '../state/AppState';
 
-export const APP_VERSION = '0.1.0';
+export const APP_VERSION = '0.1.1';
 
 const THEMES: { id: ThemeMode; label: string; icon: typeof Sun; bg: string; bar: string }[] = [
   { id: 'light', label: 'Sáng', icon: Sun, bg: '#f6f8fc', bar: '#ffffff' },
