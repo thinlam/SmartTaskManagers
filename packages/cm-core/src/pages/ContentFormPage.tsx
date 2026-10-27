@@ -187,7 +187,11 @@ export function ContentFormPage() {
         <Card className="p-5 md:p-7">
           <PageHeader
             title={editing ? 'Chỉnh sửa nội dung' : 'Tạo nội dung mới'}
-            subtitle="Tạo và lên lịch nội dung cho chiến dịch của bạn"
+            subtitle={
+              editing
+                ? 'Cập nhật thông tin, trạng thái và lịch đăng của nội dung'
+                : 'Tạo và lên lịch nội dung cho chiến dịch của bạn'
+            }
           />
 
           <div className="grid gap-x-5 gap-y-4 md:grid-cols-2">
@@ -377,14 +381,16 @@ export function ContentFormPage() {
               <Button variant="secondary" onClick={() => navigate(-1)}>
                 Hủy
               </Button>
-              <Button
-                variant="secondary"
-                loading={saving === 'draft'}
-                disabled={saving !== null}
-                onClick={() => save(true)}
-              >
-                Lưu nháp
-              </Button>
+              {!editing && (
+                <Button
+                  variant="secondary"
+                  loading={saving === 'draft'}
+                  disabled={saving !== null}
+                  onClick={() => save(true)}
+                >
+                  Lưu nháp
+                </Button>
+              )}
               <Button
                 loading={saving === 'save'}
                 disabled={saving !== null}

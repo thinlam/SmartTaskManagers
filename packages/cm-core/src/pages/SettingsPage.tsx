@@ -1,8 +1,7 @@
 import { useState } from 'react';
-import { Check, Info, LayoutDashboard, Monitor, Moon, Palette, Server, Sun } from 'lucide-react';
-import { getDefaultServerUrl, getServerUrl, setServerUrl } from '../api/client';
+import { Check, Info, LayoutDashboard, Monitor, Moon, Palette, Sun } from 'lucide-react';
 import { Section, SettingsLayout } from '../components/SettingsLayout';
-import { Button, Field, Select, inputClass } from '../components/ui';
+import { Button, Field, Select } from '../components/ui';
 import { cn } from '../lib/format';
 import { resetPrefs, setPrefs, usePrefs, type ThemeMode } from '../lib/prefs';
 import { useToast } from '../state/AppState';
@@ -129,51 +128,6 @@ function Display() {
   );
 }
 
-function ServerSection() {
-  const toast = useToast();
-  const [server, setServer] = useState(getServerUrl());
-  const [error, setError] = useState('');
-
-  const save = () => {
-    if (!/^https?:\/\//i.test(server.trim())) {
-      setError('Địa chỉ phải bắt đầu bằng http:// hoặc https://');
-      return;
-    }
-    setError('');
-    setServerUrl(server);
-    toast.success('Đã lưu. Đang tải lại để kết nối máy chủ mới...');
-    setTimeout(() => window.location.reload(), 700);
-  };
-
-  return (
-    <Section
-      title="Kết nối máy chủ"
-      description="Địa chỉ backend Content Manager mà ứng dụng này kết nối tới."
-      footer={
-        <>
-          <Button variant="secondary" onClick={() => setServer(getDefaultServerUrl())}>
-            Dùng mặc định
-          </Button>
-          <Button onClick={save}>Lưu và kết nối</Button>
-        </>
-      }
-    >
-      <Field label="Địa chỉ máy chủ" error={error} hint={`Mặc định: ${getDefaultServerUrl()}`}>
-        <input
-          className={inputClass}
-          value={server}
-          onChange={(e) => setServer(e.target.value)}
-          inputMode="url"
-          spellCheck={false}
-        />
-      </Field>
-      <p className="mt-3 text-xs text-ink-3">
-        Trên Android emulator dùng http://10.0.2.2:5290 để trỏ tới máy tính của bạn.
-      </p>
-    </Section>
-  );
-}
-
 function About() {
   return (
     <Section title="Giới thiệu">
@@ -182,8 +136,6 @@ function About() {
         <dd className="font-medium">Content Manager</dd>
         <dt className="text-ink-2">Phiên bản</dt>
         <dd className="font-medium">{APP_VERSION}</dd>
-        <dt className="text-ink-2">Máy chủ</dt>
-        <dd className="font-medium break-all">{getServerUrl()}</dd>
       </dl>
     </Section>
   );
@@ -202,7 +154,6 @@ export function SettingsPage() {
           icon: LayoutDashboard,
           render: () => <Display />,
         },
-        { id: 'server', label: 'Máy chủ', icon: Server, render: () => <ServerSection /> },
         { id: 'about', label: 'Giới thiệu', icon: Info, render: () => <About /> },
       ]}
     />

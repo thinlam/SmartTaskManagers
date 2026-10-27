@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
+  Check,
   ChevronLeft,
   ChevronRight,
   FileSearch,
@@ -123,6 +124,17 @@ export function ContentsPage() {
       return n;
     });
 
+  const changeStatus = async (c: Content, next: Content['status']) => {
+    if (next === c.status) return;
+    try {
+      await api.contents.setStatus(c.id, next);
+      toast.success(`Đã chuyển "${c.title}" sang ${STATUS_META[next].label}.`);
+      reload();
+    } catch (e) {
+      toast.error(errMsg(e));
+    }
+  };
+
   const confirmDelete = async () => {
     if (!toDelete) return;
     setDeleting(true);
@@ -156,6 +168,33 @@ export function ContentsPage() {
         }
       />
 
+      <div
+        role="tablist"
+        aria-label="Lọc theo trạng thái"
+        className="mb-3 flex gap-1.5 overflow-x-auto pb-1"
+      >
+        {[
+          ['', 'Tất cả'] as const,
+          ...STATUSES.map((st) => [st, STATUS_META[st].label] as const),
+        ].map(([value, label]) => (
+          <button
+            key={value || 'all'}
+            role="tab"
+            type="button"
+            aria-selected={status === value}
+            onClick={() => onFilter(setStatus)(value)}
+            className={cn(
+              'shrink-0 cursor-pointer rounded-full px-3.5 py-1.5 text-sm font-medium transition-colors',
+              status === value
+                ? 'bg-ink text-surface'
+                : 'bg-surface text-ink-2 ring-1 ring-line hover:bg-sunken',
+            )}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
       <Card className="mb-4 p-3 md:p-4">
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative min-w-[200px] flex-1 basis-64">
@@ -168,19 +207,6 @@ export function ContentsPage() {
               onChange={(e) => onFilter(setQ)(e.target.value)}
             />
           </div>
-          <Select
-            className="w-44"
-            value={status}
-            onChange={(e) => onFilter(setStatus)(e.target.value)}
-            aria-label="Lọc trạng thái"
-          >
-            <option value="">Tất cả trạng thái</option>
-            {STATUSES.map((s) => (
-              <option key={s} value={s}>
-                {STATUS_META[s].label}
-              </option>
-            ))}
-          </Select>
           <Select
             className="w-36"
             value={channel}
@@ -213,7 +239,8 @@ export function ContentsPage() {
             onClick={() => setAdvanced((a) => !a)}
             aria-expanded={advanced}
           >
-            Bộ lọc nâng cao
+            Bộ lọc khác
+            {priority || assigneeId ? ` (${[priority, assigneeId].filter(Boolean).length})` : ''}
           </Button>
           <div className="ml-auto inline-flex rounded-md border border-line p-0.5">
             {(
@@ -320,7 +347,7 @@ export function ContentsPage() {
           />
         ) : view === 'list' ? (
           <div className={cn('overflow-x-auto', loading && 'opacity-60')}>
-            <table className="w-full min-w-[980px] text-sm">
+            <table className="w-full min-w-[860px] text-sm">
               <thead>
                 <tr className="border-b border-line text-left text-xs font-semibold uppercase tracking-wide text-ink-2">
                   <th className="w-10 py-3 pl-4">
@@ -335,14 +362,12 @@ export function ContentsPage() {
                     />
                   </th>
                   {[
-                    'Mã',
                     'Tiêu đề',
                     'Kênh',
                     'Chiến dịch',
-                    'Người phụ trách',
+                    'Phụ trách',
                     'Trạng thái',
                     'Ngày đăng',
-                    'Ưu tiên',
                     'Tiến độ',
                   ].map((h) => (
                     <th key={h} className="px-3 py-3">
@@ -361,6 +386,7 @@ export function ContentsPage() {
                     onCheck={() => toggle(c.id)}
                     onOpen={() => navigate(`/contents/${c.id}`)}
                     onDelete={() => setToDelete([c.id])}
+                    onStatus={(next) => changeStatus(c, next)}
                   />
                 ))}
               </tbody>
@@ -509,14 +535,25 @@ function Row({
   onCheck,
   onOpen,
   onDelete,
+  onStatus,
 }: {
   c: Content;
   checked: boolean;
   onCheck: () => void;
   onOpen: () => void;
   onDelete: () => void;
+  onStatus: (status: Content['status']) => void;
 }) {
   const [menu, setMenu] = useState(false);
+  const [statusMenu, setStatusMenu] = useState(false);
+  const statusRef = useRef<HTMLTableCellElement>(null);
+  useEffect(() => {
+    if (!statusMenu) return;
+    const h = (e: MouseEvent) =>
+      statusRef.current && !statusRef.current.contains(e.target as Node) && setStatusMenu(false);
+    document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
+  }, [statusMenu]);
   const ref = useRef<HTMLTableCellElement>(null);
   useEffect(() => {
     if (!menu) return;
@@ -537,15 +574,18 @@ function Row({
           className="h-4 w-4 cursor-pointer accent-brand"
         />
       </td>
-      <td className="whitespace-nowrap px-3 text-ink-2">{c.code}</td>
-      <td className="max-w-[260px] px-3">
+      <td className="max-w-[300px] px-3 py-3">
         <button
           type="button"
           onClick={onOpen}
-          className="cursor-pointer text-left font-medium hover:text-brand"
+          className="block max-w-full cursor-pointer truncate text-left font-medium hover:text-brand"
         >
           {c.title}
         </button>
+        <span className="mt-0.5 flex items-center gap-2 text-xs text-ink-3">
+          {c.code}
+          {c.priority === 'High' && <PriorityBadge priority={c.priority} />}
+        </span>
       </td>
       <td className="px-3">
         <span className="flex items-center gap-2 whitespace-nowrap">
@@ -558,8 +598,41 @@ function Row({
           <Avatar name={c.assignee?.fullName ?? '?'} size="sm" /> {c.assignee?.fullName ?? '—'}
         </span>
       </td>
-      <td className="px-3">
-        <StatusBadge status={c.status} />
+      <td className="relative px-3" ref={statusRef}>
+        <button
+          type="button"
+          aria-label={`Đổi trạng thái ${c.code}`}
+          aria-haspopup="menu"
+          aria-expanded={statusMenu}
+          onClick={() => setStatusMenu((m) => !m)}
+          className="cursor-pointer rounded-full hover:ring-2 hover:ring-brand/20"
+        >
+          <StatusBadge status={c.status} />
+        </button>
+        {statusMenu && (
+          <div
+            role="menu"
+            className="absolute left-3 top-11 z-20 w-44 rounded-md border border-line bg-surface p-1 shadow-pop"
+          >
+            {STATUSES.map((st) => (
+              <button
+                key={st}
+                type="button"
+                role="menuitemradio"
+                aria-checked={st === c.status}
+                onClick={() => {
+                  setStatusMenu(false);
+                  onStatus(st);
+                }}
+                className="flex h-9 w-full cursor-pointer items-center gap-2 rounded-sm px-2 text-sm hover:bg-sunken"
+              >
+                <span className={cn('h-2 w-2 rounded-full', STATUS_META[st].dot)} />
+                <span className="flex-1 text-left">{STATUS_META[st].label}</span>
+                {st === c.status && <Check className="h-4 w-4 text-brand" />}
+              </button>
+            ))}
+          </div>
+        )}
       </td>
       <td
         className={cn(
@@ -568,9 +641,6 @@ function Row({
         )}
       >
         {fmtDate(c.scheduledAt)}
-      </td>
-      <td className="px-3">
-        <PriorityBadge priority={c.priority} />
       </td>
       <td className="w-32 px-3">
         <div className="flex items-center gap-2">

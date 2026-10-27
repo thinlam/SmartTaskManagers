@@ -68,25 +68,43 @@ const TITLES: [string, string][] = [
   ['/settings', 'Cài đặt'],
 ];
 
+const NAV_GROUPS: { title?: string; items: (typeof NAV)[number][] }[] = [
+  { items: [NAV[0]!] },
+  { title: 'Sản xuất nội dung', items: [NAV[1]!, NAV[2]!, NAV[3]!] },
+  { title: 'Tài nguyên', items: [NAV[4]!, NAV[5]!] },
+  { title: 'Quản lý', items: [NAV[6]!, NAV[7]!, NAV[8]!] },
+];
+
 function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   return (
-    <nav className="flex flex-col gap-1 px-3" aria-label="Điều hướng chính">
-      {NAV.map(({ to, label, icon: Icon, end }) => (
-        <NavLink
-          key={to}
-          to={to}
-          end={end}
-          onClick={onNavigate}
-          className={({ isActive }) =>
-            cn(
-              'flex h-11 items-center gap-3 rounded-md px-3 text-sm font-medium transition-colors',
-              isActive ? 'bg-brand-soft text-brand' : 'text-ink-2 hover:bg-sunken hover:text-ink',
-            )
-          }
-        >
-          <Icon className="h-[18px] w-[18px]" />
-          {label}
-        </NavLink>
+    <nav className="flex flex-col px-3" aria-label="Điều hướng chính">
+      {NAV_GROUPS.map((group, gi) => (
+        <div key={gi} className={cn('flex flex-col gap-0.5', gi > 0 && 'mt-4')}>
+          {group.title && (
+            <p className="mb-1 px-3 text-[11px] font-semibold uppercase tracking-wider text-ink-3">
+              {group.title}
+            </p>
+          )}
+          {group.items.map(({ to, label, icon: Icon, end }) => (
+            <NavLink
+              key={to}
+              to={to}
+              end={end}
+              onClick={onNavigate}
+              className={({ isActive }) =>
+                cn(
+                  'flex h-10 items-center gap-3 rounded-md px-3 text-sm font-medium transition-colors',
+                  isActive
+                    ? 'bg-brand-soft text-brand'
+                    : 'text-ink-2 hover:bg-sunken hover:text-ink',
+                )
+              }
+            >
+              <Icon className="h-[18px] w-[18px]" />
+              {label}
+            </NavLink>
+          ))}
+        </div>
       ))}
     </nav>
   );
@@ -285,16 +303,7 @@ export function AppShell({ footer }: { footer?: ReactNode }) {
           <IconButton label="Mở menu" className="lg:hidden" onClick={() => setDrawer(true)}>
             <Menu className="h-5 w-5" />
           </IconButton>
-          <button
-            type="button"
-            aria-label="Tổng quan"
-            onClick={() => navigate('/')}
-            className="hidden cursor-pointer text-ink-3 hover:text-ink sm:block"
-          >
-            <Home className="h-5 w-5" />
-          </button>
-          <span className="hidden text-ink-3 sm:inline">/</span>
-          <span className="truncate text-sm font-medium text-ink-2">{crumb}</span>
+          <h1 className="truncate text-base font-semibold text-ink">{crumb}</h1>
           <div className="flex flex-1 justify-center px-2">
             <SearchBox />
           </div>

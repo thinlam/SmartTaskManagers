@@ -1,6 +1,4 @@
 import { useState, type FormEvent } from 'react';
-import { ChevronDown, Server } from 'lucide-react';
-import { getDefaultServerUrl, getServerUrl, setServerUrl } from '../api/client';
 import { Logo } from '../components/AppShell';
 import { Button, Card, Field, inputClass } from '../components/ui';
 import { errMsg, useAuth } from '../state/AppState';
@@ -12,8 +10,6 @@ export function LoginPage() {
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [server, setServer] = useState(getServerUrl());
-  const [showServer, setShowServer] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
@@ -22,7 +18,6 @@ export function LoginPage() {
     setError('');
     setBusy(true);
     try {
-      setServerUrl(server);
       if (mode === 'login') await signIn(email, password);
       else await signUp(email, fullName, password);
     } catch (err) {
@@ -99,32 +94,6 @@ export function LoginPage() {
                 required
               />
             </Field>
-
-            <div>
-              <button
-                type="button"
-                onClick={() => setShowServer((s) => !s)}
-                className="flex cursor-pointer items-center gap-1.5 text-xs font-medium text-ink-2 hover:text-ink"
-              >
-                <Server className="h-3.5 w-3.5" /> Máy chủ
-                <ChevronDown className={cn('h-3.5 w-3.5 transition', showServer && 'rotate-180')} />
-              </button>
-              {showServer && (
-                <div className="mt-2">
-                  <input
-                    className={inputClass}
-                    value={server}
-                    onChange={(e) => setServer(e.target.value)}
-                    aria-label="Địa chỉ máy chủ"
-                    placeholder={getDefaultServerUrl()}
-                    inputMode="url"
-                  />
-                  <p className="mt-1 text-xs text-ink-3">
-                    Địa chỉ backend Content Manager (mặc định {getDefaultServerUrl()}).
-                  </p>
-                </div>
-              )}
-            </div>
 
             {error && (
               <p role="alert" className="rounded-md bg-bad-soft px-3 py-2 text-sm text-bad">
