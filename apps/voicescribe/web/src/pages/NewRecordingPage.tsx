@@ -1,12 +1,11 @@
 import { useRef, useState } from 'react';
-import { AlertCircle, Loader2, X } from 'lucide-react';
+import { AlertCircle, ChevronDown, Loader2, X } from 'lucide-react';
 import { api, transcribeFile } from '../lib/api';
 import { errorText } from '../lib/format';
 import { UploadZone } from '../components/UploadZone';
 import {
   Card,
   Field,
-  PageHeader,
   inputClass,
   primaryButtonClass,
   secondaryButtonClass,
@@ -72,19 +71,21 @@ export function NewRecordingPage({ onSaved }: { onSaved: (id: string) => void })
 
   const busy = state.kind === 'uploading' || state.kind === 'processing';
 
+  const optionsSet = Boolean(title.trim() || folderId || numSpeakers.trim());
+
   return (
     <div className="flex-1 overflow-y-auto p-8">
-      <PageHeader
-        title="Ghi âm mới"
-        subtitle="Tải lên file âm thanh — VoiceScribe xử lý nền, chuyển thành văn bản và lưu vào thư viện của bạn."
-      />
+      <div className="mx-auto max-w-2xl">
+        <h1 className="text-3xl font-bold text-slate-900">Ghi âm mới</h1>
+        <p className="mt-1 text-sm text-slate-500">
+          Thả file âm thanh vào đây, VoiceScribe sẽ tự chuyển thành văn bản.
+        </p>
 
-      <div className="mx-auto grid max-w-5xl grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
-        <Card className="flex min-h-[420px] flex-col">
+        <Card className="mt-6 flex min-h-[320px] flex-col">
           {state.kind === 'idle' && <UploadZone onFileSelected={handleFileSelected} />}
 
           {busy && (
-            <div className="flex flex-1 flex-col items-center justify-center gap-4 py-16 text-center">
+            <div className="flex flex-1 flex-col items-center justify-center gap-4 py-12 text-center">
               <Loader2 className="h-8 w-8 animate-spin text-indigo-600" />
               <p className="font-medium text-slate-900">
                 {state.kind === 'uploading'
@@ -113,7 +114,7 @@ export function NewRecordingPage({ onSaved }: { onSaved: (id: string) => void })
           )}
 
           {state.kind === 'error' && (
-            <div className="flex flex-1 flex-col items-center justify-center gap-3 py-16 text-center">
+            <div className="flex flex-1 flex-col items-center justify-center gap-3 py-12 text-center">
               <AlertCircle className="h-10 w-10 text-rose-500" />
               <p className="font-medium text-slate-900">Không xử lý được file âm thanh</p>
               <p className="max-w-md text-sm text-slate-500">{state.message}</p>
@@ -127,9 +128,20 @@ export function NewRecordingPage({ onSaved }: { onSaved: (id: string) => void })
           )}
         </Card>
 
-        <div className="flex flex-col gap-4">
-          <Card className="space-y-4">
-            <h2 className="font-semibold text-slate-900">Tùy chọn</h2>
+        <p className="mt-3 text-center text-xs text-slate-400">
+          Hỗ trợ mp3, m4a, wav, mp4, webm · tối đa {maxUploadMb}MB · file dài được xử lý nền, bạn có
+          thể rời trang.
+        </p>
+
+        <details className="group mt-6 rounded-2xl border border-slate-200 bg-white" open={optionsSet}>
+          <summary className="flex cursor-pointer list-none items-center justify-between px-5 py-3.5 text-sm font-medium text-slate-700">
+            <span>
+              Tùy chọn
+              <span className="ml-2 font-normal text-slate-400">tiêu đề, thư mục</span>
+            </span>
+            <ChevronDown className="h-4 w-4 text-slate-400 transition-transform group-open:rotate-180" />
+          </summary>
+          <div className="grid gap-4 border-t border-slate-100 p-5 sm:grid-cols-2">
             <Field label="Tiêu đề" hint="Để trống sẽ lấy theo tên file.">
               <input
                 className={inputClass}
@@ -172,21 +184,8 @@ export function NewRecordingPage({ onSaved }: { onSaved: (id: string) => void })
                 />
               </Field>
             )}
-          </Card>
-
-          <Card className="text-sm text-slate-500">
-            <h2 className="mb-2 font-semibold text-slate-900">Lưu ý</h2>
-            <ul className="list-disc space-y-1 pl-5">
-              <li>Hỗ trợ mp3, m4a, wav, mp4, webm.</li>
-              <li>Tối đa {maxUploadMb}MB mỗi file.</li>
-              <li>
-                File dài được xử lý nền: bạn theo dõi tiến độ trong Thư viện và có thể đóng trang
-                này.
-              </li>
-              <li>Bản ghi được lưu riêng cho tài khoản của bạn.</li>
-            </ul>
-          </Card>
-        </div>
+          </div>
+        </details>
       </div>
     </div>
   );

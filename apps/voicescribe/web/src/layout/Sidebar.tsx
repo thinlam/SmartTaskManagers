@@ -27,7 +27,7 @@ export function Sidebar({
   const activePage = page === 'detail' ? 'library' : page;
 
   return (
-    <aside className="flex w-72 shrink-0 flex-col bg-[#0f1115] p-4 text-white">
+    <aside className="flex w-60 shrink-0 flex-col bg-[#0f1115] p-4 text-white">
       <div className="mb-6 flex items-center gap-3 px-2 py-2">
         <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-500">
           <Mic className="h-5 w-5" />

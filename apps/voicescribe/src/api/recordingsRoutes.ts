@@ -9,6 +9,7 @@ import {
   type RecordingRow,
 } from '../services/recordings.js';
 import type { TranscriptionJobs } from '../services/jobs.js';
+import type { LabeledSegment } from '../types/diarization.js';
 import { isUuid } from '../utils/validation.js';
 
 const NOT_FOUND = { error: 'Không tìm thấy bản ghi.' };
@@ -50,6 +51,37 @@ function parseSpeakerNames(value: unknown): Record<string, string> | null {
   }
   return names;
 }
+
+const MAX_SEGMENTS = 5000;
+const MAX_SEGMENT_CHARS = 20000;
+const MAX_TEXT_CHARS = 2_000_000;
+
+function parseSegments(value: unknown): LabeledSegment[] | null {
+  if (!Array.isArray(value) || value.length > MAX_SEGMENTS) return null;
+  const segments: LabeledSegment[] = [];
+  for (const raw of value) {
+    const item = raw as Partial<LabeledSegment> | null;
+    if (
+      typeof item?.text !== 'string' ||
+      typeof item.speaker !== 'string' ||
+      typeof item.start !== 'number' ||
+      typeof item.end !== 'number' ||
+      !Number.isFinite(item.start) ||
+      !Number.isFinite(item.end)
+    ) {
+      return null;
+    }
+    const text = item.text.trim();
+    const speaker = item.speaker.trim();
+    if (!text || text.length > MAX_SEGMENT_CHARS || !speaker || speaker.length > 60) return null;
+    segments.push({ text, speaker, start: item.start, end: Math.max(item.start, item.end) });
+  }
+  return segments;
+}
+
+const joinSegments = (segments: LabeledSegment[]): string =>
+  segments.map((s) => s.text.trim()).join(' ');
+const squash = (text: string): string => text.replace(/\s+/g, ' ').trim();
 
 export function createRecordingsRouter(db: Db, jobs: TranscriptionJobs): Router {
   const router = Router();
@@ -212,6 +244,47 @@ export function createRecordingsRouter(db: Db, jobs: TranscriptionJobs): Router 
       }
       params.push(JSON.stringify(notes));
       sets.push(`notes = $${params.length}`);
+    }
+
+    if ('segments' in body || 'text' in body) {
+      const current = await db.query<Pick<RecordingRow, 'status' | 'text' | 'segments'>>(
+        'SELECT status, text, segments FROM recordings WHERE id = $1 AND user_id = $2',
+        [id, userId],
+      );
+      const row = current.rows[0];
+      if (!row) {
+        res.status(404).json(NOT_FOUND);
+        return;
+      }
+      if (row.status !== 'done') {
+        res.status(409).json({ error: 'Bản ghi chưa xử lý xong nên chưa thể chỉnh sửa.' });
+        return;
+      }
+
+      if ('text' in body) {
+        if (typeof body.text !== 'string' || body.text.length > MAX_TEXT_CHARS) {
+          res.status(400).json({ error: 'Nội dung văn bản không hợp lệ.' });
+          return;
+        }
+        params.push(body.text.trim());
+        sets.push(`text = $${params.length}`);
+      }
+
+      if ('segments' in body) {
+        const segments = parseSegments(body.segments);
+        if (!segments) {
+          res.status(400).json({ error: 'Danh sách đoạn hội thoại không hợp lệ.' });
+          return;
+        }
+        params.push(JSON.stringify(segments));
+        sets.push(`segments = $${params.length}`);
+        // Keep the paragraph version in step with the segments unless the
+        // user edited it separately (it no longer matches the old segments).
+        if (!('text' in body) && squash(row.text) === squash(joinSegments(row.segments))) {
+          params.push(joinSegments(segments));
+          sets.push(`text = $${params.length}`);
+        }
+      }
     }
 
     if (sets.length === 0) {

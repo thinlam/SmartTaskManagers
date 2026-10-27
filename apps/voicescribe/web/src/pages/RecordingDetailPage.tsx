@@ -1,13 +1,16 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   AlertCircle,
   ArrowLeft,
   Check,
+  ChevronDown,
   Copy,
-  FileDown,
+  Download,
+  FileText,
   Loader2,
   Pencil,
   Search,
+  Subtitles,
   Trash2,
   X,
 } from 'lucide-react';
@@ -19,8 +22,26 @@ import {
   formatDuration,
   progressPercent,
 } from '../lib/format';
-import { exportDocx, exportSrt, exportTxt } from '../lib/export';
-import { TranscriptList } from '../components/TranscriptList';
+import {
+  exportDocx,
+  exportSrt,
+  exportTxt,
+  toPlainText,
+  type ExportDoc,
+  type ViewMode,
+} from '../lib/export';
+import {
+  buildBlocks,
+  displayName,
+  paragraphOf,
+  speakerOrderOf,
+} from '../lib/transcript';
+import {
+  ParagraphTranscript,
+  SpeakerTranscript,
+  colorOf,
+  type SegmentsChange,
+} from '../components/TranscriptView';
 import {
   Card,
   ConfirmDialog,
@@ -32,18 +53,109 @@ import {
   secondaryButtonClass,
 } from '../components/ui';
 import { useAsync, useToast } from '../state/AppState';
-import type { LabeledSegment, Recording } from '../types';
 
-const BAR_COLORS = [
-  'bg-indigo-500',
-  'bg-emerald-500',
-  'bg-amber-500',
-  'bg-fuchsia-500',
-  'bg-rose-500',
-];
+const MODE_KEY = 'voicescribe.viewMode';
+
+function loadMode(): ViewMode | null {
+  try {
+    const stored = localStorage.getItem(MODE_KEY);
+    return stored === 'paragraph' || stored === 'speakers' ? stored : null;
+  } catch {
+    return null;
+  }
+}
 
 function baseNameOf(title: string): string {
   return title.replace(/[\\/:*?"<>|]+/g, ' ').trim() || 'ban-ghi';
+}
+
+function ModeSwitch({ mode, onChange }: { mode: ViewMode; onChange: (mode: ViewMode) => void }) {
+  const options: { value: ViewMode; label: string }[] = [
+    { value: 'paragraph', label: 'Đoạn văn' },
+    { value: 'speakers', label: 'Phân người nói' },
+  ];
+  return (
+    <div role="tablist" aria-label="Chế độ hiển thị" className="inline-flex rounded-xl bg-slate-100 p-1">
+      {options.map((o) => (
+        <button
+          key={o.value}
+          role="tab"
+          aria-selected={mode === o.value}
+          onClick={() => onChange(o.value)}
+          className={`rounded-lg px-4 py-1.5 text-sm font-medium transition-colors ${
+            mode === o.value
+              ? 'bg-white text-slate-900 shadow-sm'
+              : 'text-slate-500 hover:text-slate-800'
+          }`}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function ExportMenu({ doc }: { doc: ExportDoc }) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const close = (e: MouseEvent) => {
+      if (!rootRef.current?.contains(e.target as Node)) setOpen(false);
+    };
+    const esc = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
+    document.addEventListener('mousedown', close);
+    document.addEventListener('keydown', esc);
+    return () => {
+      document.removeEventListener('mousedown', close);
+      document.removeEventListener('keydown', esc);
+    };
+  }, [open]);
+
+  const items = [
+    { label: 'Word (.docx)', hint: 'Văn bản định dạng sẵn', Icon: FileText, run: () => exportDocx(doc) },
+    { label: 'Văn bản (.txt)', hint: 'Văn bản thuần', Icon: FileText, run: () => exportTxt(doc) },
+    { label: 'Phụ đề (.srt)', hint: 'Có mốc thời gian', Icon: Subtitles, run: () => exportSrt(doc) },
+  ];
+
+  return (
+    <div ref={rootRef} className="relative">
+      <button onClick={() => setOpen((v) => !v)} className={primaryButtonClass} aria-expanded={open}>
+        <Download className="h-3.5 w-3.5" /> Xuất file <ChevronDown className="h-3.5 w-3.5" />
+      </button>
+      {open && (
+        <div
+          role="menu"
+          className="absolute right-0 top-full z-20 mt-1.5 w-64 rounded-xl border border-slate-200 bg-white p-1.5 shadow-lg"
+        >
+          {items.map(({ label, hint, Icon, run }) => (
+            <button
+              key={label}
+              role="menuitem"
+              onClick={() => {
+                setOpen(false);
+                void run();
+              }}
+              className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left hover:bg-slate-50"
+            >
+              <Icon className="h-4 w-4 text-slate-400" />
+              <span>
+                <span className="block text-sm font-medium text-slate-800">{label}</span>
+                <span className="block text-xs text-slate-400">{hint}</span>
+              </span>
+            </button>
+          ))}
+          <p className="mt-1 border-t border-slate-100 px-3 pb-1 pt-2 text-xs text-slate-400">
+            Nội dung xuất theo chế độ đang xem:{' '}
+            <strong className="font-medium text-slate-500">
+              {doc.mode === 'paragraph' ? 'Đoạn văn' : 'Phân người nói'}
+            </strong>
+          </p>
+        </div>
+      )}
+    </div>
+  );
 }
 
 export function RecordingDetailPage({
@@ -59,7 +171,9 @@ export function RecordingDetailPage({
   const recording = useAsync(() => api.recordings.get(id), [id]);
   const folders = useAsync(() => api.folders.list(), []);
   const [search, setSearch] = useState('');
-  const [mergeBySpeaker, setMergeBySpeaker] = useState(false);
+  const [chosenMode, setChosenMode] = useState<ViewMode | null>(loadMode);
+  const [editing, setEditing] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [editingTitle, setEditingTitle] = useState(false);
   const [titleDraft, setTitleDraft] = useState('');
   const [noteDraft, setNoteDraft] = useState('');
@@ -85,11 +199,9 @@ export function RecordingDetailPage({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [processing, id]);
 
-  const speakerOrder = useMemo(() => {
-    const seen: string[] = [];
-    for (const seg of rec?.segments ?? []) if (!seen.includes(seg.speaker)) seen.push(seg.speaker);
-    return seen;
-  }, [rec]);
+  const speakerOrder = useMemo(() => speakerOrderOf(rec?.segments ?? []), [rec?.segments]);
+  const multiSpeaker = speakerOrder.length > 1;
+  const mode: ViewMode = chosenMode ?? (multiSpeaker ? 'speakers' : 'paragraph');
 
   const speakerStats = useMemo(() => {
     if (!rec) return [];
@@ -100,10 +212,10 @@ export function RecordingDetailPage({
     const sum = [...totals.values()].reduce((a, b) => a + b, 0) || 1;
     return speakerOrder.map((raw, i) => ({
       raw,
-      name: rec.speakerNames[raw] ?? raw,
+      name: displayName(rec.speakerNames, raw),
       seconds: totals.get(raw) ?? 0,
       percent: Math.round(((totals.get(raw) ?? 0) / sum) * 100),
-      color: BAR_COLORS[i % BAR_COLORS.length]!,
+      color: colorOf(i).dot,
     }));
   }, [rec, speakerOrder]);
 
@@ -131,27 +243,48 @@ export function RecordingDetailPage({
   }
 
   async function save(patch: Parameters<typeof api.recordings.update>[1], success?: string) {
+    setSaving(true);
     try {
       const updated = await api.recordings.update(id, patch);
       recording.setData(updated);
       onChanged();
       if (success) toast.success(success);
+      return true;
     } catch (err) {
       toast.error(errorText(err));
+      return false;
+    } finally {
+      setSaving(false);
     }
   }
 
-  function namedSegments(r: Recording): LabeledSegment[] {
-    return r.segments.map((s) => ({ ...s, speaker: r.speakerNames[s.speaker] ?? s.speaker }));
+  function chooseMode(next: ViewMode) {
+    setChosenMode(next);
+    setEditing(false);
+    try {
+      localStorage.setItem(MODE_KEY, next);
+    } catch {
+      /* preference just won't persist */
+    }
   }
 
-  async function copyText(r: Recording) {
-    const text = namedSegments(r)
-      .map((s) => `${s.speaker}: ${s.text.trim()}`)
-      .join('\n');
+  function exportDoc(r: NonNullable<typeof rec>): ExportDoc {
+    const named = (raw: string) => displayName(r.speakerNames, raw);
+    const segments = r.segments.map((s) => ({ ...s, speaker: named(s.speaker) }));
+    return {
+      mode,
+      title: r.title,
+      fileBase: baseNameOf(r.title),
+      paragraph: paragraphOf(r),
+      blocks: buildBlocks(segments, speakerOrder.length > 1),
+      segments,
+    };
+  }
+
+  async function copyText(r: NonNullable<typeof rec>) {
     try {
-      await navigator.clipboard.writeText(text);
-      toast.success('Đã sao chép bản ghi.');
+      await navigator.clipboard.writeText(toPlainText(exportDoc(r)));
+      toast.success('Đã sao chép.');
     } catch {
       toast.error('Không sao chép được. Hãy thử xuất file.');
     }
@@ -188,8 +321,15 @@ export function RecordingDetailPage({
     });
   }
 
-  const base = baseNameOf(rec.title);
-  const multiSpeaker = speakerOrder.length > 1;
+  function changeSegments(change: SegmentsChange) {
+    void save({
+      segments: change.segments,
+      ...(change.speakerNames ? { speakerNames: change.speakerNames } : {}),
+    });
+  }
+
+  const paragraph = paragraphOf(rec);
+  const done = rec.status === 'done';
 
   return (
     <div className="flex-1 overflow-y-auto p-8">
@@ -247,36 +387,19 @@ export function RecordingDetailPage({
             </div>
           )}
           <p className="mt-1 text-sm text-slate-400">
-            {rec.status === 'done'
-              ? `${formatDateTime(rec.createdAt)} · ${formatDuration(rec.durationSec)} · ${speakerOrder.length || 1} người nói · ${countWords(rec.text)} từ`
+            {done
+              ? `${formatDateTime(rec.createdAt)} · ${formatDuration(rec.durationSec)} · ${speakerOrder.length || 1} người nói · ${countWords(paragraph)} từ`
               : `${formatDateTime(rec.createdAt)} · ${rec.fileName}`}
           </p>
         </div>
 
-        <div className="flex shrink-0 flex-wrap gap-2">
-          {rec.status === 'done' && (
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
+          {done && (
             <>
               <button onClick={() => void copyText(rec)} className={secondaryButtonClass}>
                 <Copy className="h-3.5 w-3.5" /> Sao chép
               </button>
-              <button
-                onClick={() => exportTxt(namedSegments(rec), base)}
-                className={secondaryButtonClass}
-              >
-                .txt
-              </button>
-              <button
-                onClick={() => exportSrt(namedSegments(rec), base)}
-                className={secondaryButtonClass}
-              >
-                .srt
-              </button>
-              <button
-                onClick={() => void exportDocx(namedSegments(rec), base)}
-                className={primaryButtonClass}
-              >
-                <FileDown className="h-3.5 w-3.5" /> .docx
-              </button>
+              <ExportMenu doc={exportDoc(rec)} />
             </>
           )}
           <button
@@ -323,18 +446,12 @@ export function RecordingDetailPage({
         </Card>
       )}
 
-      {rec.status === 'done' && rec.diarizationError && (
-        <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          Không nhận dạng được người nói ({rec.diarizationError}). Toàn bộ nội dung được gán cho
-          "Người nói 1".
-        </div>
-      )}
-
-      {rec.status === 'done' && (
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_320px]">
-          <Card className="p-5">
-            <div className="mb-4 flex flex-wrap items-center gap-3">
-              <div className="relative min-w-[200px] flex-1">
+      {done && (
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_300px]">
+          <Card className="min-w-0 p-0">
+            <div className="sticky top-0 z-10 flex flex-wrap items-center gap-3 rounded-t-2xl border-b border-slate-100 bg-white/95 px-5 py-3 backdrop-blur">
+              <ModeSwitch mode={mode} onChange={chooseMode} />
+              <div className="relative ml-auto min-w-[180px] max-w-xs flex-1">
                 <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 <input
                   value={search}
@@ -343,36 +460,65 @@ export function RecordingDetailPage({
                   className={`${inputClass} bg-slate-50 py-2 pl-9`}
                 />
               </div>
-              {multiSpeaker && (
+              {(mode === 'speakers' || !editing) && (
                 <button
-                  onClick={() => setMergeBySpeaker((v) => !v)}
-                  className={`rounded-lg border px-3 py-2 text-sm font-medium ${
-                    mergeBySpeaker
-                      ? 'border-indigo-200 bg-indigo-50 text-indigo-700'
-                      : 'border-slate-200 text-slate-600 hover:bg-slate-50'
-                  }`}
+                  onClick={() => setEditing((v) => !v)}
+                  className={editing ? primaryButtonClass : secondaryButtonClass}
                 >
-                  Gộp theo người nói
+                  {editing ? (
+                    <>
+                      <Check className="h-3.5 w-3.5" /> Xong
+                    </>
+                  ) : (
+                    <>
+                      <Pencil className="h-3.5 w-3.5" /> Chỉnh sửa
+                    </>
+                  )}
                 </button>
+              )}
+              {saving && (
+                <span className="flex items-center gap-1.5 text-xs text-slate-400">
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" /> Đang lưu...
+                </span>
               )}
             </div>
 
-            {rec.segments.length === 0 ? (
-              <p className="py-10 text-center text-sm text-slate-400">
-                Bản ghi không có nội dung nhận dạng được.
-              </p>
-            ) : (
-              <TranscriptList
-                segments={rec.segments}
-                speakerOrder={speakerOrder}
-                speakerNames={rec.speakerNames}
-                onRenameSpeaker={(raw, name) =>
-                  void save({ speakerNames: { ...rec.speakerNames, [raw]: name } })
-                }
-                searchQuery={search}
-                mergeBySpeaker={mergeBySpeaker}
-              />
-            )}
+            <div className="p-5">
+              {rec.diarizationError && mode === 'speakers' && (
+                <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+                  Không nhận dạng được người nói ({rec.diarizationError}). Toàn bộ nội dung được
+                  gán cho một người nói; bạn có thể tự gán lại ở chế độ Chỉnh sửa.
+                </div>
+              )}
+
+              {rec.segments.length === 0 && !paragraph ? (
+                <p className="py-10 text-center text-sm text-slate-400">
+                  Bản ghi không có nội dung nhận dạng được.
+                </p>
+              ) : mode === 'paragraph' ? (
+                <ParagraphTranscript
+                  text={paragraph}
+                  editing={editing}
+                  query={search}
+                  onCancel={() => setEditing(false)}
+                  onSave={async (text) => {
+                    if (await save({ text }, 'Đã lưu văn bản.')) setEditing(false);
+                  }}
+                />
+              ) : (
+                <SpeakerTranscript
+                  segments={rec.segments}
+                  speakerOrder={speakerOrder}
+                  speakerNames={rec.speakerNames}
+                  editing={editing}
+                  query={search}
+                  onChange={changeSegments}
+                  onRenameSpeaker={(raw, name) =>
+                    void save({ speakerNames: { ...rec.speakerNames, [raw]: name } })
+                  }
+                />
+              )}
+            </div>
           </Card>
 
           <div className="flex flex-col gap-5">
@@ -430,9 +576,6 @@ export function RecordingDetailPage({
                     </div>
                   ))}
                 </div>
-                <p className="mt-3 text-xs text-slate-400">
-                  Bấm vào tên người nói trong bản ghi để đổi tên.
-                </p>
               </Card>
             )}
 
