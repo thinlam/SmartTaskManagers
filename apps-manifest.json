@@ -84,10 +84,10 @@
           "label": "Windows Desktop (khuyên dùng)",
           "note": "Setup.exe · kết nối sẵn tới máy chủ Content Manager (Railway)",
           "actionLabel": "Tải Setup.exe",
-          "downloadUrl": "https://github.com/thinlam/SmartTaskManagers/releases/download/content-manager-v0.1.1/content-manager_0.1.1_x64-setup.exe",
+          "downloadUrl": "https://github.com/thinlam/SmartTaskManagers/releases/download/content-manager-v0.1.2/content-manager_0.1.2_x64-setup.exe",
           "installer": {
-            "version": "0.1.1",
-            "sha256": "4464fa3d23be098d00d31be5732b17974ac64aba086894e4ad72839b4d571e16",
+            "version": "0.1.2",
+            "sha256": "c884348a248ea7fc780003b6db4c72ad265dd4ec27687b742353c1f4ed4edf50",
             "installerType": "nsis",
             "silentArgs": ["/S"],
             "startMenuShortcut": "Content Manager\\content-manager.lnk"
@@ -97,10 +97,10 @@
           "label": "Windows Desktop (.msi)",
           "note": "Dùng nếu công ty/tổ chức bạn yêu cầu cài qua MSI",
           "actionLabel": "Tải .msi",
-          "downloadUrl": "https://github.com/thinlam/SmartTaskManagers/releases/download/content-manager-v0.1.1/content-manager_0.1.1_x64_en-US.msi",
+          "downloadUrl": "https://github.com/thinlam/SmartTaskManagers/releases/download/content-manager-v0.1.2/content-manager_0.1.2_x64_en-US.msi",
           "installer": {
-            "version": "0.1.1",
-            "sha256": "f55ba801fca2bd05a0ec1b2762076399fc79bd8037157af50bca69d42ce83522",
+            "version": "0.1.2",
+            "sha256": "2287b02d2feffc04a76511dd7d6ea3b310b966ae32368c1a0a8cc146cd1b21b3",
             "installerType": "msi",
             "silentArgs": ["/qn"],
             "startMenuShortcut": "Content Manager\\content-manager.lnk"
