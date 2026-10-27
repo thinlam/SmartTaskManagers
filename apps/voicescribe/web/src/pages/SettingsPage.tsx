@@ -188,7 +188,7 @@ export function SettingsPage() {
             Đăng xuất
           </button>
         </Card>
-        <p className="text-xs text-slate-400">VoiceScribe 0.2.2</p>
+        <p className="text-xs text-slate-400">VoiceScribe 0.2.3</p>
       </div>
     </div>
   );
