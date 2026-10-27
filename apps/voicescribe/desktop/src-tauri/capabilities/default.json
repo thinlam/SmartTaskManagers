@@ -3,9 +3,5 @@
   "identifier": "default",
   "description": "enables the default permissions",
   "windows": ["main"],
-  "permissions": [
-    "core:default",
-    { "identifier": "fs:allow-exists", "allow": [{ "path": "$DOWNLOAD/**" }] },
-    { "identifier": "fs:allow-write-file", "allow": [{ "path": "$DOWNLOAD/**" }] }
-  ]
+  "permissions": ["core:default", "dialog:allow-save", "fs:allow-write-file"]
 }

@@ -26,6 +26,7 @@ import {
   exportDocx,
   exportSrt,
   exportTxt,
+  SaveCancelled,
   toPlainText,
   type ExportDoc,
   type ViewMode,
@@ -138,7 +139,10 @@ function ExportMenu({ doc }: { doc: ExportDoc }) {
                 setOpen(false);
                 run()
                   .then((message) => toast.success(message))
-                  .catch((err: unknown) => toast.error(`Không lưu được file: ${errorText(err)}`));
+                  .catch((err: unknown) => {
+                    if (err instanceof SaveCancelled) return;
+                    toast.error(`Không lưu được file: ${errorText(err)}`);
+                  });
               }}
               className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left hover:bg-slate-50"
             >

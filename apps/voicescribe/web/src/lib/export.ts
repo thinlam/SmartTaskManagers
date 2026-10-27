@@ -27,23 +27,33 @@ function srtTimestamp(seconds: number): string {
   return `${pad(h)}:${pad(m)}:${pad(s)},${pad(ms, 3)}`;
 }
 
+const FILE_FILTERS: Record<string, string> = {
+  docx: 'Tài liệu Word',
+  txt: 'Văn bản',
+  srt: 'Phụ đề',
+};
+
+/** Thrown when the user closes the "Save as" dialog without choosing a place. */
+export class SaveCancelled extends Error {}
+
 /**
  * Saves a file and resolves to a short message for the user. The desktop webview ignores
- * <a download>, so there the file is written straight into the Downloads folder (no dialog;
- * an existing name gets " (1)", " (2)"...). In a browser it is a normal download.
+ * <a download>, so there the user picks the destination in the native "Save as" dialog
+ * (starting in Downloads). In a browser it is a normal download.
  */
 async function saveBlob(blob: Blob, fileName: string): Promise<string> {
   if ('__TAURI_INTERNALS__' in window) {
+    const ext = fileName.split('.').pop() ?? '';
     const { downloadDir, join } = await import('@tauri-apps/api/path');
-    const { exists, writeFile } = await import('@tauri-apps/plugin-fs');
-    const dir = await downloadDir();
-    const dot = fileName.lastIndexOf('.');
-    const stem = dot > 0 ? fileName.slice(0, dot) : fileName;
-    const ext = dot > 0 ? fileName.slice(dot) : '';
-    let name = fileName;
-    for (let n = 1; await exists(await join(dir, name)); n += 1) name = `${stem} (${n})${ext}`;
-    await writeFile(await join(dir, name), new Uint8Array(await blob.arrayBuffer()));
-    return `Đã lưu vào thư mục Tải xuống: ${name}`;
+    const { save } = await import('@tauri-apps/plugin-dialog');
+    const { writeFile } = await import('@tauri-apps/plugin-fs');
+    const path = await save({
+      defaultPath: await join(await downloadDir(), fileName),
+      filters: [{ name: FILE_FILTERS[ext] ?? 'Tệp', extensions: [ext] }],
+    });
+    if (!path) throw new SaveCancelled();
+    await writeFile(path, new Uint8Array(await blob.arrayBuffer()));
+    return `Đã lưu: ${path}`;
   }
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
