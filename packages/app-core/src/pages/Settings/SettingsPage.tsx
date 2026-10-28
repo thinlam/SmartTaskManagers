@@ -1,5 +1,6 @@
 import type { Priority, TaskStatus } from '@stm/types';
 import { HelpButton, Switch } from '@stm/ui';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import {
   Clock,
@@ -13,6 +14,14 @@ import { useSettingsContext } from '../../state/SettingsContext';
 const WEEKDAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 const STATUSES: TaskStatus[] = ['Inbox', 'To Do', 'In Progress', 'Waiting', 'Completed'];
 const PRIORITIES: Priority[] = ['Critical', 'Urgent', 'High', 'Medium', 'Low'];
+
+type SettingsTab = 'general' | 'tasks' | 'focus' | 'smart';
+const TABS: { key: SettingsTab; icon: typeof SlidersHorizontal; label: string }[] = [
+  { key: 'general', icon: SlidersHorizontal, label: 'settings.sectionGeneral' },
+  { key: 'tasks', icon: ListChecks, label: 'settings.sectionTaskDefaults' },
+  { key: 'focus', icon: Clock, label: 'settings.sectionFocusSchedule' },
+  { key: 'smart', icon: Sparkles, label: 'settings.sectionSmartEngine' },
+];
 
 const fieldClasses =
   'w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-ink-primary outline-none focus-visible:ring-2 focus-visible:ring-primary';
@@ -31,6 +40,7 @@ const sectionCardClasses =
 export function SettingsPage() {
   const { settings, updateSettings } = useSettingsContext();
   const { t } = useTranslation();
+  const [tab, setTab] = useState<SettingsTab>('general');
 
   const STATUS_LABELS: Record<TaskStatus, string> = {
     Inbox: t('settings.statusInbox'),
@@ -78,266 +88,276 @@ export function SettingsPage() {
         </div>
       </header>
 
-      <section className="flex flex-col gap-3">
-        <SectionHeading icon={SlidersHorizontal} title={t('settings.sectionGeneral')} />
-        <div className={sectionCardClasses}>
-          <div className="flex flex-col gap-1">
-            <label htmlFor="settings-workspace-name" className={labelClasses}>
-              {t('settings.fieldWorkspaceName')}
-            </label>
-            <input
-              id="settings-workspace-name"
-              type="text"
-              value={settings.workspaceName}
-              onChange={(event) => updateSettings({ workspaceName: event.target.value })}
-              className={fieldClasses}
-            />
-          </div>
-          <div className="flex flex-col gap-1">
-            <label htmlFor="settings-week-start" className={labelClasses}>
-              {t('settings.fieldWeekStart')}
-            </label>
-            <select
-              id="settings-week-start"
-              value={settings.weekStart}
-              onChange={(event) => updateSettings({ weekStart: event.target.value })}
-              className={fieldClasses}
-            >
-              {WEEKDAYS.map((day) => (
-                <option key={day} value={day}>
-                  {WEEKDAY_LABELS[day]}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="flex flex-col gap-1">
-            <label htmlFor="settings-date-format" className={labelClasses}>
-              {t('settings.fieldDateFormat')}
-            </label>
-            <input
-              id="settings-date-format"
-              type="text"
-              value={settings.dateFormat}
-              onChange={(event) => updateSettings({ dateFormat: event.target.value })}
-              className={fieldClasses}
-            />
-          </div>
-        </div>
-      </section>
+      <div role="tablist" className="flex flex-wrap gap-4 border-b border-border">
+        {TABS.map(({ key, icon: Icon, label }) => (
+          <button
+            key={key}
+            type="button"
+            role="tab"
+            aria-selected={tab === key}
+            onClick={() => setTab(key)}
+            className={`flex items-center gap-1.5 border-b-2 px-1 pb-2 text-sm font-medium transition-colors ${
+              tab === key
+                ? 'border-primary text-primary'
+                : 'border-transparent text-ink-secondary hover:text-ink-primary'
+            }`}
+          >
+            <Icon className="h-4 w-4" aria-hidden="true" />
+            {t(label)}
+          </button>
+        ))}
+      </div>
 
-      <section className="flex flex-col gap-3">
-        <SectionHeading icon={ListChecks} title={t('settings.sectionTaskDefaults')} />
-        <div className={sectionCardClasses}>
-          <div className="flex flex-col gap-1">
-            <label htmlFor="settings-default-status" className={labelClasses}>
-              {t('settings.fieldDefaultStatus')}
-            </label>
-            <select
-              id="settings-default-status"
-              value={settings.defaultStatus}
-              onChange={(event) =>
-                updateSettings({ defaultStatus: event.target.value as TaskStatus })
-              }
-              className={fieldClasses}
-            >
-              {STATUSES.map((status) => (
-                <option key={status} value={status}>
-                  {STATUS_LABELS[status]}
-                </option>
-              ))}
-            </select>
+      {tab === 'general' && (
+        <section className="flex flex-col gap-3">
+          <div className={sectionCardClasses}>
+            <div className="flex flex-col gap-1">
+              <label htmlFor="settings-workspace-name" className={labelClasses}>
+                {t('settings.fieldWorkspaceName')}
+              </label>
+              <input
+                id="settings-workspace-name"
+                type="text"
+                value={settings.workspaceName}
+                onChange={(event) => updateSettings({ workspaceName: event.target.value })}
+                className={fieldClasses}
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label htmlFor="settings-week-start" className={labelClasses}>
+                {t('settings.fieldWeekStart')}
+              </label>
+              <select
+                id="settings-week-start"
+                value={settings.weekStart}
+                onChange={(event) => updateSettings({ weekStart: event.target.value })}
+                className={fieldClasses}
+              >
+                {WEEKDAYS.map((day) => (
+                  <option key={day} value={day}>
+                    {WEEKDAY_LABELS[day]}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex flex-col gap-1">
+              <label htmlFor="settings-date-format" className={labelClasses}>
+                {t('settings.fieldDateFormat')}
+              </label>
+              <input
+                id="settings-date-format"
+                type="text"
+                value={settings.dateFormat}
+                onChange={(event) => updateSettings({ dateFormat: event.target.value })}
+                className={fieldClasses}
+              />
+            </div>
           </div>
-          <div className="flex flex-col gap-1">
-            <label htmlFor="settings-default-priority" className={labelClasses}>
-              {t('settings.fieldDefaultPriority')}
-            </label>
-            <select
-              id="settings-default-priority"
-              value={settings.defaultPriority}
-              onChange={(event) =>
-                updateSettings({ defaultPriority: event.target.value as Priority })
-              }
-              className={fieldClasses}
-            >
-              {PRIORITIES.map((priority) => (
-                <option key={priority} value={priority}>
-                  {PRIORITY_LABELS[priority]}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="flex flex-col gap-1">
-            <label htmlFor="settings-default-estimate" className={labelClasses}>
-              {t('settings.fieldDefaultEstimate')}
-            </label>
-            <input
-              id="settings-default-estimate"
-              type="number"
-              min={0}
-              value={settings.defaultEstimateMinutes}
-              onChange={(event) =>
-                updateSettings({ defaultEstimateMinutes: Number(event.target.value) })
-              }
-              className={fieldClasses}
-            />
-          </div>
-          <div className="flex flex-col gap-1">
-            <label htmlFor="settings-due-soon-days" className={labelClasses}>
-              {t('settings.fieldDueSoonDays')}
-            </label>
-            <input
-              id="settings-due-soon-days"
-              type="number"
-              min={0}
-              value={settings.dueSoonDays}
-              onChange={(event) => updateSettings({ dueSoonDays: Number(event.target.value) })}
-              className={fieldClasses}
-            />
-          </div>
-        </div>
-      </section>
+        </section>
+      )}
 
-      <section className="flex flex-col gap-3">
-        <SectionHeading icon={Clock} title={t('settings.sectionFocusSchedule')} />
-        <div className={sectionCardClasses}>
-          <div className="flex flex-col gap-1">
-            <label htmlFor="settings-focus-days-start" className={labelClasses}>
-              {t('settings.fieldFocusDaysStart')}
-            </label>
-            <select
-              id="settings-focus-days-start"
-              value={settings.focusDaysStart}
-              onChange={(event) => updateSettings({ focusDaysStart: event.target.value })}
-              className={fieldClasses}
-            >
-              {WEEKDAYS.map((day) => (
-                <option key={day} value={day}>
-                  {WEEKDAY_LABELS[day]}
-                </option>
-              ))}
-            </select>
+      {tab === 'tasks' && (
+        <section className="flex flex-col gap-3">
+          <div className={sectionCardClasses}>
+            <div className="flex flex-col gap-1">
+              <label htmlFor="settings-default-status" className={labelClasses}>
+                {t('settings.fieldDefaultStatus')}
+              </label>
+              <select
+                id="settings-default-status"
+                value={settings.defaultStatus}
+                onChange={(event) =>
+                  updateSettings({ defaultStatus: event.target.value as TaskStatus })
+                }
+                className={fieldClasses}
+              >
+                {STATUSES.map((status) => (
+                  <option key={status} value={status}>
+                    {STATUS_LABELS[status]}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex flex-col gap-1">
+              <label htmlFor="settings-default-priority" className={labelClasses}>
+                {t('settings.fieldDefaultPriority')}
+              </label>
+              <select
+                id="settings-default-priority"
+                value={settings.defaultPriority}
+                onChange={(event) =>
+                  updateSettings({ defaultPriority: event.target.value as Priority })
+                }
+                className={fieldClasses}
+              >
+                {PRIORITIES.map((priority) => (
+                  <option key={priority} value={priority}>
+                    {PRIORITY_LABELS[priority]}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex flex-col gap-1">
+              <label htmlFor="settings-default-estimate" className={labelClasses}>
+                {t('settings.fieldDefaultEstimate')}
+              </label>
+              <input
+                id="settings-default-estimate"
+                type="number"
+                min={0}
+                value={settings.defaultEstimateMinutes}
+                onChange={(event) =>
+                  updateSettings({ defaultEstimateMinutes: Number(event.target.value) })
+                }
+                className={fieldClasses}
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label htmlFor="settings-due-soon-days" className={labelClasses}>
+                {t('settings.fieldDueSoonDays')}
+              </label>
+              <input
+                id="settings-due-soon-days"
+                type="number"
+                min={0}
+                value={settings.dueSoonDays}
+                onChange={(event) => updateSettings({ dueSoonDays: Number(event.target.value) })}
+                className={fieldClasses}
+              />
+            </div>
           </div>
-          <div className="flex flex-col gap-1">
-            <label htmlFor="settings-focus-days-end" className={labelClasses}>
-              {t('settings.fieldFocusDaysEnd')}
-            </label>
-            <select
-              id="settings-focus-days-end"
-              value={settings.focusDaysEnd}
-              onChange={(event) => updateSettings({ focusDaysEnd: event.target.value })}
-              className={fieldClasses}
-            >
-              {WEEKDAYS.map((day) => (
-                <option key={day} value={day}>
-                  {WEEKDAY_LABELS[day]}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="flex flex-col gap-1">
-            <label htmlFor="settings-focus-window-start" className={labelClasses}>
-              {t('settings.fieldFocusWindowStart')}
-            </label>
-            <input
-              id="settings-focus-window-start"
-              type="time"
-              value={settings.focusWindowStart}
-              onChange={(event) => updateSettings({ focusWindowStart: event.target.value })}
-              className={fieldClasses}
-            />
-          </div>
-          <div className="flex flex-col gap-1">
-            <label htmlFor="settings-focus-window-end" className={labelClasses}>
-              {t('settings.fieldFocusWindowEnd')}
-            </label>
-            <input
-              id="settings-focus-window-end"
-              type="time"
-              value={settings.focusWindowEnd}
-              onChange={(event) => updateSettings({ focusWindowEnd: event.target.value })}
-              className={fieldClasses}
-            />
-          </div>
-          <div className="flex flex-col gap-1">
-            <label htmlFor="settings-daily-focus-limit" className={labelClasses}>
-              {t('settings.fieldDailyFocusLimit')}
-            </label>
-            <input
-              id="settings-daily-focus-limit"
-              type="number"
-              min={0}
-              value={settings.dailyFocusLimitHours}
-              onChange={(event) =>
-                updateSettings({ dailyFocusLimitHours: Number(event.target.value) })
-              }
-              className={fieldClasses}
-            />
-          </div>
-          <div className="flex flex-col gap-1">
-            <label htmlFor="settings-weekend" className={labelClasses}>
-              {t('settings.fieldWeekend')}
-            </label>
-            <select
-              id="settings-weekend"
-              value={settings.weekend}
-              onChange={(event) => updateSettings({ weekend: event.target.value })}
-              className={fieldClasses}
-            >
-              {WEEKDAYS.map((day) => (
-                <option key={day} value={day}>
-                  {WEEKDAY_LABELS[day]}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-      </section>
+        </section>
+      )}
 
-      <section className="flex flex-col gap-3">
-        <SectionHeading icon={Sparkles} title={t('settings.sectionSmartEngine')} />
-        <div className="flex flex-col divide-y divide-border rounded-xl border border-border bg-surface shadow-sm">
-          <SettingsToggleRow
-            label={t('settings.toggleSmartScoreLabel')}
-            description={t('settings.toggleSmartScoreDescription')}
-            checked={settings.smartScoreEnabled}
-            onCheckedChange={(checked) => updateSettings({ smartScoreEnabled: checked })}
-          />
-          <SettingsToggleRow
-            label={t('settings.toggleGoalAlignmentLabel')}
-            description={t('settings.toggleGoalAlignmentDescription')}
-            checked={settings.goalAlignmentEnabled}
-            onCheckedChange={(checked) => updateSettings({ goalAlignmentEnabled: checked })}
-          />
-          <SettingsToggleRow
-            label={t('settings.toggleScheduleOverloadLabel')}
-            description={t('settings.toggleScheduleOverloadDescription')}
-            checked={settings.scheduleOverloadWarning}
-            onCheckedChange={(checked) => updateSettings({ scheduleOverloadWarning: checked })}
-          />
-          <SettingsToggleRow
-            label={t('settings.toggleExplainRecommendationsLabel')}
-            description={t('settings.toggleExplainRecommendationsDescription')}
-            checked={settings.explainRecommendations}
-            onCheckedChange={(checked) => updateSettings({ explainRecommendations: checked })}
-          />
-        </div>
-        <p className="text-xs text-ink-muted">{t('settings.smartEngineHelperText')}</p>
-      </section>
+      {tab === 'focus' && (
+        <section className="flex flex-col gap-3">
+          <div className={sectionCardClasses}>
+            <div className="flex flex-col gap-1">
+              <label htmlFor="settings-focus-days-start" className={labelClasses}>
+                {t('settings.fieldFocusDaysStart')}
+              </label>
+              <select
+                id="settings-focus-days-start"
+                value={settings.focusDaysStart}
+                onChange={(event) => updateSettings({ focusDaysStart: event.target.value })}
+                className={fieldClasses}
+              >
+                {WEEKDAYS.map((day) => (
+                  <option key={day} value={day}>
+                    {WEEKDAY_LABELS[day]}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex flex-col gap-1">
+              <label htmlFor="settings-focus-days-end" className={labelClasses}>
+                {t('settings.fieldFocusDaysEnd')}
+              </label>
+              <select
+                id="settings-focus-days-end"
+                value={settings.focusDaysEnd}
+                onChange={(event) => updateSettings({ focusDaysEnd: event.target.value })}
+                className={fieldClasses}
+              >
+                {WEEKDAYS.map((day) => (
+                  <option key={day} value={day}>
+                    {WEEKDAY_LABELS[day]}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex flex-col gap-1">
+              <label htmlFor="settings-focus-window-start" className={labelClasses}>
+                {t('settings.fieldFocusWindowStart')}
+              </label>
+              <input
+                id="settings-focus-window-start"
+                type="time"
+                value={settings.focusWindowStart}
+                onChange={(event) => updateSettings({ focusWindowStart: event.target.value })}
+                className={fieldClasses}
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label htmlFor="settings-focus-window-end" className={labelClasses}>
+                {t('settings.fieldFocusWindowEnd')}
+              </label>
+              <input
+                id="settings-focus-window-end"
+                type="time"
+                value={settings.focusWindowEnd}
+                onChange={(event) => updateSettings({ focusWindowEnd: event.target.value })}
+                className={fieldClasses}
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label htmlFor="settings-daily-focus-limit" className={labelClasses}>
+                {t('settings.fieldDailyFocusLimit')}
+              </label>
+              <input
+                id="settings-daily-focus-limit"
+                type="number"
+                min={0}
+                value={settings.dailyFocusLimitHours}
+                onChange={(event) =>
+                  updateSettings({ dailyFocusLimitHours: Number(event.target.value) })
+                }
+                className={fieldClasses}
+              />
+            </div>
+            <div className="flex flex-col gap-1">
+              <label htmlFor="settings-weekend" className={labelClasses}>
+                {t('settings.fieldWeekend')}
+              </label>
+              <select
+                id="settings-weekend"
+                value={settings.weekend}
+                onChange={(event) => updateSettings({ weekend: event.target.value })}
+                className={fieldClasses}
+              >
+                {WEEKDAYS.map((day) => (
+                  <option key={day} value={day}>
+                    {WEEKDAY_LABELS[day]}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {tab === 'smart' && (
+        <section className="flex flex-col gap-3">
+          <div className="flex flex-col divide-y divide-border rounded-xl border border-border bg-surface shadow-sm">
+            <SettingsToggleRow
+              label={t('settings.toggleSmartScoreLabel')}
+              description={t('settings.toggleSmartScoreDescription')}
+              checked={settings.smartScoreEnabled}
+              onCheckedChange={(checked) => updateSettings({ smartScoreEnabled: checked })}
+            />
+            <SettingsToggleRow
+              label={t('settings.toggleGoalAlignmentLabel')}
+              description={t('settings.toggleGoalAlignmentDescription')}
+              checked={settings.goalAlignmentEnabled}
+              onCheckedChange={(checked) => updateSettings({ goalAlignmentEnabled: checked })}
+            />
+            <SettingsToggleRow
+              label={t('settings.toggleScheduleOverloadLabel')}
+              description={t('settings.toggleScheduleOverloadDescription')}
+              checked={settings.scheduleOverloadWarning}
+              onCheckedChange={(checked) => updateSettings({ scheduleOverloadWarning: checked })}
+            />
+            <SettingsToggleRow
+              label={t('settings.toggleExplainRecommendationsLabel')}
+              description={t('settings.toggleExplainRecommendationsDescription')}
+              checked={settings.explainRecommendations}
+              onCheckedChange={(checked) => updateSettings({ explainRecommendations: checked })}
+            />
+          </div>
+          <p className="text-xs text-ink-muted">{t('settings.smartEngineHelperText')}</p>
+        </section>
+      )}
     </div>
-  );
-}
-
-interface SectionHeadingProps {
-  icon: typeof SlidersHorizontal;
-  title: string;
-}
-
-function SectionHeading({ icon: Icon, title }: SectionHeadingProps) {
-  return (
-    <h2 className="flex items-center gap-2 text-lg font-semibold text-ink-primary">
-      <Icon className="h-5 w-5 text-ink-muted" aria-hidden="true" />
-      {title}
-    </h2>
   );
 }
 

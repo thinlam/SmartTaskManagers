@@ -55,10 +55,7 @@ export function CalendarDayCell({
   const visibleTasks = day.tasks.slice(0, CALENDAR_MAX_TASKS_PER_DAY);
   const hiddenCount = Math.max(0, day.tasks.length - visibleTasks.length);
 
-  let footerText = t('calendar.noTasks');
-  if (day.tasks.length === 1) footerText = t('calendar.oneTask');
-  else if (day.tasks.length > 1) footerText = t('calendar.tasksCount', { count: day.tasks.length });
-  if (hiddenCount > 0) footerText += `  •  ${t('calendar.moreCount', { count: hiddenCount })}`;
+  // Only say something when tasks are hidden; the count is otherwise visible from the list itself.
 
   return (
     <button
@@ -120,7 +117,11 @@ export function CalendarDayCell({
         })}
       </div>
 
-      <span className="text-[10px] text-ink-muted">{footerText}</span>
+      {hiddenCount > 0 && (
+        <span className="text-[10px] text-ink-muted">
+          {t('calendar.moreCount', { count: hiddenCount })}
+        </span>
+      )}
     </button>
   );
 }
