@@ -1,7 +1,19 @@
 import { useMemo } from 'react';
 import { computeSmartAssistantData } from '@stm/shared';
 import { EmptyState, HelpButton, ProjectHealthBadge, RiskBadge, StatCard, TaskCard } from '@stm/ui';
-import { translateProjectHealth, translateRisk } from '../../lib/enumLabels';
+import { translatePriority, translateProjectHealth, translateRisk } from '../../lib/enumLabels';
+
+/** The Smart Engine returns these action names in English; shown in Vietnamese here. */
+const ACTION_LABELS: Record<string, string> = {
+  'Overdue - do now': 'Quá hạn: làm ngay',
+  'Review blocked task': 'Xem lại việc bị chặn',
+  'Waiting for dependency': 'Đang chờ việc phụ thuộc',
+  'Do now': 'Làm ngay',
+  'Break down': 'Chia nhỏ việc',
+  'Quick win': 'Việc nhanh',
+  Schedule: 'Lên lịch',
+  Defer: 'Để sau',
+};
 import { useTranslation } from 'react-i18next';
 import { useTasksContext } from '../../state/TasksContext';
 import { useProjectsContext } from '../../state/ProjectsContext';
@@ -110,6 +122,7 @@ export function SmartAssistantPage() {
                         meta={task.area}
                         dueLabel={task.dueLabel}
                         priority={task.priority}
+                        priorityLabel={translatePriority(t, task.priority)}
                         smartScore={task.smartScore}
                       />
                     </div>
@@ -130,7 +143,7 @@ export function SmartAssistantPage() {
               {data.actionGroups.map((group) => (
                 <div key={group.action} className="flex flex-col gap-2">
                   <h3 className="text-sm font-semibold uppercase tracking-wide text-ink-muted">
-                    {group.action} ({group.tasks.length})
+                    {ACTION_LABELS[group.action] ?? group.action} ({group.tasks.length})
                   </h3>
                   <div className="flex flex-col gap-2">
                     {group.tasks.map((task) => (
@@ -140,6 +153,7 @@ export function SmartAssistantPage() {
                         meta={task.area}
                         dueLabel={task.dueLabel}
                         priority={task.priority}
+                        priorityLabel={translatePriority(t, task.priority)}
                         smartScore={task.smartScore}
                       />
                     ))}

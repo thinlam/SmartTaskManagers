@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { EmptyState, HelpButton, StatCard } from '@stm/ui';
+import { EmptyState, HelpButton } from '@stm/ui';
 import { useGoalsContext } from '../../state/GoalsContext';
 import { useTasksContext } from '../../state/TasksContext';
 import { QuickCaptureInput } from '../../components/QuickCaptureInput';
@@ -68,38 +68,16 @@ export function GoalsPage() {
         <p className="text-sm text-ink-secondary">{t('goals.subtitle')}</p>
       </header>
 
-      <section className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <StatCard
-          label={t('goals.statTotal')}
-          value={String(summary.total)}
-          sub={t('goals.statTotalSub')}
-          tone="primary"
-        />
-        <StatCard
-          label={t('goals.statOnTrack')}
-          value={String(summary.onTrack)}
-          sub={t('goals.statOnTrackSub')}
-          tone="info"
-        />
-        <StatCard
-          label={t('goals.statAtRisk')}
-          value={String(summary.atRisk)}
-          sub={summary.atRisk > 0 ? t('goals.statAtRiskSubDanger') : t('goals.statAtRiskSubOk')}
-          tone={summary.atRisk > 0 ? 'danger' : 'success'}
-        />
-        <StatCard
-          label={t('goals.statAvgProgress')}
-          value={`${summary.avgProgress}%`}
-          sub={t('goals.statAvgProgressSub')}
-          tone={
-            summary.avgProgress >= 75
-              ? 'success'
-              : summary.avgProgress >= 45
-                ? 'primary'
-                : 'warning'
-          }
-        />
-      </section>
+      {summary.total > 0 && (
+        <p className="text-sm text-ink-secondary">
+          {t('goals.summaryLine', {
+            total: summary.total,
+            onTrack: summary.onTrack,
+            atRisk: summary.atRisk,
+            avg: summary.avgProgress,
+          })}
+        </p>
+      )}
 
       <QuickCaptureInput onAdd={handleAdd} placeholder={t('goals.quickCapturePlaceholder')} />
 

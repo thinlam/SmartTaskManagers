@@ -1,13 +1,9 @@
 import type { Priority, Project, ProjectHealth } from '@stm/types';
 import type { ProjectMetrics } from '@stm/shared';
-import {
-  getProjectTopFocusText,
-  getProjectNextAction,
-  formatProjectDateRange,
-} from '@stm/shared';
-import { Pencil, Trash2 } from 'lucide-react';
+import { getProjectTopFocusText, getProjectNextAction, formatProjectDateRange } from '@stm/shared';
 import { useTranslation } from 'react-i18next';
-import { IconButton, ProjectCard, type ProjectCardMetricChip } from '@stm/ui';
+import { RowActions } from '../../components/RowActions';
+import { ProjectCard, type ProjectCardMetricChip } from '@stm/ui';
 import { translatePriority, translateProjectHealth } from '../../lib/enumLabels';
 
 interface ProjectRowProps {
@@ -20,7 +16,15 @@ interface ProjectRowProps {
   onView: () => void;
 }
 
-export function ProjectRow({ project, metrics, health, priority, onEdit, onDelete, onView }: ProjectRowProps) {
+export function ProjectRow({
+  project,
+  metrics,
+  health,
+  priority,
+  onEdit,
+  onDelete,
+  onView,
+}: ProjectRowProps) {
   const { t } = useTranslation();
 
   const chips: ProjectCardMetricChip[] = [
@@ -39,22 +43,14 @@ export function ProjectRow({ project, metrics, health, priority, onEdit, onDelet
   ];
 
   return (
-    <div className="flex flex-col gap-1">
-      <div className="flex justify-end gap-1">
-        <IconButton
-          icon={<Pencil className="h-4 w-4" aria-hidden="true" />}
-          aria-label={t('projects.editAriaLabel', { name: project.name })}
-          size="sm"
-          onClick={() => onEdit(project)}
-        />
-        <IconButton
-          icon={<Trash2 className="h-4 w-4" aria-hidden="true" />}
-          aria-label={t('projects.deleteAriaLabel', { name: project.name })}
-          variant="danger"
-          size="sm"
-          onClick={() => onDelete(project.id)}
-        />
-      </div>
+    <div className="group relative">
+      <RowActions
+        editLabel={t('projects.editAriaLabel', { name: project.name })}
+        deleteLabel={t('projects.deleteAriaLabel', { name: project.name })}
+        confirmMessage={t('projects.deleteConfirm', { name: project.name })}
+        onEdit={() => onEdit(project)}
+        onDelete={() => onDelete(project.id)}
+      />
       <ProjectCard
         name={project.name}
         area={project.area}

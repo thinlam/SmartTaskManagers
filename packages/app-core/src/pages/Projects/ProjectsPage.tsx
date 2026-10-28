@@ -71,7 +71,18 @@ export function ProjectsPage() {
 
   const summary = useMemo(() => {
     if (projectData.length === 0) {
-      return { active: 0, healthy: 0, attention: 0, atRisk: 0, critical: 0, totalTasks: 0, overdueTasks: 0, projectsWithOverdue: 0, blockedTasks: 0, avgProgress: 0 };
+      return {
+        active: 0,
+        healthy: 0,
+        attention: 0,
+        atRisk: 0,
+        critical: 0,
+        totalTasks: 0,
+        overdueTasks: 0,
+        projectsWithOverdue: 0,
+        blockedTasks: 0,
+        avgProgress: 0,
+      };
     }
     let active = 0;
     let healthy = 0;
@@ -131,9 +142,7 @@ export function ProjectsPage() {
         sorted.sort((a, b) => a.project.name.localeCompare(b.project.name));
         break;
       default:
-        sorted.sort(
-          (a, b) => HEALTH_ORDER.indexOf(a.health) - HEALTH_ORDER.indexOf(b.health),
-        );
+        sorted.sort((a, b) => HEALTH_ORDER.indexOf(a.health) - HEALTH_ORDER.indexOf(b.health));
     }
     return sorted;
   }, [filteredData, sortMode]);
@@ -229,7 +238,11 @@ export function ProjectsPage() {
           value={`${summary.avgProgress}%`}
           sub={t('projects.statAvgProgressSub')}
           tone={
-            summary.avgProgress >= 75 ? 'success' : summary.avgProgress >= 45 ? 'primary' : 'warning'
+            summary.avgProgress >= 75
+              ? 'success'
+              : summary.avgProgress >= 45
+                ? 'primary'
+                : 'warning'
           }
         />
       </section>
@@ -274,7 +287,7 @@ export function ProjectsPage() {
             <option value="All">{t('kanban.filterPriorityAll')}</option>
             {PRIORITIES.map((priority) => (
               <option key={priority} value={priority}>
-                {priority}
+                {translatePriority(t, priority)}
               </option>
             ))}
           </select>
@@ -388,7 +401,10 @@ export function ProjectsPage() {
             <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs text-ink-secondary">
               {healthCounts.map(({ health, count }) => (
                 <span key={health} className="flex items-center gap-1.5">
-                  <span className={`h-2 w-2 rounded-full ${HEALTH_BAR_CLASS[health]}`} aria-hidden="true" />
+                  <span
+                    className={`h-2 w-2 rounded-full ${HEALTH_BAR_CLASS[health]}`}
+                    aria-hidden="true"
+                  />
                   {translateProjectHealth(t, health)} {count}
                 </span>
               ))}
@@ -409,7 +425,10 @@ export function ProjectsPage() {
             ) : (
               <ul className="flex flex-col gap-1.5">
                 {insights.map((insight) => (
-                  <li key={insight.id} className="flex items-start gap-2 text-sm text-ink-secondary">
+                  <li
+                    key={insight.id}
+                    className="flex items-start gap-2 text-sm text-ink-secondary"
+                  >
                     <span
                       className={`mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full ${HEALTH_BAR_CLASS[insight.health]}`}
                       aria-hidden="true"

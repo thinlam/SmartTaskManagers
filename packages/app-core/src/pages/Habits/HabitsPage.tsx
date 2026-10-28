@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { EmptyState, HelpButton, StatCard } from '@stm/ui';
+import { EmptyState, HelpButton } from '@stm/ui';
 import { useHabitsContext } from '../../state/HabitsContext';
 import { QuickCaptureInput } from '../../components/QuickCaptureInput';
 import { reportError } from '../../lib/reportError';
@@ -65,32 +65,15 @@ export function HabitsPage() {
         <p className="text-sm text-ink-secondary">{t('habits.subtitle')}</p>
       </header>
 
-      <section className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <StatCard
-          label={t('habits.statTotal')}
-          value={String(summary.total)}
-          sub={t('habits.statTotalSub')}
-          tone="primary"
-        />
-        <StatCard
-          label={t('habits.statCheckedIn')}
-          value={String(summary.checkedInToday)}
-          sub={t('habits.statCheckedInSub', { total: summary.total })}
-          tone="success"
-        />
-        <StatCard
-          label={t('habits.statBestStreak')}
-          value={String(summary.bestStreak)}
-          sub={t('habits.statBestStreakSub')}
-          tone="warning"
-        />
-        <StatCard
-          label={t('habits.statTotalCheckIns')}
-          value={String(summary.totalCheckIns)}
-          sub={t('habits.statTotalCheckInsSub')}
-          tone="info"
-        />
-      </section>
+      {summary.total > 0 && (
+        <p className="text-sm text-ink-secondary">
+          {t('habits.summaryLine', {
+            total: summary.total,
+            checkedIn: summary.checkedInToday,
+            best: summary.bestStreak,
+          })}
+        </p>
+      )}
 
       <QuickCaptureInput onAdd={handleAdd} placeholder={t('habits.quickCapturePlaceholder')} />
 

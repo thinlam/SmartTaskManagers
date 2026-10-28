@@ -17,6 +17,7 @@ import { useTasksContext } from '../../state/TasksContext';
 import { useProjectsContext } from '../../state/ProjectsContext';
 import { useSettingsContext } from '../../state/SettingsContext';
 import { reportError } from '../../lib/reportError';
+import { translatePriority } from '../../lib/enumLabels';
 import { KanbanLane } from './KanbanLane';
 
 type DueFilter = 'All' | 'overdue' | 'today' | 'week';
@@ -83,7 +84,10 @@ export function KanbanPage() {
         const due = startOfDay(new Date(task.dueDate));
         if (dueFilter === 'overdue' && !(due.getTime() < today.getTime())) return false;
         if (dueFilter === 'today' && due.getTime() !== today.getTime()) return false;
-        if (dueFilter === 'week' && !(due.getTime() >= today.getTime() && due.getTime() <= weekEnd.getTime())) {
+        if (
+          dueFilter === 'week' &&
+          !(due.getTime() >= today.getTime() && due.getTime() <= weekEnd.getTime())
+        ) {
           return false;
         }
       }
@@ -212,7 +216,7 @@ export function KanbanPage() {
             <option value="All">{t('kanban.filterPriorityAll')}</option>
             {PRIORITIES.map((priority) => (
               <option key={priority} value={priority}>
-                {priority}
+                {translatePriority(t, priority)}
               </option>
             ))}
           </select>

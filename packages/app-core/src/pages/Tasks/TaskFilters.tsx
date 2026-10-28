@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import type { Priority, Project, Risk, TaskStatus } from '@stm/types';
+import { translatePriority, translateTaskStatus } from '../../lib/enumLabels';
 
 export type StatusFilter = TaskStatus | 'All';
 export type PriorityFilter = Priority | 'All';
@@ -77,7 +78,7 @@ export function TaskFilters({
         <option value="All">{t('tasks.allStatuses')}</option>
         {STATUSES.map((value) => (
           <option key={value} value={value}>
-            {value}
+            {translateTaskStatus(t, value)}
           </option>
         ))}
       </select>
@@ -90,7 +91,7 @@ export function TaskFilters({
         <option value="All">{t('tasks.allPriorities')}</option>
         {PRIORITIES.map((value) => (
           <option key={value} value={value}>
-            {value}
+            {translatePriority(t, value)}
           </option>
         ))}
       </select>

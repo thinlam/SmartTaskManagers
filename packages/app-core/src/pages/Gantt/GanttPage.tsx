@@ -18,7 +18,11 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useTasksContext } from '../../state/TasksContext';
 import { useProjectsContext } from '../../state/ProjectsContext';
 import { reportError } from '../../lib/reportError';
-import { translateProjectHealth } from '../../lib/enumLabels';
+import {
+  translateProjectHealth,
+  translatePriority,
+  translateTaskStatus,
+} from '../../lib/enumLabels';
 import { GanttGroupHeader } from './GanttGroupHeader';
 import { GanttRow } from './GanttRow';
 
@@ -215,7 +219,7 @@ export function GanttPage() {
             <option value="All">{t('tasks.allStatuses')}</option>
             {STATUSES.map((status) => (
               <option key={status} value={status}>
-                {status}
+                {translateTaskStatus(t, status)}
               </option>
             ))}
           </select>
@@ -228,7 +232,7 @@ export function GanttPage() {
             <option value="All">{t('kanban.filterPriorityAll')}</option>
             {GANTT_PRIORITIES.map((priority) => (
               <option key={priority} value={priority}>
-                {priority}
+                {translatePriority(t, priority)}
               </option>
             ))}
           </select>
@@ -256,7 +260,8 @@ export function GanttPage() {
           label={t('gantt.statOnTrack')}
           value={String(kpis.onTrack)}
           sub={t('gantt.statOnTrackSub', {
-            percent: kpis.scheduledCount > 0 ? Math.round((kpis.onTrack / kpis.scheduledCount) * 100) : 0,
+            percent:
+              kpis.scheduledCount > 0 ? Math.round((kpis.onTrack / kpis.scheduledCount) * 100) : 0,
           })}
           tone="success"
         />
