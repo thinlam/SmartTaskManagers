@@ -5,7 +5,11 @@ import {
   computeProjectMetrics,
   getProjectNextAction,
 } from './projectMetrics';
-import { compareBySmartRank, resolveSmartEngineOptions, type SmartEngineOptions } from './smartEngineOptions';
+import {
+  compareBySmartRank,
+  resolveSmartEngineOptions,
+  type SmartEngineOptions,
+} from './smartEngineOptions';
 
 /**
  * Smart Assistant — no Sheets precedent (this screen was placeholder-only
@@ -86,7 +90,11 @@ export interface SmartAssistantData {
   habitAlerts: AssistantHabitAlert[];
 }
 
-function toAssistantTask(task: Task, referenceDate: Date, smartScoreEnabled: boolean): AssistantTask {
+function toAssistantTask(
+  task: Task,
+  referenceDate: Date,
+  smartScoreEnabled: boolean,
+): AssistantTask {
   return {
     id: task.id,
     title: task.title,
@@ -194,15 +202,13 @@ export function computeSmartAssistantData(
     );
   }
   if (goalAlerts.length > 0) {
-    summaryParts.push(`${goalAlerts.length} goal${goalAlerts.length === 1 ? '' : 's'} at risk`);
+    summaryParts.push(`${goalAlerts.length} mục tiêu có nguy cơ`);
   }
   if (habitAlerts.length > 0) {
-    summaryParts.push(
-      `${habitAlerts.length} habit${habitAlerts.length === 1 ? '' : 's'} losing streak`,
-    );
+    summaryParts.push(`${habitAlerts.length} thói quen sắp mất chuỗi`);
   }
   const summary =
-    summaryParts.length > 0 ? summaryParts.join(' · ') : 'Nothing needs attention right now.';
+    summaryParts.length > 0 ? summaryParts.join(' · ') : 'Hiện không có gì cần chú ý.';
 
   return {
     summary,

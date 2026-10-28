@@ -17,7 +17,7 @@ export function formatDueLabel(
   referenceDate: Date = new Date(),
   t?: DueLabelTranslate,
 ): string {
-  if (!dueDate) return t ? t('common.noDueDate') : 'No due date';
+  if (!dueDate) return t ? t('common.noDueDate') : 'Chưa có hạn';
 
   const due = stripToCalendarDate(new Date(dueDate));
   const today = stripToCalendarDate(referenceDate);
@@ -25,13 +25,11 @@ export function formatDueLabel(
 
   if (diffDays < 0) {
     const days = Math.abs(diffDays);
-    return t
-      ? t('common.overdueDays', { count: days })
-      : `Overdue ${days} day${days === 1 ? '' : 's'}`;
+    return t ? t('common.overdueDays', { count: days }) : `Quá hạn ${days} ngày`;
   }
-  if (diffDays === 0) return t ? t('common.dueToday') : 'Due today';
-  if (diffDays === 1) return t ? t('common.dueTomorrow') : 'Due tomorrow';
-  return t ? t('common.dueInDays', { count: diffDays }) : `Due in ${diffDays} days`;
+  if (diffDays === 0) return t ? t('common.dueToday') : 'Đến hạn hôm nay';
+  if (diffDays === 1) return t ? t('common.dueTomorrow') : 'Đến hạn ngày mai';
+  return t ? t('common.dueInDays', { count: diffDays }) : `Còn ${diffDays} ngày`;
 }
 
 function stripToCalendarDate(date: Date): Date {

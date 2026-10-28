@@ -199,17 +199,20 @@ export function getAnalyticsInsights(
   if (summary.overdueTasks > 0) {
     insights.push({
       tone: 'danger',
-      text: `${summary.overdueTasks} open task${summary.overdueTasks === 1 ? '' : 's'} overdue — that's ${summary.overdueRate}% of everything still open.`,
+      text: `${summary.overdueTasks} việc đang mở bị quá hạn, chiếm ${summary.overdueRate}% số việc chưa xong.`,
     });
   } else if (summary.openTasks > 0) {
-    insights.push({ tone: 'success', text: 'No overdue tasks — everything open is on track.' });
+    insights.push({
+      tone: 'success',
+      text: 'Không có việc quá hạn, mọi việc đang mở đều đúng tiến độ.',
+    });
   }
 
   const topArea = areaProgress[0];
   if (topArea) {
     insights.push({
       tone: 'info',
-      text: `${topArea.area} has the highest average progress at ${topArea.progress}% (${topArea.total} task${topArea.total === 1 ? '' : 's'}).`,
+      text: `Lĩnh vực ${topArea.area} có tiến độ trung bình cao nhất: ${topArea.progress}% (${topArea.total} việc).`,
     });
   }
 
@@ -219,7 +222,7 @@ export function getAnalyticsInsights(
   if (topPriority) {
     insights.push({
       tone: 'warning',
-      text: `Most tasks are ${topPriority.priority} priority (${topPriority.count}, ${topPriority.percentage}% of all tasks).`,
+      text: `Phần lớn công việc có mức ưu tiên ${topPriority.priority} (${topPriority.count} việc, ${topPriority.percentage}%).`,
     });
   }
 

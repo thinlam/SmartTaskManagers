@@ -75,17 +75,17 @@ function sortLaneTasks(
 export function getKanbanLaneSubtitle(status: TaskStatus, count: number): string {
   switch (status) {
     case 'Inbox':
-      return 'Capture first, organize later';
+      return 'Ghi nhanh trước, sắp xếp sau';
     case 'To Do':
-      return 'Ready when you are';
+      return 'Sẵn sàng khi bạn bắt đầu';
     case 'In Progress':
-      return `${count} / ${KANBAN_IN_PROGRESS_WIP_LIMIT} recommended WIP`;
+      return `${count}/${KANBAN_IN_PROGRESS_WIP_LIMIT} việc nên làm cùng lúc`;
     case 'Waiting':
-      return 'Paused or waiting on something';
+      return 'Tạm dừng hoặc đang chờ';
     case 'Completed':
-      return 'Recently finished work';
+      return 'Việc vừa hoàn thành';
     default:
-      return 'Workflow stage';
+      return 'Giai đoạn công việc';
   }
 }
 
@@ -93,17 +93,17 @@ export function getKanbanLaneSubtitle(status: TaskStatus, count: number): string
 export function getKanbanEmptyText(status: TaskStatus): string {
   switch (status) {
     case 'Inbox':
-      return 'Inbox is clear. New captures will appear here.';
+      return 'Hộp thư trống. Việc ghi nhanh mới sẽ hiện ở đây.';
     case 'To Do':
-      return 'Nothing queued. Choose intentionally what comes next.';
+      return 'Chưa có việc nào. Hãy chọn việc cần làm tiếp.';
     case 'In Progress':
-      return 'No active task. Start one important thing.';
+      return 'Chưa có việc nào đang làm. Hãy bắt đầu một việc quan trọng.';
     case 'Waiting':
-      return 'Nothing is waiting. No blockers right now.';
+      return 'Không có việc nào đang chờ.';
     case 'Completed':
-      return 'Finished tasks will appear here.';
+      return 'Việc đã xong sẽ hiện ở đây.';
     default:
-      return 'No tasks in this stage.';
+      return 'Chưa có việc nào ở giai đoạn này.';
   }
 }
 
@@ -152,16 +152,16 @@ export function getKanbanDueLabel(
   status: TaskStatus,
   referenceDate: Date,
 ): string {
-  if (status === 'Completed') return 'Done';
+  if (status === 'Completed') return 'Đã xong';
 
   const due = stripTime(dueDate);
-  if (!due) return 'No date';
+  if (!due) return 'Chưa có hạn';
 
   const diffDays = Math.round((due.getTime() - referenceDate.getTime()) / 86_400_000);
-  if (diffDays < 0) return 'Overdue';
-  if (diffDays === 0) return 'Today';
-  if (diffDays === 1) return 'Tomorrow';
-  return due.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  if (diffDays < 0) return 'Quá hạn';
+  if (diffDays === 0) return 'Hôm nay';
+  if (diffDays === 1) return 'Ngày mai';
+  return due.toLocaleDateString('vi-VN', { month: 'short', day: 'numeric' });
 }
 
 export interface KanbanLaneData {

@@ -36,7 +36,8 @@ export function getProjectDerivedPriority(metrics: ProjectMetrics): Priority {
   const first = openTasks[0];
   if (!first) return 'Medium';
   return openTasks.reduce(
-    (highest, task) => (PRIORITY_WEIGHT[task.priority] > PRIORITY_WEIGHT[highest] ? task.priority : highest),
+    (highest, task) =>
+      PRIORITY_WEIGHT[task.priority] > PRIORITY_WEIGHT[highest] ? task.priority : highest,
     first.priority,
   );
 }
@@ -126,33 +127,33 @@ export function computeProjectHealth(metrics: ProjectMetrics): ProjectHealth {
 export function getProjectTopFocusText(metrics: ProjectMetrics): string {
   if (metrics.topTask) {
     const score = metrics.topTask.smartScore;
-    return metrics.topTask.title + (score ? `  •  Score ${score}` : '');
+    return metrics.topTask.title + (score ? `  •  Điểm ${score}` : '');
   }
-  if (metrics.taskCount === 0) return 'No tasks linked yet';
-  return 'Nothing open right now';
+  if (metrics.taskCount === 0) return 'Chưa có công việc nào';
+  return 'Hiện không có việc đang mở';
 }
 
 /** Ported from getProjectNextAction_() — same priority order, same wording. */
 export function getProjectNextAction(metrics: ProjectMetrics): string {
   if (metrics.overdueCount > 0) {
-    return 'Resolve overdue work first before adding more tasks.';
+    return 'Xử lý các việc quá hạn trước khi thêm việc mới.';
   }
   if (metrics.criticalCount > 0) {
-    return 'Reduce risk by focusing on critical tasks now.';
+    return 'Giảm rủi ro bằng cách tập trung vào các việc nguy cấp.';
   }
   if (metrics.blockedCount > 0) {
-    return 'Review waiting tasks and remove blockers.';
+    return 'Xem lại các việc đang chờ và gỡ vướng mắc.';
   }
   if (metrics.topTask) {
-    return `Continue with "${metrics.topTask.title}".`;
+    return `Tiếp tục với "${metrics.topTask.title}".`;
   }
   if (metrics.taskCount === 0) {
-    return 'Add the first actionable task for this project.';
+    return 'Thêm công việc đầu tiên cho dự án này.';
   }
   if (metrics.progress >= 100) {
-    return 'Project work is complete — review and close it.';
+    return 'Dự án đã hoàn tất, hãy rà soát và đóng lại.';
   }
-  return 'Review this project and define the next concrete action.';
+  return 'Xem lại dự án và xác định bước tiếp theo.';
 }
 
 /**
@@ -165,21 +166,21 @@ export function formatTargetLabel(
   targetDate: string | null,
   referenceDate: Date = new Date(),
 ): string {
-  if (!targetDate) return 'No target date';
+  if (!targetDate) return 'Chưa đặt hạn';
 
   const target = stripToCalendarDate(new Date(targetDate));
   const today = stripToCalendarDate(referenceDate);
   const diffDays = Math.round((target.getTime() - today.getTime()) / 86_400_000);
-  const formatted = target.toLocaleDateString('en-US', {
+  const formatted = target.toLocaleDateString('vi-VN', {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
   });
 
-  if (diffDays < 0) return `Target ${formatted} • OVERDUE`;
-  if (diffDays === 0) return 'Target today';
-  if (diffDays === 1) return 'Target tomorrow';
-  return `Target ${formatted}`;
+  if (diffDays < 0) return `Hạn ${formatted} • QUÁ HẠN`;
+  if (diffDays === 0) return 'Hạn hôm nay';
+  if (diffDays === 1) return 'Hạn ngày mai';
+  return `Hạn ${formatted}`;
 }
 
 /**
@@ -198,7 +199,7 @@ export function formatProjectDateRange(
   if (!earliestStartDate || !targetDate) return formatTargetLabel(targetDate, referenceDate);
   const start = stripToCalendarDate(new Date(earliestStartDate));
   const target = stripToCalendarDate(new Date(targetDate));
-  const fmt = (date: Date) => date.toLocaleDateString('en-US', { day: '2-digit', month: 'short' });
+  const fmt = (date: Date) => date.toLocaleDateString('vi-VN', { day: '2-digit', month: 'short' });
   return `${fmt(start)} → ${fmt(target)}`;
 }
 

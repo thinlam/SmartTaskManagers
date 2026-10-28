@@ -153,8 +153,8 @@ function toFocusTask(task: Task, referenceDate: Date, t?: DueLabelTranslate): Da
 
 function buildGreeting(referenceDate: Date): string {
   const hour = referenceDate.getHours();
-  const period = hour < 12 ? 'morning' : hour < 18 ? 'afternoon' : 'evening';
-  return `Good ${period}. Here is what matters today.`;
+  const period = hour < 12 ? 'buổi sáng' : hour < 18 ? 'buổi chiều' : 'buổi tối';
+  return `Chào ${period}. Đây là những việc đáng chú ý hôm nay.`;
 }
 
 export function computeDashboardData(
@@ -196,66 +196,66 @@ export function computeDashboardData(
   const kpis: DashboardKpi[] = [
     {
       key: 'totalTasks',
-      label: 'Total Tasks',
+      label: 'Tổng công việc',
       value: String(tasks.length),
-      sub: `${openTasks.length} open`,
+      sub: `${openTasks.length} đang mở`,
       tone: 'primary',
       totalCount: tasks.length,
       openCount: openTasks.length,
     },
     {
       key: 'completed',
-      label: 'Completed',
+      label: 'Đã hoàn thành',
       value: String(completedTasks.length),
-      sub: `${completionRate}% completion rate`,
+      sub: `Tỷ lệ hoàn thành ${completionRate}%`,
       tone: 'success',
       completedCount: completedTasks.length,
       completionRatePercent: completionRate,
     },
     {
       key: 'inProgress',
-      label: 'In Progress',
+      label: 'Đang thực hiện',
       value: String(inProgressTasks.length),
-      sub: 'Currently active',
+      sub: 'Đang triển khai',
       tone: 'primary',
     },
     {
       key: 'overdue',
-      label: 'Overdue',
+      label: 'Quá hạn',
       value: String(overdueTasks.length),
-      sub: overdueTasks.length > 0 ? 'Needs attention' : 'All clear',
+      sub: overdueTasks.length > 0 ? 'Cần chú ý' : 'Không có việc trễ',
       tone: overdueTasks.length > 0 ? 'danger' : 'success',
       emphasize: overdueTasks.length > 0,
       overdueCount: overdueTasks.length,
     },
     {
       key: 'dueToday',
-      label: 'Due Today',
+      label: 'Đến hạn hôm nay',
       value: String(todayTasks.length),
-      sub: `${countHighImpact(todayTasks)} high priority`,
+      sub: `${countHighImpact(todayTasks)} ưu tiên cao`,
       tone: todayTasks.length > 0 ? 'primary' : 'success',
       highPriorityCount: countHighImpact(todayTasks),
     },
     {
       key: 'dueSoon',
-      label: 'Due Soon',
+      label: 'Sắp đến hạn',
       value: String(dueSoonTasks.length),
-      sub: `Next ${dueSoonDays} days`,
+      sub: `Trong ${dueSoonDays} ngày tới`,
       tone: 'info',
       dueSoonDaysWindow: dueSoonDays,
     },
     {
       key: 'waiting',
-      label: 'Waiting',
+      label: 'Đang chờ',
       value: String(waitingTasks.length),
-      sub: 'Blocked on something',
+      sub: 'Bị chặn bởi việc khác',
       tone: waitingTasks.length > 0 ? 'warning' : 'success',
     },
     {
       key: 'completionRate',
-      label: 'Completion Rate',
+      label: 'Tỷ lệ hoàn thành',
       value: `${completionRate}%`,
-      sub: `${completedTasks.length} of ${tasks.length} done`,
+      sub: `${completedTasks.length}/${tasks.length} đã xong`,
       tone: completionRate >= 70 ? 'success' : 'primary',
       completedCount: completedTasks.length,
       totalCount: tasks.length,
@@ -306,11 +306,11 @@ export function computeDashboardData(
       quick.length > 0
         ? {
             tone: 'danger',
-            text: `${overdueTasks.length} overdue task(s). ${quick.length} can be cleared in 20 minutes or less.`,
+            text: `${overdueTasks.length} việc quá hạn, trong đó ${quick.length} việc xử lý được trong 20 phút.`,
           }
         : {
             tone: 'danger',
-            text: `${overdueTasks.length} overdue task(s) need attention before taking on more work.`,
+            text: `${overdueTasks.length} việc quá hạn cần xử lý trước khi nhận thêm việc mới.`,
           },
     );
   }
@@ -318,12 +318,12 @@ export function computeDashboardData(
   if (smart.scheduleOverloadWarning && focusMinutesToday > focusCapacityMinutes) {
     insights.push({
       tone: 'warning',
-      text: `Today is overloaded by ${formatMinutes(focusMinutesToday - focusCapacityMinutes)}. Consider moving a lower-priority task.`,
+      text: `Hôm nay đang quá tải ${formatMinutes(focusMinutesToday - focusCapacityMinutes)}. Hãy dời bớt một việc ít ưu tiên.`,
     });
   } else if (todayTasks.length > 0) {
     insights.push({
       tone: 'success',
-      text: `Today uses ${formatMinutes(focusMinutesToday)} of your ${DAILY_FOCUS_LIMIT_HOURS}h focus capacity.`,
+      text: `Hôm nay dùng ${formatMinutes(focusMinutesToday)} trên tổng ${DAILY_FOCUS_LIMIT_HOURS} giờ tập trung.`,
     });
   }
 
@@ -334,7 +334,7 @@ export function computeDashboardData(
   if (weekTasks.length > 0) {
     insights.push({
       tone: weeklyPercent >= 70 ? 'success' : 'info',
-      text: `Weekly completion is ${weeklyPercent}% — ${weekCompleted.length} of ${weekTasks.length} scheduled tasks completed.`,
+      text: `Tuần này đã hoàn thành ${weeklyPercent}% (${weekCompleted.length}/${weekTasks.length} việc đã lên lịch).`,
     });
   }
 
@@ -342,11 +342,11 @@ export function computeDashboardData(
   if (insights.length < INSIGHT_MAX_ITEMS && topFocusTask) {
     insights.push({
       tone: 'info',
-      text: `Best next move: "${topFocusTask.title}"${topFocusTask.recommendedAction ? ` — ${topFocusTask.recommendedAction}` : '.'}`,
+      text: `Nên làm tiếp: "${topFocusTask.title}"${topFocusTask.recommendedAction ? ` — ${topFocusTask.recommendedAction}` : '.'}`,
     });
   }
 
-  const summary = `${openTasks.length} open tasks · ${todayTasks.length} due today · ${weekCompleted.length} of ${weekTasks.length} completed this week`;
+  const summary = `${openTasks.length} việc đang mở · ${todayTasks.length} đến hạn hôm nay · ${weekCompleted.length}/${weekTasks.length} đã xong tuần này`;
 
   return {
     greeting: buildGreeting(referenceDate),

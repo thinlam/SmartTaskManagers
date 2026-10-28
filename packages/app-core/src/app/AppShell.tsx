@@ -78,7 +78,7 @@ export function AppShell() {
   }
 
   const groups: SidebarGroup[] = NAV_GROUP_ORDER.map((groupLabel) => ({
-    label: groupLabel,
+    label: t(`nav.groups.${groupLabel}`),
     items: APP_ROUTES.filter((route) => route.group === groupLabel).map((route) => {
       const Icon = route.icon;
       const isRoot = route.path === '/';

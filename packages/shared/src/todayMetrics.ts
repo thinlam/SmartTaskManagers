@@ -141,9 +141,7 @@ function formatTimeLabel(dueTime: string): string {
   const [hourStr, minuteStr] = dueTime.split(':');
   const hour = Number(hourStr);
   const minute = Number(minuteStr);
-  const period = hour >= 12 ? 'PM' : 'AM';
-  const hour12 = hour % 12 === 0 ? 12 : hour % 12;
-  return `${hour12}:${String(minute).padStart(2, '0')} ${period}`;
+  return `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
 }
 
 export function computeTodayData(
@@ -278,7 +276,7 @@ export function computeTodayData(
   ];
 
   return {
-    subtitle: 'Focus on what matters most today.',
+    subtitle: 'Tập trung vào những việc quan trọng nhất hôm nay.',
     kpis,
     topFocus: topFocusSource.map((task) =>
       applySmartVisibility(toTodayTask(task, referenceDate, undefined, t), smart),
@@ -293,15 +291,15 @@ export function computeTodayData(
       applySmartVisibility(toTodayTask(task, referenceDate, undefined, t), smart),
     ),
     doNow: {
-      subtitle: 'Your most important work right now',
-      emptyText: 'Nothing urgent right now. You have breathing room.',
+      subtitle: 'Việc quan trọng nhất lúc này',
+      emptyText: 'Không có việc gấp. Bạn đang khá thong thả.',
       tasks: doNowSource.map((task) =>
         applySmartVisibility(toTodayTask(task, referenceDate, undefined, t), smart),
       ),
     },
     scheduled: {
-      subtitle: 'Time-specific tasks for today',
-      emptyText: 'No time-blocked tasks scheduled today.',
+      subtitle: 'Công việc có giờ cụ thể hôm nay',
+      emptyText: 'Không có công việc nào được đặt giờ hôm nay.',
       tasks: scheduledSource.map((task) =>
         applySmartVisibility(
           toTodayTask(
@@ -315,8 +313,8 @@ export function computeTodayData(
       ),
     },
     quickWins: {
-      subtitle: 'Small tasks you can finish fast',
-      emptyText: 'No quick wins available right now.',
+      subtitle: 'Việc nhỏ có thể xong nhanh',
+      emptyText: 'Chưa có việc nào dễ hoàn thành.',
       tasks: quickWinsSource.map((task) =>
         applySmartVisibility(toTodayTask(task, referenceDate, undefined, t), smart),
       ),

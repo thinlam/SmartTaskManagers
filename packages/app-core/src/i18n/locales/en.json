@@ -71,7 +71,14 @@
     "analytics": "Analytics",
     "assistant": "Smart Assistant",
     "settings": "Settings",
-    "gantt": "Gantt"
+    "gantt": "Gantt",
+    "groups": {
+      "Overview": "Daily",
+      "Planning": "Planning",
+      "Personal": "Personal",
+      "Insights": "Smart",
+      "System": "System"
+    }
   },
   "auth": {
     "appName": "Smart Task",
@@ -330,6 +337,7 @@
     "editAriaLabel": "Edit \"{{title}}\"",
     "completeAriaLabel": "Mark \"{{title}}\" complete",
     "deleteAriaLabel": "Delete \"{{title}}\"",
+    "deleteConfirm": "Delete \"{{title}}\"? This cannot be undone.",
     "editTaskTitle": "Edit Task",
     "newTaskTitle": "New Task",
     "deleteButton": "Delete",

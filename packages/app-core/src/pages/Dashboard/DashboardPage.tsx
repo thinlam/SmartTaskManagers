@@ -40,6 +40,14 @@ const DEFAULT_KPI_ORDER: DashboardKpiKey[] = [
   'completionRate',
 ];
 
+/** A first-time dashboard shows only the four numbers that drive decisions; the rest are one click away in "Tùy chỉnh". */
+const DEFAULT_VISIBLE_KPIS = new Set<DashboardKpiKey>([
+  'overdue',
+  'dueToday',
+  'inProgress',
+  'completionRate',
+]);
+
 const STATUS_COLOR: Record<string, string> = {
   Completed: 'var(--color-status-completed)',
   'In Progress': 'var(--color-status-in-progress)',
@@ -75,7 +83,7 @@ function loadKpiLayout(): KpiLayoutEntry[] {
   } catch {
     // Malformed/inaccessible storage (private browsing, quota) — fall back to defaults below.
   }
-  return DEFAULT_KPI_ORDER.map((key) => ({ key, visible: true }));
+  return DEFAULT_KPI_ORDER.map((key) => ({ key, visible: DEFAULT_VISIBLE_KPIS.has(key) }));
 }
 
 /**

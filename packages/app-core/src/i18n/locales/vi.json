@@ -71,7 +71,14 @@
     "analytics": "Phân tích",
     "assistant": "Trợ lý thông minh",
     "settings": "Cài đặt",
-    "gantt": "Gantt"
+    "gantt": "Gantt",
+    "groups": {
+      "Overview": "Hằng ngày",
+      "Planning": "Kế hoạch",
+      "Personal": "Cá nhân",
+      "Insights": "Thông minh",
+      "System": "Hệ thống"
+    }
   },
   "auth": {
     "appName": "Smart Task",
@@ -330,6 +337,7 @@
     "editAriaLabel": "Sửa \"{{title}}\"",
     "completeAriaLabel": "Đánh dấu \"{{title}}\" đã hoàn thành",
     "deleteAriaLabel": "Xóa \"{{title}}\"",
+    "deleteConfirm": "Xóa công việc \"{{title}}\"? Thao tác này không thể hoàn tác.",
     "editTaskTitle": "Sửa công việc",
     "newTaskTitle": "Công việc mới",
     "deleteButton": "Xóa",

@@ -10,16 +10,15 @@ interface TaskActionsProps {
   onEdit: (task: Task) => void;
 }
 
-/** Edit/Complete/Delete row actions for the Tasks table — extracted from the old TaskCard-based TaskRow so the Frame 05 table can use the same three actions in a dense cell. */
+/**
+ * Row actions for the Tasks table. Completing is the common action, so it is always visible;
+ * edit and delete show on row hover/focus (always on touch screens) to keep the table calm.
+ * Delete asks first because it cannot be undone.
+ */
 export function TaskActions({ task, onComplete, onDelete, onEdit }: TaskActionsProps) {
   const { t } = useTranslation();
   return (
     <div className="flex items-center justify-end gap-1">
-      <IconButton
-        icon={<Pencil className="h-4 w-4" aria-hidden="true" />}
-        aria-label={t('tasks.editAriaLabel', { title: task.title })}
-        onClick={() => onEdit(task)}
-      />
       {task.status !== 'Completed' && (
         <IconButton
           icon={<Check className="h-4 w-4" aria-hidden="true" />}
@@ -27,12 +26,21 @@ export function TaskActions({ task, onComplete, onDelete, onEdit }: TaskActionsP
           onClick={() => onComplete(task.id)}
         />
       )}
-      <IconButton
-        icon={<Trash2 className="h-4 w-4" aria-hidden="true" />}
-        aria-label={t('tasks.deleteAriaLabel', { title: task.title })}
-        variant="danger"
-        onClick={() => onDelete(task.id)}
-      />
+      <div className="flex items-center gap-1 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100 [@media(pointer:coarse)]:opacity-100">
+        <IconButton
+          icon={<Pencil className="h-4 w-4" aria-hidden="true" />}
+          aria-label={t('tasks.editAriaLabel', { title: task.title })}
+          onClick={() => onEdit(task)}
+        />
+        <IconButton
+          icon={<Trash2 className="h-4 w-4" aria-hidden="true" />}
+          aria-label={t('tasks.deleteAriaLabel', { title: task.title })}
+          variant="danger"
+          onClick={() => {
+            if (window.confirm(t('tasks.deleteConfirm', { title: task.title }))) onDelete(task.id);
+          }}
+        />
+      </div>
     </div>
   );
 }

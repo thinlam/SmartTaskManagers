@@ -4,7 +4,16 @@ import { useTranslation } from 'react-i18next';
 import { Download, RefreshCw } from 'lucide-react';
 import type { Priority, Task } from '@stm/types';
 import { formatDueLabel } from '@stm/shared';
-import { Button, EmptyState, HelpButton, PriorityBadge, Progress, RiskBadge, StatCard, StatusBadge } from '@stm/ui';
+import {
+  Button,
+  EmptyState,
+  HelpButton,
+  PriorityBadge,
+  Progress,
+  RiskBadge,
+  StatCard,
+  StatusBadge,
+} from '@stm/ui';
 import { useTasksContext } from '../../state/TasksContext';
 import { useProjectsContext } from '../../state/ProjectsContext';
 import { QuickCaptureInput } from '../../components/QuickCaptureInput';
@@ -41,7 +50,8 @@ function isOverdue(task: Task, today: Date): boolean {
 
 function formatTimelineRange(startDate: string | null, dueDate: string | null): string | null {
   if (!startDate && !dueDate) return null;
-  const fmt = (iso: string) => new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const fmt = (iso: string) =>
+    new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   if (startDate && dueDate) return `${fmt(startDate)} → ${fmt(dueDate)}`;
   return fmt(startDate ?? dueDate!);
 }
@@ -198,7 +208,17 @@ export function TasksPage() {
   }
 
   function handleExport() {
-    const header = ['Title', 'Project', 'Status', 'Priority', 'Progress', 'Start', 'Due', 'Risk', 'SmartScore'];
+    const header = [
+      'Title',
+      'Project',
+      'Status',
+      'Priority',
+      'Progress',
+      'Start',
+      'Due',
+      'Risk',
+      'SmartScore',
+    ];
     const rows = sortedTasks.map((task) => [
       task.title,
       task.projectId ? (projectNameById.get(task.projectId) ?? '') : '',
@@ -292,7 +312,10 @@ export function TasksPage() {
             })}
             tone="primary"
           />
-          <Progress value={tasks.length > 0 ? (counts.active / tasks.length) * 100 : 0} tone="primary" />
+          <Progress
+            value={tasks.length > 0 ? (counts.active / tasks.length) * 100 : 0}
+            tone="primary"
+          />
         </div>
         <div className="flex flex-col gap-2">
           <StatCard
@@ -312,7 +335,8 @@ export function TasksPage() {
             label={t('tasks.statHighCritical')}
             value={String(counts.highCritical)}
             sub={t('tasks.statHighCriticalSub', {
-              percent: tasks.length > 0 ? Math.round((counts.highCritical / tasks.length) * 100) : 0,
+              percent:
+                tasks.length > 0 ? Math.round((counts.highCritical / tasks.length) * 100) : 0,
             })}
             tone="warning"
           />
@@ -389,8 +413,10 @@ export function TasksPage() {
                 <th className="px-4 py-2 font-medium">{t('tasks.colPriority')}</th>
                 <th className="px-4 py-2 font-medium">{t('tasks.colProgress')}</th>
                 <th className="px-4 py-2 font-medium">{t('tasks.colTimeline')}</th>
-                <th className="px-4 py-2 font-medium">{t('tasks.colRisk')}</th>
-                <th className="px-4 py-2 font-medium">{t('tasks.colScore')}</th>
+                <th className="hidden px-4 py-2 font-medium xl:table-cell">{t('tasks.colRisk')}</th>
+                <th className="hidden px-4 py-2 font-medium xl:table-cell">
+                  {t('tasks.colScore')}
+                </th>
                 <th className="px-4 py-2 font-medium" />
               </tr>
             </thead>
@@ -399,7 +425,7 @@ export function TasksPage() {
                 const timeline = formatTimelineRange(task.startDate, task.dueDate);
                 const tone = dueLabelTone(task, today);
                 return (
-                  <tr key={task.id} className="hover:bg-surface-secondary">
+                  <tr key={task.id} className="group hover:bg-surface-secondary">
                     <td className="max-w-[220px] px-4 py-3">
                       <button
                         type="button"
@@ -416,10 +442,16 @@ export function TasksPage() {
                       {task.projectId ? (projectNameById.get(task.projectId) ?? '—') : '—'}
                     </td>
                     <td className="px-4 py-3">
-                      <StatusBadge status={task.status} label={translateTaskStatus(t, task.status)} />
+                      <StatusBadge
+                        status={task.status}
+                        label={translateTaskStatus(t, task.status)}
+                      />
                     </td>
                     <td className="px-4 py-3">
-                      <PriorityBadge priority={task.priority} label={translatePriority(t, task.priority)} />
+                      <PriorityBadge
+                        priority={task.priority}
+                        label={translatePriority(t, task.priority)}
+                      />
                     </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
@@ -437,14 +469,14 @@ export function TasksPage() {
                         </span>
                       </div>
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="hidden px-4 py-3 xl:table-cell">
                       {task.risk ? (
                         <RiskBadge risk={task.risk} label={translateRisk(t, task.risk)} />
                       ) : (
                         '—'
                       )}
                     </td>
-                    <td className="px-4 py-3 font-medium text-ink-primary">
+                    <td className="hidden px-4 py-3 font-medium text-ink-primary xl:table-cell">
                       {task.smartScore ?? '—'}
                     </td>
                     <td className="px-4 py-3">
