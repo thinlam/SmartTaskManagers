@@ -10,7 +10,7 @@ import {
   getProjectNextAction,
   type ProjectMetrics,
 } from '@stm/shared';
-import { EmptyState, HelpButton, PriorityBadge, ProjectHealthBadge, StatCard } from '@stm/ui';
+import { EmptyState, HelpButton, PriorityBadge, ProjectHealthBadge } from '@stm/ui';
 import { useProjectsContext } from '../../state/ProjectsContext';
 import { useTasksContext } from '../../state/TasksContext';
 import { QuickCaptureInput } from '../../components/QuickCaptureInput';
@@ -206,46 +206,18 @@ export function ProjectsPage() {
         <p className="text-sm text-ink-secondary">{t('projects.subtitle')}</p>
       </header>
 
-      <section className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <StatCard
-          label={t('projects.statActive')}
-          value={String(summary.active)}
-          sub={t('projects.statActiveSubBreakdown', {
+      {projectData.length > 0 && (
+        <p className="text-sm text-ink-secondary">
+          {t('projects.summaryLine', {
+            active: summary.active,
             healthy: summary.healthy,
             attention: summary.attention,
             atRisk: summary.atRisk,
+            overdue: summary.overdueTasks,
+            avg: summary.avgProgress,
           })}
-          tone="primary"
-        />
-        <StatCard
-          label={t('projects.statTotalTasks')}
-          value={String(summary.totalTasks)}
-          sub={t('projects.statTotalTasksSub', { count: projectData.length })}
-          tone="info"
-        />
-        <StatCard
-          label={t('projects.statOverdueTasks')}
-          value={String(summary.overdueTasks)}
-          sub={t('projects.statOverdueTasksSub', {
-            projects: summary.projectsWithOverdue,
-            total: projectData.length,
-            blocked: summary.blockedTasks,
-          })}
-          tone={summary.overdueTasks > 0 ? 'danger' : 'success'}
-        />
-        <StatCard
-          label={t('projects.statAvgProgress')}
-          value={`${summary.avgProgress}%`}
-          sub={t('projects.statAvgProgressSub')}
-          tone={
-            summary.avgProgress >= 75
-              ? 'success'
-              : summary.avgProgress >= 45
-                ? 'primary'
-                : 'warning'
-          }
-        />
-      </section>
+        </p>
+      )}
 
       <QuickCaptureInput onAdd={handleAdd} placeholder={t('projects.quickCapturePlaceholder')} />
 

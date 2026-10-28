@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import type { Priority, Task, TaskStatus } from '@stm/types';
 import { computeKanbanBoardData, type KanbanSortMode } from '@stm/shared';
-import { HelpButton, StatCard } from '@stm/ui';
+import { HelpButton } from '@stm/ui';
 import {
   DndContext,
   PointerSensor,
@@ -134,40 +134,16 @@ export function KanbanPage() {
         <p className="text-sm text-ink-secondary">{t('kanban.subtitle')}</p>
       </header>
 
-      <section className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <StatCard
-          label={t('kanban.statOpenTasks')}
-          value={String(data.openCount)}
-          sub={t('kanban.statOpenTasksSub')}
-          tone="primary"
-        />
-        <StatCard
-          label={t('kanban.statDueToday')}
-          value={String(data.dueTodayCount)}
-          sub={
-            data.dueTodayCount > 0
-              ? t('kanban.statDueTodaySubAttention')
-              : t('kanban.statDueTodaySubNone')
-          }
-          tone={data.dueTodayCount > 0 ? 'warning' : 'success'}
-        />
-        <StatCard
-          label={t('kanban.statOverdue')}
-          value={String(data.overdueCount)}
-          sub={
-            data.overdueCount > 0
-              ? t('kanban.statOverdueSubResolve')
-              : t('kanban.statOverdueSubClear')
-          }
-          tone={data.overdueCount > 0 ? 'danger' : 'success'}
-        />
-        <StatCard
-          label={t('kanban.statCompleted')}
-          value={String(data.completedCount)}
-          sub={t('kanban.statCompletedSub')}
-          tone="success"
-        />
-      </section>
+      {data.openCount + data.completedCount > 0 && (
+        <p className="text-sm text-ink-secondary">
+          {t('kanban.summaryLine', {
+            open: data.openCount,
+            today: data.dueTodayCount,
+            overdue: data.overdueCount,
+            done: data.completedCount,
+          })}
+        </p>
+      )}
 
       <div
         className={

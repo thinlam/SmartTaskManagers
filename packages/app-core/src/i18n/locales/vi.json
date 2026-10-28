@@ -272,6 +272,7 @@
     "completedAtLabel": "Hoàn thành lúc {{time}}"
   },
   "inbox": {
+    "summaryLine": "{{count}} việc trong hộp thư · {{ready}} sẵn sàng sắp xếp · {{processed}} đã xử lý tuần này",
     "title": "Hộp thư",
     "subtitle": "Công việc ghi nhanh đang chờ sắp xếp. Xử lý chỉ trong vài giây.",
     "loading": "Đang tải hộp thư…",
@@ -320,6 +321,7 @@
     "defaultPlaceholder": "Ghi nhanh một công việc… ví dụ: Gia hạn hộ chiếu"
   },
   "tasks": {
+    "summaryLine": "{{active}} đang làm · {{overdue}} quá hạn · {{high}} ưu tiên cao · hoàn thành {{rate}}%",
     "loading": "Đang tải công việc…",
     "title": "Công việc",
     "subtitle": "Quản lý, ưu tiên và theo dõi mọi công việc ở một nơi duy nhất.",
@@ -407,6 +409,7 @@
     "calculatedAutomaticallyHint": "Điểm thông minh, Mức rủi ro và Hành động đề xuất sẽ được tự động tính sau khi bạn thêm công việc này."
   },
   "projects": {
+    "summaryLine": "{{active}} dự án đang chạy ({{healthy}} tốt, {{attention}} cần chú ý, {{atRisk}} rủi ro) · {{overdue}} việc quá hạn · tiến độ trung bình {{avg}}%",
     "loading": "Đang tải dự án…",
     "title": "Dự án",
     "subtitle": "Theo dõi tiến độ, tình trạng, khối lượng công việc và rủi ro trễ hạn của dự án.",
@@ -580,6 +583,7 @@
     "legendCompleted": "Đã hoàn thành"
   },
   "kanban": {
+    "summaryLine": "{{open}} việc đang mở · {{today}} đến hạn hôm nay · {{overdue}} quá hạn · {{done}} đã xong",
     "title": "Kanban",
     "subtitle": "Di chuyển có chủ đích. Giữ khối lượng đang thực hiện nhỏ và hoàn thành trước khi bắt đầu thêm.",
     "statOpenTasks": "Công việc đang mở",

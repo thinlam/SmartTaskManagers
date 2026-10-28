@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import type { Priority, Task } from '@stm/types';
 import { formatDueLabel, parseQuickCapture } from '@stm/shared';
 import { useTranslation } from 'react-i18next';
-import { Button, EmptyState, HelpButton, PriorityBadge, StatCard } from '@stm/ui';
+import { Button, EmptyState, HelpButton, PriorityBadge } from '@stm/ui';
 import { useTasksContext } from '../../state/TasksContext';
 import { useProjectsContext } from '../../state/ProjectsContext';
 import { QuickCaptureInput } from '../../components/QuickCaptureInput';
@@ -20,7 +20,10 @@ function daysSince(iso: string, referenceDate: Date): number {
 }
 
 /** Rule-based project suggestion: does the task's own title text contain a real project's name? No AI call — same "Rule-based · no AI used" guarantee as Frame 10.1.1's mockup. */
-function suggestProjectId(title: string, projects: { id: string; name: string }[]): string | undefined {
+function suggestProjectId(
+  title: string,
+  projects: { id: string; name: string }[],
+): string | undefined {
   const lower = title.toLowerCase();
   return projects.find((project) => lower.includes(project.name.toLowerCase()))?.id;
 }
@@ -72,9 +75,7 @@ export function InboxPage() {
 
   const needsOrganizingTasks = useMemo(
     () =>
-      inboxTasks.filter(
-        (task) => !task.projectId && task.priority === 'Medium' && !task.dueDate,
-      ),
+      inboxTasks.filter((task) => !task.projectId && task.priority === 'Medium' && !task.dueDate),
     [inboxTasks],
   );
 
@@ -137,8 +138,12 @@ export function InboxPage() {
     }).catch(reportError);
 
     const parts: string[] = [];
-    if (parsed.projectName) parts.push(t('inbox.captureHintProject', { project: parsed.projectName }));
-    if (parsed.priority) parts.push(t('inbox.captureHintPriority', { priority: translatePriority(t, parsed.priority) }));
+    if (parsed.projectName)
+      parts.push(t('inbox.captureHintProject', { project: parsed.projectName }));
+    if (parsed.priority)
+      parts.push(
+        t('inbox.captureHintPriority', { priority: translatePriority(t, parsed.priority) }),
+      );
     if (parsed.dueDate) parts.push(t('inbox.captureHintDue', { date: parsed.dueDate }));
     setCaptureHint(parts.length > 0 ? parts.join(' · ') : null);
     window.setTimeout(() => setCaptureHint(null), 4000);
@@ -222,7 +227,11 @@ export function InboxPage() {
 
   const TABS: { key: ViewTab; label: string; count: number }[] = [
     { key: 'all', label: t('inbox.tabAll'), count: inboxTasks.length },
-    { key: 'needsOrganizing', label: t('inbox.tabNeedsOrganizing'), count: needsOrganizingTasks.length },
+    {
+      key: 'needsOrganizing',
+      label: t('inbox.tabNeedsOrganizing'),
+      count: needsOrganizingTasks.length,
+    },
     { key: 'smartMatched', label: t('inbox.tabSmartMatched'), count: smartMatchedTasks.length },
     { key: 'aging', label: t('inbox.tabAging'), count: agingTasks.length },
   ];
@@ -250,36 +259,15 @@ export function InboxPage() {
         {captureHint && <p className="text-xs font-medium text-primary">{captureHint}</p>}
       </div>
 
-      <section className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <StatCard
-          label={t('inbox.statInInbox')}
-          value={String(inboxTasks.length)}
-          sub={t('inbox.statInInboxSub')}
-          tone="primary"
-        />
-        <StatCard
-          label={t('inbox.statReadyToOrganize')}
-          value={String(smartMatchedTasks.length)}
-          sub={t('inbox.statReadyToOrganizeSub')}
-          tone="info"
-        />
-        <StatCard
-          label={t('inbox.statOldestItem')}
-          value={t('inbox.statOldestItemValue', { count: oldestItemDays })}
-          sub={
-            oldestItemDays >= AGING_DAYS_THRESHOLD
-              ? t('inbox.statOldestItemSubAging')
-              : t('inbox.statOldestItemSubFresh')
-          }
-          tone={oldestItemDays >= AGING_DAYS_THRESHOLD ? 'warning' : 'success'}
-        />
-        <StatCard
-          label={t('inbox.statProcessedThisWeek')}
-          value={String(processedThisWeekCount)}
-          sub={t('inbox.statProcessedThisWeekSub')}
-          tone="success"
-        />
-      </section>
+      {inboxTasks.length > 0 && (
+        <p className="text-sm text-ink-secondary">
+          {t('inbox.summaryLine', {
+            count: inboxTasks.length,
+            ready: smartMatchedTasks.length,
+            processed: processedThisWeekCount,
+          })}
+        </p>
+      )}
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="flex flex-col gap-3 lg:col-span-2">
@@ -301,7 +289,13 @@ export function InboxPage() {
               ))}
             </div>
             {smartMatchedTasks.length > 0 && (
-              <Button type="button" variant="secondary" size="sm" onClick={handleAcceptAllSuggestions} disabled={isSaving}>
+              <Button
+                type="button"
+                variant="secondary"
+                size="sm"
+                onClick={handleAcceptAllSuggestions}
+                disabled={isSaving}
+              >
                 {t('inbox.acceptAllSuggestions', { count: smartMatchedTasks.length })}
               </Button>
             )}
@@ -336,18 +330,21 @@ export function InboxPage() {
                       >
                         <td className="px-4 py-3 font-medium text-ink-primary">{task.title}</td>
                         <td className="px-4 py-3 text-ink-secondary">
-                          {task.projectId
-                            ? (projects.find((p) => p.id === task.projectId)?.name ?? '—')
-                            : suggestedProject
-                              ? (
-                                  <span className="text-xs font-medium text-primary">
-                                    {t('inbox.suggestedProject', { project: suggestedProject.name })}
-                                  </span>
-                                )
-                              : '—'}
+                          {task.projectId ? (
+                            (projects.find((p) => p.id === task.projectId)?.name ?? '—')
+                          ) : suggestedProject ? (
+                            <span className="text-xs font-medium text-primary">
+                              {t('inbox.suggestedProject', { project: suggestedProject.name })}
+                            </span>
+                          ) : (
+                            '—'
+                          )}
                         </td>
                         <td className="px-4 py-3">
-                          <PriorityBadge priority={task.priority} label={translatePriority(t, task.priority)} />
+                          <PriorityBadge
+                            priority={task.priority}
+                            label={translatePriority(t, task.priority)}
+                          />
                         </td>
                         <td className="px-4 py-3 text-ink-secondary">
                           {formatDueLabel(task.dueDate, today, t)}
@@ -381,7 +378,9 @@ export function InboxPage() {
                   <span className="text-xs font-semibold uppercase tracking-wide text-ink-muted">
                     {t('inbox.organizeItemTitle')}
                   </span>
-                  <span className="text-sm font-semibold text-ink-primary">{selectedTask.title}</span>
+                  <span className="text-sm font-semibold text-ink-primary">
+                    {selectedTask.title}
+                  </span>
                   <span className="text-xs text-ink-muted">
                     {t('inbox.capturedLabel', {
                       time: new Date(selectedTask.createdAt).toLocaleString(i18n.language, {
@@ -408,13 +407,17 @@ export function InboxPage() {
                   <span className="font-semibold uppercase tracking-wide">
                     {t('inbox.smartSuggestionLabel')}
                   </span>
-                  <p>{t('inbox.smartSuggestionText', { project: selectedSuggestionProject.name })}</p>
+                  <p>
+                    {t('inbox.smartSuggestionText', { project: selectedSuggestionProject.name })}
+                  </p>
                   <div className="flex items-center justify-between">
                     <Button
                       type="button"
                       variant="primary"
                       size="sm"
-                      onClick={() => handleAcceptSuggestion(selectedTask.id, selectedSuggestionProject.id)}
+                      onClick={() =>
+                        handleAcceptSuggestion(selectedTask.id, selectedSuggestionProject.id)
+                      }
                       disabled={isSaving}
                     >
                       {t('inbox.acceptSuggestionButton')}
@@ -478,11 +481,22 @@ export function InboxPage() {
                 />
               </div>
 
-              <Button type="button" variant="primary" onClick={handleMoveToTasks} disabled={isSaving}>
+              <Button
+                type="button"
+                variant="primary"
+                onClick={handleMoveToTasks}
+                disabled={isSaving}
+              >
                 {t('inbox.moveToTasksButton')}
               </Button>
               <div className="flex items-center gap-2">
-                <Button type="button" variant="secondary" size="sm" onClick={handleSnooze} disabled={isSaving}>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  onClick={handleSnooze}
+                  disabled={isSaving}
+                >
                   {t('inbox.snoozeButton')}
                 </Button>
                 <Button

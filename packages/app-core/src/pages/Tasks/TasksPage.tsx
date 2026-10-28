@@ -11,7 +11,6 @@ import {
   PriorityBadge,
   Progress,
   RiskBadge,
-  StatCard,
   StatusBadge,
 } from '@stm/ui';
 import { useTasksContext } from '../../state/TasksContext';
@@ -302,59 +301,16 @@ export function TasksPage() {
         </div>
       </header>
 
-      <section className="grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <div className="flex flex-col gap-2">
-          <StatCard
-            label={t('tasks.statActiveTasks')}
-            value={String(counts.active)}
-            sub={t('tasks.statActiveTasksSub', {
-              percent: tasks.length > 0 ? Math.round((counts.active / tasks.length) * 100) : 0,
-            })}
-            tone="primary"
-          />
-          <Progress
-            value={tasks.length > 0 ? (counts.active / tasks.length) * 100 : 0}
-            tone="primary"
-          />
-        </div>
-        <div className="flex flex-col gap-2">
-          <StatCard
-            label={t('tasks.statOverdue')}
-            value={String(counts.overdue)}
-            sub={counts.overdue > 0 ? t('tasks.statOverdueSub') : t('common.allClearShort')}
-            tone={counts.overdue > 0 ? 'danger' : 'success'}
-            emphasize={counts.overdue > 0}
-          />
-          <Progress
-            value={tasks.length > 0 ? (counts.overdue / tasks.length) * 100 : 0}
-            tone="danger"
-          />
-        </div>
-        <div className="flex flex-col gap-2">
-          <StatCard
-            label={t('tasks.statHighCritical')}
-            value={String(counts.highCritical)}
-            sub={t('tasks.statHighCriticalSub', {
-              percent:
-                tasks.length > 0 ? Math.round((counts.highCritical / tasks.length) * 100) : 0,
-            })}
-            tone="warning"
-          />
-          <Progress
-            value={tasks.length > 0 ? (counts.highCritical / tasks.length) * 100 : 0}
-            tone="warning"
-          />
-        </div>
-        <div className="flex flex-col gap-2">
-          <StatCard
-            label={t('tasks.statCompletionRate')}
-            value={`${counts.completionRate}%`}
-            sub={t('tasks.statCompletionRateSub', { count: counts.completed })}
-            tone="success"
-          />
-          <Progress value={counts.completionRate} tone="success" />
-        </div>
-      </section>
+      {tasks.length > 0 && (
+        <p className="text-sm text-ink-secondary">
+          {t('tasks.summaryLine', {
+            active: counts.active,
+            overdue: counts.overdue,
+            high: counts.highCritical,
+            rate: counts.completionRate,
+          })}
+        </p>
+      )}
 
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border">
         <div className="flex flex-wrap gap-4">

@@ -272,6 +272,7 @@
     "completedAtLabel": "Completed {{time}}"
   },
   "inbox": {
+    "summaryLine": "{{count}} in inbox · {{ready}} ready to organize · {{processed}} processed this week",
     "title": "Inbox",
     "subtitle": "Quick-captured tasks waiting to be organized. Process them in seconds.",
     "loading": "Loading inbox…",
@@ -320,6 +321,7 @@
     "defaultPlaceholder": "Capture a task… e.g. Renew passport"
   },
   "tasks": {
+    "summaryLine": "{{active}} active · {{overdue}} overdue · {{high}} high priority · {{rate}}% complete",
     "loading": "Loading tasks…",
     "title": "Tasks",
     "subtitle": "Manage, prioritize and track every task from one place.",
@@ -407,6 +409,7 @@
     "calculatedAutomaticallyHint": "Smart Score, Risk Level and Recommended Action are calculated automatically after you add this task."
   },
   "projects": {
+    "summaryLine": "{{active}} active projects ({{healthy}} healthy, {{attention}} attention, {{atRisk}} at risk) · {{overdue}} overdue tasks · {{avg}}% average progress",
     "loading": "Loading projects…",
     "title": "Projects",
     "subtitle": "Monitor project progress, health, workload and deadline risk.",
@@ -580,6 +583,7 @@
     "legendCompleted": "Completed"
   },
   "kanban": {
+    "summaryLine": "{{open}} open · {{today}} due today · {{overdue}} overdue · {{done}} done",
     "title": "Kanban",
     "subtitle": "Move intentionally. Keep active work small and finish before starting more.",
     "statOpenTasks": "Open Tasks",
