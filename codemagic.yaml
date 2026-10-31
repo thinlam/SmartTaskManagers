@@ -5,6 +5,7 @@ workflows:
     instance_type: linux
     environment:
       node: 20
+      java: 21
       vars:
         PROJECT_ROOT: apps/web
     scripts:
