@@ -2,7 +2,7 @@ workflows:
   android-build:
     name: Smart Task Manager - Android
     max_build_duration: 60
-    instance_type: linux_x2
+    instance_type: linux
     environment:
       node: 20
       vars:
@@ -33,7 +33,7 @@ workflows:
   ios-build:
     name: Smart Task Manager - iOS
     max_build_duration: 60
-    instance_type: mac_mini_m2
+    instance_type: mac_mini
     integrations:
       app_store_connect: codemagic_api_key # tạo trong Codemagic > Teams > Integrations > App Store Connect
     environment:
