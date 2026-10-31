@@ -15,11 +15,12 @@ import {
   inputClass,
 } from '../components/ui';
 import { cn, fmtBytes, fmtDate } from '../lib/format';
-import { errMsg, useAsync, useToast } from '../state/AppState';
+import { errMsg, useAsync, usePermissions, useToast } from '../state/AppState';
 import { MediaThumb } from './ContentFormPage';
 
 export function MediaPage() {
   const toast = useToast();
+  const { canEdit, canDelete } = usePermissions();
   const [q, setQ] = useState('');
   const [dq, setDq] = useState('');
   const [type, setType] = useState<'' | 'image' | 'video'>('');
@@ -72,6 +73,7 @@ export function MediaPage() {
   return (
     <div
       onDragOver={(e) => {
+        if (!canEdit) return;
         e.preventDefault();
         setDragging(true);
       }}
@@ -81,21 +83,27 @@ export function MediaPage() {
       onDrop={(e) => {
         e.preventDefault();
         setDragging(false);
-        void upload(e.dataTransfer.files);
+        if (canEdit) void upload(e.dataTransfer.files);
       }}
       className={cn('min-h-full rounded-lg', dragging && 'outline-2 outline-dashed outline-brand')}
     >
       <PageHeader
         title="Thư viện media"
-        subtitle="Ảnh và video dùng cho nội dung. Kéo thả tệp vào đây để tải lên."
+        subtitle={
+          canEdit
+            ? 'Ảnh và video dùng cho nội dung. Kéo thả tệp vào đây để tải lên.'
+            : 'Ảnh và video dùng cho nội dung.'
+        }
         actions={
-          <Button
-            loading={uploading}
-            icon={<UploadCloud className="h-4 w-4" />}
-            onClick={() => input.current?.click()}
-          >
-            Tải lên
-          </Button>
+          canEdit && (
+            <Button
+              loading={uploading}
+              icon={<UploadCloud className="h-4 w-4" />}
+              onClick={() => input.current?.click()}
+            >
+              Tải lên
+            </Button>
+          )
         }
       />
       <input
@@ -163,10 +171,12 @@ export function MediaPage() {
             hint={
               q || type
                 ? 'Thử đổi từ khóa hoặc bộ lọc.'
-                : 'Tải lên ảnh hoặc video để dùng cho nội dung.'
+                : canEdit
+                  ? 'Tải lên ảnh hoặc video để dùng cho nội dung.'
+                  : 'Chưa có tệp nào được tải lên.'
             }
             action={
-              !q && !type ? (
+              !q && !type && canEdit ? (
                 <Button
                   icon={<UploadCloud className="h-4 w-4" />}
                   onClick={() => input.current?.click()}
@@ -198,14 +208,16 @@ export function MediaPage() {
                       {fmtBytes(a.size)} · {fmtDate(a.createdAt)}
                     </p>
                   </div>
-                  <button
-                    type="button"
-                    aria-label={`Xóa ${a.fileName}`}
-                    onClick={() => setToDelete(a)}
-                    className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-md text-ink-3 hover:bg-bad-soft hover:text-bad"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
+                  {canDelete && (
+                    <button
+                      type="button"
+                      aria-label={`Xóa ${a.fileName}`}
+                      onClick={() => setToDelete(a)}
+                      className="flex h-8 w-8 shrink-0 cursor-pointer items-center justify-center rounded-md text-ink-3 hover:bg-bad-soft hover:text-bad"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  )}
                 </div>
               </Card>
             </li>

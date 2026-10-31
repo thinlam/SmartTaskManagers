@@ -25,9 +25,9 @@ import {
   Select,
   Spinner,
 } from '../components/ui';
-import { downloadCsv } from '../lib/format';
+import { SaveCancelled, downloadCsv } from '../lib/format';
 import { STATUS_META } from '../lib/meta';
-import { useAsync } from '../state/AppState';
+import { errMsg, useAsync, useToast } from '../state/AppState';
 
 const RANGES = [
   { v: '7', label: '7 ngày qua' },
@@ -46,6 +46,7 @@ const STATUS_COLOR: Record<string, string> = {
 };
 
 export function ReportsPage() {
+  const toast = useToast();
   const [range, setRange] = useState('30');
   const { data, error, loading, reload } = useAsync(
     () =>
@@ -58,13 +59,34 @@ export function ReportsPage() {
     [range],
   );
 
-  const exportCsv = (d: ReportSummary) =>
-    downloadCsv(`bao-cao-noi-dung-${new Date().toISOString().slice(0, 10)}.csv`, [
-      ['Nhóm', 'Tên', 'Tổng', 'Đã đăng'],
-      ...d.byChannel.map((x) => ['Kênh', x.channel, x.count, x.published]),
-      ...d.byAssignee.map((x) => ['Người phụ trách', x.name, x.count, x.published]),
-      ...d.byCampaign.map((x) => ['Chiến dịch', x.name, x.count, x.published]),
-    ]);
+  const [exporting, setExporting] = useState(false);
+  const exportCsv = async (d: ReportSummary) => {
+    setExporting(true);
+    try {
+      const label = RANGES.find((r) => r.v === range)?.label ?? '';
+      const message = await downloadCsv(
+        `bao-cao-noi-dung-${new Date().toISOString().slice(0, 10)}.csv`,
+        [
+          ['Báo cáo nội dung', label],
+          [],
+          ['Tổng nội dung', d.total],
+          ['Đã đăng', d.published],
+          ['Tỷ lệ hoàn thành (%)', d.completionRate],
+          [],
+          ['Nhóm', 'Tên', 'Tổng', 'Đã đăng'],
+          ...d.byStatus.map((x) => ['Trạng thái', STATUS_META[x.status].label, x.count, '']),
+          ...d.byChannel.map((x) => ['Kênh', x.channel, x.count, x.published]),
+          ...d.byAssignee.map((x) => ['Người phụ trách', x.name, x.count, x.published]),
+          ...d.byCampaign.map((x) => ['Chiến dịch', x.name, x.count, x.published]),
+        ],
+      );
+      toast.success(message);
+    } catch (e) {
+      if (!(e instanceof SaveCancelled)) toast.error(`Không xuất được báo cáo: ${errMsg(e)}`);
+    } finally {
+      setExporting(false);
+    }
+  };
 
   return (
     <>
@@ -89,7 +111,8 @@ export function ReportsPage() {
               variant="secondary"
               icon={<Download className="h-4 w-4" />}
               disabled={!data}
-              onClick={() => data && exportCsv(data)}
+              loading={exporting}
+              onClick={() => data && void exportCsv(data)}
             >
               Xuất CSV
             </Button>

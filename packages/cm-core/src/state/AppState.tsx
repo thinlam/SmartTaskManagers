@@ -75,6 +75,20 @@ export function useAuth(): AuthValue {
   return v;
 }
 
+/**
+ * What the signed-in user may do. Mirrors the server rules: Viewers read only, Editors create and
+ * edit, and only Admins delete or manage the workspace. The server enforces these; the UI just
+ * hides what would be refused.
+ */
+export function usePermissions() {
+  const role = useAuth().user?.role;
+  return {
+    canEdit: role === 'Admin' || role === 'Editor',
+    canDelete: role === 'Admin',
+    isViewer: role === 'Viewer',
+  };
+}
+
 /* ───────────── Lookups (members + campaigns) ───────────── */
 
 interface LookupValue {

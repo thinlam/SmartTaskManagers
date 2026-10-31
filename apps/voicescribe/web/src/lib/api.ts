@@ -1,6 +1,7 @@
 import type {
   AppConfig,
   Folder,
+  LabeledSegment,
   Paged,
   Recording,
   RecordingNote,
@@ -150,6 +151,8 @@ export const api = {
         title?: string;
         folderId?: string | null;
         speakerNames?: Record<string, string>;
+        text?: string;
+        segments?: LabeledSegment[];
         notes?: Pick<RecordingNote, 'text'>[] | RecordingNote[];
       },
     ) => request<Recording>('PATCH', `/api/recordings/${id}`, { body: patch }),

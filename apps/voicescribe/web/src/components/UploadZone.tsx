@@ -23,7 +23,7 @@ export function UploadZone({ onFileSelected }: { onFileSelected: (file: File) =>
       onDragLeave={() => setIsDragOver(false)}
       onDrop={handleDrop}
       onClick={() => inputRef.current?.click()}
-      className={`flex flex-1 cursor-pointer flex-col items-center justify-center gap-4 rounded-xl border-2 border-dashed p-16 text-center transition-colors ${
+      className={`flex flex-1 cursor-pointer flex-col items-center justify-center gap-4 rounded-xl border-2 border-dashed p-12 text-center transition-colors ${
         isDragOver ? 'border-indigo-400 bg-indigo-50' : 'border-slate-200 hover:border-slate-300'
       }`}
     >
@@ -33,9 +33,12 @@ export function UploadZone({ onFileSelected }: { onFileSelected: (file: File) =>
       <div>
         <p className="font-medium text-slate-900">Kéo thả file âm thanh vào đây</p>
         <p className="mt-1 text-sm text-slate-400">
-          hoặc bấm để chọn file — hỗ trợ {ACCEPTED_EXTENSIONS.join(', ')}
+          hoặc bấm để chọn file
         </p>
       </div>
+      <span className="rounded-lg bg-indigo-600 px-5 py-2 text-sm font-medium text-white">
+        Chọn file
+      </span>
       <input
         ref={inputRef}
         type="file"

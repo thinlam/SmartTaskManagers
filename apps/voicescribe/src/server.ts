@@ -33,7 +33,7 @@ app.get('/health', async (_req, res) => {
 
 const api = express.Router();
 api.use(allowDesktopOrigins);
-api.use(express.json({ limit: '256kb' }));
+api.use(express.json({ limit: '5mb' }));
 api.use(createAuthRouter(config, db));
 
 const auth = requireAuth(config.jwtSecret);

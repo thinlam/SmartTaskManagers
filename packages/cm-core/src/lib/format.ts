@@ -76,14 +76,43 @@ export const fromLocalInput = (v: string) => (v ? new Date(v).toISOString() : nu
 export const isOverdue = (c: { scheduledAt: string | null; status: string }) =>
   !!c.scheduledAt && c.status !== 'Published' && new Date(c.scheduledAt).getTime() < Date.now();
 
-export function downloadCsv(filename: string, rows: (string | number)[][]) {
-  const esc = (v: string | number) => `"${String(v).replace(/"/g, '""')}"`;
-  const blob = new Blob(['﻿' + rows.map((r) => r.map(esc).join(',')).join('\r\n')], {
-    type: 'text/csv;charset=utf-8',
-  });
+/**
+ * Saves a file and resolves to a short message for the user. The desktop webview ignores
+ * <a download>, so there the user picks the destination in the native "Save as" dialog
+ * (starting in Downloads). In a browser it is a normal download.
+ * Rejects with SaveCancelled when the dialog is dismissed.
+ */
+export class SaveCancelled extends Error {}
+
+export async function saveFile(blob: Blob, fileName: string): Promise<string> {
+  if ('__TAURI_INTERNALS__' in window) {
+    const ext = fileName.split('.').pop() ?? '';
+    const { downloadDir, join } = await import('@tauri-apps/api/path');
+    const { save } = await import('@tauri-apps/plugin-dialog');
+    const { writeFile } = await import('@tauri-apps/plugin-fs');
+    const path = await save({
+      defaultPath: await join(await downloadDir(), fileName),
+      filters: [{ name: ext.toUpperCase(), extensions: [ext] }],
+    });
+    if (!path) throw new SaveCancelled();
+    await writeFile(path, new Uint8Array(await blob.arrayBuffer()));
+    return `Đã lưu: ${path}`;
+  }
+  const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = filename;
+  a.href = url;
+  a.download = fileName;
+  document.body.appendChild(a);
   a.click();
-  URL.revokeObjectURL(a.href);
+  a.remove();
+  URL.revokeObjectURL(url);
+  return `Đã tải xuống: ${fileName}`;
+}
+
+export function downloadCsv(filename: string, rows: (string | number)[][]): Promise<string> {
+  const esc = (v: string | number) => `"${String(v).replace(/"/g, '""')}"`;
+  // BOM so Excel reads the Vietnamese text as UTF-8.
+  const text = rows.map((r) => r.map(esc).join(',')).join(String.fromCharCode(13, 10));
+  const blob = new Blob([String.fromCharCode(0xfeff) + text], { type: 'text/csv;charset=utf-8' });
+  return saveFile(blob, filename);
 }

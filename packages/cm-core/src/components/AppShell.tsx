@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import { api } from '../api/client';
 import type { Activity } from '../api/types';
-import { useAsync, useAuth } from '../state/AppState';
+import { useAsync, useAuth, usePermissions } from '../state/AppState';
 import { cn, fmtBytes, timeAgo } from '../lib/format';
 import { Avatar, Button, IconButton, ProgressBar } from './ui';
 import { activityText } from '../lib/activity';
@@ -68,25 +68,43 @@ const TITLES: [string, string][] = [
   ['/settings', 'Cài đặt'],
 ];
 
+const NAV_GROUPS: { title?: string; items: (typeof NAV)[number][] }[] = [
+  { items: [NAV[0]!] },
+  { title: 'Sản xuất nội dung', items: [NAV[1]!, NAV[2]!, NAV[3]!] },
+  { title: 'Tài nguyên', items: [NAV[4]!, NAV[5]!] },
+  { title: 'Quản lý', items: [NAV[6]!, NAV[7]!, NAV[8]!] },
+];
+
 function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   return (
-    <nav className="flex flex-col gap-1 px-3" aria-label="Điều hướng chính">
-      {NAV.map(({ to, label, icon: Icon, end }) => (
-        <NavLink
-          key={to}
-          to={to}
-          end={end}
-          onClick={onNavigate}
-          className={({ isActive }) =>
-            cn(
-              'flex h-11 items-center gap-3 rounded-md px-3 text-sm font-medium transition-colors',
-              isActive ? 'bg-brand-soft text-brand' : 'text-ink-2 hover:bg-sunken hover:text-ink',
-            )
-          }
-        >
-          <Icon className="h-[18px] w-[18px]" />
-          {label}
-        </NavLink>
+    <nav className="flex flex-col px-3" aria-label="Điều hướng chính">
+      {NAV_GROUPS.map((group, gi) => (
+        <div key={gi} className={cn('flex flex-col gap-0.5', gi > 0 && 'mt-4')}>
+          {group.title && (
+            <p className="mb-1 px-3 text-[11px] font-semibold uppercase tracking-wider text-ink-3">
+              {group.title}
+            </p>
+          )}
+          {group.items.map(({ to, label, icon: Icon, end }) => (
+            <NavLink
+              key={to}
+              to={to}
+              end={end}
+              onClick={onNavigate}
+              className={({ isActive }) =>
+                cn(
+                  'flex h-10 items-center gap-3 rounded-md px-3 text-sm font-medium transition-colors',
+                  isActive
+                    ? 'bg-brand-soft text-brand'
+                    : 'text-ink-2 hover:bg-sunken hover:text-ink',
+                )
+              }
+            >
+              <Icon className="h-[18px] w-[18px]" />
+              {label}
+            </NavLink>
+          ))}
+        </div>
       ))}
     </nav>
   );
@@ -235,9 +253,15 @@ function SearchBox() {
 export function AppShell({ footer }: { footer?: ReactNode }) {
   const { pathname } = useLocation();
   const navigate = useNavigate();
+  const { canEdit } = usePermissions();
   const [drawer, setDrawer] = useState(false);
+  const mainRef = useRef<HTMLElement>(null);
 
-  useEffect(() => setDrawer(false), [pathname]);
+  useEffect(() => {
+    setDrawer(false);
+    // A new page always starts at the top instead of keeping the previous page's scroll.
+    mainRef.current?.scrollTo(0, 0);
+  }, [pathname]);
 
   const crumb = TITLES.find(([p]) => pathname.startsWith(p))?.[1] ?? 'Tổng quan';
 
@@ -285,31 +309,27 @@ export function AppShell({ footer }: { footer?: ReactNode }) {
           <IconButton label="Mở menu" className="lg:hidden" onClick={() => setDrawer(true)}>
             <Menu className="h-5 w-5" />
           </IconButton>
-          <button
-            type="button"
-            aria-label="Tổng quan"
-            onClick={() => navigate('/')}
-            className="hidden cursor-pointer text-ink-3 hover:text-ink sm:block"
-          >
-            <Home className="h-5 w-5" />
-          </button>
-          <span className="hidden text-ink-3 sm:inline">/</span>
-          <span className="truncate text-sm font-medium text-ink-2">{crumb}</span>
+          <h1 className="truncate text-base font-semibold text-ink">{crumb}</h1>
           <div className="flex flex-1 justify-center px-2">
             <SearchBox />
           </div>
-          <Button
-            icon={<Plus className="h-4 w-4" />}
-            onClick={() => navigate('/contents/new')}
-            className="hidden sm:inline-flex"
-          >
-            Tạo nội dung
-          </Button>
+          {canEdit && (
+            <Button
+              icon={<Plus className="h-4 w-4" />}
+              onClick={() => navigate('/contents/new')}
+              className="hidden sm:inline-flex"
+            >
+              Tạo nội dung
+            </Button>
+          )}
           <NotificationBell />
           <UserMenu />
         </header>
 
-        <main className="flex-1 overflow-y-auto px-4 py-5 pb-24 md:px-6 md:py-6 lg:pb-8">
+        <main
+          ref={mainRef}
+          className="flex-1 overflow-y-auto px-4 py-5 pb-24 md:px-6 md:py-6 lg:pb-8"
+        >
           <Outlet />
         </main>
 
@@ -321,16 +341,20 @@ export function AppShell({ footer }: { footer?: ReactNode }) {
           {BOTTOM.slice(0, 2).map((n) => (
             <TabLink key={n.to} {...n} />
           ))}
-          <button
-            type="button"
-            aria-label="Tạo nội dung"
-            onClick={() => navigate('/contents/new')}
-            className="flex flex-1 cursor-pointer items-center justify-center"
-          >
-            <span className="-mt-5 flex h-12 w-12 items-center justify-center rounded-full bg-brand text-white shadow-pop">
-              <Plus className="h-6 w-6" />
-            </span>
-          </button>
+          {canEdit ? (
+            <button
+              type="button"
+              aria-label="Tạo nội dung"
+              onClick={() => navigate('/contents/new')}
+              className="flex flex-1 cursor-pointer items-center justify-center"
+            >
+              <span className="-mt-5 flex h-12 w-12 items-center justify-center rounded-full bg-brand text-white shadow-pop">
+                <Plus className="h-6 w-6" />
+              </span>
+            </button>
+          ) : (
+            <span className="flex-1" />
+          )}
           {BOTTOM.slice(2).map((n) => (
             <TabLink key={n.to} {...n} />
           ))}

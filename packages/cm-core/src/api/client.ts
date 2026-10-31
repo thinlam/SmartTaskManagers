@@ -39,16 +39,15 @@ function write(key: string, value: string | null) {
   }
 }
 
-let baseUrl = read(SERVER_KEY) || DEFAULT_URL;
+// The backend address is fixed at build time (VITE_CM_API_URL); users cannot change it, so a
+// stray edit can never leave the app pointing at the wrong server. Drop any value an older
+// version saved.
+write(SERVER_KEY, null);
+const baseUrl = DEFAULT_URL;
 let token = read(TOKEN_KEY);
 let onUnauthorized: (() => void) | null = null;
 
 export const getServerUrl = () => baseUrl;
-export const getDefaultServerUrl = () => DEFAULT_URL;
-export const setServerUrl = (url: string) => {
-  baseUrl = url.trim().replace(/\/+$/, '') || DEFAULT_URL;
-  write(SERVER_KEY, baseUrl === DEFAULT_URL ? null : baseUrl);
-};
 export const setToken = (t: string | null) => {
   token = t;
   write(TOKEN_KEY, t);
@@ -92,7 +91,7 @@ async function request<T>(
   try {
     res = await fetch(url, { method, headers, body });
   } catch {
-    throw new ApiError(`Không kết nối được máy chủ (${baseUrl}). Kiểm tra backend đang chạy.`, 0);
+    throw new ApiError('Không kết nối được máy chủ. Hãy kiểm tra kết nối mạng và thử lại.', 0);
   }
   if (res.status === 401 && token) {
     setToken(null);

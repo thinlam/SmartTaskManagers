@@ -312,7 +312,7 @@ export function DashboardPage() {
               </Card>
 
               <Card className="p-5">
-                <SectionTitle>Created vs Published theo tuần</SectionTitle>
+                <SectionTitle>Tạo mới và đã đăng theo tuần</SectionTitle>
                 <div className="h-72">
                   <ResponsiveContainer width="100%" height="100%">
                     <LineChart
@@ -339,7 +339,7 @@ export function DashboardPage() {
                       <Line
                         type="monotone"
                         dataKey="created"
-                        name="Created"
+                        name="Tạo mới"
                         stroke="var(--color-brand)"
                         strokeWidth={2.5}
                         dot={{ r: 4 }}
@@ -347,7 +347,7 @@ export function DashboardPage() {
                       <Line
                         type="monotone"
                         dataKey="published"
-                        name="Published"
+                        name="Đã đăng"
                         stroke="var(--color-ok)"
                         strokeWidth={2.5}
                         dot={{ r: 4 }}

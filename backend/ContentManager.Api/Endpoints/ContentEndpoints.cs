@@ -79,7 +79,7 @@ public static class ContentEndpoints
             Log(db, ctx, "created", c);
             await db.SaveChangesAsync();
             return Results.Created($"/api/contents/{c.Id}", (await Load(db).FirstAsync(x => x.Id == c.Id)).ToDto());
-        });
+        }).RequireRole(RoleAccess.CanEdit);
 
         g.MapPut("/{id:guid}", async (Guid id, ContentInput i, HttpContext ctx, AppDbContext db) =>
         {
@@ -103,7 +103,7 @@ public static class ContentEndpoints
             Log(db, ctx, statusChanged ? "status" : "updated", c);
             await db.SaveChangesAsync();
             return Results.Ok((await Load(db).FirstAsync(x => x.Id == id)).ToDto());
-        });
+        }).RequireRole(RoleAccess.CanEdit);
 
         g.MapPatch("/{id:guid}/status", async (Guid id, StatusInput i, HttpContext ctx, AppDbContext db) =>
         {
@@ -117,7 +117,7 @@ public static class ContentEndpoints
                 await db.SaveChangesAsync();
             }
             return Results.Ok((await Load(db).FirstAsync(x => x.Id == id)).ToDto());
-        });
+        }).RequireRole(RoleAccess.CanEdit);
 
         g.MapDelete("/{id:guid}", async (Guid id, HttpContext ctx, AppDbContext db) =>
         {
@@ -127,13 +127,13 @@ public static class ContentEndpoints
             db.Contents.Remove(c);
             await db.SaveChangesAsync();
             return Results.NoContent();
-        });
+        }).RequireRole(RoleAccess.AdminOnly);
 
         g.MapPost("/bulk-delete", async (BulkDeleteInput i, AppDbContext db) =>
         {
             var n = await db.Contents.Where(c => i.Ids.Contains(c.Id)).ExecuteDeleteAsync();
             return Results.Ok(new { deleted = n });
-        });
+        }).RequireRole(RoleAccess.AdminOnly);
     }
 
     private static IQueryable<Content> Load(AppDbContext db) =>
