@@ -82,3 +82,92 @@ workflows:
         notify:
           success: true
           failure: true
+
+  content-manager-android-build:
+    name: Content Manager - Android
+    max_build_duration: 60
+    instance_type: linux
+    environment:
+      node: 20
+      java: 21
+      vars:
+        PROJECT_ROOT: apps/content-web
+    scripts:
+      - name: Install root dependencies
+        script: |
+          npm install
+      - name: Build web assets + sync Capacitor
+        script: |
+          cd $PROJECT_ROOT
+          npm run cap:sync
+      - name: Build Android debug APK
+        script: |
+          cd $PROJECT_ROOT/android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+    artifacts:
+      - apps/content-web/android/app/build/outputs/**/*.apk
+    publishing:
+      email:
+        recipients:
+          - thinlam6@gmail.com
+        notify:
+          success: true
+          failure: true
+
+  content-manager-ios-build:
+    name: Content Manager - iOS
+    max_build_duration: 60
+    instance_type: mac_mini
+    integrations:
+      app_store_connect: codemagic_api_key # tạo trong Codemagic > Teams > Integrations > App Store Connect
+    environment:
+      node: 20
+      vars:
+        PROJECT_ROOT: apps/content-web
+        XCODE_WORKSPACE: ios/App/App.xcworkspace
+        XCODE_SCHEME: App
+        BUNDLE_ID: com.contentmanager.app
+      ios_signing:
+        distribution_type: ad_hoc # đổi thành app_store nếu muốn nộp qua TestFlight
+        bundle_identifier: com.contentmanager.app
+    scripts:
+      - name: Install root dependencies
+        script: |
+          npm install
+      - name: Build web assets
+        script: |
+          cd $PROJECT_ROOT
+          npm run build
+      - name: Add iOS platform (not committed yet) + sync Capacitor
+        script: |
+          cd $PROJECT_ROOT
+          if [ ! -d ios ]; then npx cap add ios; fi
+          npx cap sync ios
+      - name: Install CocoaPods
+        script: |
+          cd $PROJECT_ROOT/ios/App
+          pod install
+      - name: Set up code signing
+        script: |
+          keychain initialize
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_ADHOC \
+            --create
+          keychain add-certificates
+          xcode-project use-profiles
+      - name: Build ipa
+        script: |
+          cd $PROJECT_ROOT
+          xcode-project build-ipa \
+            --workspace "$XCODE_WORKSPACE" \
+            --scheme "$XCODE_SCHEME"
+    artifacts:
+      - build/ios/ipa/*.ipa
+    publishing:
+      email:
+        recipients:
+          - thinlam6@gmail.com
+        notify:
+          success: true
+          failure: true
