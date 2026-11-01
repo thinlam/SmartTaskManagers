@@ -1,0 +1,6 @@
+{
+  "appId": "com.voicescribe.app",
+  "appName": "VoiceScribe",
+  "webDir": "dist",
+  "server": { "androidScheme": "https" }
+}

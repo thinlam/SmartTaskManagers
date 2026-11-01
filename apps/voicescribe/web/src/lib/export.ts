@@ -39,9 +39,32 @@ export class SaveCancelled extends Error {}
 /**
  * Saves a file and resolves to a short message for the user. The desktop webview ignores
  * <a download>, so there the user picks the destination in the native "Save as" dialog
- * (starting in Downloads). In a browser it is a normal download.
+ * (starting in Downloads). The Android app has no download manager either, so it hands the
+ * file to the system share sheet ("Save to Files", Drive, Zalo...). In a browser it is a
+ * normal download.
  */
 async function saveBlob(blob: Blob, fileName: string): Promise<string> {
+  const { Capacitor } = await import('@capacitor/core');
+  if (Capacitor.isNativePlatform()) {
+    const { Filesystem, Directory } = await import('@capacitor/filesystem');
+    const { Share } = await import('@capacitor/share');
+    const bytes = new Uint8Array(await blob.arrayBuffer());
+    let binary = '';
+    for (let i = 0; i < bytes.length; i += 0x8000) {
+      binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+    }
+    const { uri } = await Filesystem.writeFile({
+      path: fileName,
+      data: btoa(binary),
+      directory: Directory.Cache,
+    });
+    try {
+      await Share.share({ title: fileName, url: uri, dialogTitle: 'Lưu hoặc gửi tệp' });
+    } catch {
+      throw new SaveCancelled();
+    }
+    return `Đã xuất: ${fileName}`;
+  }
   if ('__TAURI_INTERNALS__' in window) {
     const ext = fileName.split('.').pop() ?? '';
     const { downloadDir, join } = await import('@tauri-apps/api/path');

@@ -1,11 +1,14 @@
 import type { NextFunction, Request, Response } from 'express';
 
-// The browser build is same-origin; only the Tauri desktop shell calls this
-// API cross-origin (WebView2 uses http://tauri.localhost, macOS/Linux tauri://localhost).
+// The browser build is same-origin; only the native shells call this API cross-origin:
+// Tauri (WebView2 uses http://tauri.localhost, macOS/Linux tauri://localhost) and the
+// Capacitor Android app (https://localhost with androidScheme "https").
 const DESKTOP_ORIGINS = new Set([
   'http://tauri.localhost',
   'https://tauri.localhost',
   'tauri://localhost',
+  'https://localhost',
+  'capacitor://localhost',
 ]);
 
 export function allowDesktopOrigins(req: Request, res: Response, next: NextFunction): void {
