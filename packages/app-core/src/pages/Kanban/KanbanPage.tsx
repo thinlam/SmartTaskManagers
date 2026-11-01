@@ -174,7 +174,7 @@ export function KanbanPage() {
             value={projectFilter}
             onChange={(event) => setProjectFilter(event.target.value)}
             aria-label={t('tasks.projectFilterAriaLabel')}
-            className={controlClasses}
+            className={`${controlClasses} min-w-0 basis-[calc(50%-0.25rem)] sm:basis-auto`}
           >
             <option value="All">{t('kanban.filterProjectAll')}</option>
             {projects.map((project) => (
@@ -187,7 +187,7 @@ export function KanbanPage() {
             value={priorityFilter}
             onChange={(event) => setPriorityFilter(event.target.value as Priority | 'All')}
             aria-label={t('tasks.priorityFilterAriaLabel')}
-            className={controlClasses}
+            className={`${controlClasses} min-w-0 basis-[calc(50%-0.25rem)] sm:basis-auto`}
           >
             <option value="All">{t('kanban.filterPriorityAll')}</option>
             {PRIORITIES.map((priority) => (
@@ -200,7 +200,7 @@ export function KanbanPage() {
             value={dueFilter}
             onChange={(event) => setDueFilter(event.target.value as DueFilter)}
             aria-label={t('kanban.filterDueDateAriaLabel')}
-            className={controlClasses}
+            className={`${controlClasses} min-w-0 basis-[calc(50%-0.25rem)] sm:basis-auto`}
           >
             <option value="All">{t('kanban.filterDueDateAll')}</option>
             <option value="overdue">{t('kanban.filterDueDateOverdue')}</option>
@@ -211,7 +211,7 @@ export function KanbanPage() {
             value={sortMode}
             onChange={(event) => setSortMode(event.target.value as KanbanSortMode)}
             aria-label={t('kanban.sortAriaLabel')}
-            className={controlClasses}
+            className={`${controlClasses} min-w-0 basis-[calc(50%-0.25rem)] sm:basis-auto`}
           >
             <option value="smartScore">{t('kanban.sortSmartScore')}</option>
             <option value="dueDate">{t('kanban.sortDueDate')}</option>

@@ -201,7 +201,7 @@ export function GanttPage() {
             value={projectFilter}
             onChange={(event) => setProjectFilter(event.target.value)}
             aria-label={t('tasks.projectFilterAriaLabel')}
-            className={controlClasses}
+            className={`${controlClasses} min-w-0 basis-[calc(50%-0.25rem)] sm:basis-auto`}
           >
             <option value="All">{t('kanban.filterProjectAll')}</option>
             {projects.map((project) => (
@@ -214,7 +214,7 @@ export function GanttPage() {
             value={statusFilter}
             onChange={(event) => setStatusFilter(event.target.value as TaskStatus | 'All')}
             aria-label={t('tasks.statusFilterAriaLabel')}
-            className={controlClasses}
+            className={`${controlClasses} min-w-0 basis-[calc(50%-0.25rem)] sm:basis-auto`}
           >
             <option value="All">{t('tasks.allStatuses')}</option>
             {STATUSES.map((status) => (
@@ -227,7 +227,7 @@ export function GanttPage() {
             value={priorityFilter}
             onChange={(event) => setPriorityFilter(event.target.value as Priority | 'All')}
             aria-label={t('tasks.priorityFilterAriaLabel')}
-            className={controlClasses}
+            className={`${controlClasses} min-w-0 basis-[calc(50%-0.25rem)] sm:basis-auto`}
           >
             <option value="All">{t('kanban.filterPriorityAll')}</option>
             {GANTT_PRIORITIES.map((priority) => (

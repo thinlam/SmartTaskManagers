@@ -59,11 +59,15 @@ export function CalendarPage() {
   const [projectFilter, setProjectFilter] = useState('All');
 
   const filteredTasks = useMemo(
-    () => (projectFilter === 'All' ? tasks : tasks.filter((task) => task.projectId === projectFilter)),
+    () =>
+      projectFilter === 'All' ? tasks : tasks.filter((task) => task.projectId === projectFilter),
     [tasks, projectFilter],
   );
 
-  const data = useMemo(() => computeCalendarMonthData(anchor, filteredTasks), [anchor, filteredTasks]);
+  const data = useMemo(
+    () => computeCalendarMonthData(anchor, filteredTasks),
+    [anchor, filteredTasks],
+  );
 
   const monthLabel = anchor
     .toLocaleDateString(i18n.language, { month: 'long', year: 'numeric' })
@@ -200,7 +204,7 @@ export function CalendarPage() {
                 value={projectFilter}
                 onChange={(event) => setProjectFilter(event.target.value)}
                 aria-label={t('tasks.projectFilterAriaLabel')}
-                className={controlClasses}
+                className={`${controlClasses} min-w-0 basis-[calc(50%-0.25rem)] sm:basis-auto`}
               >
                 <option value="All">{t('kanban.filterProjectAll')}</option>
                 {projects.map((project) => (

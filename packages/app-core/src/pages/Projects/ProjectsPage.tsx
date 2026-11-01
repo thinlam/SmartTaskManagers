@@ -254,7 +254,7 @@ export function ProjectsPage() {
             value={priorityFilter}
             onChange={(event) => setPriorityFilter(event.target.value as Priority | 'All')}
             aria-label={t('tasks.priorityFilterAriaLabel')}
-            className={controlClasses}
+            className={`${controlClasses} min-w-0 basis-[calc(50%-0.25rem)] sm:basis-auto`}
           >
             <option value="All">{t('kanban.filterPriorityAll')}</option>
             {PRIORITIES.map((priority) => (
@@ -267,7 +267,7 @@ export function ProjectsPage() {
             value={sortMode}
             onChange={(event) => setSortMode(event.target.value as SortMode)}
             aria-label={t('projects.sortAriaLabel')}
-            className={controlClasses}
+            className={`${controlClasses} min-w-0 basis-[calc(50%-0.25rem)] sm:basis-auto`}
           >
             <option value="healthRisk">{t('projects.sortHealthRisk')}</option>
             <option value="progress">{t('projects.sortProgress')}</option>

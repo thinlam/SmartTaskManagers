@@ -54,13 +54,13 @@ export function TaskFilters({
         onChange={(event) => onSearchChange(event.target.value)}
         placeholder={t('tasks.searchPlaceholder')}
         aria-label={t('tasks.searchAriaLabel')}
-        className={`${controlClasses} min-w-[220px] flex-1`}
+        className={`${controlClasses} min-w-[220px] flex-1 basis-full sm:basis-auto`}
       />
       <select
         value={projectId}
         onChange={(event) => onProjectChange(event.target.value)}
         aria-label={t('tasks.projectFilterAriaLabel')}
-        className={controlClasses}
+        className={`${controlClasses} min-w-0 basis-[calc(50%-0.25rem)] sm:basis-auto`}
       >
         <option value="All">{t('tasks.allProjects')}</option>
         {projects.map((project) => (
@@ -73,7 +73,7 @@ export function TaskFilters({
         value={status}
         onChange={(event) => onStatusChange(event.target.value as StatusFilter)}
         aria-label={t('tasks.statusFilterAriaLabel')}
-        className={controlClasses}
+        className={`${controlClasses} min-w-0 basis-[calc(50%-0.25rem)] sm:basis-auto`}
       >
         <option value="All">{t('tasks.allStatuses')}</option>
         {STATUSES.map((value) => (
@@ -86,7 +86,7 @@ export function TaskFilters({
         value={priority}
         onChange={(event) => onPriorityChange(event.target.value as PriorityFilter)}
         aria-label={t('tasks.priorityFilterAriaLabel')}
-        className={controlClasses}
+        className={`${controlClasses} min-w-0 basis-[calc(50%-0.25rem)] sm:basis-auto`}
       >
         <option value="All">{t('tasks.allPriorities')}</option>
         {PRIORITIES.map((value) => (
@@ -99,7 +99,7 @@ export function TaskFilters({
         value={risk}
         onChange={(event) => onRiskChange(event.target.value as RiskFilter)}
         aria-label={t('tasks.riskFilterAriaLabel')}
-        className={controlClasses}
+        className={`${controlClasses} min-w-0 basis-[calc(50%-0.25rem)] sm:basis-auto`}
       >
         <option value="All">{t('tasks.allRisks')}</option>
         {RISKS.map((value) => (
@@ -112,7 +112,7 @@ export function TaskFilters({
         value={sort}
         onChange={(event) => onSortChange(event.target.value as SortOption)}
         aria-label={t('tasks.sortAriaLabel')}
-        className={controlClasses}
+        className={`${controlClasses} min-w-0 basis-[calc(50%-0.25rem)] sm:basis-auto`}
       >
         <option value="smartScore">{t('tasks.sortSmartScore')}</option>
         <option value="dueDate">{t('tasks.sortDueDate')}</option>
