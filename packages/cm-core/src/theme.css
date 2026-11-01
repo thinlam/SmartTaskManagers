@@ -82,3 +82,15 @@ body {
   --shadow-card: 0 1px 2px rgb(0 0 0 / 0.3);
   --shadow-pop: 0 12px 32px -8px rgb(0 0 0 / 0.6);
 }
+
+/*
+ * Safe areas for notches, camera cut-outs and gesture bars. iOS reports them through env();
+ * on Android the Capacitor SystemBars plugin injects --safe-area-inset-* when the WebView
+ * does not, so each variable takes whichever is larger.
+ */
+:root {
+  --sat: max(env(safe-area-inset-top, 0px), var(--safe-area-inset-top, 0px));
+  --sab: max(env(safe-area-inset-bottom, 0px), var(--safe-area-inset-bottom, 0px));
+  --sal: max(env(safe-area-inset-left, 0px), var(--safe-area-inset-left, 0px));
+  --sar: max(env(safe-area-inset-right, 0px), var(--safe-area-inset-right, 0px));
+}

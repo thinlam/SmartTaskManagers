@@ -28,7 +28,7 @@ export function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-full items-center justify-center bg-canvas px-4 py-10 pt-[max(2.5rem,env(safe-area-inset-top))]">
+    <div className="flex min-h-full items-center justify-center bg-canvas px-4 py-10 pt-[max(2.5rem,var(--sat))] pb-[max(2.5rem,var(--sab))]">
       <div className="w-full max-w-md">
         <div className="mb-6 flex items-center justify-center gap-3">
           <Logo size={44} />

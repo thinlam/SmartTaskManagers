@@ -266,7 +266,7 @@ export function AppShell({ footer }: { footer?: ReactNode }) {
   const crumb = TITLES.find(([p]) => pathname.startsWith(p))?.[1] ?? 'Tổng quan';
 
   return (
-    <div className="flex h-full">
+    <div className="flex h-full pl-[var(--sal)] pr-[var(--sar)]">
       {/* Desktop sidebar */}
       <aside className="hidden w-64 shrink-0 flex-col border-r border-line bg-surface lg:flex">
         <div className="flex h-16 items-center gap-3 px-5">
@@ -286,7 +286,7 @@ export function AppShell({ footer }: { footer?: ReactNode }) {
           <div className="absolute inset-0 bg-ink/40" />
           <aside
             onMouseDown={(e) => e.stopPropagation()}
-            className="absolute inset-y-0 left-0 flex w-72 max-w-[85vw] flex-col bg-surface pt-[env(safe-area-inset-top)] shadow-pop"
+            className="absolute inset-y-0 left-0 flex w-72 max-w-[85vw] flex-col bg-surface pb-[var(--sab)] pl-[var(--sal)] pt-[var(--sat)] shadow-pop"
           >
             <div className="flex h-16 items-center justify-between px-5">
               <div className="flex items-center gap-3">
@@ -305,7 +305,7 @@ export function AppShell({ footer }: { footer?: ReactNode }) {
       )}
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-16 shrink-0 items-center gap-3 border-b border-line bg-surface px-4 pt-[env(safe-area-inset-top)] md:px-6">
+        <header className="flex h-[calc(4rem+var(--sat))] shrink-0 items-center gap-3 border-b border-line bg-surface px-4 pt-[var(--sat)] md:px-6">
           <IconButton label="Mở menu" className="lg:hidden" onClick={() => setDrawer(true)}>
             <Menu className="h-5 w-5" />
           </IconButton>
@@ -328,7 +328,7 @@ export function AppShell({ footer }: { footer?: ReactNode }) {
 
         <main
           ref={mainRef}
-          className="flex-1 overflow-y-auto px-4 py-5 pb-24 md:px-6 md:py-6 lg:pb-8"
+          className="flex-1 overflow-y-auto px-4 py-5 pb-[calc(6rem+var(--sab))] md:px-6 md:py-6 lg:pb-8"
         >
           <Outlet />
         </main>
@@ -336,7 +336,7 @@ export function AppShell({ footer }: { footer?: ReactNode }) {
         {/* Mobile bottom tabs */}
         <nav
           aria-label="Điều hướng nhanh"
-          className="fixed inset-x-0 bottom-0 z-30 flex items-stretch border-t border-line bg-surface pb-[env(safe-area-inset-bottom)] lg:hidden"
+          className="fixed inset-x-0 bottom-0 z-30 flex items-stretch border-t border-line bg-surface pb-[var(--sab)] pl-[var(--sal)] pr-[var(--sar)] lg:hidden"
         >
           {BOTTOM.slice(0, 2).map((n) => (
             <TabLink key={n.to} {...n} />
