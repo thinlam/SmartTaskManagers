@@ -42,7 +42,7 @@ export function LoginPage() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 p-4">
+    <div className="flex min-h-dvh items-center justify-center bg-slate-50 px-4 pb-[max(1rem,var(--sab))] pt-[max(1rem,var(--sat))]">
       <div className="w-full max-w-md">
         <div className="mb-6 flex items-center justify-center gap-3">
           <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-600 text-white">

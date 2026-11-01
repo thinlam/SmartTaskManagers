@@ -74,7 +74,7 @@ export function NewRecordingPage({ onSaved }: { onSaved: (id: string) => void })
   const optionsSet = Boolean(title.trim() || folderId || numSpeakers.trim());
 
   return (
-    <div className="flex-1 overflow-y-auto p-8">
+    <div className="flex-1 overflow-y-auto p-4 sm:p-8">
       <div className="mx-auto max-w-2xl">
         <h1 className="text-3xl font-bold text-slate-900">Ghi âm mới</h1>
         <p className="mt-1 text-sm text-slate-500">

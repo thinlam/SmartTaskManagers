@@ -5,3 +5,29 @@ body {
   color: #0f172a;
   font-family: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
 }
+
+/*
+ * Safe areas for notches, camera cut-outs and gesture bars. iOS reports them through env();
+ * on Android the Capacitor SystemBars plugin injects --safe-area-inset-* when the WebView
+ * does not, so each variable takes whichever is larger.
+ */
+:root {
+  --sat: max(env(safe-area-inset-top, 0px), var(--safe-area-inset-top, 0px));
+  --sab: max(env(safe-area-inset-bottom, 0px), var(--safe-area-inset-bottom, 0px));
+  --sal: max(env(safe-area-inset-left, 0px), var(--safe-area-inset-left, 0px));
+  --sar: max(env(safe-area-inset-right, 0px), var(--safe-area-inset-right, 0px));
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+/* Taps should feel instant and not select text/flash on touch screens. */
+button,
+a,
+[role='button'] {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}

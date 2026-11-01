@@ -234,7 +234,7 @@ export function RecordingDetailPage({
     );
   if (!rec) {
     return (
-      <div className="flex-1 p-8">
+      <div className="flex-1 p-4 sm:p-8">
         <button
           onClick={onBack}
           className="mb-4 text-sm font-medium text-indigo-600 hover:underline"
@@ -339,7 +339,7 @@ export function RecordingDetailPage({
   const done = rec.status === 'done';
 
   return (
-    <div className="flex-1 overflow-y-auto p-8">
+    <div className="flex-1 overflow-y-auto p-4 sm:p-8">
       <button
         onClick={onBack}
         className="mb-3 flex items-center gap-1.5 text-sm font-medium text-indigo-600 hover:underline"

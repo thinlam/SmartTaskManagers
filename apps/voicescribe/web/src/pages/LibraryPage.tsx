@@ -106,7 +106,7 @@ export function LibraryPage({
   ];
 
   return (
-    <div className="flex-1 overflow-y-auto p-8">
+    <div className="flex-1 overflow-y-auto p-4 sm:p-8">
       <PageHeader
         title="Thư viện"
         actions={
@@ -155,7 +155,7 @@ export function LibraryPage({
               tabIndex={0}
               onClick={() => onOpenRecording(r.id)}
               onKeyDown={(e) => e.key === 'Enter' && onOpenRecording(r.id)}
-              className="group flex cursor-pointer items-center gap-4 border-b border-slate-100 px-5 py-4 last:border-0 hover:bg-slate-50 focus:bg-slate-50 focus:outline-none"
+              className="group flex cursor-pointer items-center gap-3 border-b border-slate-100 px-3 py-4 sm:gap-4 sm:px-5 last:border-0 hover:bg-slate-50 focus:bg-slate-50 focus:outline-none"
             >
               <span
                 className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
@@ -194,7 +194,9 @@ export function LibraryPage({
                     {r.error ?? 'Không xử lý được file này'}
                   </p>
                 ) : (
-                  <p className="mt-0.5 truncate text-sm text-slate-400">{r.preview || r.fileName}</p>
+                  <p className="mt-0.5 truncate text-sm text-slate-400">
+                    {r.preview || r.fileName}
+                  </p>
                 )}
               </div>
 
@@ -211,7 +213,7 @@ export function LibraryPage({
                 )}
               </div>
 
-              <div className="w-24 shrink-0 text-right text-xs text-slate-500">
+              <div className="shrink-0 text-right text-xs text-slate-500 sm:w-24">
                 <p>{formatDate(r.createdAt)}</p>
                 <p className="mt-0.5 font-mono">
                   {r.status === 'done' ? formatDuration(r.durationSec) : ''}
@@ -225,7 +227,7 @@ export function LibraryPage({
                 }}
                 aria-label={`Xóa ${r.title}`}
                 title="Xóa"
-                className="rounded-lg p-2 text-slate-300 opacity-0 hover:bg-rose-50 hover:text-rose-600 focus:opacity-100 group-hover:opacity-100"
+                className="rounded-lg p-2 text-slate-300 opacity-0 hover:bg-rose-50 hover:text-rose-600 focus:opacity-100 group-hover:opacity-100 [@media(pointer:coarse)]:opacity-100"
               >
                 <Trash2 className="h-4 w-4" />
               </button>

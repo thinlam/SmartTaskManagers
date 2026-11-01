@@ -17,7 +17,7 @@ function Shell() {
   const bump = useCallback(() => setDataVersion((n) => n + 1), []);
 
   return (
-    <div className="flex h-screen bg-slate-50 text-slate-900">
+    <div className="flex h-dvh flex-col bg-slate-50 pl-[var(--sal)] pr-[var(--sar)] pt-[var(--sat)] text-slate-900 md:flex-row">
       <Sidebar
         page={route.page}
         refreshKey={dataVersion}
@@ -66,7 +66,7 @@ function Gate() {
   const { user, loading } = useAuth();
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-slate-50 text-slate-500">
+      <div className="flex h-dvh items-center justify-center bg-slate-50 text-slate-500">
         <Loader2 className="h-5 w-5 animate-spin" />
       </div>
     );

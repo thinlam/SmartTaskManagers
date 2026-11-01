@@ -174,7 +174,7 @@ function PasswordSection() {
 export function SettingsPage() {
   const { signOut } = useAuth();
   return (
-    <div className="flex-1 overflow-y-auto p-8">
+    <div className="flex-1 overflow-y-auto p-4 sm:p-8">
       <PageHeader title="Cài đặt" subtitle="Quản lý tài khoản và kết nối của bạn." />
       <div className="max-w-3xl space-y-6">
         <ProfileSection />
