@@ -87,6 +87,40 @@ workflows:
           success: true
           failure: true
 
+  voicescribe-android-build:
+    name: VoiceScribe - Android
+    max_build_duration: 60
+    instance_type: linux
+    environment:
+      node: 20
+      java: 21
+      vars:
+        PROJECT_ROOT: apps/voicescribe/web
+        # Public backend URL baked into the build; the page itself runs at https://localhost.
+        VITE_API_URL: https://voicescribe-production-57f0.up.railway.app
+    scripts:
+      - name: Install root dependencies
+        script: |
+          npm install
+      - name: Build web assets + sync Capacitor
+        script: |
+          cd $PROJECT_ROOT
+          npm run cap:sync
+      - name: Build Android debug APK
+        script: |
+          cd $PROJECT_ROOT/android
+          chmod +x gradlew
+          ./gradlew assembleDebug
+    artifacts:
+      - apps/voicescribe/web/android/app/build/outputs/**/*.apk
+    publishing:
+      email:
+        recipients:
+          - thinlam6@gmail.com
+        notify:
+          success: true
+          failure: true
+
   content-manager-android-build:
     name: Content Manager - Android
     max_build_duration: 60
@@ -96,6 +130,7 @@ workflows:
       java: 21
       vars:
         PROJECT_ROOT: apps/content-web
+        VITE_CM_API_URL: https://content-manager-api-production-7008.up.railway.app
     scripts:
       - name: Install root dependencies
         script: |
@@ -129,6 +164,7 @@ workflows:
       node: 20
       vars:
         PROJECT_ROOT: apps/content-web
+        VITE_CM_API_URL: https://content-manager-api-production-7008.up.railway.app
         XCODE_WORKSPACE: ios/App/App.xcworkspace
         XCODE_SCHEME: App
         BUNDLE_ID: com.contentmanager.app
