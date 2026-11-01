@@ -8,6 +8,9 @@ workflows:
       java: 21
       vars:
         PROJECT_ROOT: apps/web
+        # .env.development is git-ignored, so CI has no API URL without this and the app
+        # throws at startup (white screen). Public URL, not a secret.
+        VITE_API_BASE_URL: https://smarttaskmanagers-production.up.railway.app
     scripts:
       - name: Install root dependencies
         script: |
@@ -41,6 +44,7 @@ workflows:
       node: 20
       vars:
         PROJECT_ROOT: apps/web
+        VITE_API_BASE_URL: https://smarttaskmanagers-production.up.railway.app
         XCODE_WORKSPACE: ios/App/App.xcworkspace
         XCODE_SCHEME: App
         BUNDLE_ID: com.smarttaskmanager.app
