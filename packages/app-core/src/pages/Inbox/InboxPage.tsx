@@ -91,11 +91,6 @@ export function InboxPage() {
       .length;
   }, [tasks, today]);
 
-  const oldestItemDays = useMemo(() => {
-    if (inboxTasks.length === 0) return 0;
-    return Math.max(...inboxTasks.map((task) => daysSince(task.createdAt, today)));
-  }, [inboxTasks, today]);
-
   const tabTasks = useMemo(() => {
     switch (viewTab) {
       case 'needsOrganizing':

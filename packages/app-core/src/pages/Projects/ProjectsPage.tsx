@@ -8,7 +8,6 @@ import {
   computeProjectMetrics,
   getProjectDerivedPriority,
   getProjectNextAction,
-  type ProjectMetrics,
 } from '@stm/shared';
 import { EmptyState, HelpButton, PriorityBadge, ProjectHealthBadge } from '@stm/ui';
 import { useProjectsContext } from '../../state/ProjectsContext';
