@@ -1,7 +1,8 @@
 import { useRef, useState } from 'react';
-import { AlertCircle, ChevronDown, Loader2, X } from 'lucide-react';
+import { AlertCircle, ChevronDown, Loader2, Mic, Upload, X } from 'lucide-react';
 import { api, transcribeFile } from '../lib/api';
 import { errorText } from '../lib/format';
+import { isRecordingSupported, RecorderPanel } from '../components/RecorderPanel';
 import { UploadZone } from '../components/UploadZone';
 import {
   Card,
@@ -26,11 +27,17 @@ export function NewRecordingPage({ onSaved }: { onSaved: (id: string) => void })
   const [title, setTitle] = useState('');
   const [folderId, setFolderId] = useState('');
   const [numSpeakers, setNumSpeakers] = useState('');
+  const [mode, setMode] = useState<'record' | 'file'>(() =>
+    isRecordingSupported() ? 'record' : 'file',
+  );
   const abortRef = useRef<AbortController | null>(null);
+  // Kept so a failed upload of a fresh recording can be retried without recording again.
+  const lastFileRef = useRef<File | null>(null);
 
   const maxUploadMb = config?.maxUploadMb ?? 100;
 
   function handleFileSelected(file: File) {
+    lastFileRef.current = file;
     if (file.size > maxUploadMb * 1024 * 1024) {
       setState({ kind: 'error', message: `File vượt quá dung lượng tối đa ${maxUploadMb}MB.` });
       return;
@@ -78,11 +85,39 @@ export function NewRecordingPage({ onSaved }: { onSaved: (id: string) => void })
       <div className="mx-auto max-w-2xl">
         <h1 className="text-3xl font-bold text-slate-900">Ghi âm mới</h1>
         <p className="mt-1 text-sm text-slate-500">
-          Thả file âm thanh vào đây, VoiceScribe sẽ tự chuyển thành văn bản.
+          Ghi âm trực tiếp hoặc chọn file, VoiceScribe sẽ tự chuyển thành văn bản.
         </p>
 
+        {state.kind === 'idle' && (
+          <div className="mt-5 grid grid-cols-2 gap-1 rounded-xl bg-slate-100 p-1" role="tablist">
+            {(
+              [
+                ['record', 'Ghi âm', Mic],
+                ['file', 'Chọn file', Upload],
+              ] as const
+            ).map(([key, label, Icon]) => (
+              <button
+                key={key}
+                role="tab"
+                aria-selected={mode === key}
+                onClick={() => setMode(key)}
+                className={`flex items-center justify-center gap-2 rounded-lg py-2 text-sm font-medium transition-colors ${
+                  mode === key ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'
+                }`}
+              >
+                <Icon className="h-4 w-4" /> {label}
+              </button>
+            ))}
+          </div>
+        )}
+
         <Card className="mt-6 flex min-h-[320px] flex-col">
-          {state.kind === 'idle' && <UploadZone onFileSelected={handleFileSelected} />}
+          {state.kind === 'idle' && mode === 'record' && (
+            <RecorderPanel maxBytes={maxUploadMb * 1024 * 1024} onRecorded={handleFileSelected} />
+          )}
+          {state.kind === 'idle' && mode === 'file' && (
+            <UploadZone onFileSelected={handleFileSelected} />
+          )}
 
           {busy && (
             <div className="flex flex-1 flex-col items-center justify-center gap-4 py-12 text-center">
@@ -118,22 +153,35 @@ export function NewRecordingPage({ onSaved }: { onSaved: (id: string) => void })
               <AlertCircle className="h-10 w-10 text-rose-500" />
               <p className="font-medium text-slate-900">Không xử lý được file âm thanh</p>
               <p className="max-w-md text-sm text-slate-500">{state.message}</p>
-              <button
-                onClick={() => setState({ kind: 'idle' })}
-                className={`${primaryButtonClass} mt-2`}
-              >
-                Thử lại
-              </button>
+              <div className="mt-2 flex flex-wrap justify-center gap-2">
+                {lastFileRef.current && (
+                  <button
+                    onClick={() => handleFileSelected(lastFileRef.current!)}
+                    className={primaryButtonClass}
+                  >
+                    Gửi lại
+                  </button>
+                )}
+                <button
+                  onClick={() => setState({ kind: 'idle' })}
+                  className={lastFileRef.current ? secondaryButtonClass : primaryButtonClass}
+                >
+                  Làm lại
+                </button>
+              </div>
             </div>
           )}
         </Card>
 
         <p className="mt-3 text-center text-xs text-slate-400">
-          Hỗ trợ mp3, m4a, wav, mp4, webm · tối đa {maxUploadMb}MB · file dài được xử lý nền, bạn có
-          thể rời trang.
+          Ghi âm trực tiếp hoặc file mp3, m4a, wav, mp4, webm · tối đa {maxUploadMb}MB · file dài
+          được xử lý nền, bạn có thể rời trang.
         </p>
 
-        <details className="group mt-6 rounded-2xl border border-slate-200 bg-white" open={optionsSet}>
+        <details
+          className="group mt-6 rounded-2xl border border-slate-200 bg-white"
+          open={optionsSet}
+        >
           <summary className="flex cursor-pointer list-none items-center justify-between px-5 py-3.5 text-sm font-medium text-slate-700">
             <span>
               Tùy chọn

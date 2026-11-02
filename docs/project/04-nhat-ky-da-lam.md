@@ -1,0 +1,81 @@
+# 4. Nhật ký những gì đã làm
+
+> Cập nhật: 2026-11-02. Ngày lấy từ lịch sử Git (`git log`), **247 commit** từ 2026-09-15 đến 2026-11-01.
+> Nhịp làm việc: tháng 9/2026 có 147 commit, tháng 10 có 89, 11 ngày đầu tháng 11 có 11.
+> Đây là bản tóm tắt theo mốc, không liệt kê từng commit. Muốn xem chi tiết dùng
+> `git log --date=short --format="%h %ad %s"`.
+
+## Tháng 9/2026: Smart Task Manager
+
+| Ngày       | Việc đã làm                                                                                                                                                                                              |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-09-15 | Commit đầu tiên. Bản đầu có quản lý task, chi tiết task, thêm nhanh, Timeline/Gantt, menu điều hướng.                                                                                                    |
+| 2026-09-18 | Thêm module Dự án và hộp thoại lỗi chuyên nghiệp.                                                                                                                                                        |
+| 2026-09-20 | Làm lại bằng Vite + React 19 + Tailwind v4 (Phase 05); Sidebar và Topbar (08); Inbox (11); Dự án (13); Lịch (16); Cài đặt (19); **JWT Authentication (22)**.                                             |
+| 2026-09-21 | API Mục tiêu (25); **đồng bộ hai chiều Google Sheets ↔ backend (28)**; nối Dashboard/Today với dữ liệu thật; **bộ cài Windows .exe/.msi (32)**; tách cấu hình Dev/Production, health checks, Dockerfile. |
+| 2026-09-22 | **Chuyển cơ sở dữ liệu từ SQL Server sang MySQL (Railway)**; đa ngôn ngữ Việt/Anh (react-i18next); Dark Mode; kế hoạch triển khai web.                                                                   |
+| 2026-09-23 | **Cách ly dữ liệu theo tài khoản** (query filter theo user hiện tại); bỏ ô nhập địa chỉ máy chủ ở màn hình đăng nhập; làm lại giao diện Cài đặt.                                                         |
+| 2026-09-24 | Sửa nút tài khoản trên Topbar thành menu (không đăng xuất tức thì).                                                                                                                                      |
+| 2026-09-26 | Cài đặt tài khoản v2: ảnh đại diện, đổi mật khẩu, quản lý phiên đăng nhập, đăng xuất; `jti` trong token.                                                                                                 |
+| 2026-09-27 | **Phase 34: bọc `apps/web` thành app Android/iOS bằng Capacitor**; giao diện responsive; CORS cho Capacitor; ảnh đại diện trên Topbar; rà soát i18n toàn bộ.                                             |
+| 2026-09-30 | Làm lại Dashboard theo thiết kế Frame 03 (KPI theo trạng thái, biểu đồ donut, bảng cần chú ý).                                                                                                           |
+
+## Tháng 10/2026: giao diện, Hub, Content Manager, VoiceScribe
+
+| Ngày       | Việc đã làm                                                                                                                                                                                                                                                    |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-10-04 | Trang chi tiết task (Frame 06); **Kanban kéo thả đổi trạng thái thật** (Frame 08); Inbox có phân tích cú pháp ghi nhanh (Frame 10.1.1).                                                                                                                        |
+| 2026-10-14 | **App Hub:** đưa khung Hub vào Git, nối máy trạng thái tự cài (self-install) vào thẻ app và trang chi tiết.                                                                                                                                                    |
+| 2026-10-16 | Hub lấy danh mục từ manifest trên GitHub thay vì đóng gói cứng; sửa kiểm tra hoàn tất gỡ cài; cố định link tải Smart Task Manager theo tag. **VoiceScribe bắt đầu** (Bước 1: smoke test).                                                                      |
+| 2026-10-17 | VoiceScribe có giao diện web nối backend thật (Bước 4).                                                                                                                                                                                                        |
+| 2026-10-18 | **Content Manager ra đời** (web, di động, desktop) và được đưa vào Hub; tách trang Tài khoản/Cài đặt, thêm giao diện tối; build desktop trỏ vào API Railway.                                                                                                   |
+| 2026-10-20 | VoiceScribe: app desktop Tauri trỏ vào API Railway; chạy tách người nói trên CUDA khi có.                                                                                                                                                                      |
+| 2026-10-22 | **VoiceScribe 0.2.0:** tài khoản, thư mục, bản ghi lưu lâu dài (PostgreSQL).                                                                                                                                                                                   |
+| 2026-10-24 | VoiceScribe 0.2.1 (xử lý nền), cài ffmpeg vào Docker, bỏ ô chỉnh máy chủ, desktop 0.2.2; Hub bump 0.1.1.                                                                                                                                                       |
+| 2026-10-27 | **Content Manager 0.1.1, 0.1.2, 0.1.3** và VoiceScribe 0.2.3, 0.2.4, 0.2.5 lên Hub. Nội dung chính: sửa kéo thả Kanban, xuất CSV qua hộp thoại lưu, menu bị cắt; làm lại Chiến dịch/Cài đặt/Thành viên; **phân quyền Admin/Editor/Viewer** kiểm tra ở backend. |
+| 2026-10-28 | **Smart Task Manager, 4 vòng làm lại giao diện** (xem bên dưới).                                                                                                                                                                                               |
+| 2026-10-31 | Thêm workflow Codemagic đầu tiên cho Android/iOS (5 commit chỉnh loại máy và JDK 21 để build chạy được).                                                                                                                                                       |
+
+### Smart Task Manager: 4 vòng giao diện (2026-10-28)
+
+| Vòng | Commit    | Nội dung                                                                                                                                                                                                                                      |
+| ---- | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1    | `f4c9f24` | Việt hóa các câu tiếng Anh sinh trong `packages/shared` (lời chào, tóm tắt, ngày giờ 24h); nhóm sidebar; Tổng quan chỉ hiện 4 chỉ số mặc định; nút ✓ luôn thấy, sửa/xóa hiện khi rê chuột và xóa phải xác nhận; ẩn cột Rủi ro/Điểm ở màn nhỏ. |
+| 2    | `72ec7e5` | Việt hóa ô lọc và nhãn Trợ lý; thanh sửa/xóa hiện khi rê chuột cho Mục tiêu, Thói quen, Dự án; thay 4 thẻ số liệu bằng một dòng tóm tắt ở Mục tiêu và Thói quen.                                                                              |
+| 3    | `44fb573` | Thay dải 4 thẻ số liệu ở Công việc, Kanban, Hộp thư, Dự án bằng một dòng tóm tắt.                                                                                                                                                             |
+| 4    | `4f9c4e7` | Hộp xác nhận xóa tự vẽ thay `window.confirm`; Cài đặt chia 4 tab; Lịch bỏ chữ "Không có công việc" lặp ở ô trống.                                                                                                                             |
+
+## Tháng 11/2026
+
+| Ngày       | Việc đã làm                                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2026-11-01 | **Smart Task Manager 0.1.1** build desktop, Release `smart-task-manager_0.1.1`, đã kiểm tra dung lượng và SHA-256, Hub cập nhật (`2ee2b12`).                                                                                                                                                                                                                                                                                                                                    |
+|            | Phát hiện và sửa **APK trắng màn hình**: `.env.development` không có trên CI nên thiếu `VITE_API_BASE_URL` (`7314d08`).                                                                                                                                                                                                                                                                                                                                                         |
+|            | Content Manager: thêm `VITE_CM_API_URL` vào workflow Android/iOS (`78bc70b`).                                                                                                                                                                                                                                                                                                                                                                                                   |
+|            | **VoiceScribe Android:** thêm Capacitor, workflow Codemagic, CORS cho `https://localhost`, xuất file qua bảng chia sẻ (`1a1664e`).                                                                                                                                                                                                                                                                                                                                              |
+|            | Giao diện điện thoại: VoiceScribe có thanh tab dưới và vùng an toàn (`3e5d8aa`); Content Manager dùng biến vùng an toàn (`b7aeb0d`).                                                                                                                                                                                                                                                                                                                                            |
+|            | **Sửa gốc Android:** Capacitor 7 không cấp vùng an toàn, thanh tab bị 3 nút điều hướng đè; đệm cửa sổ theo thanh hệ thống trong `MainActivity` cho cả 3 app (`d186e0a`).                                                                                                                                                                                                                                                                                                        |
+|            | Smart Task Manager: bộ lọc xếp 2 ô mỗi dòng trên điện thoại (`addec05`).                                                                                                                                                                                                                                                                                                                                                                                                        |
+|            | Viết bộ tài liệu `docs/project/` (tài liệu này).                                                                                                                                                                                                                                                                                                                                                                                                                                |
+|            | Sửa 2 cảnh báo lint (biến không dùng ở `InboxPage`, `ProjectsPage`); chưa commit. Làm rơi nhầm stash của GitHub Desktop khi chạy `git stash pop`, đã khôi phục stash `ba0c6b1` và gỡ 216 tệp bị áp (xem tài liệu 05, 06).                                                                                                                                                                                                                                                       |
+|            | Thêm `CLAUDE.md` ở gốc repo: mỗi lần làm việc trợ lý phải cập nhật `docs/project/`; chưa commit.                                                                                                                                                                                                                                                                                                                                                                                |
+| 2026-11-02 | **VoiceScribe ghi âm trực tiếp:** `RecorderPanel.tsx` (micro, tạm dừng, thanh âm lượng, tự gửi khi dừng), tab Ghi âm/Chọn file ở `NewRecordingPage`, nút Gửi lại khi lỗi, quyền `RECORD_AUDIO` cho Android; chưa commit. Đã kiểm chứng: typecheck sạch; trên Chrome với micro giả, bản ghi webm tải lên đúng (2 lần), tạm dừng làm đồng hồ đứng, dừng thì nhả micro. **Chưa kiểm chứng:** micro thật, Android (hộp xin quyền), Tauri Windows, độ chính xác chép lời tiếng Việt. |     |
+
+## Phiên bản đã phát hành lên Hub
+
+| App                | Phiên bản             | Ngày                                                                     |
+| ------------------ | --------------------- | ------------------------------------------------------------------------ |
+| Smart Task Manager | 0.1.0                 | Có từ trước khi Hub dùng manifest (cố định URL theo tag ngày 2026-10-16) |
+| Smart Task Manager | **0.1.1**             | 2026-11-01                                                               |
+| VoiceScribe        | 0.2.0                 | 2026-10-22                                                               |
+| VoiceScribe        | 0.2.1                 | 2026-10-24                                                               |
+| VoiceScribe        | 0.2.3, 0.2.4, 0.2.5   | 2026-10-27                                                               |
+| Content Manager    | 0.1.1, 0.1.2, 0.1.3   | 2026-10-27                                                               |
+| Hub                | 0.1.1 (bump trong mã) | 2026-10-24 (chưa có Release)                                             |
+
+## Chưa kiểm chứng trên máy thật (tính đến 2026-11-01)
+
+- Mọi bản APK sau ngày 2026-11-01 (mã Java `MainActivity`, vùng an toàn, VoiceScribe Android).
+- Hộp xác nhận xóa tự vẽ trên Tauri và Android.
+- Phân quyền Viewer của Content Manager với dữ liệu thật.
+- Smart Task Manager 0.1.1: chưa cài và mở thử bản `.exe` vừa build.
