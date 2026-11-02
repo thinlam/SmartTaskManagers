@@ -60,18 +60,20 @@
 |            | Sửa 2 cảnh báo lint (biến không dùng ở `InboxPage`, `ProjectsPage`) (`f16ac7b`). Làm rơi nhầm stash của GitHub Desktop khi chạy `git stash pop`, đã khôi phục stash `ba0c6b1` và gỡ 216 tệp bị áp (xem tài liệu 05, 06).                                                                                                                                                                                                                                                                                                |
 |            | Thêm `CLAUDE.md` ở gốc repo: mỗi lần làm việc trợ lý phải cập nhật `docs/project/` (`5b3b7ad`).                                                                                                                                                                                                                                                                                                                                                                                                                         |
 | 2026-11-02 | **VoiceScribe ghi âm trực tiếp:** `RecorderPanel.tsx` (micro, tạm dừng, thanh âm lượng, tự gửi khi dừng), tab Ghi âm/Chọn file ở `NewRecordingPage`, nút Gửi lại khi lỗi, quyền `RECORD_AUDIO` cho Android (`5b3b7ad`); `npm run build` của web VoiceScribe qua. Đã kiểm chứng: typecheck sạch; trên Chrome với micro giả, bản ghi webm tải lên đúng (2 lần), tạm dừng làm đồng hồ đứng, dừng thì nhả micro. **Chưa kiểm chứng:** micro thật, Android (hộp xin quyền), Tauri Windows, độ chính xác chép lời tiếng Việt. |     |
+|            | **VoiceScribe desktop 0.2.6** build trên máy (bỏ bản build đầu vì còn chữ "0.2.5" trong Cài đặt): nâng phiên bản ở `tauri.conf.json`, `package.json`, `Cargo.toml`, `Cargo.lock`, `SettingsPage.tsx`; chưa commit, chưa có Release, Hub chưa cập nhật. SHA-256 của `.exe` `0cfad2c3…3d24d10`, `.msi` `5a7e52cd…6b9f`. Đã kiểm tra bản web nhúng có chữ 0.2.6 và có ghi âm; **chưa cài thử**.                                                                                                                            |
 
 ## Phiên bản đã phát hành lên Hub
 
-| App                | Phiên bản             | Ngày                                                                     |
-| ------------------ | --------------------- | ------------------------------------------------------------------------ |
-| Smart Task Manager | 0.1.0                 | Có từ trước khi Hub dùng manifest (cố định URL theo tag ngày 2026-10-16) |
-| Smart Task Manager | **0.1.1**             | 2026-11-01                                                               |
-| VoiceScribe        | 0.2.0                 | 2026-10-22                                                               |
-| VoiceScribe        | 0.2.1                 | 2026-10-24                                                               |
-| VoiceScribe        | 0.2.3, 0.2.4, 0.2.5   | 2026-10-27                                                               |
-| Content Manager    | 0.1.1, 0.1.2, 0.1.3   | 2026-10-27                                                               |
-| Hub                | 0.1.1 (bump trong mã) | 2026-10-24 (chưa có Release)                                             |
+| App                | Phiên bản                         | Ngày                                                                     |
+| ------------------ | --------------------------------- | ------------------------------------------------------------------------ |
+| Smart Task Manager | 0.1.0                             | Có từ trước khi Hub dùng manifest (cố định URL theo tag ngày 2026-10-16) |
+| Smart Task Manager | **0.1.1**                         | 2026-11-01                                                               |
+| VoiceScribe        | 0.2.0                             | 2026-10-22                                                               |
+| VoiceScribe        | 0.2.1                             | 2026-10-24                                                               |
+| VoiceScribe        | 0.2.3, 0.2.4, 0.2.5               | 2026-10-27                                                               |
+| VoiceScribe        | 0.2.6 (mới build, chưa phát hành) | 2026-11-02                                                               |
+| Content Manager    | 0.1.1, 0.1.2, 0.1.3               | 2026-10-27                                                               |
+| Hub                | 0.1.1 (bump trong mã)             | 2026-10-24 (chưa có Release)                                             |
 
 ## Chưa kiểm chứng trên máy thật (tính đến 2026-11-01)
 
