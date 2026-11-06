@@ -1,6 +1,6 @@
 [package]
 name = "app"
-version = "0.1.1"
+version = "0.1.2"
 description = "Smart Task Manager — Windows desktop client (Personal Productivity Ecosystem)"
 repository = "https://github.com/thinlam/SmartTaskManagers"
 edition = "2021"
