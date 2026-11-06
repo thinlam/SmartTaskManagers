@@ -17,6 +17,20 @@ public sealed class ProjectRepository(AppDbContext dbContext) : IProjectReposito
         CancellationToken cancellationToken = default
     ) => dbContext.Projects.FirstOrDefaultAsync(p => p.ExternalId == externalId, cancellationToken);
 
+    public Task<bool> ExistsWithNameAsync(
+        string name,
+        Guid? excludeId = null,
+        CancellationToken cancellationToken = default
+    ) =>
+        dbContext
+            .Projects.AsNoTracking()
+            .Where(p => p.Name.ToLower() == name.ToLower())
+            .Where(p => excludeId == null || p.Id != excludeId)
+            .AnyAsync(cancellationToken);
+
+    public Task<int> CountAsync(CancellationToken cancellationToken = default) =>
+        dbContext.Projects.AsNoTracking().CountAsync(cancellationToken);
+
     public Task<List<Project>> GetChangedSinceAsync(
         DateTimeOffset since,
         CancellationToken cancellationToken = default

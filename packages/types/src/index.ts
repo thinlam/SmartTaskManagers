@@ -79,6 +79,36 @@ export interface Task {
  */
 export type ProjectHealth = 'Healthy' | 'Attention' | 'At Risk' | 'Critical';
 
+/** Project's own priority scale, entered by hand on the create/edit form — a separate type from Task's Priority, deliberately without 'Urgent'. */
+export type ProjectPriority = 'Critical' | 'High' | 'Medium' | 'Low';
+
+/** "Lĩnh vực" on the create/edit Project form — optional. */
+export type ProjectField =
+  | 'Technology'
+  | 'Education'
+  | 'Business'
+  | 'Marketing'
+  | 'Finance'
+  | 'Hr'
+  | 'Design'
+  | 'Operations'
+  | 'Healthcare'
+  | 'Legal'
+  | 'Research'
+  | 'Personal'
+  | 'Other';
+
+/** "Danh mục" on the create/edit Project form — optional. */
+export type ProjectCategory =
+  | 'Work'
+  | 'Study'
+  | 'SideProject'
+  | 'Personal'
+  | 'Family'
+  | 'Health'
+  | 'PersonalFinance'
+  | 'Other';
+
 /**
  * The Project entity (Phase 13) — matches PROJECT_HEADERS in
  * apps/google-sheets/src/00_Constants.gs, minus `Health`: that column is
@@ -92,6 +122,11 @@ export interface Project {
   area: Area;
   targetDate: string | null;
   description: string;
+  priority: ProjectPriority;
+  /** Hex "#RRGGBB" — always set; the backend auto-assigns one from its palette if none was chosen. */
+  color: string;
+  field: ProjectField | null;
+  category: ProjectCategory | null;
   createdAt: string;
   updatedAt: string;
 }

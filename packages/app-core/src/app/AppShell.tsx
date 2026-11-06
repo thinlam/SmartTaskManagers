@@ -12,6 +12,7 @@ import { TaskDetailDrawer } from '../components/TaskDetailDrawer';
 import { ProjectDetailDrawer } from '../components/ProjectDetailDrawer';
 import { GoalDetailDrawer } from '../components/GoalDetailDrawer';
 import { HabitDetailDrawer } from '../components/HabitDetailDrawer';
+import { ToastHost } from '../components/ToastHost';
 
 /** Where a notification's entity lives — clicking one navigates there. */
 const ENTITY_TYPE_PATH: Record<NonNullable<AppNotification['entityType']>, string> = {
@@ -141,6 +142,7 @@ export function AppShell() {
       <ProjectDetailDrawer />
       <GoalDetailDrawer />
       <HabitDetailDrawer />
+      <ToastHost />
     </div>
   );
 }

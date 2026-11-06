@@ -15,7 +15,6 @@ import {
 } from '@stm/ui';
 import { useTasksContext } from '../../state/TasksContext';
 import { useProjectsContext } from '../../state/ProjectsContext';
-import { QuickCaptureInput } from '../../components/QuickCaptureInput';
 import { reportError } from '../../lib/reportError';
 import { translatePriority, translateTaskStatus, translateRisk } from '../../lib/enumLabels';
 import {
@@ -95,7 +94,6 @@ export function TasksPage() {
     refetch,
     deleteTask,
     completeTask,
-    addTask,
     openEditDrawer,
   } = useTasksContext();
   const { projects } = useProjectsContext();
@@ -192,10 +190,6 @@ export function TasksPage() {
   const totalPages = Math.max(1, Math.ceil(sortedTasks.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
   const pageTasks = sortedTasks.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
-
-  function handleAdd(title: string) {
-    addTask({ title, area: 'Personal' }).catch(reportError);
-  }
 
   async function handleRefresh() {
     setIsRefreshing(true);
@@ -335,8 +329,6 @@ export function TasksPage() {
           </span>
         )}
       </div>
-
-      <QuickCaptureInput onAdd={handleAdd} placeholder={t('tasks.quickCapturePlaceholder')} />
 
       <TaskFilters
         search={search}

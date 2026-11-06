@@ -76,6 +76,26 @@ export const riskColors = {
   critical: '#DC2626',
 } as const;
 
+/**
+ * Preset swatches for the Project create/edit form's color picker, in
+ * the exact order backend/SmartTask.Domain/Projects/ProjectColorPalette.cs
+ * uses to auto-assign a project's next color when none is chosen by
+ * hand. Keep the two lists identical and in the same order by hand — they
+ * aren't wired together programmatically.
+ */
+export const projectColorPalette = [
+  '#6366F1',
+  '#06B6D4',
+  '#10B981',
+  '#F59E0B',
+  '#EF4444',
+  '#EC4899',
+  '#8B5CF6',
+  '#14B8A6',
+  '#F97316',
+  '#6B7280',
+] as const;
+
 export type ColorToken = keyof typeof colors;
 export type StatusToken = keyof typeof statusColors;
 export type PriorityToken = keyof typeof priorityColors;

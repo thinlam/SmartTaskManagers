@@ -25,6 +25,18 @@ public sealed class Project : SyncableEntity
     public DateOnly? TargetDate { get; set; }
     public string? Description { get; set; }
 
+    /// <summary>Entered on the create/edit form; defaults to Medium.</summary>
+    public ProjectPriorityLevel Priority { get; set; } = ProjectPriorityLevel.Medium;
+
+    /// <summary>Hex string ("#RRGGBB"). Null only transiently during CreateAsync — see ProjectService, which always assigns a palette color before saving.</summary>
+    public string? Color { get; set; }
+
+    /// <summary>"Lĩnh vực" — optional.</summary>
+    public ProjectFieldType? Field { get; set; }
+
+    /// <summary>"Danh mục" — optional.</summary>
+    public ProjectCategoryType? Category { get; set; }
+
     public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
 }

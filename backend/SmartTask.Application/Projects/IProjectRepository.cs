@@ -11,6 +11,16 @@ public interface IProjectRepository
     /// <summary>Phase 28 sync's join lookup — finds the row a given Sheets ProjectId already maps to, if any.</summary>
     Task<Project?> GetByExternalIdAsync(string externalId, CancellationToken cancellationToken = default);
 
+    /// <summary>Case-insensitive duplicate-name check for the current user, excluding <paramref name="excludeId"/> (the project being edited, on update).</summary>
+    Task<bool> ExistsWithNameAsync(
+        string name,
+        Guid? excludeId = null,
+        CancellationToken cancellationToken = default
+    );
+
+    /// <summary>How many projects the current user already has — used to auto-assign the next palette color on create.</summary>
+    Task<int> CountAsync(CancellationToken cancellationToken = default);
+
     /// <summary>Phase 28 pull — everything changed after <paramref name="since"/>, for Sheets to catch up on.</summary>
     Task<List<Project>> GetChangedSinceAsync(
         DateTimeOffset since,

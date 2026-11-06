@@ -4,7 +4,12 @@ import { getProjectTopFocusText, getProjectNextAction, formatProjectDateRange } 
 import { useTranslation } from 'react-i18next';
 import { RowActions } from '../../components/RowActions';
 import { ProjectCard, type ProjectCardMetricChip } from '@stm/ui';
-import { translatePriority, translateProjectHealth } from '../../lib/enumLabels';
+import {
+  translatePriority,
+  translateProjectCategory,
+  translateProjectField,
+  translateProjectHealth,
+} from '../../lib/enumLabels';
 
 interface ProjectRowProps {
   project: Project;
@@ -67,6 +72,9 @@ export function ProjectRow({
         nextLabel={t('common.next')}
         priority={priority}
         priorityLabel={translatePriority(t, priority)}
+        color={project.color}
+        fieldLabel={project.field ? translateProjectField(t, project.field) : undefined}
+        categoryLabel={project.category ? translateProjectCategory(t, project.category) : undefined}
         onViewProject={onView}
         viewProjectLabel={t('projects.viewProjectLabel')}
       />

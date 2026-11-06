@@ -1,4 +1,4 @@
-import type { Project } from '@stm/types';
+import type { Project, ProjectCategory, ProjectField, ProjectPriority } from '@stm/types';
 import { httpClient } from './httpClient';
 import { areaToBackend, areaToFrontend } from './enumMappings';
 
@@ -10,6 +10,10 @@ interface ProjectDto {
   health: string;
   targetDate: string | null;
   description: string | null;
+  priority: string;
+  color: string;
+  field: string | null;
+  category: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -21,6 +25,10 @@ function fromDto(dto: ProjectDto): Project {
     area: areaToFrontend(dto.area),
     targetDate: dto.targetDate,
     description: dto.description ?? '',
+    priority: dto.priority as ProjectPriority,
+    color: dto.color,
+    field: (dto.field as ProjectField | null) ?? null,
+    category: (dto.category as ProjectCategory | null) ?? null,
     createdAt: dto.createdAt,
     updatedAt: dto.updatedAt,
   };
@@ -31,6 +39,10 @@ export interface ProjectWriteFields {
   area?: Project['area'];
   targetDate?: string | null;
   description?: string;
+  priority?: ProjectPriority;
+  color?: string | null;
+  field?: ProjectField | null;
+  category?: ProjectCategory | null;
 }
 
 function toWriteBody(fields: ProjectWriteFields): Record<string, unknown> {
@@ -39,6 +51,10 @@ function toWriteBody(fields: ProjectWriteFields): Record<string, unknown> {
   if (fields.area !== undefined) body.area = areaToBackend(fields.area);
   if (fields.targetDate !== undefined) body.targetDate = fields.targetDate;
   if (fields.description !== undefined) body.description = fields.description;
+  if (fields.priority !== undefined) body.priority = fields.priority;
+  if (fields.color !== undefined) body.color = fields.color;
+  if (fields.field !== undefined) body.field = fields.field;
+  if (fields.category !== undefined) body.category = fields.category;
   return body;
 }
 

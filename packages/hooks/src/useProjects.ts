@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import type { Project } from '@stm/types';
+import type { Project, ProjectCategory, ProjectField, ProjectPriority } from '@stm/types';
 import { projectApi, type ProjectWriteFields } from '@stm/api-client';
 
 export interface NewProjectInput {
@@ -7,14 +7,21 @@ export interface NewProjectInput {
   area: Project['area'];
   targetDate?: string | null;
   description?: string;
+  priority?: ProjectPriority;
+  color?: string | null;
+  field?: ProjectField | null;
+  category?: ProjectCategory | null;
 }
+
+/** Like Partial<Project>, but color may be explicitly null (clear it back to auto-assigned). */
+export type ProjectPatch = Omit<Partial<Project>, 'color'> & { color?: string | null };
 
 export interface UseProjectsResult {
   projects: Project[];
   isLoading: boolean;
   error: string | null;
   addProject: (input: NewProjectInput) => Promise<Project>;
-  updateProject: (id: string, patch: Partial<Project>) => Promise<Project>;
+  updateProject: (id: string, patch: ProjectPatch) => Promise<Project>;
   deleteProject: (id: string) => Promise<void>;
 }
 
@@ -56,12 +63,16 @@ export function useProjects(): UseProjectsResult {
   }, []);
 
   const updateProject = useCallback(
-    async (id: string, patch: Partial<Project>): Promise<Project> => {
+    async (id: string, patch: ProjectPatch): Promise<Project> => {
       const fields: ProjectWriteFields = {
         name: patch.name,
         area: patch.area,
         targetDate: patch.targetDate,
         description: patch.description,
+        priority: patch.priority,
+        color: patch.color,
+        field: patch.field,
+        category: patch.category,
       };
       const updated = await projectApi.update(id, fields);
       setProjects((previous) => previous.map((project) => (project.id === id ? updated : project)));

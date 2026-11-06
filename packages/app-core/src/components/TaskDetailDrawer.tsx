@@ -8,6 +8,7 @@ import { useTasksContext } from '../state/TasksContext';
 import { useProjectsContext } from '../state/ProjectsContext';
 import { useGoalsContext } from '../state/GoalsContext';
 import { translatePriority, translateTaskStatus } from '../lib/enumLabels';
+import { reportSuccess } from '../lib/reportError';
 
 const AREAS: Area[] = ['Career', 'Learning', 'Health', 'Personal', 'Personal Admin'];
 const PRIORITIES: Priority[] = ['Critical', 'Urgent', 'High', 'Medium', 'Low'];
@@ -178,8 +179,10 @@ export function TaskDetailDrawer() {
     try {
       if (editingTask) {
         await updateTask(editingTask.id, shared);
+        reportSuccess(t('tasks.saveChangesButton'));
       } else {
         await addTask(shared);
+        reportSuccess(t('tasks.addTaskButton'));
       }
       closeDrawer();
     } catch (err) {
@@ -197,6 +200,7 @@ export function TaskDetailDrawer() {
     setError(null);
     try {
       await addTask(shared);
+      reportSuccess(t('tasks.addTaskButton'));
       setForm(emptyForm());
     } catch (err) {
       setError(err instanceof ApiError ? err.message : t('tasks.saveError'));

@@ -29,6 +29,12 @@ public sealed class ProjectService(
         CancellationToken cancellationToken = default
     )
     {
+        if (await projectRepository.ExistsWithNameAsync(request.Name, null, cancellationToken))
+        {
+            throw new InvalidOperationException("A project with this name already exists.");
+        }
+
+        var existingCount = await projectRepository.CountAsync(cancellationToken);
         var now = dateTimeProvider.UtcNow;
         var project = new Project
         {
@@ -36,6 +42,10 @@ public sealed class ProjectService(
             Area = request.Area,
             TargetDate = request.TargetDate,
             Description = request.Description,
+            Priority = request.Priority,
+            Color = request.Color ?? ProjectColorPalette.NextColor(existingCount),
+            Field = request.Field,
+            Category = request.Category,
             CreatedAt = now,
             UpdatedAt = now,
         };
@@ -58,10 +68,22 @@ public sealed class ProjectService(
             return null;
         }
 
+        if (
+            request.Name is not null
+            && await projectRepository.ExistsWithNameAsync(request.Name, id, cancellationToken)
+        )
+        {
+            throw new InvalidOperationException("A project with this name already exists.");
+        }
+
         project.Name = request.Name ?? project.Name;
         project.Area = request.Area ?? project.Area;
         project.TargetDate = request.TargetDate ?? project.TargetDate;
         project.Description = request.Description ?? project.Description;
+        project.Priority = request.Priority ?? project.Priority;
+        project.Color = request.Color ?? project.Color;
+        project.Field = request.Field ?? project.Field;
+        project.Category = request.Category ?? project.Category;
         project.UpdatedAt = dateTimeProvider.UtcNow;
 
         await projectRepository.SaveChangesAsync(cancellationToken);
@@ -90,6 +112,10 @@ public sealed class ProjectService(
             project.Health,
             project.TargetDate,
             project.Description,
+            project.Priority,
+            project.Color ?? ProjectColorPalette.Colors[0],
+            project.Field,
+            project.Category,
             project.CreatedAt,
             project.UpdatedAt
         );

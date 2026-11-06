@@ -9,10 +9,10 @@ import {
   getProjectDerivedPriority,
   getProjectNextAction,
 } from '@stm/shared';
-import { EmptyState, HelpButton, PriorityBadge, ProjectHealthBadge } from '@stm/ui';
+import { Plus } from 'lucide-react';
+import { Button, EmptyState, HelpButton, PriorityBadge, ProjectHealthBadge } from '@stm/ui';
 import { useProjectsContext } from '../../state/ProjectsContext';
 import { useTasksContext } from '../../state/TasksContext';
-import { QuickCaptureInput } from '../../components/QuickCaptureInput';
 import { reportError } from '../../lib/reportError';
 import { translatePriority, translateProjectHealth } from '../../lib/enumLabels';
 import { ProjectRow } from './ProjectRow';
@@ -49,7 +49,8 @@ const controlClasses =
 export function ProjectsPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const { projects, isLoading, addProject, deleteProject, openEditDrawer } = useProjectsContext();
+  const { projects, isLoading, deleteProject, openEditDrawer, openCreateDrawer } =
+    useProjectsContext();
   const { tasks } = useTasksContext();
   const [viewTab, setViewTab] = useState<ViewTab>('All');
   const [priorityFilter, setPriorityFilter] = useState<Priority | 'All'>('All');
@@ -160,10 +161,6 @@ export function ProjectsPage() {
     [projectData, t],
   );
 
-  function handleAdd(name: string) {
-    addProject({ name, area: 'Personal' }).catch(reportError);
-  }
-
   function handleViewProject(project: Project) {
     navigate(`/tasks?project=${project.id}`);
   }
@@ -190,19 +187,29 @@ export function ProjectsPage() {
 
   return (
     <div className="flex flex-col gap-6 p-4 sm:p-8">
-      <header className="flex flex-col gap-1">
-        <div className="flex items-center gap-2">
-          <h1 className="text-[28px] font-bold leading-[34px] text-ink-primary">
-            {t('projects.title')}
-          </h1>
-          <HelpButton
-            title={t('help.projects.title')}
-            intro={t('help.projects.intro')}
-            items={t('help.projects.items', { returnObjects: true }) as string[]}
-            closeLabel={t('common.close')}
-          />
+      <header className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center gap-2">
+            <h1 className="text-[28px] font-bold leading-[34px] text-ink-primary">
+              {t('projects.title')}
+            </h1>
+            <HelpButton
+              title={t('help.projects.title')}
+              intro={t('help.projects.intro')}
+              items={t('help.projects.items', { returnObjects: true }) as string[]}
+              closeLabel={t('common.close')}
+            />
+          </div>
+          <p className="text-sm text-ink-secondary">{t('projects.subtitle')}</p>
         </div>
-        <p className="text-sm text-ink-secondary">{t('projects.subtitle')}</p>
+        <Button
+          type="button"
+          variant="primary"
+          leadingIcon={<Plus className="h-4 w-4" aria-hidden="true" />}
+          onClick={() => openCreateDrawer()}
+        >
+          {t('projects.addProjectHeaderButton')}
+        </Button>
       </header>
 
       {projectData.length > 0 && (
@@ -217,8 +224,6 @@ export function ProjectsPage() {
           })}
         </p>
       )}
-
-      <QuickCaptureInput onAdd={handleAdd} placeholder={t('projects.quickCapturePlaceholder')} />
 
       <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border">
         <div className="flex flex-wrap gap-4">

@@ -77,6 +77,50 @@ public enum ProjectHealthLevel
     Critical,
 }
 
+/// <summary>
+/// Project's own priority scale — deliberately a separate enum from
+/// PriorityLevel (no Urgent): entered by hand on the create/edit form,
+/// unlike Task's Priority which that form's spec never asked to touch.
+/// </summary>
+public enum ProjectPriorityLevel
+{
+    Critical,
+    High,
+    Medium,
+    Low,
+}
+
+/// <summary>"Lĩnh vực" on the create/edit Project form — optional.</summary>
+public enum ProjectFieldType
+{
+    Technology,
+    Education,
+    Business,
+    Marketing,
+    Finance,
+    Hr,
+    Design,
+    Operations,
+    Healthcare,
+    Legal,
+    Research,
+    Personal,
+    Other,
+}
+
+/// <summary>"Danh mục" on the create/edit Project form — optional.</summary>
+public enum ProjectCategoryType
+{
+    Work,
+    Study,
+    SideProject,
+    Personal,
+    Family,
+    Health,
+    PersonalFinance,
+    Other,
+}
+
 public enum GoalStatusType
 {
     OnTrack,

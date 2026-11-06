@@ -1,6 +1,6 @@
 # 1. Nghiệp vụ từng ứng dụng
 
-> Cập nhật: 2026-11-01. Nội dung dựa trên mã nguồn trong repo (backend, `packages/*`, `apps/*`) tại
+> Cập nhật: 2026-11-07. Nội dung dựa trên mã nguồn trong repo (backend, `packages/*`, `apps/*`) tại
 > thời điểm này. Chỗ nào chưa kiểm chứng trên máy thật được ghi rõ.
 
 Repo `SmartTaskManagers` chứa **4 ứng dụng** dùng chung một kho mã:
@@ -21,38 +21,38 @@ Mỗi tài khoản chỉ thấy dữ liệu của chính mình (cách ly bằng 
 
 ### 1.1 Đối tượng nghiệp vụ
 
-| Đối tượng        | Ý nghĩa                                          | Giá trị cố định                                               |
-| ---------------- | ------------------------------------------------ | ------------------------------------------------------------- |
-| **Task**         | Một việc cần làm                                 | Trạng thái: Inbox, To Do, In Progress, Waiting, Completed     |
-|                  |                                                  | Ưu tiên: Critical, Urgent, High, Medium, Low                  |
-|                  |                                                  | Lĩnh vực: Career, Learning, Health, Personal, PersonalAdmin   |
-| **Project**      | Nhóm nhiều task có hạn mục tiêu                  | Sức khỏe dự án: Healthy, Attention, AtRisk                    |
-| **Goal**         | Mục tiêu dài hạn, có tiến độ %                   | Trạng thái: OnTrack, AtRisk, Completed                        |
-| **Habit**        | Thói quen lặp lại, có chuỗi (streak) và check-in | Tần suất: Daily, Weekly, Custom                               |
-| **Notification** | Cảnh báo hệ thống tự sinh                        | Quá hạn, sắp hạn, thói quen sắp mất chuỗi, mục tiêu có rủi ro |
-| **Session**      | Một thiết bị đang đăng nhập                      | Xem/đăng xuất từng thiết bị trong Cài đặt tài khoản           |
+| Đối tượng        | Ý nghĩa                                          | Giá trị cố định                                                                                                                                                                        |
+| ---------------- | ------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Task**         | Một việc cần làm                                 | Trạng thái: Inbox, To Do, In Progress, Waiting, Completed                                                                                                                              |
+|                  |                                                  | Ưu tiên: Critical, Urgent, High, Medium, Low                                                                                                                                           |
+|                  |                                                  | Lĩnh vực: Career, Learning, Health, Personal, PersonalAdmin                                                                                                                            |
+| **Project**      | Nhóm nhiều task có hạn mục tiêu                  | Sức khỏe dự án: Healthy, Attention, AtRisk. Ưu tiên riêng: Critical/High/Medium/Low (mặc định Medium). Màu (tự gán nếu để trống). Lĩnh vực và Danh mục đều không bắt buộc (2026-11-07) |
+| **Goal**         | Mục tiêu dài hạn, có tiến độ %                   | Trạng thái: OnTrack, AtRisk, Completed                                                                                                                                                 |
+| **Habit**        | Thói quen lặp lại, có chuỗi (streak) và check-in | Tần suất: Daily, Weekly, Custom                                                                                                                                                        |
+| **Notification** | Cảnh báo hệ thống tự sinh                        | Quá hạn, sắp hạn, thói quen sắp mất chuỗi, mục tiêu có rủi ro                                                                                                                          |
+| **Session**      | Một thiết bị đang đăng nhập                      | Xem/đăng xuất từng thiết bị trong Cài đặt tài khoản                                                                                                                                    |
 
 Quan hệ: Task thuộc 0 hoặc 1 Project, 0 hoặc 1 Goal, có thể phụ thuộc một Task khác. Xóa Project
 hoặc Goal sẽ gỡ liên kết ở các task liên quan chứ không xóa task.
 
 ### 1.2 Các màn hình và nghiệp vụ
 
-| Màn hình              | Nghiệp vụ                                                                                                                                                |
-| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Tổng quan**         | Lời chào theo giờ, các chỉ số chính (mặc định: Quá hạn, Đến hạn hôm nay, Đang thực hiện, Tỷ lệ hoàn thành). Người dùng bật thêm chỉ số bằng "Tùy chỉnh". |
-| **Hôm nay**           | Tập trung hôm nay: việc đã lên lịch giờ, việc đang làm, việc quá hạn, ưu tiên cao, việc dễ xong nhanh.                                                   |
-| **Hộp thư (Inbox)**   | Ghi nhanh một dòng (có phân tích cú pháp: ưu tiên, hạn, dự án), rồi sắp xếp sau vào dự án/hạn.                                                           |
-| **Công việc**         | Bảng công việc, tab Tất cả/Đang làm/Hoàn thành/Quá hạn, lọc theo dự án/trạng thái/ưu tiên/rủi ro, sắp xếp theo Điểm thông minh. Xuất file.               |
-| **Dự án**             | Thẻ dự án với số việc theo trạng thái, việc nên làm tiếp, hạn mục tiêu, sức khỏe.                                                                        |
-| **Lịch**              | Xem hạn chót theo Tháng/Tuần/Danh sách; chọn ngày để xem việc trong ngày.                                                                                |
-| **Kanban**            | Cột theo trạng thái, kéo thả để đổi trạng thái; có gợi ý giới hạn việc làm cùng lúc (WIP).                                                               |
-| **Gantt**             | Dòng thời gian theo dự án, tiến độ, rủi ro, trễ hạn.                                                                                                     |
-| **Mục tiêu**          | Danh sách mục tiêu, tiến độ %, thêm/sửa/xóa.                                                                                                             |
-| **Thói quen**         | Check-in hằng ngày/tuần, chuỗi ngày dài nhất.                                                                                                            |
-| **Phân tích**         | Báo cáo tỷ lệ hoàn thành, quá hạn, tiến độ theo lĩnh vực, phân bố ưu tiên.                                                                               |
-| **Trợ lý thông minh** | Gom việc theo hành động đề xuất (Làm ngay, Chia nhỏ việc, Việc nhanh, Lên lịch, Để sau…).                                                                |
-| **Cài đặt**           | 4 tab: Chung, Mặc định công việc, Tập trung & Lịch trình, Công cụ thông minh.                                                                            |
-| **Tài khoản**         | Ảnh đại diện, đổi mật khẩu, ngôn ngữ (Việt/Anh), giao diện sáng/tối, phiên đăng nhập.                                                                    |
+| Màn hình              | Nghiệp vụ                                                                                                                                                                                                                         |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Tổng quan**         | Lời chào theo giờ, các chỉ số chính (mặc định: Quá hạn, Đến hạn hôm nay, Đang thực hiện, Tỷ lệ hoàn thành). Người dùng bật thêm chỉ số bằng "Tùy chỉnh".                                                                          |
+| **Hôm nay**           | Tập trung hôm nay: việc đã lên lịch giờ, việc đang làm, việc quá hạn, ưu tiên cao, việc dễ xong nhanh.                                                                                                                            |
+| **Hộp thư (Inbox)**   | Ghi nhanh một dòng (có phân tích cú pháp: ưu tiên, hạn, dự án), rồi sắp xếp sau vào dự án/hạn.                                                                                                                                    |
+| **Công việc**         | Bảng công việc, tab Tất cả/Đang làm/Hoàn thành/Quá hạn, lọc theo dự án/trạng thái/ưu tiên/rủi ro, sắp xếp theo Điểm thông minh. Xuất file.                                                                                        |
+| **Dự án**             | Thẻ dự án với số việc theo trạng thái, việc nên làm tiếp, hạn mục tiêu, sức khỏe. Nút "Thêm dự án" ở đầu trang mở form giữa màn hình: Tên (bắt buộc, không trùng), Ưu tiên, Màu, Lĩnh vực, Danh mục, Mô tả/mục tiêu (2026-11-07). |
+| **Lịch**              | Xem hạn chót theo Tháng/Tuần/Danh sách; chọn ngày để xem việc trong ngày.                                                                                                                                                         |
+| **Kanban**            | Cột theo trạng thái, kéo thả để đổi trạng thái; có gợi ý giới hạn việc làm cùng lúc (WIP).                                                                                                                                        |
+| **Gantt**             | Dòng thời gian theo dự án, tiến độ, rủi ro, trễ hạn.                                                                                                                                                                              |
+| **Mục tiêu**          | Danh sách mục tiêu, tiến độ %, thêm/sửa/xóa.                                                                                                                                                                                      |
+| **Thói quen**         | Check-in hằng ngày/tuần, chuỗi ngày dài nhất.                                                                                                                                                                                     |
+| **Phân tích**         | Báo cáo tỷ lệ hoàn thành, quá hạn, tiến độ theo lĩnh vực, phân bố ưu tiên.                                                                                                                                                        |
+| **Trợ lý thông minh** | Gom việc theo hành động đề xuất (Làm ngay, Chia nhỏ việc, Việc nhanh, Lên lịch, Để sau…).                                                                                                                                         |
+| **Cài đặt**           | 4 tab: Chung, Mặc định công việc, Tập trung & Lịch trình, Công cụ thông minh.                                                                                                                                                     |
+| **Tài khoản**         | Ảnh đại diện, đổi mật khẩu, ngôn ngữ (Việt/Anh), giao diện sáng/tối, phiên đăng nhập.                                                                                                                                             |
 
 ### 1.3 Smart Engine (quy tắc tính điểm)
 

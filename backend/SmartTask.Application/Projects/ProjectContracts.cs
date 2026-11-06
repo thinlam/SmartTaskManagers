@@ -10,6 +10,10 @@ public sealed record ProjectResponse(
     ProjectHealthLevel Health,
     DateOnly? TargetDate,
     string? Description,
+    ProjectPriorityLevel Priority,
+    string Color,
+    ProjectFieldType? Field,
+    ProjectCategoryType? Category,
     DateTimeOffset CreatedAt,
     DateTimeOffset UpdatedAt
 );
@@ -33,6 +37,15 @@ public sealed class CreateProjectRequest
 
     [MaxLength(4000)]
     public string? Description { get; init; }
+
+    public ProjectPriorityLevel Priority { get; init; } = ProjectPriorityLevel.Medium;
+
+    /// <summary>Hex "#RRGGBB"; left null to let ProjectService auto-assign the next palette color.</summary>
+    [RegularExpression("^#[0-9A-Fa-f]{6}$")]
+    public string? Color { get; init; }
+
+    public ProjectFieldType? Field { get; init; }
+    public ProjectCategoryType? Category { get; init; }
 }
 
 public sealed class UpdateProjectRequest
@@ -45,4 +58,12 @@ public sealed class UpdateProjectRequest
 
     [MaxLength(4000)]
     public string? Description { get; init; }
+
+    public ProjectPriorityLevel? Priority { get; init; }
+
+    [RegularExpression("^#[0-9A-Fa-f]{6}$")]
+    public string? Color { get; init; }
+
+    public ProjectFieldType? Field { get; init; }
+    public ProjectCategoryType? Category { get; init; }
 }

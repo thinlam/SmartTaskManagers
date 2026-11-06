@@ -32,8 +32,15 @@ public sealed class ProjectsController(IProjectService projectService) : Control
         CancellationToken cancellationToken
     )
     {
-        var created = await projectService.CreateAsync(request, cancellationToken);
-        return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
+        try
+        {
+            var created = await projectService.CreateAsync(request, cancellationToken);
+            return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(new { message = ex.Message });
+        }
     }
 
     [HttpPatch("{id:guid}")]
@@ -43,8 +50,15 @@ public sealed class ProjectsController(IProjectService projectService) : Control
         CancellationToken cancellationToken
     )
     {
-        var updated = await projectService.UpdateAsync(id, request, cancellationToken);
-        return updated is null ? NotFound() : Ok(updated);
+        try
+        {
+            var updated = await projectService.UpdateAsync(id, request, cancellationToken);
+            return updated is null ? NotFound() : Ok(updated);
+        }
+        catch (InvalidOperationException ex)
+        {
+            return Conflict(new { message = ex.Message });
+        }
     }
 
     [HttpDelete("{id:guid}")]

@@ -77,6 +77,11 @@
 3. Link tải trên Hub trỏ vào **tag cụ thể**, không dùng `/latest/`.
 4. Không đánh dấu "đã xong" khi chưa chạy thật. Báo rõ cái gì đã kiểm chứng và cái gì chưa.
 5. Sửa backend (CORS, logic) chỉ có hiệu lực sau khi **redeploy** trên Railway.
+6. Thêm cột mới vào bảng có dữ liệu thật: migration EF phải đặt `defaultValue` là **một giá trị enum hợp
+   lệ** (không phải chuỗi rỗng `""`), nếu không hàng cũ sẽ lỗi khi đọc do `HasConversion<string>()` không
+   parse được chuỗi rỗng. Thêm **UNIQUE INDEX** trên cột đã có dữ liệu trùng sẽ làm migration thất bại khi
+   deploy — kiểm tra trùng lặp trước khi thêm (ứng dụng này tự `MigrateAsync()` khi khởi động, xem
+   `SmartTask.Api/Program.cs`, nên migration lỗi sẽ chặn app khởi động). (Bài học 2026-11-07.)
 
 ## E. Thỏa thuận làm việc với trợ lý AI
 

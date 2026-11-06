@@ -239,6 +239,14 @@ namespace SmartTask.Persistence.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("varchar(20)");
 
+                    b.Property<string>("Category")
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)");
+
+                    b.Property<string>("Color")
+                        .HasMaxLength(7)
+                        .HasColumnType("varchar(7)");
+
                     b.Property<DateTimeOffset>("CreatedAt")
                         .HasColumnType("datetime(6)");
 
@@ -249,6 +257,10 @@ namespace SmartTask.Persistence.Migrations
                     b.Property<string>("ExternalId")
                         .HasMaxLength(50)
                         .HasColumnType("varchar(50)");
+
+                    b.Property<string>("Field")
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)");
 
                     b.Property<string>("Health")
                         .IsRequired()
@@ -262,6 +274,11 @@ namespace SmartTask.Persistence.Migrations
                         .IsRequired()
                         .HasMaxLength(200)
                         .HasColumnType("varchar(200)");
+
+                    b.Property<string>("Priority")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("varchar(20)");
 
                     b.Property<int>("SyncStatus")
                         .HasColumnType("int");
@@ -283,6 +300,9 @@ namespace SmartTask.Persistence.Migrations
                     b.HasIndex("UserId");
 
                     b.HasIndex("UserId", "ExternalId")
+                        .IsUnique();
+
+                    b.HasIndex("UserId", "Name")
                         .IsUnique();
 
                     b.ToTable("Projects", (string)null);

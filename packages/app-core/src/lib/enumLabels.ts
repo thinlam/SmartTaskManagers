@@ -2,7 +2,10 @@ import type {
   GoalStatus,
   HabitFrequency,
   Priority,
+  ProjectCategory,
+  ProjectField,
   ProjectHealth,
+  ProjectPriority,
   Risk,
   TaskStatus,
 } from '@stm/types';
@@ -67,6 +70,49 @@ export function translateGoalStatus(t: Translate, status: GoalStatus): string {
     Completed: 'enums.goalStatusCompleted',
   };
   return t(key[status]);
+}
+
+export function translateProjectPriority(t: Translate, priority: ProjectPriority): string {
+  const key: Record<ProjectPriority, string> = {
+    Critical: 'projects.priorityCritical',
+    High: 'projects.priorityHigh',
+    Medium: 'projects.priorityMedium',
+    Low: 'projects.priorityLow',
+  };
+  return t(key[priority]);
+}
+
+export function translateProjectField(t: Translate, field: ProjectField): string {
+  const key: Record<ProjectField, string> = {
+    Technology: 'projects.fieldTechnology',
+    Education: 'projects.fieldEducation',
+    Business: 'projects.fieldBusiness',
+    Marketing: 'projects.fieldMarketing',
+    Finance: 'projects.fieldFinance',
+    Hr: 'projects.fieldHr',
+    Design: 'projects.fieldDesign',
+    Operations: 'projects.fieldOperations',
+    Healthcare: 'projects.fieldHealthcare',
+    Legal: 'projects.fieldLegal',
+    Research: 'projects.fieldResearch',
+    Personal: 'projects.fieldPersonal',
+    Other: 'projects.fieldOther',
+  };
+  return t(key[field]);
+}
+
+export function translateProjectCategory(t: Translate, category: ProjectCategory): string {
+  const key: Record<ProjectCategory, string> = {
+    Work: 'projects.categoryWork',
+    Study: 'projects.categoryStudy',
+    SideProject: 'projects.categorySideProject',
+    Personal: 'projects.categoryPersonal',
+    Family: 'projects.categoryFamily',
+    Health: 'projects.categoryHealth',
+    PersonalFinance: 'projects.categoryPersonalFinance',
+    Other: 'projects.categoryOther',
+  };
+  return t(key[category]);
 }
 
 export function translateHabitFrequency(t: Translate, frequency: HabitFrequency): string {

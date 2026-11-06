@@ -30,6 +30,12 @@ export interface ProjectCardProps {
   /** Derived (not stored) — see getProjectDerivedPriority in packages/shared. Omit to hide the badge. */
   priority?: Priority;
   priorityLabel?: string;
+  /** Stored project color (hex) — rendered as a small dot next to the name. Omit to hide it. */
+  color?: string;
+  /** Translated "Lĩnh vực" value — omit to hide the tag. */
+  fieldLabel?: string;
+  /** Translated "Danh mục" value — omit to hide the tag. */
+  categoryLabel?: string;
   onViewProject?: () => void;
   /** Translated "View project" button text — falls back to English when omitted. */
   viewProjectLabel?: string;
@@ -83,6 +89,9 @@ export function ProjectCard({
   nextLabel = 'Next',
   priority,
   priorityLabel,
+  color,
+  fieldLabel,
+  categoryLabel,
   onViewProject,
   viewProjectLabel = 'View project →',
 }: ProjectCardProps) {
@@ -91,7 +100,16 @@ export function ProjectCard({
       <div className={cn('w-1.5 shrink-0', STRIPE_CLASSES[health])} aria-hidden="true" />
       <div className="flex flex-1 flex-col gap-3 p-4">
         <div className="flex items-start justify-between gap-3">
-          <span className="text-sm font-semibold text-ink-primary">{name}</span>
+          <span className="flex items-center gap-2 text-sm font-semibold text-ink-primary">
+            {color && (
+              <span
+                className="h-2.5 w-2.5 shrink-0 rounded-full"
+                style={{ backgroundColor: color }}
+                aria-hidden="true"
+              />
+            )}
+            {name}
+          </span>
           <div className="flex shrink-0 items-center gap-1.5">
             {priority && <PriorityBadge priority={priority} label={priorityLabel} />}
             <ProjectHealthBadge health={health} label={healthLabel} />
@@ -106,6 +124,21 @@ export function ProjectCard({
             {progressLabel ?? `${progress}% complete`}
           </span>
         </div>
+
+        {(fieldLabel || categoryLabel) && (
+          <div className="flex flex-wrap gap-1.5">
+            {fieldLabel && (
+              <span className="rounded-md bg-surface-secondary px-2 py-0.5 text-xs text-ink-secondary">
+                {fieldLabel}
+              </span>
+            )}
+            {categoryLabel && (
+              <span className="rounded-md bg-surface-secondary px-2 py-0.5 text-xs text-ink-secondary">
+                {categoryLabel}
+              </span>
+            )}
+          </div>
+        )}
 
         <Progress value={progress} />
 
