@@ -2,10 +2,16 @@ import { CheckCircle2, X, XCircle } from 'lucide-react';
 
 export type ToastVariant = 'success' | 'error';
 
+export interface ToastAction {
+  label: string;
+  onClick: () => void;
+}
+
 export interface ToastData {
   id: string;
   variant: ToastVariant;
   message: string;
+  action?: ToastAction;
 }
 
 export interface ToastStackProps {
@@ -47,6 +53,18 @@ export function ToastStack({ toasts, onDismiss }: ToastStackProps) {
           >
             <Icon className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
             <p className="flex-1 text-sm font-medium">{toast.message}</p>
+            {toast.action && (
+              <button
+                type="button"
+                onClick={() => {
+                  toast.action?.onClick();
+                  onDismiss(toast.id);
+                }}
+                className="shrink-0 rounded px-1.5 py-0.5 text-sm font-semibold underline-offset-2 hover:underline"
+              >
+                {toast.action.label}
+              </button>
+            )}
             <button
               type="button"
               onClick={() => onDismiss(toast.id)}

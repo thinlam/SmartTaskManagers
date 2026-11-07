@@ -407,7 +407,16 @@
     "dueTomorrow": "Tomorrow",
     "duePlus3Days": "+3 days",
     "dueNextWeek": "Next week",
-    "calculatedAutomaticallyHint": "Smart Score, Risk Level and Recommended Action are calculated automatically after you add this task."
+    "calculatedAutomaticallyHint": "Smart Score, Risk Level and Recommended Action are calculated automatically after you add this task.",
+    "sectionAdvanced": "Advanced",
+    "fieldParentTask": "Parent task",
+    "noParentTaskOption": "None (top-level task)",
+    "fieldReminderAt": "Remind me at",
+    "fieldAttachmentUrl": "Attachment link",
+    "attachmentUrlPlaceholder": "https://…",
+    "titleDuplicateWarning": "Another open task already uses this title — this is just a heads-up, you can still save.",
+    "deleteSuccess": "Task deleted.",
+    "undoButton": "Undo"
   },
   "projects": {
     "summaryLine": "{{active}} active projects ({{healthy}} healthy, {{attention}} attention, {{atRisk}} at risk) · {{overdue}} overdue tasks · {{avg}}% average progress",

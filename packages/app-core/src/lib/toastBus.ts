@@ -1,8 +1,9 @@
-import type { ToastVariant } from '@stm/ui';
+import type { ToastAction, ToastVariant } from '@stm/ui';
 
 export interface ToastInput {
   variant: ToastVariant;
   message: string;
+  action?: ToastAction;
 }
 
 type Listener = (toast: ToastInput) => void;

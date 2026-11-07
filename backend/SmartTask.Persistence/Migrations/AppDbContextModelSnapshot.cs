@@ -319,6 +319,10 @@ namespace SmartTask.Persistence.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("varchar(20)");
 
+                    b.Property<string>("AttachmentUrl")
+                        .HasMaxLength(2000)
+                        .HasColumnType("varchar(2000)");
+
                     b.Property<string>("Category")
                         .HasMaxLength(100)
                         .HasColumnType("varchar(100)");
@@ -331,6 +335,9 @@ namespace SmartTask.Persistence.Migrations
                         .HasColumnType("varchar(20)");
 
                     b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<DateTimeOffset?>("DeletedAt")
                         .HasColumnType("datetime(6)");
 
                     b.Property<Guid?>("DependencyTaskId")
@@ -359,6 +366,9 @@ namespace SmartTask.Persistence.Migrations
                     b.Property<Guid?>("GoalId")
                         .HasColumnType("char(36)");
 
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("tinyint(1)");
+
                     b.Property<DateTimeOffset?>("LastStatusChangedAt")
                         .HasColumnType("datetime(6)");
 
@@ -373,6 +383,12 @@ namespace SmartTask.Persistence.Migrations
                     b.Property<string>("Notes")
                         .HasMaxLength(4000)
                         .HasColumnType("varchar(4000)");
+
+                    b.Property<Guid?>("ParentTaskId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<int>("Position")
+                        .HasColumnType("int");
 
                     b.Property<string>("Priority")
                         .IsRequired()
@@ -393,6 +409,9 @@ namespace SmartTask.Persistence.Migrations
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("varchar(20)");
+
+                    b.Property<DateTimeOffset?>("ReminderAt")
+                        .HasColumnType("datetime(6)");
 
                     b.Property<string>("Risk")
                         .HasMaxLength(20)
@@ -427,17 +446,23 @@ namespace SmartTask.Persistence.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("Category");
+
                     b.HasIndex("DependencyTaskId");
 
                     b.HasIndex("DueDate");
 
                     b.HasIndex("GoalId");
 
+                    b.HasIndex("ParentTaskId");
+
                     b.HasIndex("ProjectId");
 
                     b.HasIndex("Status");
 
                     b.HasIndex("UserId");
+
+                    b.HasIndex("Status", "DueDate");
 
                     b.HasIndex("UserId", "ExternalId")
                         .IsUnique();
@@ -554,6 +579,11 @@ namespace SmartTask.Persistence.Migrations
                         .HasForeignKey("GoalId")
                         .OnDelete(DeleteBehavior.SetNull);
 
+                    b.HasOne("SmartTask.Domain.Tasks.TaskItem", "ParentTask")
+                        .WithMany()
+                        .HasForeignKey("ParentTaskId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("SmartTask.Domain.Projects.Project", "Project")
                         .WithMany()
                         .HasForeignKey("ProjectId")
@@ -568,6 +598,8 @@ namespace SmartTask.Persistence.Migrations
                     b.Navigation("DependencyTask");
 
                     b.Navigation("Goal");
+
+                    b.Navigation("ParentTask");
 
                     b.Navigation("Project");
                 });

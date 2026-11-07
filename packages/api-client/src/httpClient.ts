@@ -14,6 +14,8 @@ export class ApiError extends Error {
   constructor(
     public readonly status: number,
     message: string,
+    /** Per-field messages from an ASP.NET ValidationProblem (422) body — undefined for any other error shape. */
+    public readonly errors?: Record<string, string[]>,
   ) {
     super(message);
     this.name = 'ApiError';
@@ -75,11 +77,17 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   }
 
   if (!response.ok) {
+    const errors =
+      typeof data === 'object' && data !== null && 'errors' in data
+        ? (data as { errors: Record<string, string[]> }).errors
+        : undefined;
     const message =
       (typeof data === 'object' && data !== null && 'message' in data
         ? String((data as { message: unknown }).message)
-        : undefined) ?? response.statusText;
-    throw new ApiError(response.status, message);
+        : undefined) ??
+      (errors ? Object.values(errors).flat().join(' ') : undefined) ??
+      response.statusText;
+    throw new ApiError(response.status, message, errors);
   }
 
   return data as T;

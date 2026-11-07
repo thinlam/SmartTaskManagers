@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.EntityFrameworkCore;
 using SmartTask.Application.Tasks;
 
@@ -41,6 +42,10 @@ public sealed class TasksController(ITaskService taskService) : ControllerBase
             var created = await taskService.CreateAsync(request, cancellationToken);
             return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
         }
+        catch (TaskValidationException ex)
+        {
+            return ValidationProblem(ToModelState(ex));
+        }
         catch (DbUpdateException)
         {
             // Most likely an invalid ProjectId/GoalId/DependencyTaskId — the FK constraint
@@ -64,6 +69,10 @@ public sealed class TasksController(ITaskService taskService) : ControllerBase
             var updated = await taskService.UpdateAsync(id, request, cancellationToken);
             return updated is null ? NotFound() : Ok(updated);
         }
+        catch (TaskValidationException ex)
+        {
+            return ValidationProblem(ToModelState(ex));
+        }
         catch (DbUpdateException)
         {
             return BadRequest(
@@ -84,5 +93,25 @@ public sealed class TasksController(ITaskService taskService) : ControllerBase
     {
         var deleted = await taskService.DeleteAsync(id, cancellationToken);
         return deleted ? NoContent() : NotFound();
+    }
+
+    [HttpPost("{id:guid}/restore")]
+    public async Task<ActionResult<TaskResponse>> Restore(Guid id, CancellationToken cancellationToken)
+    {
+        var restored = await taskService.RestoreAsync(id, cancellationToken);
+        return restored is null ? NotFound() : Ok(restored);
+    }
+
+    private static ModelStateDictionary ToModelState(TaskValidationException ex)
+    {
+        var modelState = new ModelStateDictionary();
+        foreach (var (field, messages) in ex.Errors)
+        {
+            foreach (var message in messages)
+            {
+                modelState.AddModelError(field, message);
+            }
+        }
+        return modelState;
     }
 }

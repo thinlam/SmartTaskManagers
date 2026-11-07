@@ -36,13 +36,19 @@ public sealed record TaskResponse(
     DateTimeOffset CreatedAt,
     DateTimeOffset UpdatedAt,
     DateTimeOffset? LastStatusChangedAt,
-    string? Notes
+    string? Notes,
+    int Position,
+    Guid? ParentTaskId,
+    DateTimeOffset? ReminderAt,
+    string? AttachmentUrl,
+    /// <summary>Non-blocking — true when another open (non-Completed) task already has this exact title. Client renders a warning banner, never blocks save.</summary>
+    bool HasOpenDuplicateName
 );
 
 public sealed class CreateTaskRequest
 {
     [Required]
-    [MaxLength(500)]
+    [MaxLength(200)]
     public required string Name { get; init; }
 
     public string? Description { get; init; }
@@ -71,6 +77,12 @@ public sealed class CreateTaskRequest
 
     [MaxLength(4000)]
     public string? Notes { get; init; }
+
+    public Guid? ParentTaskId { get; init; }
+    public DateTimeOffset? ReminderAt { get; init; }
+
+    [MaxLength(2000)]
+    public string? AttachmentUrl { get; init; }
 }
 
 /// <summary>
@@ -87,7 +99,7 @@ public sealed class CreateTaskRequest
 /// </summary>
 public sealed class UpdateTaskRequest
 {
-    [MaxLength(500)]
+    [MaxLength(200)]
     public string? Name { get; init; }
     public string? Description { get; init; }
     public AreaType? Area { get; init; }
@@ -115,4 +127,10 @@ public sealed class UpdateTaskRequest
 
     [MaxLength(4000)]
     public string? Notes { get; init; }
+
+    public Guid? ParentTaskId { get; init; }
+    public DateTimeOffset? ReminderAt { get; init; }
+
+    [MaxLength(2000)]
+    public string? AttachmentUrl { get; init; }
 }

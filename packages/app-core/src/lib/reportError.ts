@@ -1,3 +1,4 @@
+import type { ToastAction } from '@stm/ui';
 import { ApiError } from '@stm/api-client';
 import { showToast } from './toastBus';
 
@@ -16,7 +17,7 @@ export function reportError(err: unknown): void {
   showToast({ variant: 'error', message });
 }
 
-/** Companion to reportError, for the same quick-action call sites, so success isn't silent either. */
-export function reportSuccess(message: string): void {
-  showToast({ variant: 'success', message });
+/** Companion to reportError, for the same quick-action call sites, so success isn't silent either. Optional `action` renders a button on the toast (e.g. "Hoàn tác" after a delete). */
+export function reportSuccess(message: string, action?: ToastAction): void {
+  showToast({ variant: 'success', message, action });
 }

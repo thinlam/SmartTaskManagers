@@ -1,16 +1,42 @@
 using Microsoft.EntityFrameworkCore;
+using SmartTask.Application.Abstractions;
 using SmartTask.Application.Tasks;
 using SmartTask.Domain.Tasks;
 
 namespace SmartTask.Persistence.Repositories;
 
-public sealed class TaskRepository(AppDbContext dbContext) : ITaskRepository
+public sealed class TaskRepository(AppDbContext dbContext, ICurrentUserContext currentUserContext)
+    : ITaskRepository
 {
     public Task<List<TaskItem>> GetAllAsync(CancellationToken cancellationToken = default) =>
         dbContext.Tasks.AsNoTracking().ToListAsync(cancellationToken);
 
     public Task<TaskItem?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
         dbContext.Tasks.FirstOrDefaultAsync(t => t.Id == id, cancellationToken);
+
+    public Task<TaskItem?> GetByIdIncludingDeletedAsync(
+        Guid id,
+        CancellationToken cancellationToken = default
+    ) =>
+        dbContext
+            .Tasks.IgnoreQueryFilters()
+            .Where(t => t.UserId == currentUserContext.UserId)
+            .FirstOrDefaultAsync(t => t.Id == id, cancellationToken);
+
+    public Task<bool> ExistsOpenWithNameAsync(
+        string name,
+        Guid? excludeId = null,
+        CancellationToken cancellationToken = default
+    ) =>
+        dbContext
+            .Tasks.AsNoTracking()
+            .Where(t => t.Name.ToLower() == name.ToLower())
+            .Where(t => t.Status != Domain.Enums.TaskStatusType.Completed)
+            .Where(t => excludeId == null || t.Id != excludeId)
+            .AnyAsync(cancellationToken);
+
+    public Task<int> CountAsync(CancellationToken cancellationToken = default) =>
+        dbContext.Tasks.AsNoTracking().CountAsync(cancellationToken);
 
     public Task<TaskItem?> GetByExternalIdAsync(
         string externalId,

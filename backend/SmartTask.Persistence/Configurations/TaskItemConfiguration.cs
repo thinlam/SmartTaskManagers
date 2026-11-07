@@ -16,6 +16,7 @@ public sealed class TaskItemConfiguration : IEntityTypeConfiguration<TaskItem>
         builder.Property(t => t.RecommendedAction).HasMaxLength(500);
         builder.Property(t => t.Notes).HasMaxLength(4000);
         builder.Property(t => t.ExternalId).HasMaxLength(50);
+        builder.Property(t => t.AttachmentUrl).HasMaxLength(2000);
 
         builder.Property(t => t.Area).HasConversion<string>().HasMaxLength(20);
         builder.Property(t => t.Priority).HasConversion<string>().HasMaxLength(20);
@@ -50,6 +51,16 @@ public sealed class TaskItemConfiguration : IEntityTypeConfiguration<TaskItem>
             .HasForeignKey(t => t.DependencyTaskId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        // Same Restrict reasoning as DependencyTask above — a second self-referencing FK
+        // on the same table, SetNull would hit the identical "multiple cascade paths" error.
+        // TaskService clears ParentTaskId on a subtask before a parent's hard delete would
+        // ever run (soft delete makes this moot in practice, but keep DB-level safety too).
+        builder
+            .HasOne(t => t.ParentTask)
+            .WithMany()
+            .HasForeignKey(t => t.ParentTaskId)
+            .OnDelete(DeleteBehavior.Restrict);
+
         builder
             .HasOne<SmartTask.Domain.Users.User>()
             .WithMany()
@@ -60,6 +71,8 @@ public sealed class TaskItemConfiguration : IEntityTypeConfiguration<TaskItem>
 
         builder.HasIndex(t => t.Status);
         builder.HasIndex(t => t.DueDate);
+        builder.HasIndex(t => new { t.Status, t.DueDate });
+        builder.HasIndex(t => t.Category);
 
         // Phase 28 — the join key sync uses to find "the row this Sheets
         // TaskId already maps to". MySQL has no filtered indexes (the old

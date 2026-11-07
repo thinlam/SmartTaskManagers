@@ -407,7 +407,16 @@
     "dueTomorrow": "Ngày mai",
     "duePlus3Days": "+3 ngày",
     "dueNextWeek": "Tuần sau",
-    "calculatedAutomaticallyHint": "Điểm thông minh, Mức rủi ro và Hành động đề xuất sẽ được tự động tính sau khi bạn thêm công việc này."
+    "calculatedAutomaticallyHint": "Điểm thông minh, Mức rủi ro và Hành động đề xuất sẽ được tự động tính sau khi bạn thêm công việc này.",
+    "sectionAdvanced": "Nâng cao",
+    "fieldParentTask": "Công việc cha",
+    "noParentTaskOption": "Không có (công việc gốc)",
+    "fieldReminderAt": "Nhắc tôi lúc",
+    "fieldAttachmentUrl": "Đường dẫn đính kèm",
+    "attachmentUrlPlaceholder": "https://…",
+    "titleDuplicateWarning": "Đã có công việc khác (chưa hoàn thành) dùng tên này — vẫn lưu được, chỉ là lời nhắc.",
+    "deleteSuccess": "Đã xóa công việc.",
+    "undoButton": "Hoàn tác"
   },
   "projects": {
     "summaryLine": "{{active}} dự án đang chạy ({{healthy}} tốt, {{attention}} cần chú ý, {{atRisk}} rủi ro) · {{overdue}} việc quá hạn · tiến độ trung bình {{avg}}%",

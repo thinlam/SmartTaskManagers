@@ -1,6 +1,6 @@
 # 5. Quy tắc của dự án
 
-> Cập nhật: 2026-11-01 (thêm quy tắc cập nhật docs sau mỗi lần làm việc). Gom từ cấu hình trong repo (ESLint, Prettier, `.gitignore`, lịch sử commit) và
+> Cập nhật: 2026-11-07 (thêm quy ước test B5). Gom từ cấu hình trong repo (ESLint, Prettier, `.gitignore`, lịch sử commit) và
 > từ các thỏa thuận làm việc giữa chủ dự án và trợ lý AI. Mục nào là thỏa thuận (không có công cụ ép) được ghi rõ.
 
 ## A. Quy tắc bắt buộc, có công cụ kiểm tra
@@ -57,6 +57,17 @@
 - Địa chỉ API công khai (`https://...up.railway.app`) **không** phải bí mật và được phép nằm trong
   `codemagic.yaml` và các `.env.production` được commit.
 - Mật khẩu người dùng: tối thiểu 8 ký tự, có chữ hoa, chữ thường và số; luôn có ô nhập lại khi đăng ký.
+
+### B5. Test (bắt đầu từ 2026-11-07)
+
+- Backend: xUnit, mỗi project nghiệp vụ (`SmartTask.Application`) có project test riêng cùng cấp
+  (`SmartTask.Application.Tests`), thêm vào `SmartTask.slnx`. Dùng fake tay cho interface (`ITaskRepository`,
+  `IDateTimeProvider`, `ISmartEngineService`...) đặt ở thư mục `Fakes/` trong project test — **không** thêm
+  thư viện mock (Moq/NSubstitute) trừ khi fake tay không còn đủ. Chạy: `dotnet test` (từ `backend/`).
+- Frontend: Vitest, một `vitest.config.ts` ở gốc repo quét `packages/*/src/**/*.test.ts(x)` — không cần config
+  riêng cho từng package. Test đặt cạnh file nguồn (`tenFile.test.ts` cạnh `tenFile.ts`). Chạy: `npm test` (từ gốc).
+- Test mới chỉ bắt buộc cho logic nghiệp vụ không hiển nhiên (quy tắc validate, thuật toán, parser) — không bắt
+  buộc viết test cho mọi thành phần UI thuần hiển thị.
 
 ## C. Quy tắc Git
 

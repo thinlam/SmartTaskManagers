@@ -8,6 +8,19 @@ public interface ITaskRepository
     Task<List<TaskItem>> GetAllAsync(CancellationToken cancellationToken = default);
     Task<TaskItem?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
 
+    /// <summary>Bypasses the IsDeleted query filter (UserId scoping still applies) — the only way to look up a soft-deleted task, for Undo's restore.</summary>
+    Task<TaskItem?> GetByIdIncludingDeletedAsync(Guid id, CancellationToken cancellationToken = default);
+
+    /// <summary>Non-blocking "a task with this title is already open" check for the create/edit form's warning banner — Completed tasks don't count as a duplicate.</summary>
+    Task<bool> ExistsOpenWithNameAsync(
+        string name,
+        Guid? excludeId = null,
+        CancellationToken cancellationToken = default
+    );
+
+    /// <summary>How many (non-deleted) tasks the current user already has — used to assign a new task's Position at the end of the list.</summary>
+    Task<int> CountAsync(CancellationToken cancellationToken = default);
+
     /// <summary>Phase 28 sync's join lookup — finds the row a given Sheets TaskId already maps to, if any.</summary>
     Task<TaskItem?> GetByExternalIdAsync(string externalId, CancellationToken cancellationToken = default);
 

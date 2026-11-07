@@ -17,6 +17,10 @@ export interface NewTaskInput {
   dueDate?: string | null;
   progress?: number;
   tags?: string[];
+  /** References another Task's id — for subtasks (at most 2 levels deep). */
+  parentTaskId?: string | null;
+  reminderAt?: string | null;
+  attachmentUrl?: string | null;
 }
 
 export interface UseTasksResult {
@@ -31,6 +35,8 @@ export interface UseTasksResult {
   updateTask: (id: string, patch: Partial<Task>) => Promise<Task>;
   deleteTask: (id: string) => Promise<void>;
   completeTask: (id: string) => Promise<Task>;
+  /** Undo for deleteTask (soft delete on the backend) — puts the task back into local state. */
+  restoreTask: (id: string) => Promise<Task>;
 }
 
 /**
@@ -103,6 +109,9 @@ export function useTasks(): UseTasksResult {
       startDate: patch.startDate,
       dueDate: patch.dueDate,
       progress: patch.progress,
+      parentTaskId: patch.parentTaskId,
+      reminderAt: patch.reminderAt,
+      attachmentUrl: patch.attachmentUrl,
     };
     const updated = await taskApi.update(id, fields);
     setTasks((previous) => previous.map((task) => (task.id === id ? updated : task)));
@@ -117,7 +126,16 @@ export function useTasks(): UseTasksResult {
   const completeTask = useCallback(async (id: string): Promise<Task> => {
     const completed = await taskApi.complete(id);
     setTasks((previous) => previous.map((task) => (task.id === id ? completed : task)));
+    // A recurring task's completion creates its next occurrence server-side
+    // (not reflected in `completed` itself) — refetch to pick up that new row.
+    void refetch();
     return completed;
+  }, [refetch]);
+
+  const restoreTask = useCallback(async (id: string): Promise<Task> => {
+    const restored = await taskApi.restore(id);
+    setTasks((previous) => [restored, ...previous]);
+    return restored;
   }, []);
 
   return {
@@ -130,5 +148,6 @@ export function useTasks(): UseTasksResult {
     updateTask,
     deleteTask,
     completeTask,
+    restoreTask,
   };
 }

@@ -47,7 +47,8 @@
     "build:cm-tauri": "npm run tauri --workspace=apps/content-desktop -- build",
     "cm:android-open": "npm run android:open --workspace=apps/content-web",
     "cm:up": "docker compose -f docker-compose.content-manager.yml up -d --build",
-    "cm:down": "docker compose -f docker-compose.content-manager.yml down"
+    "cm:down": "docker compose -f docker-compose.content-manager.yml down",
+    "test": "vitest run"
   },
   "devDependencies": {
     "@eslint/js": "^9.15.0",
@@ -57,6 +58,7 @@
     "eslint-config-prettier": "^9.1.0",
     "prettier": "^3.3.3",
     "typescript": "^5.7.2",
-    "typescript-eslint": "^8.15.0"
+    "typescript-eslint": "^8.15.0",
+    "vitest": "2.1.9"
   }
 }

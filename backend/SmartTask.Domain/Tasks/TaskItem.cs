@@ -70,4 +70,21 @@ public sealed class TaskItem : SyncableEntity
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
     public DateTimeOffset? LastStatusChangedAt { get; set; }
     public string? Notes { get; set; }
+
+    /// <summary>Sort order within the user's task list — set to "end of list" on create, never entered by hand.</summary>
+    public int Position { get; set; }
+
+    /// <summary>Soft delete (GĐ1) — replaces the old hard DELETE so Undo can restore. Hidden from every normal query by AppDbContext's global query filter.</summary>
+    public bool IsDeleted { get; set; }
+    public DateTimeOffset? DeletedAt { get; set; }
+
+    /// <summary>Subtask parent — self-referencing, max depth 2 (enforced in TaskService, not the DB). Null for a top-level task.</summary>
+    public Guid? ParentTaskId { get; set; }
+    public TaskItem? ParentTask { get; set; }
+
+    /// <summary>When set, the frontend shows an in-app reminder banner/toast once this time passes — no background delivery (no email/push) this phase.</summary>
+    public DateTimeOffset? ReminderAt { get; set; }
+
+    /// <summary>A pasted link, not an uploaded file — no file storage exists for this app yet.</summary>
+    public string? AttachmentUrl { get; set; }
 }

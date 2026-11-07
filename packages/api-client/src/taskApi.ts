@@ -36,6 +36,11 @@ interface TaskDto {
   updatedAt: string;
   lastStatusChangedAt: string | null;
   notes: string | null;
+  position: number;
+  parentTaskId: string | null;
+  reminderAt: string | null;
+  attachmentUrl: string | null;
+  hasOpenDuplicateName: boolean;
 }
 
 function fromDto(dto: TaskDto): Task {
@@ -65,6 +70,11 @@ function fromDto(dto: TaskDto): Task {
     recommendedAction: dto.recommendedAction ?? undefined,
     createdAt: dto.createdAt,
     updatedAt: dto.updatedAt,
+    position: dto.position,
+    parentTaskId: dto.parentTaskId,
+    reminderAt: dto.reminderAt,
+    attachmentUrl: dto.attachmentUrl,
+    hasOpenDuplicateName: dto.hasOpenDuplicateName,
   };
 }
 
@@ -81,6 +91,9 @@ export interface TaskWriteFields {
   startDate?: string | null;
   dueDate?: string | null;
   progress?: number;
+  parentTaskId?: string | null;
+  reminderAt?: string | null;
+  attachmentUrl?: string | null;
 }
 
 function toWriteBody(fields: TaskWriteFields): Record<string, unknown> {
@@ -96,6 +109,9 @@ function toWriteBody(fields: TaskWriteFields): Record<string, unknown> {
   if (fields.startDate !== undefined) body.startDate = fields.startDate;
   if (fields.dueDate !== undefined) body.dueDate = fields.dueDate;
   if (fields.progress !== undefined) body.progress = fields.progress;
+  if (fields.parentTaskId !== undefined) body.parentTaskId = fields.parentTaskId;
+  if (fields.reminderAt !== undefined) body.reminderAt = fields.reminderAt;
+  if (fields.attachmentUrl !== undefined) body.attachmentUrl = fields.attachmentUrl;
   return body;
 }
 
@@ -109,4 +125,6 @@ export const taskApi = {
   complete: async (id: string): Promise<Task> =>
     fromDto(await httpClient.post<TaskDto>(`/api/tasks/${id}/complete`)),
   remove: (id: string): Promise<void> => httpClient.delete(`/api/tasks/${id}`),
+  restore: async (id: string): Promise<Task> =>
+    fromDto(await httpClient.post<TaskDto>(`/api/tasks/${id}/restore`)),
 };

@@ -26,7 +26,7 @@ export function ToastHost() {
   useEffect(() => {
     return subscribeToast((toast: ToastInput) => {
       const id = String(nextId++);
-      setToasts((previous) => [...previous, { id, ...toast }]);
+      setToasts((previous) => [...previous, { ...toast, id }]);
       timers.current.set(
         id,
         setTimeout(() => dismiss(id), AUTO_DISMISS_MS),

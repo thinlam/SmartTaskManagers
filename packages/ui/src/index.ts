@@ -41,6 +41,7 @@ export {
   type ToastStackProps,
   type ToastData,
   type ToastVariant,
+  type ToastAction,
 } from './components/Toast';
 export { Switch, type SwitchProps } from './components/Switch';
 export {

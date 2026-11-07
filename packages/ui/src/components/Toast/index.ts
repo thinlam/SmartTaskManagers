@@ -1,1 +1,7 @@
-export { ToastStack, type ToastStackProps, type ToastData, type ToastVariant } from './Toast';
+export {
+  ToastStack,
+  type ToastStackProps,
+  type ToastData,
+  type ToastVariant,
+  type ToastAction,
+} from './Toast';

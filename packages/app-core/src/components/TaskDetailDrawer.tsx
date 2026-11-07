@@ -8,7 +8,7 @@ import { useTasksContext } from '../state/TasksContext';
 import { useProjectsContext } from '../state/ProjectsContext';
 import { useGoalsContext } from '../state/GoalsContext';
 import { translatePriority, translateTaskStatus } from '../lib/enumLabels';
-import { reportSuccess } from '../lib/reportError';
+import { reportError, reportSuccess } from '../lib/reportError';
 
 const AREAS: Area[] = ['Career', 'Learning', 'Health', 'Personal', 'Personal Admin'];
 const PRIORITIES: Priority[] = ['Critical', 'Urgent', 'High', 'Medium', 'Low'];
@@ -65,6 +65,24 @@ interface FormState {
   dueDate: string;
   progress: number;
   tags: string;
+  /** '' = no parent task — matches the "No parent" option's value. */
+  parentTaskId: string;
+  /** datetime-local input value ('' = no reminder). */
+  reminderAt: string;
+  attachmentUrl: string;
+}
+
+/** YYYY-MM-DDTHH:mm (local) for <input type="datetime-local">, or '' for null. */
+function toDatetimeLocalValue(iso: string | null): string {
+  if (!iso) return '';
+  const date = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
+/** Inverse of toDatetimeLocalValue — '' becomes null, otherwise an ISO string. */
+function fromDatetimeLocalValue(value: string): string | null {
+  return value ? new Date(value).toISOString() : null;
 }
 
 function emptyForm(): FormState {
@@ -80,6 +98,9 @@ function emptyForm(): FormState {
     dueDate: '',
     progress: 0,
     tags: '',
+    parentTaskId: '',
+    reminderAt: '',
+    attachmentUrl: '',
   };
 }
 
@@ -96,6 +117,9 @@ function formFromTask(task: Task): FormState {
     dueDate: task.dueDate ?? '',
     progress: task.progress,
     tags: task.tags.join(', '),
+    parentTaskId: task.parentTaskId ?? '',
+    reminderAt: toDatetimeLocalValue(task.reminderAt),
+    attachmentUrl: task.attachmentUrl ?? '',
   };
 }
 
@@ -132,13 +156,26 @@ function isoDateInDays(offsetDays: number): string {
  */
 export function TaskDetailDrawer() {
   const { t } = useTranslation();
-  const { isDrawerOpen, editingTask, createDefaults, closeDrawer, addTask, updateTask, deleteTask } =
-    useTasksContext();
+  const {
+    isDrawerOpen,
+    editingTask,
+    createDefaults,
+    closeDrawer,
+    addTask,
+    updateTask,
+    deleteTask,
+    restoreTask,
+    tasks,
+  } = useTasksContext();
   const { projects } = useProjectsContext();
   const { goals } = useGoalsContext();
   const [form, setForm] = useState<FormState>(emptyForm());
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
+
+  /** Only top-level tasks can be chosen as a parent — subtasks are at most 2 levels deep. */
+  const parentOptions = tasks.filter((task) => !task.parentTaskId && task.id !== editingTask?.id);
 
   useEffect(() => {
     if (!isDrawerOpen) return;
@@ -146,7 +183,12 @@ export function TaskDetailDrawer() {
       editingTask ? formFromTask(editingTask) : { ...emptyForm(), ...(createDefaults ?? {}) },
     );
     setError(null);
+    setFieldErrors({});
   }, [isDrawerOpen, editingTask, createDefaults]);
+
+  function fieldError(name: string): string | null {
+    return fieldErrors[name]?.[0] ?? null;
+  }
 
   function buildSharedFields() {
     const title = form.title.trim();
@@ -166,7 +208,27 @@ export function TaskDetailDrawer() {
       dueDate: form.dueDate || null,
       progress: form.progress,
       tags,
+      parentTaskId: form.parentTaskId || null,
+      reminderAt: fromDatetimeLocalValue(form.reminderAt),
+      attachmentUrl: form.attachmentUrl.trim() || null,
     };
+  }
+
+  /** Non-blocking: shown as a normal success toast with an added hint, never blocks save. */
+  function successMessageFor(result: Task, baseMessage: string): string {
+    return result.hasOpenDuplicateName
+      ? `${baseMessage} ${t('tasks.titleDuplicateWarning')}`
+      : baseMessage;
+  }
+
+  function applyError(err: unknown, fallback: string) {
+    if (err instanceof ApiError && err.errors) {
+      setFieldErrors(err.errors);
+      setError(err.message);
+    } else {
+      setFieldErrors({});
+      setError(err instanceof ApiError ? err.message : fallback);
+    }
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -176,17 +238,18 @@ export function TaskDetailDrawer() {
 
     setIsSubmitting(true);
     setError(null);
+    setFieldErrors({});
     try {
       if (editingTask) {
-        await updateTask(editingTask.id, shared);
-        reportSuccess(t('tasks.saveChangesButton'));
+        const updated = await updateTask(editingTask.id, shared);
+        reportSuccess(successMessageFor(updated, t('tasks.saveChangesButton')));
       } else {
-        await addTask(shared);
-        reportSuccess(t('tasks.addTaskButton'));
+        const created = await addTask(shared);
+        reportSuccess(successMessageFor(created, t('tasks.addTaskButton')));
       }
       closeDrawer();
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : t('tasks.saveError'));
+      applyError(err, t('tasks.saveError'));
     } finally {
       setIsSubmitting(false);
     }
@@ -198,12 +261,13 @@ export function TaskDetailDrawer() {
 
     setIsSubmitting(true);
     setError(null);
+    setFieldErrors({});
     try {
-      await addTask(shared);
-      reportSuccess(t('tasks.addTaskButton'));
+      const created = await addTask(shared);
+      reportSuccess(successMessageFor(created, t('tasks.addTaskButton')));
       setForm(emptyForm());
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : t('tasks.saveError'));
+      applyError(err, t('tasks.saveError'));
     } finally {
       setIsSubmitting(false);
     }
@@ -218,13 +282,18 @@ export function TaskDetailDrawer() {
 
   async function handleDelete() {
     if (!editingTask) return;
+    const deletedId = editingTask.id;
     setIsSubmitting(true);
     setError(null);
     try {
-      await deleteTask(editingTask.id);
+      await deleteTask(deletedId);
       closeDrawer();
+      reportSuccess(t('tasks.deleteSuccess'), {
+        label: t('tasks.undoButton'),
+        onClick: () => restoreTask(deletedId).catch(reportError),
+      });
     } catch (err) {
-      setError(err instanceof ApiError ? err.message : t('tasks.deleteError'));
+      applyError(err, t('tasks.deleteError'));
     } finally {
       setIsSubmitting(false);
     }
@@ -309,6 +378,11 @@ export function TaskDetailDrawer() {
         className="flex flex-col gap-5"
       >
         {error && <p className="text-sm text-danger">{error}</p>}
+        {editingTask?.hasOpenDuplicateName && (
+          <p className="rounded-lg border border-warning/30 bg-warning-soft px-3 py-2 text-xs text-warning">
+            {t('tasks.titleDuplicateWarning')}
+          </p>
+        )}
 
         <div className="flex flex-col gap-3">
           <span className={sectionHeadingClasses}>{t('tasks.sectionTaskDetails')}</span>
@@ -320,13 +394,14 @@ export function TaskDetailDrawer() {
               id="task-title"
               type="text"
               required
-              maxLength={120}
+              maxLength={200}
               autoFocus={isCreating}
               value={form.title}
               onChange={(event) => setForm((f) => ({ ...f, title: event.target.value }))}
               className={fieldClasses}
               placeholder={t('tasks.titlePlaceholder')}
             />
+            {fieldError('Name') && <p className="text-xs text-danger">{fieldError('Name')}</p>}
           </div>
 
           <div className="flex flex-col gap-1">
@@ -498,6 +573,9 @@ export function TaskDetailDrawer() {
                 onChange={(event) => setForm((f) => ({ ...f, dueDate: event.target.value }))}
                 className={fieldClasses}
               />
+              {fieldError('DueDate') && (
+                <p className="text-xs text-danger">{fieldError('DueDate')}</p>
+              )}
             </div>
           </div>
           <div className="flex flex-wrap gap-2">
@@ -531,6 +609,62 @@ export function TaskDetailDrawer() {
             onChange={(event) => setForm((f) => ({ ...f, tags: event.target.value }))}
             className={fieldClasses}
           />
+          {fieldError('Tags') && <p className="text-xs text-danger">{fieldError('Tags')}</p>}
+        </div>
+
+        <div className="flex flex-col gap-3">
+          <span className={sectionHeadingClasses}>{t('tasks.sectionAdvanced')}</span>
+          <div className="flex flex-col gap-1">
+            <label htmlFor="task-parent" className={labelClasses}>
+              {t('tasks.fieldParentTask')}
+            </label>
+            <select
+              id="task-parent"
+              value={form.parentTaskId}
+              onChange={(event) => setForm((f) => ({ ...f, parentTaskId: event.target.value }))}
+              className={fieldClasses}
+            >
+              <option value="">{t('tasks.noParentTaskOption')}</option>
+              {parentOptions.map((task) => (
+                <option key={task.id} value={task.id}>
+                  {task.title}
+                </option>
+              ))}
+            </select>
+            {fieldError('ParentTaskId') && (
+              <p className="text-xs text-danger">{fieldError('ParentTaskId')}</p>
+            )}
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <label htmlFor="task-reminder" className={labelClasses}>
+              {t('tasks.fieldReminderAt')}
+            </label>
+            <input
+              id="task-reminder"
+              type="datetime-local"
+              value={form.reminderAt}
+              onChange={(event) => setForm((f) => ({ ...f, reminderAt: event.target.value }))}
+              className={fieldClasses}
+            />
+            {fieldError('ReminderAt') && (
+              <p className="text-xs text-danger">{fieldError('ReminderAt')}</p>
+            )}
+          </div>
+
+          <div className="flex flex-col gap-1">
+            <label htmlFor="task-attachment" className={labelClasses}>
+              {t('tasks.fieldAttachmentUrl')}
+            </label>
+            <input
+              id="task-attachment"
+              type="url"
+              placeholder={t('tasks.attachmentUrlPlaceholder')}
+              value={form.attachmentUrl}
+              onChange={(event) => setForm((f) => ({ ...f, attachmentUrl: event.target.value }))}
+              className={fieldClasses}
+            />
+          </div>
         </div>
 
         {isCreating && (

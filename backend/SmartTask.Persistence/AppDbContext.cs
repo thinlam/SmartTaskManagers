@@ -49,7 +49,9 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options, ICurren
         // only ever set to a real user's id — comparing a non-nullable
         // UserId column against a null parameter matches zero rows, so
         // an unset current user fails closed (empty result), never open.
-        modelBuilder.Entity<TaskItem>().HasQueryFilter(t => t.UserId == currentUserContext.UserId);
+        modelBuilder
+            .Entity<TaskItem>()
+            .HasQueryFilter(t => t.UserId == currentUserContext.UserId && !t.IsDeleted);
         modelBuilder.Entity<Project>().HasQueryFilter(p => p.UserId == currentUserContext.UserId);
         modelBuilder.Entity<Goal>().HasQueryFilter(g => g.UserId == currentUserContext.UserId);
         modelBuilder.Entity<Habit>().HasQueryFilter(h => h.UserId == currentUserContext.UserId);

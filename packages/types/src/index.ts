@@ -67,6 +67,16 @@ export interface Task {
   recommendedAction?: string;
   createdAt: string;
   updatedAt: string;
+  /** Manual sort order within the list — lower sorts first. */
+  position: number;
+  /** References another Task's id — subtasks are at most 2 levels deep (a subtask can't have its own subtasks). */
+  parentTaskId: string | null;
+  /** ISO datetime — when to show an in-app reminder for this task (only while the app is open; Phase 1 has no background delivery). */
+  reminderAt: string | null;
+  /** A link only (no file upload in this phase) — e.g. a Drive/Dropbox URL. */
+  attachmentUrl: string | null;
+  /** Response-only, non-blocking: true when another open (non-Completed) task already has this exact title. */
+  hasOpenDuplicateName: boolean;
 }
 
 /**
