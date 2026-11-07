@@ -100,7 +100,7 @@ function toAssistantTask(
     title: task.title,
     area: task.area,
     priority: task.priority,
-    dueLabel: formatDueLabel(task.dueDate, referenceDate),
+    dueLabel: formatDueLabel(task.dueDate, referenceDate, undefined, task),
     smartScore: smartScoreEnabled ? task.smartScore : undefined,
     risk: task.risk,
   };

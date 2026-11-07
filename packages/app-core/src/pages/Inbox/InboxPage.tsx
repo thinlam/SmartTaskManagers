@@ -342,7 +342,7 @@ export function InboxPage() {
                           />
                         </td>
                         <td className="px-4 py-3 text-ink-secondary">
-                          {formatDueLabel(task.dueDate, today, t)}
+                          {formatDueLabel(task.dueDate, today, t, task)}
                         </td>
                         <td className="px-4 py-3 text-right">
                           <button

@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Download, RefreshCw } from 'lucide-react';
 import type { Priority, Task } from '@stm/types';
-import { formatDueLabel } from '@stm/shared';
+import { formatDueLabel, formatDateVi } from '@stm/shared';
 import {
   Button,
   EmptyState,
@@ -48,8 +48,7 @@ function isOverdue(task: Task, today: Date): boolean {
 
 function formatTimelineRange(startDate: string | null, dueDate: string | null): string | null {
   if (!startDate && !dueDate) return null;
-  const fmt = (iso: string) =>
-    new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  const fmt = (iso: string) => formatDateVi(new Date(iso));
   if (startDate && dueDate) return `${fmt(startDate)} → ${fmt(dueDate)}`;
   return fmt(startDate ?? dueDate!);
 }
@@ -87,15 +86,8 @@ const DUE_LABEL_TONE_CLASSES: Record<ReturnType<typeof dueLabelTone>, string> = 
 export function TasksPage() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const {
-    tasks,
-    isLoading,
-    lastFetchedAt,
-    refetch,
-    deleteTask,
-    completeTask,
-    openEditDrawer,
-  } = useTasksContext();
+  const { tasks, isLoading, lastFetchedAt, refetch, deleteTask, completeTask, openEditDrawer } =
+    useTasksContext();
   const { projects } = useProjectsContext();
   const [searchParams] = useSearchParams();
   const [search, setSearch] = useState('');
@@ -413,7 +405,7 @@ export function TasksPage() {
                       <div className="flex flex-col">
                         {timeline && <span className="text-ink-secondary">{timeline}</span>}
                         <span className={`text-xs font-medium ${DUE_LABEL_TONE_CLASSES[tone]}`}>
-                          {formatDueLabel(task.dueDate, today, t)}
+                          {formatDueLabel(task.dueDate, today, t, task)}
                         </span>
                       </div>
                     </td>

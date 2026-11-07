@@ -36,7 +36,8 @@
     "dueInDays_one": "Đến hạn trong {{count}} ngày",
     "dueInDays_other": "Đến hạn trong {{count}} ngày",
     "overdueDays_one": "Quá hạn {{count}} ngày",
-    "overdueDays_other": "Quá hạn {{count}} ngày"
+    "overdueDays_other": "Quá hạn {{count}} ngày",
+    "completedOn": "Hoàn thành ngày {{date}}"
   },
   "notifications": {
     "title": "Thông báo",

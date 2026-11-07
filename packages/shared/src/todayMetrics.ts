@@ -128,7 +128,7 @@ function toTodayTask(
     title: task.title,
     area: task.area,
     priority: task.priority,
-    dueLabel: dueLabelOverride ?? formatDueLabel(task.dueDate, referenceDate, t),
+    dueLabel: dueLabelOverride ?? formatDueLabel(task.dueDate, referenceDate, t, task),
     projectId: task.projectId ?? undefined,
     progress: task.progress,
     smartScore: task.smartScore,

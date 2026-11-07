@@ -282,7 +282,7 @@ export function TodayPage() {
                       key={task.id}
                       title={task.title}
                       meta={metaFor(task.area, task.projectId ?? undefined)}
-                      dueLabel={formatDueLabel(task.dueDate, new Date(), t)}
+                      dueLabel={formatDueLabel(task.dueDate, new Date(), t, task)}
                       priority={task.priority}
                       priorityLabel={translatePriority(t, task.priority)}
                       status={task.status}
@@ -320,7 +320,10 @@ export function TodayPage() {
                   >
                     <div className="flex items-start justify-between gap-2">
                       <span className="font-medium text-ink-primary">{task.title}</span>
-                      <PriorityBadge priority={task.priority} label={translatePriority(t, task.priority)} />
+                      <PriorityBadge
+                        priority={task.priority}
+                        label={translatePriority(t, task.priority)}
+                      />
                     </div>
                     <span className="text-xs text-ink-secondary">
                       {metaFor(task.area, task.projectId)}
@@ -344,7 +347,10 @@ export function TodayPage() {
                   <li key={task.id} className="flex flex-col gap-1 text-sm">
                     <div className="flex items-start justify-between gap-2">
                       <span className="font-medium text-ink-primary">{task.title}</span>
-                      <PriorityBadge priority={task.priority} label={translatePriority(t, task.priority)} />
+                      <PriorityBadge
+                        priority={task.priority}
+                        label={translatePriority(t, task.priority)}
+                      />
                     </div>
                     <span className="text-xs text-ink-secondary">
                       {metaFor(task.area, task.projectId)} · {task.dueLabel}

@@ -1,4 +1,4 @@
-export { formatDueLabel } from './formatDueLabel';
+export { formatDueLabel, formatDateVi, type DueLabelTaskInfo } from './formatDueLabel';
 export {
   parseQuickCapture,
   type ParsedQuickCapture,

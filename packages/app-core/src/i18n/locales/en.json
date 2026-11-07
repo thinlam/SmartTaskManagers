@@ -36,7 +36,8 @@
     "dueInDays_one": "Due in {{count}} day",
     "dueInDays_other": "Due in {{count}} days",
     "overdueDays_one": "Overdue {{count}} day",
-    "overdueDays_other": "Overdue {{count}} days"
+    "overdueDays_other": "Overdue {{count}} days",
+    "completedOn": "Completed on {{date}}"
   },
   "notifications": {
     "title": "Notifications",

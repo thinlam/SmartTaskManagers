@@ -145,7 +145,7 @@ function toFocusTask(task: Task, referenceDate: Date, t?: DueLabelTranslate): Da
     title: task.title,
     area: task.area,
     priority: task.priority,
-    dueLabel: formatDueLabel(task.dueDate, referenceDate, t),
+    dueLabel: formatDueLabel(task.dueDate, referenceDate, t, task),
     smartScore: task.smartScore,
     recommendedAction: task.recommendedAction,
   };
@@ -283,7 +283,7 @@ export function computeDashboardData(
       title: task.title,
       projectId: task.projectId ?? undefined,
       priority: task.priority,
-      dueLabel: formatDueLabel(task.dueDate, referenceDate, t),
+      dueLabel: formatDueLabel(task.dueDate, referenceDate, t, task),
       risk: task.risk,
       smartScore: smart.smartScoreEnabled ? task.smartScore : undefined,
     }));

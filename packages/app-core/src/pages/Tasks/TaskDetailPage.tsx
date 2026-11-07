@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ChevronRight, Pencil } from 'lucide-react';
-import { formatDueLabel } from '@stm/shared';
+import { formatDueLabel, formatDateVi } from '@stm/shared';
 import {
   Button,
   EmptyState,
@@ -89,17 +89,21 @@ export function TaskDetailPage() {
   }
 
   const today = new Date();
-  const dueLabel = formatDueLabel(task.dueDate, today, t);
+  const dueLabel = formatDueLabel(task.dueDate, today, t, task);
   const isOverdueTask =
     task.status !== 'Completed' &&
     !!task.dueDate &&
     new Date(task.dueDate).setHours(0, 0, 0, 0) < new Date().setHours(0, 0, 0, 0);
-  const estimateHours = task.estimateMinutes != null ? (task.estimateMinutes / 60).toFixed(1) : null;
+  const estimateHours =
+    task.estimateMinutes != null ? (task.estimateMinutes / 60).toFixed(1) : null;
   const score = scoreToneLabel(task.smartScore ?? 0);
 
   const whyBullets: { tone: Tone; text: string }[] = [];
   if (task.priority === 'Critical' || task.priority === 'Urgent') {
-    whyBullets.push({ tone: 'danger', text: t('taskDetail.whyCriticalPriority', { priority: translatePriority(t, task.priority) }) });
+    whyBullets.push({
+      tone: 'danger',
+      text: t('taskDetail.whyCriticalPriority', { priority: translatePriority(t, task.priority) }),
+    });
   } else if (task.priority === 'High') {
     whyBullets.push({ tone: 'warning', text: t('taskDetail.whyHighPriority') });
   }
@@ -108,7 +112,10 @@ export function TaskDetailPage() {
       (new Date(task.dueDate).setHours(0, 0, 0, 0) - new Date().setHours(0, 0, 0, 0)) / 86_400_000,
     );
     if (diffDays < 0) {
-      whyBullets.push({ tone: 'danger', text: t('taskDetail.whyOverdue', { count: Math.abs(diffDays) }) });
+      whyBullets.push({
+        tone: 'danger',
+        text: t('taskDetail.whyOverdue', { count: Math.abs(diffDays) }),
+      });
     } else if (diffDays === 0) {
       whyBullets.push({ tone: 'danger', text: t('taskDetail.whyDueToday') });
     } else if (diffDays <= 2) {
@@ -116,7 +123,10 @@ export function TaskDetailPage() {
     }
   }
   if (task.risk === 'Critical' || task.risk === 'High') {
-    whyBullets.push({ tone: 'warning', text: t('taskDetail.whyHighRisk', { risk: translateRisk(t, task.risk) }) });
+    whyBullets.push({
+      tone: 'warning',
+      text: t('taskDetail.whyHighRisk', { risk: translateRisk(t, task.risk) }),
+    });
   }
 
   async function handleMarkComplete() {
@@ -195,7 +205,9 @@ export function TaskDetailPage() {
               onClick={handleMarkComplete}
               disabled={task.status === 'Completed' || isSaving}
             >
-              {task.status === 'Completed' ? t('taskDetail.completed') : t('taskDetail.markComplete')}
+              {task.status === 'Completed'
+                ? t('taskDetail.completed')
+                : t('taskDetail.markComplete')}
             </Button>
             <Button type="button" variant="secondary" size="sm" onClick={openProgressEditor}>
               {t('taskDetail.updateProgress')}
@@ -233,10 +245,21 @@ export function TaskDetailPage() {
               className="flex-1"
             />
             <span className="w-12 text-sm font-semibold text-ink-primary">{progressDraft}%</span>
-            <Button type="button" variant="primary" size="sm" onClick={saveProgress} disabled={isSaving}>
+            <Button
+              type="button"
+              variant="primary"
+              size="sm"
+              onClick={saveProgress}
+              disabled={isSaving}
+            >
               {t('taskDetail.save')}
             </Button>
-            <Button type="button" variant="ghost" size="sm" onClick={() => setIsEditingProgress(false)}>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsEditingProgress(false)}
+            >
               {t('taskDetail.cancel')}
             </Button>
           </div>
@@ -250,10 +273,21 @@ export function TaskDetailPage() {
               onChange={(event) => setDeadlineDraft(event.target.value)}
               className="rounded-md border border-border bg-surface px-3 py-2 text-sm text-ink-primary"
             />
-            <Button type="button" variant="primary" size="sm" onClick={saveDeadline} disabled={isSaving}>
+            <Button
+              type="button"
+              variant="primary"
+              size="sm"
+              onClick={saveDeadline}
+              disabled={isSaving}
+            >
               {t('taskDetail.save')}
             </Button>
-            <Button type="button" variant="ghost" size="sm" onClick={() => setIsEditingDeadline(false)}>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setIsEditingDeadline(false)}
+            >
               {t('taskDetail.cancel')}
             </Button>
           </div>
@@ -262,7 +296,12 @@ export function TaskDetailPage() {
 
       <section className="grid grid-cols-2 gap-4 sm:grid-cols-4">
         <div className="flex flex-col gap-2">
-          <StatCard label={t('taskDetail.statProgress')} value={`${task.progress}%`} sub={translateTaskStatus(t, task.status)} tone="primary" />
+          <StatCard
+            label={t('taskDetail.statProgress')}
+            value={`${task.progress}%`}
+            sub={translateTaskStatus(t, task.status)}
+            tone="primary"
+          />
           <Progress value={task.progress} />
         </div>
         <div className="flex flex-col gap-2">
@@ -277,7 +316,7 @@ export function TaskDetailPage() {
           <StatCard
             label={t('taskDetail.statDeadline')}
             value={dueLabel}
-            sub={task.dueDate ? new Date(task.dueDate).toLocaleDateString(i18n.language, { day: '2-digit', month: 'short', year: 'numeric' }) : ''}
+            sub={task.dueDate ? formatDateVi(new Date(task.dueDate)) : ''}
             tone={isOverdueTask ? 'danger' : 'primary'}
             emphasize={isOverdueTask}
           />
@@ -286,7 +325,11 @@ export function TaskDetailPage() {
           <StatCard
             label={t('taskDetail.statSmartScore')}
             value={settings.smartScoreEnabled ? String(task.smartScore ?? '—') : '—'}
-            sub={settings.smartScoreEnabled ? t(`taskDetail.scoreLabel.${score.key}`) : t('taskDetail.smartScoreDisabled')}
+            sub={
+              settings.smartScoreEnabled
+                ? t(`taskDetail.scoreLabel.${score.key}`)
+                : t('taskDetail.smartScoreDisabled')
+            }
             tone={settings.smartScoreEnabled ? score.tone : 'info'}
           />
         </div>
@@ -326,9 +369,7 @@ export function TaskDetailPage() {
                   {t('taskDetail.fieldStartDate')}
                 </span>
                 <span className="text-sm font-medium text-ink-primary">
-                  {task.startDate
-                    ? new Date(task.startDate).toLocaleDateString(i18n.language, { day: '2-digit', month: 'short', year: 'numeric' })
-                    : '—'}
+                  {task.startDate ? formatDateVi(new Date(task.startDate)) : '—'}
                 </span>
               </div>
               <div className="flex flex-col gap-1">
@@ -336,9 +377,7 @@ export function TaskDetailPage() {
                   {t('taskDetail.fieldDueDate')}
                 </span>
                 <span className="text-sm font-medium text-ink-primary">
-                  {task.dueDate
-                    ? `${new Date(task.dueDate).toLocaleDateString(i18n.language, { day: '2-digit', month: 'short', year: 'numeric' })} · ${dueLabel}`
-                    : '—'}
+                  {task.dueDate ? `${formatDateVi(new Date(task.dueDate))} · ${dueLabel}` : '—'}
                 </span>
               </div>
               <div className="flex flex-col gap-1">
@@ -346,9 +385,7 @@ export function TaskDetailPage() {
                   {t('taskDetail.fieldCompletedDate')}
                 </span>
                 <span className="text-sm font-medium text-ink-primary">
-                  {task.completedDate
-                    ? new Date(task.completedDate).toLocaleDateString(i18n.language, { day: '2-digit', month: 'short', year: 'numeric' })
-                    : '—'}
+                  {task.completedDate ? formatDateVi(new Date(task.completedDate)) : '—'}
                 </span>
               </div>
             </div>
@@ -368,7 +405,9 @@ export function TaskDetailPage() {
 
         <div className="flex flex-col gap-6 lg:col-span-1">
           <section className="flex flex-col gap-4 rounded-lg border border-border bg-surface p-5">
-            <h2 className="text-sm font-semibold text-ink-primary">{t('taskDetail.smartIntelligence')}</h2>
+            <h2 className="text-sm font-semibold text-ink-primary">
+              {t('taskDetail.smartIntelligence')}
+            </h2>
             {settings.smartScoreEnabled ? (
               <>
                 <div className="flex items-center justify-between">
@@ -394,7 +433,10 @@ export function TaskDetailPage() {
                     </span>
                     <ul className="flex flex-col gap-1.5">
                       {whyBullets.map((bullet, index) => (
-                        <li key={index} className="flex items-center gap-2 text-sm text-ink-secondary">
+                        <li
+                          key={index}
+                          className="flex items-center gap-2 text-sm text-ink-secondary"
+                        >
                           <span
                             className={`h-1.5 w-1.5 shrink-0 rounded-full ${TONE_BG_CLASS[bullet.tone]}`}
                             aria-hidden="true"
@@ -407,7 +449,10 @@ export function TaskDetailPage() {
                 )}
               </>
             ) : (
-              <EmptyState message={t('taskDetail.smartScoreDisabledMessage')} className="border-none" />
+              <EmptyState
+                message={t('taskDetail.smartScoreDisabledMessage')}
+                className="border-none"
+              />
             )}
           </section>
 
@@ -416,7 +461,9 @@ export function TaskDetailPage() {
             <ul className="flex flex-col gap-3 text-sm">
               {task.updatedAt !== task.createdAt && (
                 <li className="flex flex-col">
-                  <span className="font-medium text-ink-primary">{t('taskDetail.activityUpdated')}</span>
+                  <span className="font-medium text-ink-primary">
+                    {t('taskDetail.activityUpdated')}
+                  </span>
                   <span className="text-xs text-ink-muted">
                     {new Date(task.updatedAt).toLocaleString(i18n.language, {
                       day: '2-digit',
@@ -428,7 +475,9 @@ export function TaskDetailPage() {
                 </li>
               )}
               <li className="flex flex-col">
-                <span className="font-medium text-ink-primary">{t('taskDetail.activityCreated')}</span>
+                <span className="font-medium text-ink-primary">
+                  {t('taskDetail.activityCreated')}
+                </span>
                 <span className="text-xs text-ink-muted">
                   {new Date(task.createdAt).toLocaleString(i18n.language, {
                     day: '2-digit',
