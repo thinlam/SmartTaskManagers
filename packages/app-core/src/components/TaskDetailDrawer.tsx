@@ -2,8 +2,7 @@ import { useEffect, useState, type FormEvent, type KeyboardEvent } from 'react';
 import type { Area, Priority, Task, TaskStatus } from '@stm/types';
 import { ApiError } from '@stm/api-client';
 import { useTranslation } from 'react-i18next';
-import { formatDueLabel } from '@stm/shared';
-import { Button, cn, Drawer, PriorityBadge, Progress, StatusBadge } from '@stm/ui';
+import { Button, cn, Drawer } from '@stm/ui';
 import { useTasksContext } from '../state/TasksContext';
 import { useProjectsContext } from '../state/ProjectsContext';
 import { useGoalsContext } from '../state/GoalsContext';
@@ -49,7 +48,6 @@ const STATUS_SELECTED_CLASS: Record<TaskStatus, string> = {
 const fieldClasses =
   'w-full rounded-md border border-border bg-surface px-3 py-2 text-sm text-ink-primary outline-none focus-visible:ring-2 focus-visible:ring-primary';
 const labelClasses = 'text-xs font-semibold uppercase tracking-wide text-ink-muted';
-const sectionHeadingClasses = 'text-xs font-semibold uppercase tracking-wide text-ink-muted';
 
 interface FormState {
   title: string;
@@ -173,21 +171,47 @@ export function TaskDetailDrawer() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
+  const [detailsOpen, setDetailsOpen] = useState(false);
 
   /** Only top-level tasks can be chosen as a parent — subtasks are at most 2 levels deep. */
   const parentOptions = tasks.filter((task) => !task.parentTaskId && task.id !== editingTask?.id);
 
   useEffect(() => {
     if (!isDrawerOpen) return;
-    setForm(
-      editingTask ? formFromTask(editingTask) : { ...emptyForm(), ...(createDefaults ?? {}) },
-    );
+    const nextForm = editingTask
+      ? formFromTask(editingTask)
+      : { ...emptyForm(), ...(createDefaults ?? {}) };
+    setForm(nextForm);
     setError(null);
     setFieldErrors({});
+    // Keep "Thêm chi tiết" open when editing a task that already has data
+    // there, so existing values aren't hidden behind a collapsed section.
+    setDetailsOpen(
+      Boolean(
+        nextForm.description ||
+        nextForm.tags ||
+        nextForm.startDate ||
+        nextForm.reminderAt ||
+        nextForm.attachmentUrl ||
+        nextForm.goalId ||
+        nextForm.parentTaskId ||
+        nextForm.area !== 'Personal',
+      ),
+    );
   }, [isDrawerOpen, editingTask, createDefaults]);
 
   function fieldError(name: string): string | null {
     return fieldErrors[name]?.[0] ?? null;
+  }
+
+  /** Fields that live inside the collapsed "Thêm chi tiết" section — a validation error on any of them must force it open. */
+  const DETAIL_ERROR_FIELDS = ['Tags', 'ParentTaskId', 'ReminderAt'];
+
+  function applyFieldErrors(errors: Record<string, string[]>) {
+    setFieldErrors(errors);
+    if (DETAIL_ERROR_FIELDS.some((field) => field in errors)) {
+      setDetailsOpen(true);
+    }
   }
 
   function buildSharedFields() {
@@ -223,7 +247,7 @@ export function TaskDetailDrawer() {
 
   function applyError(err: unknown, fallback: string) {
     if (err instanceof ApiError && err.errors) {
-      setFieldErrors(err.errors);
+      applyFieldErrors(err.errors);
       setError(err.message);
     } else {
       setFieldErrors({});
@@ -300,10 +324,6 @@ export function TaskDetailDrawer() {
   }
 
   const isCreating = !editingTask;
-  const projectName = form.projectId
-    ? (projects.find((project) => project.id === form.projectId)?.name ?? null)
-    : null;
-  const previewDueLabel = formatDueLabel(form.dueDate || null, new Date(), t);
 
   return (
     <Drawer
@@ -322,7 +342,12 @@ export function TaskDetailDrawer() {
               <span className="text-xs text-ink-muted">{t('tasks.quickAddFooterHint')}</span>
             )}
             <div className="flex items-center gap-2">
-              <Button type="button" variant="secondary" onClick={closeDrawer} disabled={isSubmitting}>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={closeDrawer}
+                disabled={isSubmitting}
+              >
                 {t('tasks.cancelButton')}
               </Button>
               {isCreating && (
@@ -339,6 +364,7 @@ export function TaskDetailDrawer() {
                 type="submit"
                 form="task-detail-form"
                 variant="primary"
+                className="shadow-sm ring-1 ring-primary/30"
                 disabled={isSubmitting || !form.title.trim()}
               >
                 {editingTask ? t('tasks.saveChangesButton') : t('tasks.addTaskButton')}
@@ -348,34 +374,11 @@ export function TaskDetailDrawer() {
         </div>
       }
     >
-      {isCreating && (
-        <div className="mb-4 flex flex-col gap-3 rounded-lg border border-border bg-surface-secondary/50 p-4">
-          <span className={sectionHeadingClasses}>{t('tasks.livePreviewTitle')}</span>
-          <div className="flex flex-col gap-2 rounded-lg border border-border bg-surface p-3">
-            <div className="flex items-center gap-2">
-              <PriorityBadge priority={form.priority} label={translatePriority(t, form.priority)} />
-              <StatusBadge status={form.status} label={translateTaskStatus(t, form.status)} />
-            </div>
-            <span className="text-sm font-semibold text-ink-primary">
-              {form.title.trim() || t('tasks.livePreviewPlaceholderTitle')}
-            </span>
-            <span className="text-xs text-ink-secondary">
-              {[projectName, form.area].filter(Boolean).join(' · ')}
-            </span>
-            <span className="text-xs text-ink-muted">
-              {previewDueLabel}
-              {form.progress > 0 ? ` · ${form.progress}%` : ''}
-            </span>
-            <Progress value={form.progress} />
-          </div>
-        </div>
-      )}
-
       <form
         id="task-detail-form"
         onSubmit={handleSubmit}
         onKeyDown={handleFormKeyDown}
-        className="flex flex-col gap-5"
+        className="flex flex-col gap-4"
       >
         {error && <p className="text-sm text-danger">{error}</p>}
         {editingTask?.hasOpenDuplicateName && (
@@ -384,201 +387,109 @@ export function TaskDetailDrawer() {
           </p>
         )}
 
-        <div className="flex flex-col gap-3">
-          <span className={sectionHeadingClasses}>{t('tasks.sectionTaskDetails')}</span>
-          <div className="flex flex-col gap-1">
-            <label htmlFor="task-title" className={labelClasses}>
-              {t('tasks.fieldTitle')} *
-            </label>
-            <input
-              id="task-title"
-              type="text"
-              required
-              maxLength={200}
-              autoFocus={isCreating}
-              value={form.title}
-              onChange={(event) => setForm((f) => ({ ...f, title: event.target.value }))}
-              className={fieldClasses}
-              placeholder={t('tasks.titlePlaceholder')}
-            />
-            {fieldError('Name') && <p className="text-xs text-danger">{fieldError('Name')}</p>}
-          </div>
-
-          <div className="flex flex-col gap-1">
-            <label htmlFor="task-description" className={labelClasses}>
-              {t('tasks.fieldDescription')}
-            </label>
-            <textarea
-              id="task-description"
-              rows={3}
-              value={form.description}
-              onChange={(event) => setForm((f) => ({ ...f, description: event.target.value }))}
-              className={fieldClasses}
-            />
-          </div>
+        <div className="flex flex-col gap-1">
+          <label htmlFor="task-title" className={labelClasses}>
+            {t('tasks.fieldTitle')} *
+          </label>
+          <input
+            id="task-title"
+            type="text"
+            required
+            maxLength={200}
+            autoFocus
+            value={form.title}
+            onChange={(event) => setForm((f) => ({ ...f, title: event.target.value }))}
+            className={fieldClasses}
+            placeholder={t('tasks.titlePlaceholder')}
+          />
+          {fieldError('Name') && <p className="text-xs text-danger">{fieldError('Name')}</p>}
         </div>
 
-        <div className="flex flex-col gap-3">
-          <span className={sectionHeadingClasses}>{t('tasks.sectionAssignment')}</span>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="flex flex-col gap-1">
-              <label htmlFor="task-area" className={labelClasses}>
-                {t('tasks.fieldArea')}
-              </label>
-              <select
-                id="task-area"
-                value={form.area}
-                onChange={(event) => setForm((f) => ({ ...f, area: event.target.value as Area }))}
-                className={fieldClasses}
-              >
-                {AREAS.map((area) => (
-                  <option key={area} value={area}>
-                    {area}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="flex flex-col gap-1">
-              <label htmlFor="task-project" className={labelClasses}>
-                {t('tasks.fieldProject')}
-              </label>
-              <select
-                id="task-project"
-                value={form.projectId}
-                onChange={(event) => setForm((f) => ({ ...f, projectId: event.target.value }))}
-                className={fieldClasses}
-              >
-                <option value="">{t('tasks.noProjectOption')}</option>
-                {projects.map((project) => (
-                  <option key={project.id} value={project.id}>
-                    {project.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-1">
-            <label htmlFor="task-goal" className={labelClasses}>
-              {t('tasks.fieldGoal')}
-            </label>
-            <select
-              id="task-goal"
-              value={form.goalId}
-              onChange={(event) => setForm((f) => ({ ...f, goalId: event.target.value }))}
-              className={fieldClasses}
-            >
-              <option value="">{t('tasks.noGoalOption')}</option>
-              {goals.map((goal) => (
-                <option key={goal.id} value={goal.id}>
-                  {goal.name}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-3">
-          <span className={sectionHeadingClasses}>{t('tasks.sectionPriorityStatus')}</span>
-          <div className="flex flex-col gap-1">
-            <span className={labelClasses}>{t('tasks.fieldPriority')}</span>
-            <div className="flex flex-wrap gap-2">
-              {PRIORITIES.map((priority) => (
-                <button
-                  key={priority}
-                  type="button"
-                  onClick={() => setForm((f) => ({ ...f, priority }))}
-                  className={cn(
-                    'flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors',
-                    form.priority === priority
-                      ? PRIORITY_SELECTED_CLASS[priority]
-                      : 'border-border text-ink-secondary hover:bg-surface-secondary',
-                  )}
-                >
-                  <span
-                    className={cn('h-1.5 w-1.5 rounded-full', PRIORITY_DOT_CLASS[priority])}
-                    aria-hidden="true"
-                  />
-                  {translatePriority(t, priority)}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-1">
-            <span className={labelClasses}>{t('tasks.fieldStatus')}</span>
-            <div className="flex flex-wrap gap-2">
-              {STATUSES.map((status) => (
-                <button
-                  key={status}
-                  type="button"
-                  onClick={() => setForm((f) => ({ ...f, status }))}
-                  className={cn(
-                    'flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors',
-                    form.status === status
-                      ? STATUS_SELECTED_CLASS[status]
-                      : 'border-border text-ink-secondary hover:bg-surface-secondary',
-                  )}
-                >
-                  <span
-                    className={cn('h-1.5 w-1.5 rounded-full', STATUS_DOT_CLASS[status])}
-                    aria-hidden="true"
-                  />
-                  {translateTaskStatus(t, status)}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-1">
-            <label htmlFor="task-progress" className={labelClasses}>
-              {t('tasks.fieldProgress', { progress: form.progress })}
-            </label>
-            <input
-              id="task-progress"
-              type="range"
-              min={0}
-              max={100}
-              step={5}
-              value={form.progress}
-              onChange={(event) => setForm((f) => ({ ...f, progress: Number(event.target.value) }))}
-              className="w-full"
-            />
-          </div>
-        </div>
-
-        <div className="flex flex-col gap-3">
-          <span className={sectionHeadingClasses}>{t('tasks.sectionSchedule')}</span>
-          <div className="grid grid-cols-2 gap-3">
-            <div className="flex flex-col gap-1">
-              <label htmlFor="task-start-date" className={labelClasses}>
-                {t('tasks.fieldStartDate')}
-              </label>
-              <input
-                id="task-start-date"
-                type="date"
-                value={form.startDate}
-                onChange={(event) => setForm((f) => ({ ...f, startDate: event.target.value }))}
-                className={fieldClasses}
-              />
-            </div>
-            <div className="flex flex-col gap-1">
-              <label htmlFor="task-due-date" className={labelClasses}>
-                {t('tasks.fieldDueDate')}
-              </label>
-              <input
-                id="task-due-date"
-                type="date"
-                value={form.dueDate}
-                onChange={(event) => setForm((f) => ({ ...f, dueDate: event.target.value }))}
-                className={fieldClasses}
-              />
-              {fieldError('DueDate') && (
-                <p className="text-xs text-danger">{fieldError('DueDate')}</p>
-              )}
-            </div>
-          </div>
+        <div className="flex flex-col gap-1">
+          <span className={labelClasses}>{t('tasks.fieldPriority')}</span>
           <div className="flex flex-wrap gap-2">
+            {PRIORITIES.map((priority) => (
+              <button
+                key={priority}
+                type="button"
+                onClick={() => setForm((f) => ({ ...f, priority }))}
+                className={cn(
+                  'flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors',
+                  form.priority === priority
+                    ? PRIORITY_SELECTED_CLASS[priority]
+                    : 'border-border text-ink-secondary hover:bg-surface-secondary',
+                )}
+              >
+                <span
+                  className={cn('h-1.5 w-1.5 rounded-full', PRIORITY_DOT_CLASS[priority])}
+                  aria-hidden="true"
+                />
+                {translatePriority(t, priority)}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {!isCreating && (
+          <div className="flex flex-col gap-3">
+            <div className="flex flex-col gap-1">
+              <span className={labelClasses}>{t('tasks.fieldStatus')}</span>
+              <div className="flex flex-wrap gap-2">
+                {STATUSES.map((status) => (
+                  <button
+                    key={status}
+                    type="button"
+                    onClick={() => setForm((f) => ({ ...f, status }))}
+                    className={cn(
+                      'flex items-center gap-1.5 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors',
+                      form.status === status
+                        ? STATUS_SELECTED_CLASS[status]
+                        : 'border-border text-ink-secondary hover:bg-surface-secondary',
+                    )}
+                  >
+                    <span
+                      className={cn('h-1.5 w-1.5 rounded-full', STATUS_DOT_CLASS[status])}
+                      aria-hidden="true"
+                    />
+                    {translateTaskStatus(t, status)}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label htmlFor="task-progress" className={labelClasses}>
+                {t('tasks.fieldProgress', { progress: form.progress })}
+              </label>
+              <input
+                id="task-progress"
+                type="range"
+                min={0}
+                max={100}
+                step={5}
+                value={form.progress}
+                onChange={(event) =>
+                  setForm((f) => ({ ...f, progress: Number(event.target.value) }))
+                }
+                className="w-full"
+              />
+            </div>
+          </div>
+        )}
+
+        <div className="flex flex-col gap-1">
+          <label htmlFor="task-due-date" className={labelClasses}>
+            {t('tasks.fieldDueDate')}
+          </label>
+          <input
+            id="task-due-date"
+            type="date"
+            value={form.dueDate}
+            onChange={(event) => setForm((f) => ({ ...f, dueDate: event.target.value }))}
+            className={fieldClasses}
+          />
+          {fieldError('DueDate') && <p className="text-xs text-danger">{fieldError('DueDate')}</p>}
+          <div className="mt-1 flex flex-wrap gap-2">
             {[
               { label: t('tasks.dueToday'), offset: 0 },
               { label: t('tasks.dueTomorrow'), offset: 1 },
@@ -598,79 +509,169 @@ export function TaskDetailDrawer() {
         </div>
 
         <div className="flex flex-col gap-1">
-          <label htmlFor="task-tags" className={labelClasses}>
-            {t('tasks.fieldTags')}
+          <label htmlFor="task-project" className={labelClasses}>
+            {t('tasks.fieldProject')}
           </label>
-          <input
-            id="task-tags"
-            type="text"
-            placeholder={t('tasks.tagsPlaceholder')}
-            value={form.tags}
-            onChange={(event) => setForm((f) => ({ ...f, tags: event.target.value }))}
+          <select
+            id="task-project"
+            value={form.projectId}
+            onChange={(event) => setForm((f) => ({ ...f, projectId: event.target.value }))}
             className={fieldClasses}
-          />
-          {fieldError('Tags') && <p className="text-xs text-danger">{fieldError('Tags')}</p>}
+          >
+            <option value="">{t('tasks.noProjectOption')}</option>
+            {projects.map((project) => (
+              <option key={project.id} value={project.id}>
+                {project.name}
+              </option>
+            ))}
+          </select>
         </div>
 
-        <div className="flex flex-col gap-3">
-          <span className={sectionHeadingClasses}>{t('tasks.sectionAdvanced')}</span>
-          <div className="flex flex-col gap-1">
-            <label htmlFor="task-parent" className={labelClasses}>
-              {t('tasks.fieldParentTask')}
-            </label>
-            <select
-              id="task-parent"
-              value={form.parentTaskId}
-              onChange={(event) => setForm((f) => ({ ...f, parentTaskId: event.target.value }))}
-              className={fieldClasses}
-            >
-              <option value="">{t('tasks.noParentTaskOption')}</option>
-              {parentOptions.map((task) => (
-                <option key={task.id} value={task.id}>
-                  {task.title}
-                </option>
-              ))}
-            </select>
-            {fieldError('ParentTaskId') && (
-              <p className="text-xs text-danger">{fieldError('ParentTaskId')}</p>
-            )}
-          </div>
+        <details
+          className="rounded-lg border border-border"
+          open={detailsOpen}
+          onToggle={(event) => setDetailsOpen(event.currentTarget.open)}
+        >
+          <summary className="cursor-pointer select-none px-3 py-2 text-sm font-medium text-ink-primary">
+            {t('tasks.sectionMoreDetails')}
+          </summary>
+          <div className="flex flex-col gap-3 border-t border-border px-3 py-3">
+            <div className="flex flex-col gap-1">
+              <label htmlFor="task-description" className={labelClasses}>
+                {t('tasks.fieldDescription')}
+              </label>
+              <textarea
+                id="task-description"
+                rows={3}
+                value={form.description}
+                onChange={(event) => setForm((f) => ({ ...f, description: event.target.value }))}
+                className={fieldClasses}
+              />
+            </div>
 
-          <div className="flex flex-col gap-1">
-            <label htmlFor="task-reminder" className={labelClasses}>
-              {t('tasks.fieldReminderAt')}
-            </label>
-            <input
-              id="task-reminder"
-              type="datetime-local"
-              value={form.reminderAt}
-              onChange={(event) => setForm((f) => ({ ...f, reminderAt: event.target.value }))}
-              className={fieldClasses}
-            />
-            {fieldError('ReminderAt') && (
-              <p className="text-xs text-danger">{fieldError('ReminderAt')}</p>
-            )}
-          </div>
+            <div className="flex flex-col gap-1">
+              <label htmlFor="task-tags" className={labelClasses}>
+                {t('tasks.fieldTags')}
+              </label>
+              <input
+                id="task-tags"
+                type="text"
+                placeholder={t('tasks.tagsPlaceholder')}
+                value={form.tags}
+                onChange={(event) => setForm((f) => ({ ...f, tags: event.target.value }))}
+                className={fieldClasses}
+              />
+              {fieldError('Tags') && <p className="text-xs text-danger">{fieldError('Tags')}</p>}
+            </div>
 
-          <div className="flex flex-col gap-1">
-            <label htmlFor="task-attachment" className={labelClasses}>
-              {t('tasks.fieldAttachmentUrl')}
-            </label>
-            <input
-              id="task-attachment"
-              type="url"
-              placeholder={t('tasks.attachmentUrlPlaceholder')}
-              value={form.attachmentUrl}
-              onChange={(event) => setForm((f) => ({ ...f, attachmentUrl: event.target.value }))}
-              className={fieldClasses}
-            />
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1">
+                <label htmlFor="task-start-date" className={labelClasses}>
+                  {t('tasks.fieldStartDate')}
+                </label>
+                <input
+                  id="task-start-date"
+                  type="date"
+                  value={form.startDate}
+                  onChange={(event) => setForm((f) => ({ ...f, startDate: event.target.value }))}
+                  className={fieldClasses}
+                />
+              </div>
+              <div className="flex flex-col gap-1">
+                <label htmlFor="task-reminder" className={labelClasses}>
+                  {t('tasks.fieldReminderAt')}
+                </label>
+                <input
+                  id="task-reminder"
+                  type="datetime-local"
+                  value={form.reminderAt}
+                  onChange={(event) => setForm((f) => ({ ...f, reminderAt: event.target.value }))}
+                  className={fieldClasses}
+                />
+                {fieldError('ReminderAt') && (
+                  <p className="text-xs text-danger">{fieldError('ReminderAt')}</p>
+                )}
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label htmlFor="task-attachment" className={labelClasses}>
+                {t('tasks.fieldAttachmentUrl')}
+              </label>
+              <input
+                id="task-attachment"
+                type="url"
+                placeholder={t('tasks.attachmentUrlPlaceholder')}
+                value={form.attachmentUrl}
+                onChange={(event) => setForm((f) => ({ ...f, attachmentUrl: event.target.value }))}
+                className={fieldClasses}
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col gap-1">
+                <label htmlFor="task-area" className={labelClasses}>
+                  {t('tasks.fieldArea')}
+                </label>
+                <select
+                  id="task-area"
+                  value={form.area}
+                  onChange={(event) => setForm((f) => ({ ...f, area: event.target.value as Area }))}
+                  className={fieldClasses}
+                >
+                  {AREAS.map((area) => (
+                    <option key={area} value={area}>
+                      {area}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex flex-col gap-1">
+                <label htmlFor="task-goal" className={labelClasses}>
+                  {t('tasks.fieldGoal')}
+                </label>
+                <select
+                  id="task-goal"
+                  value={form.goalId}
+                  onChange={(event) => setForm((f) => ({ ...f, goalId: event.target.value }))}
+                  className={fieldClasses}
+                >
+                  <option value="">{t('tasks.noGoalOption')}</option>
+                  {goals.map((goal) => (
+                    <option key={goal.id} value={goal.id}>
+                      {goal.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="flex flex-col gap-1">
+              <label htmlFor="task-parent" className={labelClasses}>
+                {t('tasks.fieldParentTask')}
+              </label>
+              <select
+                id="task-parent"
+                value={form.parentTaskId}
+                onChange={(event) => setForm((f) => ({ ...f, parentTaskId: event.target.value }))}
+                className={fieldClasses}
+              >
+                <option value="">{t('tasks.noParentTaskOption')}</option>
+                {parentOptions.map((task) => (
+                  <option key={task.id} value={task.id}>
+                    {task.title}
+                  </option>
+                ))}
+              </select>
+              {fieldError('ParentTaskId') && (
+                <p className="text-xs text-danger">{fieldError('ParentTaskId')}</p>
+              )}
+            </div>
           </div>
-        </div>
+        </details>
 
         {isCreating && (
-          <p className="rounded-lg border border-primary/20 bg-primary-light/40 px-3 py-2.5 text-xs text-primary">
-            {t('tasks.calculatedAutomaticallyHint')}
-          </p>
+          <p className="text-xs text-ink-muted">{t('tasks.calculatedAutomaticallyHint')}</p>
         )}
       </form>
     </Drawer>

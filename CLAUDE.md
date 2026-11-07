@@ -44,6 +44,46 @@ quyết định kiến trúc), **trước khi báo hoàn thành**, phải cập 
 
 Nói rõ **đã cập nhật những tệp docs nào**, và nếu bỏ qua tệp nào thì vì sao.
 
+## Quy tắc bắt buộc: mỗi nghiệp vụ/tính năng mới phải có file kế hoạch riêng, làm theo đúng 3 bước
+
+Áp dụng cho **nghiệp vụ hoặc tính năng mới, hoặc sửa một luồng nghiệp vụ có sẵn** (không áp dụng cho việc
+sửa lỗi nhỏ, đổi config, hay trả lời câu hỏi không đổi gì trong repo).
+
+### Bước 1 — Đưa ra plan TRƯỚC khi đụng code
+
+Trước khi viết code, phải đọc kỹ yêu cầu của người dùng, **hiểu đúng theo nghiệp vụ thật** của họ (không
+suy diễn máy móc theo câu chữ nếu điều đó đi ngược nghiệp vụ), rồi tạo file kế hoạch tại
+`docs/project/plans/YYYY-MM-DD-<ten-ngan>.md` gồm các mục:
+
+- **Mục tiêu / nghiệp vụ**: tính năng/việc sửa này giải quyết vấn đề gì, cho ai dùng, hiểu theo đúng ý
+  nghiệp vụ của người dùng (nếu yêu cầu có điểm chưa rõ hoặc có thể hiểu nhiều cách, nêu rõ cách hiểu đã
+  chọn và vì sao).
+- **Phạm vi**: những gì làm, những gì rõ ràng KHÔNG làm trong lần này.
+- **Hướng đi / cách làm hoặc cách sửa**: phương án đúng chuẩn theo nghiệp vụ (không chỉ đúng theo chữ
+  nghĩa yêu cầu) — các file/module sẽ đổi, luồng dữ liệu, có đổi backend/schema không.
+- **Rủi ro**: trình bày dạng bảng 3 cột `Rủi ro | Mức | Giảm thiểu` (Mức: Thấp/Trung bình/Cao/Không có).
+- **Kiểm chứng**: dự kiến chạy test/kiểm tra gì để coi là xong (typecheck, test, chạy thật trên trình
+  duyệt...).
+
+Nếu việc đủ lớn hoặc có điểm chưa chắc về nghiệp vụ, trình bày plan này cho người dùng duyệt trước khi
+sang Bước 2. Nếu không chắc có cần file kế hoạch hay không, hỏi người dùng.
+
+### Bước 2 — Code phải bám theo plan đã viết
+
+Khi code, phải đối chiếu lại đúng file kế hoạch ở Bước 1 (không code tùy ý khác hướng đã chốt). Nếu
+trong lúc code phát hiện hướng đã chốt không ổn hoặc cần đổi, **sửa lại file kế hoạch đó trước**, nêu rõ
+vì sao đổi, rồi mới tiếp tục code theo hướng mới.
+
+### Bước 3 — Xong phải test và ghi kết quả thật vào plan
+
+Sau khi code xong, phải chạy kiểm chứng thật (typecheck/build/test/chạy thử UI tùy việc) rồi cập nhật lại
+**chính file kế hoạch đó** (không tạo file mới) với phần "Kết quả thật": mục nào đã làm, mục nào bỏ/đổi so
+với dự kiến, và **kết quả kiểm chứng thật** (không ghi điều dự định). Việc này làm **thêm vào**, không
+thay thế, các cập nhật bắt buộc ở mục "cập nhật docs" phía trên (`04-nhat-ky-da-lam.md` vẫn phải cập nhật
+như cũ, có thể trỏ về file kế hoạch tương ứng).
+
+Không báo "đã xong" với người dùng nếu chưa hoàn tất cả 3 bước trên.
+
 ## Các thỏa thuận quan trọng khác (chi tiết ở tài liệu 05)
 
 - Chỉ commit khi người dùng yêu cầu. Chỉ push sau khi người dùng nói rõ "push".

@@ -416,7 +416,9 @@
     "attachmentUrlPlaceholder": "https://…",
     "titleDuplicateWarning": "Đã có công việc khác (chưa hoàn thành) dùng tên này — vẫn lưu được, chỉ là lời nhắc.",
     "deleteSuccess": "Đã xóa công việc.",
-    "undoButton": "Hoàn tác"
+    "undoButton": "Hoàn tác",
+    "sectionMoreDetails": "Thêm chi tiết",
+    "moreDetailsHint": "Mô tả, thẻ, ngày bắt đầu, nhắc hẹn, đính kèm, lĩnh vực, mục tiêu, công việc cha"
   },
   "projects": {
     "summaryLine": "{{active}} dự án đang chạy ({{healthy}} tốt, {{attention}} cần chú ý, {{atRisk}} rủi ro) · {{overdue}} việc quá hạn · tiến độ trung bình {{avg}}%",

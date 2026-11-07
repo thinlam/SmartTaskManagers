@@ -416,7 +416,9 @@
     "attachmentUrlPlaceholder": "https://…",
     "titleDuplicateWarning": "Another open task already uses this title — this is just a heads-up, you can still save.",
     "deleteSuccess": "Task deleted.",
-    "undoButton": "Undo"
+    "undoButton": "Undo",
+    "sectionMoreDetails": "More details",
+    "moreDetailsHint": "Description, tags, start date, reminder, attachment, area, goal, parent task"
   },
   "projects": {
     "summaryLine": "{{active}} active projects ({{healthy}} healthy, {{attention}} attention, {{atRisk}} at risk) · {{overdue}} overdue tasks · {{avg}}% average progress",
