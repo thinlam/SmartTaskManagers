@@ -116,8 +116,11 @@ version + release ở trên.
 
 ## Quy tắc bắt buộc: commit thì push luôn; xung đột push/pull chọn bản đã push trước
 
-- Khi người dùng bảo **commit**, trợ lý **push luôn** sau khi commit thành công — không cần đợi người dùng
-  nói "push" riêng.
+- Khi người dùng bảo **commit** (hoặc trợ lý tự commit vì lý do khác, ví dụ cập nhật docs), **ngay sau khi
+  commit thành công, luôn chạy `git push` trong cùng lượt làm việc** — không đợi người dùng nói "push" riêng,
+  không hỏi lại xác nhận, không để lại tác vụ "chờ push" cho lần sau. Đây là **bước cuối bắt buộc của mọi
+  lần commit**, coi như một phần của hành động "commit" chứ không phải việc tùy chọn tiếp theo — nhớ làm
+  luôn, đừng quên. Chỉ ngoại lệ khi người dùng rõ ràng nói "đừng push"/"chưa push" cho riêng commit đó.
 - Khi đổi máy làm việc (ví dụ máy cũ chưa push, máy mới sửa y chang rồi đã push), nếu push/pull bị xung đột
   (conflict): **luôn chọn bản đã push lên remote trước đó**, bỏ bản local chưa từng push của máy đang
   thao tác, dù máy đang thao tác là máy "mới" hay "cũ". Nếu không xác định được bản nào đã push trước, phải
