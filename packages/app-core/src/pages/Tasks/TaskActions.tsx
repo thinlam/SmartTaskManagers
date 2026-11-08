@@ -1,48 +1,47 @@
 import type { Task } from '@stm/types';
 import { useState } from 'react';
-import { Check, Pencil, Trash2 } from 'lucide-react';
+import { Pencil, Trash2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { IconButton } from '@stm/ui';
+import { Button } from '@stm/ui';
 import { ConfirmDialog } from '../../components/ConfirmDialog';
 
 interface TaskActionsProps {
   task: Task;
-  onComplete: (id: string) => void;
   onDelete: (id: string) => void;
   onEdit: (task: Task) => void;
 }
 
 /**
- * Row actions for the Tasks table. Completing is the common action, so it is always visible;
- * edit and delete show on row hover/focus (always on touch screens) to keep the table calm.
+ * Row actions for the Tasks table. Completing a task happens via the Status column now (no
+ * separate checkmark) — edit and delete are always visible with a text label, since hiding
+ * them behind hover/icon-only made users think there was no way to edit/delete from the list.
  * Delete asks first because it cannot be undone.
  */
-export function TaskActions({ task, onComplete, onDelete, onEdit }: TaskActionsProps) {
+export function TaskActions({ task, onDelete, onEdit }: TaskActionsProps) {
   const { t } = useTranslation();
   const [confirming, setConfirming] = useState(false);
   return (
     <>
       <div className="flex items-center justify-end gap-1">
-        {task.status !== 'Completed' && (
-          <IconButton
-            icon={<Check className="h-4 w-4" aria-hidden="true" />}
-            aria-label={t('tasks.completeAriaLabel', { title: task.title })}
-            onClick={() => onComplete(task.id)}
-          />
-        )}
-        <div className="flex items-center gap-1 opacity-0 transition-opacity focus-within:opacity-100 group-hover:opacity-100 [@media(pointer:coarse)]:opacity-100">
-          <IconButton
-            icon={<Pencil className="h-4 w-4" aria-hidden="true" />}
-            aria-label={t('tasks.editAriaLabel', { title: task.title })}
-            onClick={() => onEdit(task)}
-          />
-          <IconButton
-            icon={<Trash2 className="h-4 w-4" aria-hidden="true" />}
-            aria-label={t('tasks.deleteAriaLabel', { title: task.title })}
-            variant="danger"
-            onClick={() => setConfirming(true)}
-          />
-        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          leadingIcon={<Pencil className="h-3.5 w-3.5" aria-hidden="true" />}
+          aria-label={t('tasks.editAriaLabel', { title: task.title })}
+          onClick={() => onEdit(task)}
+        >
+          {t('tasks.editButtonLabel')}
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="text-danger hover:bg-danger/10"
+          leadingIcon={<Trash2 className="h-3.5 w-3.5" aria-hidden="true" />}
+          aria-label={t('tasks.deleteAriaLabel', { title: task.title })}
+          onClick={() => setConfirming(true)}
+        >
+          {t('tasks.deleteButtonLabel')}
+        </Button>
       </div>
       <ConfirmDialog
         open={confirming}

@@ -26,7 +26,7 @@ interface TaskFiltersProps {
   onSortChange: (value: SortOption) => void;
 }
 
-const STATUSES: TaskStatus[] = ['Inbox', 'To Do', 'In Progress', 'Waiting', 'Completed'];
+export const STATUSES: TaskStatus[] = ['Inbox', 'To Do', 'In Progress', 'Waiting', 'Completed'];
 const PRIORITIES: Priority[] = ['Critical', 'Urgent', 'High', 'Medium', 'Low'];
 const RISKS: Risk[] = ['Critical', 'High', 'Medium', 'Low'];
 

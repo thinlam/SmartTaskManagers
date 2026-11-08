@@ -19,6 +19,7 @@ import { useTagsContext } from '../../state/TagsContext';
 import { reportError } from '../../lib/reportError';
 import { translatePriority, translateTaskStatus, translateRisk } from '../../lib/enumLabels';
 import {
+  STATUSES,
   TaskFilters,
   type PriorityFilter,
   type RiskFilter,
@@ -87,8 +88,16 @@ const DUE_LABEL_TONE_CLASSES: Record<ReturnType<typeof dueLabelTone>, string> = 
 export function TasksPage() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const { tasks, isLoading, lastFetchedAt, refetch, deleteTask, completeTask, openEditDrawer } =
-    useTasksContext();
+  const {
+    tasks,
+    isLoading,
+    lastFetchedAt,
+    refetch,
+    deleteTask,
+    completeTask,
+    updateTask,
+    openEditDrawer,
+  } = useTasksContext();
   const { projects } = useProjectsContext();
   const { tags } = useTagsContext();
   const [searchParams] = useSearchParams();
@@ -365,7 +374,7 @@ export function TasksPage() {
                 <th className="px-4 py-2 font-medium">{t('tasks.colTimeline')}</th>
                 <th className="hidden px-4 py-2 font-medium xl:table-cell">{t('tasks.colRisk')}</th>
                 <th className="hidden px-4 py-2 font-medium xl:table-cell">
-                  {t('tasks.colScore')}
+                  {t('tasks.colChangeStatus')}
                 </th>
                 <th className="px-4 py-2 font-medium" />
               </tr>
@@ -443,13 +452,33 @@ export function TasksPage() {
                         '—'
                       )}
                     </td>
-                    <td className="hidden px-4 py-3 font-medium text-ink-primary xl:table-cell">
-                      {task.smartScore ?? '—'}
+                    <td className="hidden px-4 py-3 xl:table-cell">
+                      <select
+                        value={task.status}
+                        onChange={(event) => {
+                          const nextStatus = event.target.value as Task['status'];
+                          // Completed goes through completeTask (not a plain update): it also
+                          // sets Progress/CompletedDate and spawns the next occurrence for
+                          // recurring tasks, which a generic status patch would skip.
+                          const request =
+                            nextStatus === 'Completed'
+                              ? completeTask(task.id)
+                              : updateTask(task.id, { status: nextStatus });
+                          request.catch(reportError);
+                        }}
+                        aria-label={t('tasks.changeStatusAriaLabel', { title: task.title })}
+                        className="rounded-md border border-border bg-surface px-2 py-1 text-xs text-ink-primary outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                      >
+                        {STATUSES.map((value) => (
+                          <option key={value} value={value}>
+                            {translateTaskStatus(t, value)}
+                          </option>
+                        ))}
+                      </select>
                     </td>
                     <td className="px-4 py-3">
                       <TaskActions
                         task={task}
-                        onComplete={(id) => completeTask(id).catch(reportError)}
                         onDelete={(id) => deleteTask(id).catch(reportError)}
                         onEdit={openEditDrawer}
                       />
