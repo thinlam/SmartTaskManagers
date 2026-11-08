@@ -11,6 +11,15 @@ namespace SmartTask.Persistence.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            // Idempotency guard: on Railway this migration previously crashed partway through
+            // (CREATE TABLE Tags succeeded, a later statement failed, so EF never recorded the
+            // migration as applied). Each restart retried from the top and hit "Table 'Tags'
+            // already exists". Drop any leftover partial state first — these tables are brand
+            // new and, if they exist at all here, hold at most a partial backfill with no real
+            // user-facing data, so dropping them is safe.
+            migrationBuilder.Sql("DROP TABLE IF EXISTS `TaskTags`;");
+            migrationBuilder.Sql("DROP TABLE IF EXISTS `Tags`;");
+
             migrationBuilder.CreateTable(
                 name: "Tags",
                 columns: table => new
@@ -79,27 +88,28 @@ namespace SmartTask.Persistence.Migrations
             // Backfill: split the legacy comma-separated Tags column (now LegacyTagsCsv in C#,
             // still the physical "Tags" column) into the new Tags/TaskTags relational tables,
             // normalized (trim + lowercase) and deduped per user. The old column is left intact.
+            //
+            // Uses SUBSTRING_INDEX against a fixed 1..10 "numbers" table instead of a recursive
+            // CTE (`WITH RECURSIVE`): a task can have at most 10 tags (TaskService.ValidateTags),
+            // so no real recursion is needed, and this avoids relying on recursive-CTE support,
+            // which isn't available on every MySQL/MariaDB version/configuration.
             migrationBuilder.Sql(
                 @"
                 INSERT INTO Tags (Id, UserId, Name, NormalizedName, CreatedAt)
-                SELECT UUID(), UserId, Name, NormalizedName, UTC_TIMESTAMP(6)
+                SELECT UUID(), UserId, MIN(Name), NormalizedName, UTC_TIMESTAMP(6)
                 FROM (
-                    WITH RECURSIVE split AS (
-                        SELECT Id AS TaskId, UserId, CONCAT(TRIM(Tags), ',') AS rest
-                        FROM Tasks
-                        WHERE Tags IS NOT NULL AND TRIM(Tags) <> ''
-                        UNION ALL
-                        SELECT TaskId, UserId, SUBSTRING(rest, LOCATE(',', rest) + 1)
-                        FROM split
-                        WHERE LOCATE(',', rest) > 1
-                    )
-                    SELECT UserId,
-                           TRIM(SUBSTRING(rest, 1, LOCATE(',', rest) - 1)) AS Name,
-                           LOWER(TRIM(SUBSTRING(rest, 1, LOCATE(',', rest) - 1))) AS NormalizedName
-                    FROM split
-                    WHERE LOCATE(',', rest) > 1
-                      AND TRIM(SUBSTRING(rest, 1, LOCATE(',', rest) - 1)) <> ''
-                ) parsed
+                    SELECT Tasks.UserId AS UserId,
+                           TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(Tasks.Tags, ',', n), ',', -1)) AS Name,
+                           LOWER(TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(Tasks.Tags, ',', n), ',', -1))) AS NormalizedName
+                    FROM Tasks
+                    JOIN (
+                        SELECT 1 AS n UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4 UNION ALL SELECT 5
+                        UNION ALL SELECT 6 UNION ALL SELECT 7 UNION ALL SELECT 8 UNION ALL SELECT 9 UNION ALL SELECT 10
+                    ) AS numbers
+                        ON CHAR_LENGTH(Tasks.Tags) - CHAR_LENGTH(REPLACE(Tasks.Tags, ',', '')) >= n - 1
+                    WHERE Tasks.Tags IS NOT NULL AND TRIM(Tasks.Tags) <> ''
+                ) AS parsed
+                WHERE Name <> ''
                 GROUP BY UserId, NormalizedName;
                 "
             );
@@ -109,21 +119,16 @@ namespace SmartTask.Persistence.Migrations
                 INSERT INTO TaskTags (TagsId, TasksId)
                 SELECT t.Id, task_tag.TaskId
                 FROM (
-                    WITH RECURSIVE split AS (
-                        SELECT Id AS TaskId, UserId, CONCAT(TRIM(Tags), ',') AS rest
-                        FROM Tasks
-                        WHERE Tags IS NOT NULL AND TRIM(Tags) <> ''
-                        UNION ALL
-                        SELECT TaskId, UserId, SUBSTRING(rest, LOCATE(',', rest) + 1)
-                        FROM split
-                        WHERE LOCATE(',', rest) > 1
-                    )
-                    SELECT TaskId, UserId,
-                           LOWER(TRIM(SUBSTRING(rest, 1, LOCATE(',', rest) - 1))) AS NormalizedName
-                    FROM split
-                    WHERE LOCATE(',', rest) > 1
-                      AND TRIM(SUBSTRING(rest, 1, LOCATE(',', rest) - 1)) <> ''
-                ) task_tag
+                    SELECT Tasks.Id AS TaskId, Tasks.UserId AS UserId,
+                           LOWER(TRIM(SUBSTRING_INDEX(SUBSTRING_INDEX(Tasks.Tags, ',', n), ',', -1))) AS NormalizedName
+                    FROM Tasks
+                    JOIN (
+                        SELECT 1 AS n UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4 UNION ALL SELECT 5
+                        UNION ALL SELECT 6 UNION ALL SELECT 7 UNION ALL SELECT 8 UNION ALL SELECT 9 UNION ALL SELECT 10
+                    ) AS numbers
+                        ON CHAR_LENGTH(Tasks.Tags) - CHAR_LENGTH(REPLACE(Tasks.Tags, ',', '')) >= n - 1
+                    WHERE Tasks.Tags IS NOT NULL AND TRIM(Tasks.Tags) <> ''
+                ) AS task_tag
                 JOIN Tags t ON t.UserId = task_tag.UserId AND t.NormalizedName = task_tag.NormalizedName;
                 "
             );
