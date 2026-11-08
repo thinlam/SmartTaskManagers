@@ -40,6 +40,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options, ICurren
     public DbSet<User> Users => Set<User>();
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<Session> Sessions => Set<Session>();
+    public DbSet<Tag> Tags => Set<Tag>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -57,6 +58,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options, ICurren
         modelBuilder.Entity<Habit>().HasQueryFilter(h => h.UserId == currentUserContext.UserId);
         modelBuilder.Entity<Notification>().HasQueryFilter(n => n.UserId == currentUserContext.UserId);
         modelBuilder.Entity<Session>().HasQueryFilter(s => s.UserId == currentUserContext.UserId);
+        modelBuilder.Entity<Tag>().HasQueryFilter(tag => tag.UserId == currentUserContext.UserId);
     }
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
@@ -82,6 +84,9 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options, ICurren
                         break;
                     case Notification notification:
                         notification.UserId = currentUserId.Value;
+                        break;
+                    case Tag tag:
+                        tag.UserId = currentUserId.Value;
                         break;
                     case Session session when session.UserId == Guid.Empty:
                         session.UserId = currentUserId.Value;

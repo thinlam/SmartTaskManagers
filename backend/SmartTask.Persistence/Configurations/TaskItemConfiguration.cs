@@ -12,7 +12,9 @@ public sealed class TaskItemConfiguration : IEntityTypeConfiguration<TaskItem>
 
         builder.Property(t => t.Name).HasMaxLength(500).IsRequired();
         builder.Property(t => t.Category).HasMaxLength(100);
-        builder.Property(t => t.Tags).HasMaxLength(1000);
+#pragma warning disable CS0618 // LegacyTagsCsv is obsolete by design — still mapped for the historical column.
+        builder.Property(t => t.LegacyTagsCsv).HasMaxLength(1000).HasColumnName("Tags");
+#pragma warning restore CS0618
         builder.Property(t => t.RecommendedAction).HasMaxLength(500);
         builder.Property(t => t.Notes).HasMaxLength(4000);
         builder.Property(t => t.ExternalId).HasMaxLength(50);
@@ -82,5 +84,12 @@ public sealed class TaskItemConfiguration : IEntityTypeConfiguration<TaskItem>
         // coexist without tripping the uniqueness constraint — identical
         // behavior to the SQL Server filtered index.
         builder.HasIndex(t => new { t.UserId, t.ExternalId }).IsUnique();
+
+        // Normalized Tags relation — implicit many-to-many via skip navigation, EF creates
+        // and manages the join table itself (no C# entity needed for the join row).
+        builder
+            .HasMany(t => t.Tags)
+            .WithMany(tag => tag.Tasks)
+            .UsingEntity(j => j.ToTable("TaskTags"));
     }
 }

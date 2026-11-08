@@ -1,5 +1,6 @@
 using SmartTask.Application.Abstractions;
 using SmartTask.Application.SmartEngine;
+using SmartTask.Application.Tags;
 using SmartTask.Domain.Enums;
 using SmartTask.Domain.Tasks;
 
@@ -12,11 +13,13 @@ namespace SmartTask.Application.Tasks;
 /// </summary>
 public sealed class TaskService(
     ITaskRepository taskRepository,
+    ITagRepository tagRepository,
     IDateTimeProvider dateTimeProvider,
     ISmartEngineService smartEngineService
 ) : ITaskService
 {
     private const int MaxTagCount = 10;
+    private const int MaxTagLength = 30;
     private const int MaxEstimateMinutes = 10080; // 7 days — a generous but finite cap.
 
     public async Task<List<TaskResponse>> GetAllAsync(CancellationToken cancellationToken = default)
@@ -50,6 +53,8 @@ public sealed class TaskService(
         await ValidateParentAsync(request.ParentTaskId, excludeId: null, errors, cancellationToken);
         ThrowIfInvalid(errors);
 
+        var tags = await tagRepository.GetOrCreateManyAsync(request.Tags ?? [], cancellationToken);
+
         var now = dateTimeProvider.UtcNow;
         var position = await taskRepository.CountAsync(cancellationToken);
         var task = new TaskItem
@@ -59,7 +64,7 @@ public sealed class TaskService(
             Area = request.Area,
             ProjectId = request.ProjectId,
             Category = request.Category,
-            Tags = request.Tags,
+            Tags = tags,
             Priority = request.Priority,
             Status = request.Status,
             StartDate = request.StartDate,
@@ -116,7 +121,7 @@ public sealed class TaskService(
             errors
         );
         ValidateEstimate(request.EstimateMinutes ?? task.EstimateMinutes, errors);
-        ValidateTags(request.Tags ?? task.Tags, errors);
+        ValidateTags(request.Tags, errors);
         if (request.ParentTaskId is not null && request.ParentTaskId != task.ParentTaskId)
         {
             if (request.ParentTaskId == id)
@@ -137,7 +142,10 @@ public sealed class TaskService(
         task.Area = request.Area ?? task.Area;
         task.ProjectId = request.ProjectId ?? task.ProjectId;
         task.Category = request.Category ?? task.Category;
-        task.Tags = request.Tags ?? task.Tags;
+        if (request.Tags is not null)
+        {
+            task.Tags = await tagRepository.GetOrCreateManyAsync(request.Tags, cancellationToken);
+        }
         task.Priority = request.Priority ?? task.Priority;
         task.Status = request.Status ?? task.Status;
         task.StartDate = request.StartDate ?? task.StartDate;
@@ -254,7 +262,7 @@ public sealed class TaskService(
             Area = completed.Area,
             ProjectId = completed.ProjectId,
             Category = completed.Category,
-            Tags = completed.Tags,
+            Tags = completed.Tags.ToList(),
             Priority = completed.Priority,
             Status = TaskStatusType.ToDo,
             StartDate = completed.StartDate?.AddDays(deltaDays),
@@ -351,16 +359,36 @@ public sealed class TaskService(
         }
     }
 
-    private static void ValidateTags(string? tags, Dictionary<string, List<string>> errors)
+    private static void ValidateTags(List<string>? tags, Dictionary<string, List<string>> errors)
     {
-        if (string.IsNullOrWhiteSpace(tags))
+        if (tags is null || tags.Count == 0)
         {
             return;
         }
-        var count = tags.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Length;
-        if (count > MaxTagCount)
+
+        // Count distinct normalized names, not raw entries — "Work" and "work" collapse to
+        // one tag once resolved (see ITagRepository.GetOrCreateManyAsync), so the limit should
+        // match what actually gets saved, not what the client happened to send.
+        var distinctCount = tags
+            .Select(t => t.Trim())
+            .Where(t => t.Length > 0)
+            .Select(t => t.ToLowerInvariant())
+            .Distinct()
+            .Count();
+
+        if (distinctCount > MaxTagCount)
         {
-            errors.AddError("Tags", $"Tối đa {MaxTagCount} tag.");
+            errors.AddError("Tags", $"Tối đa {MaxTagCount} thẻ.");
+        }
+
+        foreach (var tag in tags)
+        {
+            var trimmed = tag.Trim();
+            if (trimmed.Length > MaxTagLength)
+            {
+                errors.AddError("Tags", $"Mỗi thẻ tối đa {MaxTagLength} ký tự (\"{trimmed}\" dài hơn).");
+                break;
+            }
         }
     }
 
@@ -430,7 +458,7 @@ public sealed class TaskService(
             task.Area,
             task.ProjectId,
             task.Category,
-            task.Tags,
+            task.Tags.Select(t => t.Name).OrderBy(n => n).ToList(),
             task.Priority,
             task.Status,
             task.StartDate,

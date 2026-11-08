@@ -308,6 +308,38 @@ namespace SmartTask.Persistence.Migrations
                     b.ToTable("Projects", (string)null);
                 });
 
+            modelBuilder.Entity("SmartTask.Domain.Tasks.Tag", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("varchar(30)");
+
+                    b.Property<string>("NormalizedName")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("varchar(30)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("char(36)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("UserId", "NormalizedName")
+                        .IsUnique();
+
+                    b.ToTable("Tags", (string)null);
+                });
+
             modelBuilder.Entity("SmartTask.Domain.Tasks.TaskItem", b =>
                 {
                     b.Property<Guid>("Id")
@@ -375,6 +407,11 @@ namespace SmartTask.Persistence.Migrations
                     b.Property<DateTimeOffset?>("LastSyncedAt")
                         .HasColumnType("datetime(6)");
 
+                    b.Property<string>("LegacyTagsCsv")
+                        .HasMaxLength(1000)
+                        .HasColumnType("varchar(1000)")
+                        .HasColumnName("Tags");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(500)
@@ -430,10 +467,6 @@ namespace SmartTask.Persistence.Migrations
 
                     b.Property<int>("SyncStatus")
                         .HasColumnType("int");
-
-                    b.Property<string>("Tags")
-                        .HasMaxLength(1000)
-                        .HasColumnType("varchar(1000)");
 
                     b.Property<DateTimeOffset>("UpdatedAt")
                         .HasColumnType("datetime(6)");
@@ -522,6 +555,21 @@ namespace SmartTask.Persistence.Migrations
                     b.ToTable("Users", (string)null);
                 });
 
+            modelBuilder.Entity("TagTaskItem", b =>
+                {
+                    b.Property<Guid>("TagsId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<Guid>("TasksId")
+                        .HasColumnType("char(36)");
+
+                    b.HasKey("TagsId", "TasksId");
+
+                    b.HasIndex("TasksId");
+
+                    b.ToTable("TaskTags", (string)null);
+                });
+
             modelBuilder.Entity("SmartTask.Domain.Auth.Session", b =>
                 {
                     b.HasOne("SmartTask.Domain.Users.User", null)
@@ -567,6 +615,15 @@ namespace SmartTask.Persistence.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("SmartTask.Domain.Tasks.Tag", b =>
+                {
+                    b.HasOne("SmartTask.Domain.Users.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("SmartTask.Domain.Tasks.TaskItem", b =>
                 {
                     b.HasOne("SmartTask.Domain.Tasks.TaskItem", "DependencyTask")
@@ -602,6 +659,21 @@ namespace SmartTask.Persistence.Migrations
                     b.Navigation("ParentTask");
 
                     b.Navigation("Project");
+                });
+
+            modelBuilder.Entity("TagTaskItem", b =>
+                {
+                    b.HasOne("SmartTask.Domain.Tasks.Tag", null)
+                        .WithMany()
+                        .HasForeignKey("TagsId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SmartTask.Domain.Tasks.TaskItem", null)
+                        .WithMany()
+                        .HasForeignKey("TasksId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 #pragma warning restore 612, 618
         }

@@ -15,6 +15,7 @@ import {
 } from '@stm/ui';
 import { useTasksContext } from '../../state/TasksContext';
 import { useProjectsContext } from '../../state/ProjectsContext';
+import { useTagsContext } from '../../state/TagsContext';
 import { reportError } from '../../lib/reportError';
 import { translatePriority, translateTaskStatus, translateRisk } from '../../lib/enumLabels';
 import {
@@ -89,11 +90,13 @@ export function TasksPage() {
   const { tasks, isLoading, lastFetchedAt, refetch, deleteTask, completeTask, openEditDrawer } =
     useTasksContext();
   const { projects } = useProjectsContext();
+  const { tags } = useTagsContext();
   const [searchParams] = useSearchParams();
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<StatusFilter>('All');
   const [priority, setPriority] = useState<PriorityFilter>('All');
   const [risk, setRisk] = useState<RiskFilter>('All');
+  const [tag, setTag] = useState<string>('All');
   // "View project →" on Projects (Frame 11) links here as /tasks?project=<id> —
   // this is the only way to arrive with a non-default filter already applied.
   const [projectId, setProjectId] = useState<string>(() => searchParams.get('project') ?? 'All');
@@ -148,9 +151,10 @@ export function TasksPage() {
       if (priority !== 'All' && task.priority !== priority) return false;
       if (risk !== 'All' && task.risk !== risk) return false;
       if (projectId !== 'All' && task.projectId !== projectId) return false;
+      if (tag !== 'All' && !task.tags.includes(tag)) return false;
       return true;
     });
-  }, [tabFilteredTasks, search, status, priority, risk, projectId]);
+  }, [tabFilteredTasks, search, status, priority, risk, projectId, tag]);
 
   const sortedTasks = useMemo(() => {
     const sorted = filteredTasks.slice();
@@ -177,7 +181,7 @@ export function TasksPage() {
 
   useEffect(() => {
     setPage(1);
-  }, [search, status, priority, risk, projectId, sort, viewTab]);
+  }, [search, status, priority, risk, projectId, tag, sort, viewTab]);
 
   const totalPages = Math.max(1, Math.ceil(sortedTasks.length / PAGE_SIZE));
   const currentPage = Math.min(page, totalPages);
@@ -260,6 +264,9 @@ export function TasksPage() {
           <p className="text-sm text-ink-secondary">{t('tasks.subtitle')}</p>
         </div>
         <div className="flex items-center gap-2">
+          <Button type="button" variant="secondary" size="sm" onClick={() => navigate('/tags')}>
+            {t('tasks.manageTagsButton')}
+          </Button>
           <Button
             type="button"
             variant="secondary"
@@ -334,6 +341,9 @@ export function TasksPage() {
         projectId={projectId}
         onProjectChange={setProjectId}
         projects={projects}
+        tag={tag}
+        onTagChange={setTag}
+        tagNames={tags.map((t) => t.name)}
         sort={sort}
         onSortChange={setSort}
       />
@@ -377,6 +387,23 @@ export function TasksPage() {
                         </span>
                         <span className="text-xs text-ink-muted">{task.area}</span>
                       </button>
+                      {task.tags.length > 0 && (
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          {task.tags.map((tagName) => (
+                            <button
+                              key={tagName}
+                              type="button"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                setTag(tagName);
+                              }}
+                              className="rounded-full bg-surface-secondary px-2 py-0.5 text-[11px] font-medium text-ink-secondary hover:bg-primary/10 hover:text-primary"
+                            >
+                              {tagName}
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-ink-secondary">
                       {task.projectId ? (projectNameById.get(task.projectId) ?? '—') : '—'}

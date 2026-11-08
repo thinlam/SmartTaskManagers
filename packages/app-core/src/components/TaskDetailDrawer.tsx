@@ -8,6 +8,7 @@ import { useProjectsContext } from '../state/ProjectsContext';
 import { useGoalsContext } from '../state/GoalsContext';
 import { translatePriority, translateTaskStatus } from '../lib/enumLabels';
 import { reportError, reportSuccess } from '../lib/reportError';
+import { TagChipInput } from './TagChipInput';
 
 const AREAS: Area[] = ['Career', 'Learning', 'Health', 'Personal', 'Personal Admin'];
 const PRIORITIES: Priority[] = ['Critical', 'Urgent', 'High', 'Medium', 'Low'];
@@ -62,7 +63,7 @@ interface FormState {
   startDate: string;
   dueDate: string;
   progress: number;
-  tags: string;
+  tags: string[];
   /** '' = no parent task — matches the "No parent" option's value. */
   parentTaskId: string;
   /** datetime-local input value ('' = no reminder). */
@@ -95,7 +96,7 @@ function emptyForm(): FormState {
     startDate: '',
     dueDate: '',
     progress: 0,
-    tags: '',
+    tags: [],
     parentTaskId: '',
     reminderAt: '',
     attachmentUrl: '',
@@ -114,7 +115,7 @@ function formFromTask(task: Task): FormState {
     startDate: task.startDate ?? '',
     dueDate: task.dueDate ?? '',
     progress: task.progress,
-    tags: task.tags.join(', '),
+    tags: task.tags,
     parentTaskId: task.parentTaskId ?? '',
     reminderAt: toDatetimeLocalValue(task.reminderAt),
     attachmentUrl: task.attachmentUrl ?? '',
@@ -189,7 +190,7 @@ export function TaskDetailDrawer() {
     setDetailsOpen(
       Boolean(
         nextForm.description ||
-        nextForm.tags ||
+        nextForm.tags.length > 0 ||
         nextForm.startDate ||
         nextForm.reminderAt ||
         nextForm.attachmentUrl ||
@@ -216,10 +217,7 @@ export function TaskDetailDrawer() {
 
   function buildSharedFields() {
     const title = form.title.trim();
-    const tags = form.tags
-      .split(',')
-      .map((tag) => tag.trim())
-      .filter(Boolean);
+    const tags = form.tags;
     return {
       title,
       description: form.description,
@@ -553,13 +551,10 @@ export function TaskDetailDrawer() {
               <label htmlFor="task-tags" className={labelClasses}>
                 {t('tasks.fieldTags')}
               </label>
-              <input
+              <TagChipInput
                 id="task-tags"
-                type="text"
-                placeholder={t('tasks.tagsPlaceholder')}
                 value={form.tags}
-                onChange={(event) => setForm((f) => ({ ...f, tags: event.target.value }))}
-                className={fieldClasses}
+                onChange={(tags) => setForm((f) => ({ ...f, tags }))}
               />
               {fieldError('Tags') && <p className="text-xs text-danger">{fieldError('Tags')}</p>}
             </div>

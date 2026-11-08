@@ -16,7 +16,7 @@ public sealed record TaskResponse(
     AreaType Area,
     Guid? ProjectId,
     string? Category,
-    string? Tags,
+    IReadOnlyList<string> Tags,
     PriorityLevel Priority,
     TaskStatusType Status,
     DateOnly? StartDate,
@@ -58,8 +58,8 @@ public sealed class CreateTaskRequest
     [MaxLength(100)]
     public string? Category { get; init; }
 
-    [MaxLength(1000)]
-    public string? Tags { get; init; }
+    /// <summary>Tag names (not ids) — TaskService resolves each to an existing or newly created Tag for the current user. Max 10, each ≤ 30 characters (see TaskService.ValidateTags).</summary>
+    public List<string>? Tags { get; init; }
     public PriorityLevel Priority { get; init; } = PriorityLevel.Medium;
     public TaskStatusType Status { get; init; } = TaskStatusType.Inbox;
     public DateOnly? StartDate { get; init; }
@@ -108,8 +108,8 @@ public sealed class UpdateTaskRequest
     [MaxLength(100)]
     public string? Category { get; init; }
 
-    [MaxLength(1000)]
-    public string? Tags { get; init; }
+    /// <summary>Tag names (not ids), same resolution as CreateTaskRequest.Tags. Null means "leave unchanged" — pass an empty list to clear all tags.</summary>
+    public List<string>? Tags { get; init; }
     public PriorityLevel? Priority { get; init; }
     public TaskStatusType? Status { get; init; }
     public DateOnly? StartDate { get; init; }

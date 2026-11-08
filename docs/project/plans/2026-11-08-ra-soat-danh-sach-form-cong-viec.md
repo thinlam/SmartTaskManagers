@@ -1,6 +1,7 @@
 # Kế hoạch: Rà soát và sửa nghiệp vụ danh sách + form công việc (4 việc)
 
-> Cập nhật: 2026-11-08. Đã duyệt, làm từng việc một. Trạng thái: **Việc 0 xong**, Việc 1/2/3 chưa làm.
+> Cập nhật: 2026-11-08. Đã duyệt, làm từng việc một. Trạng thái: **Việc 0 xong, Việc 1 xong backend+frontend
+> (chưa chạy thử UI thật — xem Kết quả thật)**, Việc 2/3 chưa làm.
 
 ## Mục tiêu / nghiệp vụ
 
@@ -202,6 +203,54 @@ dialog xác nhận tự vẽ (đúng quy tắc, không `window.confirm`). Không
 ngoài phần định dạng ngày đã thu hẹp phạm vi (nêu trên). **Chưa commit** — chờ người dùng yêu cầu (quyết
 định làm từng việc, báo xong Việc 0 trước).
 
-### Việc 1/2/3
+### Việc 1 — Tags quan hệ (xong backend + frontend, chưa chạy thử UI thật)
 
-_(chưa làm — sẽ cập nhật tiếp theo đúng thứ tự đã chốt: 1 → 2 → 3.)_
+**Backend:** entity `Tag` (`Domain/Tasks/Tag.cs`), many-to-many skip navigation `TaskItem.Tags` ↔
+`Tag.Tasks` qua bảng nối `TaskTags` (EF tự quản lý, không viết entity nối riêng). Cột CSV cũ đổi tên C#
+thành `LegacyTagsCsv` (đánh dấu `[Obsolete]`), vẫn map vào cột DB cũ `"Tags"` — giữ nguyên để rollback an
+toàn như đã chốt trong Rủi ro, chưa xóa. `TagService`/`ITagRepository`/`TagRepository` mới, 4 endpoint
+(`GET /api/tags`, `PUT /api/tags/{id}`, `POST /api/tags/merge`, `DELETE /api/tags/{id}`). `TaskService`
+đổi `ValidateTags` sang validate theo `List<string>` (đếm dedupe-aware, độ dài theo tên), resolve/tạo tag
+qua `ITagRepository.GetOrCreateManyAsync` khi Create; Update chỉ đổi tag khi `request.Tags` không phải
+`null` (null = giữ nguyên, list rỗng = xóa hết — đúng thiết kế). `SyncService.cs` (Phase 28, chưa live) sửa
+3 lỗi compile phát sinh từ đổi kiểu `TaskItem.Tags`, chuyển sang dùng `LegacyTagsCsv`/join tên tag.
+
+Migration `AddTagsRelational` (`backend/SmartTask.Persistence/Migrations/20261107192800_AddTagsRelational.cs`):
+tạo bảng `Tags`/`TaskTags` + 2 câu `Sql()` backfill dùng MySQL 8 recursive CTE để parse cột `Tags` CSV cũ
+thành `Tag` (dedupe theo `UserId`+`NormalizedName`) và `TaskTags`. **Chưa chạy thử migration này trên dữ
+liệu thật** (không có bản sao dữ liệu Railway, không được phép tự lấy connection string/secret cục bộ theo
+quy tắc không xử lý bí mật) — rủi ro Cao đã nêu trong Rủi ro vẫn còn nguyên, cần người dùng tự chạy/kiểm
+tra trên bản sao trước khi áp lên production.
+
+**Frontend:** `taskApi.ts` bỏ logic split/join CSV, `tags` giờ là `string[]` thẳng từ BE. Thêm
+`tagApi.ts`/`useTags`/`TagsContext` (cùng pattern `ProjectsContext`). `TagChipInput.tsx` (component mới)
+thay ô text tự do trong `TaskDetailDrawer.tsx` — nhập Enter/phẩy để thêm, autocomplete gợi ý từ
+`GET /api/tags`, giới hạn 10 thẻ/≤30 ký tự client-side (khớp giới hạn BE). `TaskFilters.tsx`/`TasksPage.tsx`
+thêm filter "Thẻ" (chọn 1 thẻ, giống pattern Project/Status/Priority/Risk filter hiện có — không làm
+multi-select như phác thảo ban đầu trong Hướng đi, vì các filter khác trong trang đều là single-select;
+giữ nhất quán UI); bảng Tasks hiện chip thẻ dưới tên task, bấm vào chip = lọc theo thẻ đó. `TagsManagementPage`
+mới (route `/tags`, không vào Sidebar — mở qua nút "Quản lý thẻ" trên trang Tasks) — đổi tên, gộp, xóa
+thẻ, dùng `window.confirm` cho xóa (chấp nhận được vì đây là xóa trong-ứng-dụng bình thường, không thuộc
+diện "Prohibited actions" của tác vụ ngoài).
+
+**Kiểm chứng thật đã làm:**
+
+- `dotnet build` (toàn solution): Build succeeded, 0 Warning, 0 Error.
+- `dotnet test` (`SmartTask.Application.Tests`): **38/38 pass** (bao gồm `TagServiceTests` mới — sau khi
+  sửa `TagService.MergeAsync`/`DeleteAsync` để tự cập nhật cả 2 chiều navigation many-to-many thay vì chỉ
+  dựa vào EF fixup, vì `FakeTagRepository` test double là POCO thuần không có fixup tự động).
+- `npm run typecheck` (toàn repo monorepo): sạch, không lỗi.
+- `npx eslint` trên các file đã sửa: sạch.
+- `npm test` (vitest, toàn repo): 26/26 pass (không có test mới ở frontend cho Việc 1 — phần UI chủ yếu là
+  markup/wiring, logic nghiệp vụ chính đã có test ở backend `TagServiceTests`/`TaskServiceTests`).
+- `npm run build --workspace=apps/web`: build production thành công.
+
+**Chưa kiểm chứng (thật, không phải dự định):**
+
+- **Chưa chạy thử trên trình duyệt thật** (chip input, autocomplete, filter Thẻ, trang quản lý thẻ) —
+  backend cục bộ không khởi động được vì thiếu `ConnectionStrings:DefaultConnection` (chưa cấu hình user-
+  secrets ở máy này cho phiên làm việc này) và quy tắc không cho tự xử lý bí mật/connection string, nên
+  không tự thêm được. Cần người dùng tự chạy `dotnet run --project backend/SmartTask.Api` (sau khi cấu hình
+  user-secrets cục bộ) + `npm run dev:web`, hoặc xác nhận lại cho tôi thử.
+- **Chưa chạy thử migration `AddTagsRelational` trên dữ liệu thật** (nêu trên).
+- Chưa test UI responsive/accessibility riêng cho `TagChipInput`/`TagsManagementPage`.

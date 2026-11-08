@@ -19,6 +19,9 @@ interface TaskFiltersProps {
   projectId: string;
   onProjectChange: (value: string) => void;
   projects: Project[];
+  tag: string;
+  onTagChange: (value: string) => void;
+  tagNames: string[];
   sort: SortOption;
   onSortChange: (value: SortOption) => void;
 }
@@ -42,6 +45,9 @@ export function TaskFilters({
   projectId,
   onProjectChange,
   projects,
+  tag,
+  onTagChange,
+  tagNames,
   sort,
   onSortChange,
 }: TaskFiltersProps) {
@@ -105,6 +111,19 @@ export function TaskFilters({
         {RISKS.map((value) => (
           <option key={value} value={value}>
             {value}
+          </option>
+        ))}
+      </select>
+      <select
+        value={tag}
+        onChange={(event) => onTagChange(event.target.value)}
+        aria-label={t('tasks.tagFilterAriaLabel')}
+        className={`${controlClasses} min-w-0 basis-[calc(50%-0.25rem)] sm:basis-auto`}
+      >
+        <option value="All">{t('tasks.allTags')}</option>
+        {tagNames.map((name) => (
+          <option key={name} value={name}>
+            {name}
           </option>
         ))}
       </select>

@@ -16,7 +16,12 @@ public sealed class TaskServiceTests
     private static readonly DateTimeOffset Now = new(2026, 11, 7, 10, 0, 0, TimeSpan.Zero);
 
     private static TaskService CreateSut(FakeTaskRepository? repository = null) =>
-        new(repository ?? new FakeTaskRepository(), new FakeDateTimeProvider(Now), new FakeSmartEngineService());
+        new(
+            repository ?? new FakeTaskRepository(),
+            new FakeTagRepository(),
+            new FakeDateTimeProvider(Now),
+            new FakeSmartEngineService()
+        );
 
     private static CreateTaskRequest MinimalRequest(string name = "Buy milk") => new() { Name = name };
 
@@ -129,12 +134,68 @@ public sealed class TaskServiceTests
     public async Task CreateAsync_MoreThan10Tags_Throws()
     {
         var sut = CreateSut();
-        var elevenTags = string.Join(',', Enumerable.Range(1, 11).Select(i => $"tag{i}"));
+        var elevenTags = Enumerable.Range(1, 11).Select(i => $"tag{i}").ToList();
         var request = new CreateTaskRequest { Name = "Buy milk", Tags = elevenTags };
 
         var ex = await Assert.ThrowsAsync<TaskValidationException>(() => sut.CreateAsync(request));
 
         Assert.True(ex.Errors.ContainsKey("Tags"));
+    }
+
+    [Fact]
+    public async Task CreateAsync_TagLongerThan30Chars_Throws()
+    {
+        var sut = CreateSut();
+        var request = new CreateTaskRequest
+        {
+            Name = "Buy milk",
+            Tags = [new string('a', 31)],
+        };
+
+        var ex = await Assert.ThrowsAsync<TaskValidationException>(() => sut.CreateAsync(request));
+
+        Assert.True(ex.Errors.ContainsKey("Tags"));
+    }
+
+    [Fact]
+    public async Task CreateAsync_TagsAreCaseInsensitiveAndDeduped()
+    {
+        var repository = new FakeTaskRepository();
+        var tagRepository = new FakeTagRepository();
+        var sut = new TaskService(
+            repository,
+            tagRepository,
+            new FakeDateTimeProvider(Now),
+            new FakeSmartEngineService()
+        );
+
+        var created = await sut.CreateAsync(
+            new CreateTaskRequest { Name = "Buy milk", Tags = ["Work", "work", " WORK ", "Home"] }
+        );
+
+        Assert.Equal(["Home", "Work"], created.Tags.OrderBy(t => t).ToList());
+    }
+
+    [Fact]
+    public async Task UpdateAsync_TagsOmitted_LeavesExistingTagsUnchanged()
+    {
+        var sut = CreateSut();
+        var created = await sut.CreateAsync(new CreateTaskRequest { Name = "Buy milk", Tags = ["Work"] });
+
+        var updated = await sut.UpdateAsync(created.Id, new UpdateTaskRequest { Name = "Buy milk 2" });
+
+        Assert.Equal(["Work"], updated!.Tags);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_EmptyTagsList_ClearsAllTags()
+    {
+        var sut = CreateSut();
+        var created = await sut.CreateAsync(new CreateTaskRequest { Name = "Buy milk", Tags = ["Work"] });
+
+        var updated = await sut.UpdateAsync(created.Id, new UpdateTaskRequest { Tags = [] });
+
+        Assert.Empty(updated!.Tags);
     }
 
     [Fact]

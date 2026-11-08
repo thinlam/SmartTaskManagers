@@ -31,8 +31,19 @@ public sealed class TaskItem : SyncableEntity
 
     public string? Category { get; set; }
 
-    /// <summary>Comma-separated, matching how Sheets itself stores Tags — not normalized into its own table, since the source data isn't shaped that way either.</summary>
-    public string? Tags { get; set; }
+    /// <summary>
+    /// Obsolete — the old comma-separated storage (Phase 21), kept so the AddTagsRelational
+    /// migration's data backfill has a readable source and so a bad backfill can be re-run
+    /// or rolled back without losing the original values. Not read or written by TaskService
+    /// anymore; <see cref="Tags"/> below (the Tag/TaskTag relation) is the live source of truth.
+    /// Still maps to the DB column literally named "Tags" (see TaskItemConfiguration) — only
+    /// the C# property was renamed to free up the `Tags` name for the new navigation.
+    /// </summary>
+    [Obsolete("Read-only historical data. Use the Tags navigation collection instead.")]
+    public string? LegacyTagsCsv { get; set; }
+
+    /// <summary>Many-to-many via the TaskTags join table (see TaskItemConfiguration) — the normalized replacement for LegacyTagsCsv.</summary>
+    public ICollection<Tag> Tags { get; set; } = new List<Tag>();
 
     public PriorityLevel Priority { get; set; } = PriorityLevel.Medium;
     public TaskStatusType Status { get; set; } = TaskStatusType.Inbox;

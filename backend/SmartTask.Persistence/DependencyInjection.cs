@@ -6,6 +6,7 @@ using SmartTask.Application.Goals;
 using SmartTask.Application.Habits;
 using SmartTask.Application.Notifications;
 using SmartTask.Application.Projects;
+using SmartTask.Application.Tags;
 using SmartTask.Application.Tasks;
 using SmartTask.Application.Users;
 using SmartTask.Persistence.Repositories;
@@ -57,6 +58,7 @@ public static class DependencyInjection
         services.AddScoped<IHabitRepository, HabitRepository>();
         services.AddScoped<INotificationRepository, NotificationRepository>();
         services.AddScoped<ISessionRepository, SessionRepository>();
+        services.AddScoped<ITagRepository, TagRepository>();
 
         return services;
     }

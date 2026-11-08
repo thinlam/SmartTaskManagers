@@ -113,7 +113,9 @@ public sealed class SyncService(
                     Area = item.Area,
                     ProjectId = item.ProjectId,
                     Category = item.Category,
-                    Tags = item.Tags,
+#pragma warning disable CS0618 // Tags is now the Tag/TaskTag relation — Phase 28 sync isn't live yet and hasn't been updated to resolve tag names through ITagRepository, so it round-trips through the legacy CSV column for now.
+                    LegacyTagsCsv = item.Tags,
+#pragma warning restore CS0618
                     Priority = item.Priority,
                     Status = item.Status,
                     StartDate = item.StartDate,
@@ -151,7 +153,9 @@ public sealed class SyncService(
             existing.Area = item.Area;
             existing.ProjectId = item.ProjectId;
             existing.Category = item.Category;
-            existing.Tags = item.Tags;
+#pragma warning disable CS0618 // Same Phase 28 scope note as the create branch above.
+            existing.LegacyTagsCsv = item.Tags;
+#pragma warning restore CS0618
             existing.Priority = item.Priority;
             existing.Status = item.Status;
             existing.StartDate = item.StartDate;
@@ -248,7 +252,7 @@ public sealed class SyncService(
             task.Area,
             task.ProjectId,
             task.Category,
-            task.Tags,
+            task.Tags.Count > 0 ? string.Join(",", task.Tags.Select(t => t.Name)) : null,
             task.Priority,
             task.Status,
             task.StartDate,

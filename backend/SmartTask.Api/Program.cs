@@ -18,6 +18,7 @@ using SmartTask.Application.Notifications;
 using SmartTask.Application.Projects;
 using SmartTask.Application.SmartEngine;
 using SmartTask.Application.Sync;
+using SmartTask.Application.Tags;
 using SmartTask.Application.Tasks;
 using SmartTask.Infrastructure;
 using SmartTask.Infrastructure.Security;
@@ -105,6 +106,7 @@ builder.Services.AddScoped<IHabitService, HabitService>();
 builder.Services.AddScoped<ISyncService, SyncService>();
 builder.Services.AddScoped<ISmartEngineService, SmartEngineService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
+builder.Services.AddScoped<ITagService, TagService>();
 
 // ============================================================
 // BACKGROUND SERVICES

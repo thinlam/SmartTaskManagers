@@ -7,6 +7,7 @@ import { ProjectsProvider } from './state/ProjectsContext';
 import { GoalsProvider } from './state/GoalsContext';
 import { HabitsProvider } from './state/HabitsContext';
 import { SettingsProvider } from './state/SettingsContext';
+import { TagsProvider } from './state/TagsContext';
 import { LoginPage } from './pages/Auth/LoginPage';
 
 /**
@@ -29,7 +30,9 @@ function AuthGate() {
         <GoalsProvider>
           <HabitsProvider>
             <SettingsProvider>
-              <RouterProvider router={router} />
+              <TagsProvider>
+                <RouterProvider router={router} />
+              </TagsProvider>
             </SettingsProvider>
           </HabitsProvider>
         </GoalsProvider>

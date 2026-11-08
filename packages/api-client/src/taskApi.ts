@@ -15,7 +15,7 @@ interface TaskDto {
   area: string;
   projectId: string | null;
   category: string | null;
-  tags: string | null;
+  tags: string[];
   priority: string;
   status: string;
   startDate: string | null;
@@ -51,12 +51,7 @@ function fromDto(dto: TaskDto): Task {
     area: areaToFrontend(dto.area),
     projectId: dto.projectId,
     goalId: dto.goalId,
-    tags: dto.tags
-      ? dto.tags
-          .split(',')
-          .map((tag) => tag.trim())
-          .filter(Boolean)
-      : [],
+    tags: dto.tags ?? [],
     priority: dto.priority as Task['priority'],
     status: taskStatusToFrontend(dto.status),
     startDate: dto.startDate,
@@ -103,7 +98,7 @@ function toWriteBody(fields: TaskWriteFields): Record<string, unknown> {
   if (fields.area !== undefined) body.area = areaToBackend(fields.area);
   if (fields.projectId !== undefined) body.projectId = fields.projectId;
   if (fields.goalId !== undefined) body.goalId = fields.goalId;
-  if (fields.tags !== undefined) body.tags = fields.tags.join(',');
+  if (fields.tags !== undefined) body.tags = fields.tags;
   if (fields.priority !== undefined) body.priority = fields.priority;
   if (fields.status !== undefined) body.status = taskStatusToBackend(fields.status);
   if (fields.startDate !== undefined) body.startDate = fields.startDate;
