@@ -107,9 +107,25 @@ yêu cầu ra **bản mới**, không phải chỉ build lại bản hiện tạ
 
 Deploy lên Railway (cho web/API) vẫn do chủ dự án làm, không nằm trong rule này.
 
+## Quy tắc bắt buộc: "build lại" khác "build"
+
+"Build lại" (đổi máy làm việc, cần dựng lại đúng artifact máy kia đã build) **không phải** rule "build" ở
+trên. "Build lại" = build ra đúng bản hiện có (**không** bump version, không tạo release mới) để tiếp tục
+làm việc trên máy mới. Chỉ khi người dùng gõ đúng "build" (không có "lại") mới áp dụng quy trình bump
+version + release ở trên.
+
+## Quy tắc bắt buộc: commit thì push luôn; xung đột push/pull chọn bản đã push trước
+
+- Khi người dùng bảo **commit**, trợ lý **push luôn** sau khi commit thành công — không cần đợi người dùng
+  nói "push" riêng.
+- Khi đổi máy làm việc (ví dụ máy cũ chưa push, máy mới sửa y chang rồi đã push), nếu push/pull bị xung đột
+  (conflict): **luôn chọn bản đã push lên remote trước đó**, bỏ bản local chưa từng push của máy đang
+  thao tác, dù máy đang thao tác là máy "mới" hay "cũ". Nếu không xác định được bản nào đã push trước, phải
+  hỏi chủ dự án trước khi merge/reset, không tự chọn.
+
 ## Các thỏa thuận quan trọng khác (chi tiết ở tài liệu 05)
 
-- Chỉ commit khi người dùng yêu cầu. Chỉ push sau khi người dùng nói rõ "push".
+- Chỉ commit khi người dùng yêu cầu; khi commit thì push luôn theo rule ở trên.
 - Không in hay chia sẻ bí mật (`HF_TOKEN`, `JWT_SECRET`, `SIGNUP_CODE`, chuỗi kết nối, khóa ký).
 - Không sửa hay xóa dữ liệu trong cơ sở dữ liệu thật. Deploy lên Railway do chủ dự án làm. Tạo GitHub
   Release cho app desktop thì theo rule "build" ở trên (tự tạo sau khi hỏi xác nhận, không còn là việc

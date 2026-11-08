@@ -1,6 +1,7 @@
 # 5. Quy tắc của dự án
 
-> Cập nhật: 2026-11-07 (thêm quy ước test B5). Gom từ cấu hình trong repo (ESLint, Prettier, `.gitignore`, lịch sử commit) và
+> Cập nhật: 2026-11-08 (sửa rule commit→push luôn, phân biệt "build" vs "build lại", rule chọn bản khi
+> xung đột push/pull giữa 2 máy). Gom từ cấu hình trong repo (ESLint, Prettier, `.gitignore`, lịch sử commit) và
 > từ các thỏa thuận làm việc giữa chủ dự án và trợ lý AI. Mục nào là thỏa thuận (không có công cụ ép) được ghi rõ.
 
 ## A. Quy tắc bắt buộc, có công cụ kiểm tra
@@ -99,10 +100,23 @@
 Đây là thỏa thuận giữa chủ dự án và trợ lý, **không có công cụ nào ép**:
 
 - Trợ lý trả lời bằng **tiếng Việt, ngắn gọn, trung thực** về cái đã và chưa kiểm chứng.
-- **Chỉ commit khi được yêu cầu. Chỉ push sau khi chủ dự án nói rõ "push".**
-- Việc trên dashboard Railway, tạo GitHub Release, cấp khóa ký: **do chủ dự án làm**.
+- **Chỉ commit khi được yêu cầu. Khi được yêu cầu commit thì push luôn** — không cần đợi nói "push" riêng
+  (khác với rule cũ "chỉ push khi nói rõ push"; rule này đã được thay bằng rule này).
+- **"Build lại" ≠ "build".** "Build lại" nghĩa là: đang ở máy khác (máy mới), chỉ cần build ra đúng artifact
+  mà máy kia **đã build trước đó** (cùng version, không bump version, không tạo release mới) — dùng khi đổi
+  máy làm việc và cần dựng lại y như cũ để tiếp tục. "Build" (không có "lại") vẫn giữ nguyên nghĩa ở mục
+  "build nghĩa là bump version mới..." trong `CLAUDE.md` — bump version, build web + Tauri thật, tạo tag/release
+  sau khi hỏi xác nhận. Hai lệnh này **khác nhau**, không được hiểu lẫn.
+- **Xung đột khi push/pull (đổi máy làm việc):** nếu máy cũ chưa push mà máy mới đã sửa y chang và push
+  trước, thì khi máy cũ pull/push lại bị xung đột (conflict) — **luôn chọn bản đã push trước** (bản của máy
+  mới trong ví dụ này), không chọn bản local chưa push của máy đang thao tác. Nói cách khác: bản đã lên remote
+  trước thắng; bản local chưa từng push bị discard khi xung đột với nó. Nếu không chắc máy nào đã push trước,
+  phải hỏi lại chủ dự án trước khi quyết, không tự chọn.
+- Việc trên dashboard Railway, tạo GitHub Release, cấp khóa ký: **do chủ dự án làm**, trừ trường hợp rule
+  "build" ở `CLAUDE.md` cho phép trợ lý tự tạo Release sau khi hỏi xác nhận.
 - Không sửa hay xóa dữ liệu trong cơ sở dữ liệu thật (PostgreSQL/MySQL).
 - Không in hay chia sẻ bí mật của chủ dự án.
-- Hành động khó hoàn tác hoặc ảnh hưởng người ngoài (push, xóa, phát hành) phải được hỏi trước.
+- Hành động khó hoàn tác hoặc ảnh hưởng người ngoài (xóa, phát hành) phải được hỏi trước. Push sau khi commit
+  theo yêu cầu thì không cần hỏi lại riêng (xem rule push ở trên), nhưng force-push vẫn luôn phải hỏi.
 - **Sau mỗi lần làm việc, trợ lý phải cập nhật `docs/project/`** (ít nhất `04-nhat-ky-da-lam.md`: làm gì, ngày, mã commit, đã/chưa kiểm chứng gì). Quy tắc này nằm trong `CLAUDE.md` ở gốc repo để mỗi phiên đều tự động nạp.
 - Thay đổi chỉ nên làm đúng phạm vi được yêu cầu; việc phát sinh thì báo, không tự mở rộng.
