@@ -84,10 +84,35 @@ như cũ, có thể trỏ về file kế hoạch tương ứng).
 
 Không báo "đã xong" với người dùng nếu chưa hoàn tất cả 3 bước trên.
 
+## Quy tắc bắt buộc: "build" nghĩa là bump version mới rồi build cả web app và Tauri
+
+Khi người dùng gõ **"build"** (không kèm chi tiết khác) cho app desktop (ví dụ Smart Task Manager), hiểu là
+yêu cầu ra **bản mới**, không phải chỉ build lại bản hiện tại. Phải làm theo thứ tự:
+
+1. **Bump version** lên patch kế tiếp (ví dụ `0.1.3` → `0.1.4`) ở cả `apps/desktop/src-tauri/tauri.conf.json`
+   và `apps/desktop/src-tauri/Cargo.toml` (và app tương ứng nếu không phải Smart Task Manager). Nếu người
+   dùng nói rõ muốn bump minor/major (`0.2.0`, `1.0.0`) thì theo đúng ý đó thay vì patch mặc định. Nếu
+   không rõ ràng việc này có nên bump minor/major hay không, hỏi lại trước khi làm.
+2. **Build web app** trước (`npm run build:web` hoặc `npm run build --workspace=apps/desktop` tùy app) để
+   bắt lỗi typecheck/build sớm, rẻ hơn build Tauri.
+3. **Build Tauri thật** ra `.exe`/`.msi` (`npm run tauri -- build` trong thư mục app, hoặc lệnh tương đương)
+   — không chỉ build web rồi báo xong; phải thấy file cài đặt thật được tạo ra.
+4. Ghi lại version mới, kích thước file, và SHA-256 (nếu tính được) vào `docs/project/04-nhat-ky-da-lam.md`
+   theo đúng quy tắc docs ở trên.
+
+5. Sau khi có `.exe`/`.msi` thật và đã ghi version/hash vào docs, **tạo git tag** theo đúng version (ví dụ
+   `smart-task-manager_0.1.4`), rồi **hỏi xác nhận ngắn** (phiên bản, tên file, SHA-256) trước khi
+   `gh release create` kèm 2 file đó lên GitHub. Chỉ tạo Release thật sau khi người dùng xác nhận câu hỏi
+   đó — không tự tạo im lặng.
+
+Deploy lên Railway (cho web/API) vẫn do chủ dự án làm, không nằm trong rule này.
+
 ## Các thỏa thuận quan trọng khác (chi tiết ở tài liệu 05)
 
 - Chỉ commit khi người dùng yêu cầu. Chỉ push sau khi người dùng nói rõ "push".
 - Không in hay chia sẻ bí mật (`HF_TOKEN`, `JWT_SECRET`, `SIGNUP_CODE`, chuỗi kết nối, khóa ký).
-- Không sửa hay xóa dữ liệu trong cơ sở dữ liệu thật. Việc trên Railway và tạo GitHub Release do chủ dự án làm.
+- Không sửa hay xóa dữ liệu trong cơ sở dữ liệu thật. Deploy lên Railway do chủ dự án làm. Tạo GitHub
+  Release cho app desktop thì theo rule "build" ở trên (tự tạo sau khi hỏi xác nhận, không còn là việc
+  chỉ chủ dự án làm).
 - Không dùng `git stash` / `git stash pop` để thử nhanh (đã từng lấy nhầm stash của GitHub Desktop).
 - Hub: sửa cả `apps-manifest.json` và `apps/hub/src/data/apps.ts` cùng lúc.
