@@ -1,6 +1,6 @@
 # Kế hoạch: Rà soát và sửa nghiệp vụ danh sách + form công việc (4 việc)
 
-> Cập nhật: 2026-11-08. Đã duyệt, làm từng việc một. Trạng thái: **Việc 0 xong, Việc 1 xong backend+frontend
+> Cập nhật: 2026-11-08. Đã duyệt, làm từng việc một. Trạng thái: **Việc 0 xong, Việc 1 xong + đã push (commit `3a28b03`) — Railway sẽ tự migrate khi deploy, chưa xác nhận deploy thành công**, Việc 2/3 chưa làm.
 > (chưa chạy thử UI thật — xem Kết quả thật)**, Việc 2/3 chưa làm.
 
 ## Mục tiêu / nghiệp vụ
