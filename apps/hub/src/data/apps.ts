@@ -209,10 +209,10 @@ export const DEFAULT_APPS: AppEntry[] = [
         note: 'Setup.exe · kết nối sẵn tới máy chủ VoiceScribe (Railway)',
         actionLabel: 'Tải Setup.exe',
         downloadUrl:
-          'https://github.com/thinlam/SmartTaskManagers/releases/download/voicescribe-v0.2.6/voicescribe_0.2.6_x64-setup.exe',
+          'https://github.com/thinlam/SmartTaskManagers/releases/download/voicescribe-v0.2.7/voicescribe_0.2.7_x64-setup.exe',
         installer: {
-          version: '0.2.6',
-          sha256: '0cfad2c34972b9522fcdbbcdcacc3dfc888a40defb1f021459badf9103d24d10',
+          version: '0.2.7',
+          sha256: 'c75f7e797ecb4b6e0d8efe9eeb04d2eea5879e96636b237f002cd705c0ddc3a9',
           installerType: 'nsis',
           silentArgs: ['/S'],
           startMenuShortcut: 'VoiceScribe\\voicescribe.lnk',
@@ -223,10 +223,10 @@ export const DEFAULT_APPS: AppEntry[] = [
         note: 'Dùng nếu công ty/tổ chức bạn yêu cầu cài qua MSI',
         actionLabel: 'Tải .msi',
         downloadUrl:
-          'https://github.com/thinlam/SmartTaskManagers/releases/download/voicescribe-v0.2.6/voicescribe_0.2.6_x64_en-US.msi',
+          'https://github.com/thinlam/SmartTaskManagers/releases/download/voicescribe-v0.2.7/voicescribe_0.2.7_x64_en-US.msi',
         installer: {
-          version: '0.2.6',
-          sha256: '5a7e52cd817c3f7b83fcce56d6dee1baafc8018f7ea83a778b8717276fd56b9f',
+          version: '0.2.7',
+          sha256: 'e3bff3347b1b950629dda40ba458191f2f216abb2fda35335a493b067694f19c',
           installerType: 'msi',
           silentArgs: ['/qn'],
           startMenuShortcut: 'VoiceScribe\\voicescribe.lnk',
