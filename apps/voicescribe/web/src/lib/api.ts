@@ -1,5 +1,6 @@
 import type {
   AppConfig,
+  DenoiseLevel,
   Folder,
   LabeledSegment,
   Paged,
@@ -48,10 +49,20 @@ export const setToken = (token: string | null): void => writeStorage(TOKEN_KEY, 
  * accepts the same JWT as ?token= instead (see server's audioRoutes.ts).
  * Returns null when there is no token or the recording has no kept audio.
  */
-export function audioUrl(recordingId: string, hasAudio: boolean): string | null {
+export function audioUrl(
+  recordingId: string,
+  hasAudio: boolean,
+  variant?: 'filtered',
+): string | null {
   const token = getToken();
   if (!token || !hasAudio) return null;
-  return `${getServerUrl()}/api/recordings/${recordingId}/audio?token=${encodeURIComponent(token)}`;
+  const url = new URL(
+    `${getServerUrl()}/api/recordings/${recordingId}/audio`,
+    window.location.origin,
+  );
+  url.searchParams.set('token', token);
+  if (variant) url.searchParams.set('variant', variant);
+  return url.toString();
 }
 
 export class ApiError extends Error {
@@ -175,6 +186,8 @@ export interface TranscribeOptions {
   numSpeakers?: number;
   folderId?: string;
   title?: string;
+  /** Server defaults to "medium" when omitted. */
+  denoise?: DenoiseLevel;
 }
 
 /**
@@ -229,6 +242,7 @@ export function transcribeFile(
     if (options.numSpeakers !== undefined) form.append('num_speakers', String(options.numSpeakers));
     if (options.folderId) form.append('folder_id', options.folderId);
     if (options.title) form.append('title', options.title);
+    if (options.denoise) form.append('denoise', options.denoise);
     xhr.send(form);
   });
 }

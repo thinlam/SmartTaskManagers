@@ -65,6 +65,15 @@ const MIGRATIONS: Migration[] = [
         ADD COLUMN audio_path text;
     `,
   },
+  {
+    id: '004_recording_denoise',
+    sql: `
+      ALTER TABLE recordings
+        ADD COLUMN audio_filtered_path text,
+        ADD COLUMN denoise_level text NOT NULL DEFAULT 'off'
+          CHECK (denoise_level IN ('off', 'light', 'medium', 'strong'));
+    `,
+  },
 ];
 
 /** Applies pending migrations in order, each in its own transaction. Safe to run on every start. */

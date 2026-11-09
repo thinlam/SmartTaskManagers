@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import { AlertCircle, ChevronDown, Loader2, Mic, Upload, X } from 'lucide-react';
 import { api, transcribeFile } from '../lib/api';
+import type { DenoiseLevel } from '../types';
 import { errorText } from '../lib/format';
 import { isRecordingSupported, RecorderPanel } from '../components/RecorderPanel';
 import { UploadZone } from '../components/UploadZone';
@@ -27,6 +28,8 @@ export function NewRecordingPage({ onSaved }: { onSaved: (id: string) => void })
   const [title, setTitle] = useState('');
   const [folderId, setFolderId] = useState('');
   const [numSpeakers, setNumSpeakers] = useState('');
+  const [denoiseOn, setDenoiseOn] = useState(true);
+  const [denoiseLevel, setDenoiseLevel] = useState<Exclude<DenoiseLevel, 'off'>>('medium');
   const [mode, setMode] = useState<'record' | 'file'>(() =>
     isRecordingSupported() ? 'record' : 'file',
   );
@@ -52,6 +55,7 @@ export function NewRecordingPage({ onSaved }: { onSaved: (id: string) => void })
         title: title.trim() || undefined,
         folderId: folderId || undefined,
         numSpeakers: numSpeakers.trim() ? Number.parseInt(numSpeakers, 10) : undefined,
+        denoise: denoiseOn ? denoiseLevel : 'off',
       },
       (percent) => {
         setState((prev) => {
@@ -78,7 +82,9 @@ export function NewRecordingPage({ onSaved }: { onSaved: (id: string) => void })
 
   const busy = state.kind === 'uploading' || state.kind === 'processing';
 
-  const optionsSet = Boolean(title.trim() || folderId || numSpeakers.trim());
+  const optionsSet = Boolean(
+    title.trim() || folderId || numSpeakers.trim() || !denoiseOn || denoiseLevel !== 'medium',
+  );
 
   return (
     <div className="flex-1 overflow-y-auto p-4 sm:p-8">
@@ -232,6 +238,32 @@ export function NewRecordingPage({ onSaved }: { onSaved: (id: string) => void })
                 />
               </Field>
             )}
+            <Field
+              label="Lọc tạp âm"
+              hint="Giảm tiếng ồn nền trước khi nhận dạng. Lọc quá mạnh có thể làm mất chữ."
+            >
+              <div className="flex items-center gap-3">
+                <label className="flex items-center gap-2 text-sm text-slate-700">
+                  <input
+                    type="checkbox"
+                    checked={denoiseOn}
+                    disabled={busy}
+                    onChange={(e) => setDenoiseOn(e.target.checked)}
+                  />
+                  Bật lọc
+                </label>
+                <select
+                  className={`${inputClass} w-auto`}
+                  value={denoiseLevel}
+                  disabled={busy || !denoiseOn}
+                  onChange={(e) => setDenoiseLevel(e.target.value as Exclude<DenoiseLevel, 'off'>)}
+                >
+                  <option value="light">Nhẹ</option>
+                  <option value="medium">Vừa</option>
+                  <option value="strong">Mạnh</option>
+                </select>
+              </div>
+            </Field>
           </div>
         </details>
       </div>

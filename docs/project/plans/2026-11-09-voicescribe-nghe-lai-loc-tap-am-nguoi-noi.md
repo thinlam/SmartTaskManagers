@@ -123,3 +123,49 @@ lỗi nghiêm trọng — danh sách người nói trong popup "Đoạn này do 
   **App này không có test suite nào** (`npm test` báo "Missing script"), nên không có bước test tự động để
   chạy — chỉ dừng ở typecheck/build/lint. **Chưa chạy thật qua trình duyệt** (chưa khởi động backend+Postgres
   local trên máy này để thử ghi âm/tải file/nghe lại thật). Chưa chạy migration `003` trên dữ liệu thật.
+
+### Việc 2 — Lọc tạp âm trước khi nhận diện giọng nói (xong 2026-11-09)
+
+- **Lựa chọn thư viện (theo đúng yêu cầu "kiểm tra stack hiện tại và chọn phương án phù hợp"):** toàn bộ
+  pipeline xử lý audio hiện có (`audioChunker.ts`) chỉ dựa vào `ffmpeg`/`ffprobe` qua `execFile` (không có
+  binding native nào khác). Thêm RNNoise/WebRTC-APM/Speex DSP sẽ phải build/link thêm một dependency native
+  mới (phức tạp hơn trên Windows + môi trường deploy Railway hiện tại), trong khi `ffmpeg` đã có sẵn 2 bộ
+  lọc đủ dùng cho nhiễu nền phổ biến (quạt, ồn phòng, hiss): `afftdn` (FFT denoiser, có tham số mức lọc
+  `nr`/`nf`) và `highpass` (lọc ù tần số thấp). Vì vậy chọn **ffmpeg `afftdn` + `highpass` + `loudnorm`**
+  thay vì thêm thư viện mới — không tự viết thuật toán lọc thô, dùng đúng bộ lọc chuẩn có sẵn trong ffmpeg,
+  giữ nguyên quy ước "mọi xử lý audio đi qua ffmpeg" của codebase.
+- **Backend:** `audioChunker.ts` thêm `denoiseAudio(inputPath, outputPath, level)` với 3 mức
+  `light`/`medium`/`strong` (khác nhau ở tham số `afftdn=nr=.../highpass=f=...`), luôn có `loudnorm` sau lọc
+  để chuẩn hóa độ to, ép mono/16kHz/PCM16 giống chuẗn output ffmpeg hiện có cho Whisper. Chạy denoise **trước
+  khi chunking**, một lần trên toàn file (thay buffer đưa vào transcribe nếu thành công; lỗi thì dùng lại
+  file gốc, không chặn transcription). Migration `004_recording_denoise` thêm `audio_filtered_path`
+  (nullable) và `denoise_level` (`CHECK IN ('off','light','medium','strong')`, mặc định `'off'`).
+  `transcribeRoute.ts` nhận field `denoise` trong form-data, validate theo `DENOISE_LEVELS`, mặc định
+  `'medium'` khi không gửi hoặc gửi sai (lý do mặc định "vừa": lọc mạnh quá dễ mất từ, theo đúng yêu cầu).
+  `jobs.ts`: sau khi transcribe xong, move **cả file gốc và file đã lọc** (2 file riêng, file gốc không bị
+  đổi/ghi đè) sang `audioStorageDir`, đặt tên `${recordingId}` và `${recordingId}-filtered`. `audioRoutes.ts`
+  nhận `?variant=filtered` để stream bản đã lọc (404 message riêng nếu không có). Xóa bản ghi (`DELETE`) dọn
+  cả 2 file.
+- **Frontend:** `NewRecordingPage.tsx` thêm ô "Lọc tạp âm" (checkbox on/off, mặc định bật) + select mức
+  Nhẹ/Vừa/Mạnh (mặc định Vừa), gửi lên qua `TranscribeOptions.denoise`. `RecordingDetailPage.tsx`'s
+  `AudioPlayerBar` thêm tab "Bản gốc"/"Đã lọc tạp âm" (chỉ hiện khi `hasFilteredAudio`) để nghe so sánh,
+  dùng lại đúng `useAudioPlayer`/`audioUrl(..., variant)` đã có từ Việc 1 (không cần thêm player riêng).
+- **Khác dự kiến — "xử lý nền có progress bar" (yêu cầu gốc):** không thêm thanh tiến trình riêng cho bước
+  denoise. Lý do thật: toàn bộ transcription (kể cả chunking/Whisper) trong app này đã luôn chạy nền
+  (`TranscriptionJobs`, không chặn UI) và UI hiện tại chỉ có trạng thái "đang xử lý" không xác định phần
+  trăm (xem comment có sẵn trong `lib/api.ts` về việc không có progress thật phía server) — bước denoise
+  chỉ cộng thêm thời gian vào đúng giai đoạn "đang xử lý" đó, không có cơ chế progress % nào đã có sẵn để
+  gắn vào. Không tự dựng thêm cơ chế progress giả. Đây là một phần việc **chưa làm đúng y yêu cầu gốc**
+  (chỉ không-chặn-UI, chưa có thanh % riêng cho denoise), nêu rõ ở đây để người dùng biết, không giấu.
+- **WER (word-error-rate) trước/sau lọc — yêu cầu gốc "test trên vài mẫu ồn, ghi kết quả vào đây":
+  CHƯA LÀM ĐƯỢC, không giả số.** Lý do thật: môi trường làm việc này không có backend+Postgres+HF_TOKEN
+  đang chạy (không có dịch vụ transcription thật để gọi), app `voicescribe` không có bất kỳ test suite nào
+  (`npm test` → "Missing script: test" ở cả `src` và `web`), và không có sẵn mẫu audio ồn nào trong repo để
+  dùng. Không tạo số liệu WER giả để báo cáo. Việc này cần người dùng (hoặc một lượt làm việc có backend
+  thật + mẫu audio thật) tự chạy, hoặc cho phép dựng mẫu test sau.
+- Kiểm chứng thật đã chạy: backend `npm run typecheck` sạch; frontend `npm run typecheck` và `npm run build`
+  sạch; `npx eslint` sạch trên mọi file đã sửa (trừ lỗi "Definition for rule ... was not found" đã xác minh
+  là lỗi cấu hình có từ trước, không phải do sửa lần này); `npx prettier --write` đã chạy trên các file code
+  đã sửa và re-verify lại typecheck/build sau đó không gãy. **Chưa chạy thật** backend+Postgres local để thử
+  denoise/transcribe bằng file thật, chưa chạy migration `004` trên dữ liệu thật, và chưa có kết quả WER như
+  nêu trên.

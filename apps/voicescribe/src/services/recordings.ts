@@ -1,4 +1,5 @@
 import type { Db } from '../db/pool.js';
+import type { DenoiseLevel } from '../utils/audioChunker.js';
 import type { LabeledSegment } from '../types/diarization.js';
 
 export type RecordingStatus = 'processing' | 'done' | 'failed';
@@ -25,6 +26,10 @@ export interface RecordingRow {
   diarization_error: string | null;
   /** Basename of the original audio file kept under AppConfig.audioStorageDir; null if not kept (old recording, or saving it failed). */
   audio_path: string | null;
+  /** Basename of the denoised copy, same directory; null if denoising was off, failed, or not applicable (old recording). */
+  audio_filtered_path: string | null;
+  /** Level requested at upload time, kept so the UI can show what was applied — not re-derived from audio_filtered_path (which is also null when denoising failed). */
+  denoise_level: DenoiseLevel;
   status: RecordingStatus;
   progress_done: number;
   progress_total: number;
@@ -54,6 +59,8 @@ export function toDetailDto(r: RecordingRow) {
     processingTimeMs: r.processing_ms,
     diarizationError: r.diarization_error,
     hasAudio: r.audio_path !== null,
+    hasFilteredAudio: r.audio_filtered_path !== null,
+    denoiseLevel: r.denoise_level,
     status: r.status,
     progressDone: r.progress_done,
     progressTotal: r.progress_total,
@@ -94,6 +101,9 @@ export interface CompletedRecording {
   diarizationError: string | null;
   /** Basename under AppConfig.audioStorageDir, or null if the original audio could not be kept. */
   audioPath: string | null;
+  /** Basename of the denoised copy, or null if denoising was off or failed. */
+  filteredAudioPath: string | null;
+  denoiseLevel: DenoiseLevel;
 }
 
 export async function completeRecording(
@@ -105,8 +115,8 @@ export async function completeRecording(
   await db.query(
     `UPDATE recordings
         SET status = 'done', text = $2, segments = $3, duration_sec = $4, processing_ms = $5,
-            diarization_error = $6, audio_path = $7, error = NULL, progress_done = progress_total,
-            updated_at = now()
+            diarization_error = $6, audio_path = $7, audio_filtered_path = $8, denoise_level = $9,
+            error = NULL, progress_done = progress_total, updated_at = now()
       WHERE id = $1`,
     [
       id,
@@ -116,6 +126,8 @@ export async function completeRecording(
       Math.round(done.processingMs),
       done.diarizationError,
       done.audioPath,
+      done.filteredAudioPath,
+      done.denoiseLevel,
     ],
   );
 }

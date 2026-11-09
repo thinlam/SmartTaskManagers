@@ -26,6 +26,7 @@ export interface Folder {
 }
 
 export type RecordingStatus = 'processing' | 'done' | 'failed';
+export type DenoiseLevel = 'off' | 'light' | 'medium' | 'strong';
 
 export interface RecordingSummary {
   id: string;
@@ -64,6 +65,9 @@ export interface Recording {
   diarizationError: string | null;
   /** Whether the original audio was kept on the server for in-app playback (older recordings may not have it). */
   hasAudio: boolean;
+  /** Whether a denoised copy exists (denoiseLevel was not "off" and filtering succeeded). */
+  hasFilteredAudio: boolean;
+  denoiseLevel: DenoiseLevel;
   status: RecordingStatus;
   progressDone: number;
   progressTotal: number;

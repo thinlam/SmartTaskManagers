@@ -7,6 +7,7 @@ import { CancelledError, TranscriptionError } from '../types/transcription.js';
 import { diarizeAudio } from './diarization.js';
 import { transcribeLongAudio } from './longAudioTranscription.js';
 import { completeRecording, failRecording, setProgress } from './recordings.js';
+import { denoiseAudio, type DenoiseLevel } from '../utils/audioChunker.js';
 import { mergeTranscriptWithSpeakers } from '../utils/mergeSpeakers.js';
 
 export const UPLOAD_DIR = join(tmpdir(), 'voicescribe-uploads');
@@ -33,6 +34,7 @@ export interface TranscriptionJob {
   audioPath: string;
   fileName: string;
   numSpeakers: number | undefined;
+  denoiseLevel: DenoiseLevel;
 }
 
 /**
@@ -91,8 +93,26 @@ export class TranscriptionJobs {
   private async run(job: TranscriptionJob): Promise<void> {
     const controller = new AbortController();
     this.active.set(job.recordingId, controller);
+    // Set once a denoised temp file exists, so `finally` can always clean it up —
+    // whether the job goes on to succeed (after it's moved to persistent storage,
+    // this is a harmless no-op) or fails partway through.
+    let filteredTempPath: string | null = null;
     try {
-      const audio = await readFile(job.audioPath);
+      let audio = await readFile(job.audioPath);
+      if (job.denoiseLevel !== 'off') {
+        try {
+          filteredTempPath = `${job.audioPath}.denoised.wav`;
+          await denoiseAudio(job.audioPath, filteredTempPath, job.denoiseLevel);
+          audio = await readFile(filteredTempPath);
+        } catch (err) {
+          // Best-effort: transcribe from the original audio instead of losing the job.
+          console.error(
+            `[jobs] denoise failed for recording ${job.recordingId}, using original audio:`,
+            err,
+          );
+          filteredTempPath = null;
+        }
+      }
       const result = await transcribeLongAudio({
         hfToken: this.config.hfToken,
         audio,
@@ -142,12 +162,29 @@ export class TranscriptionJobs {
         console.error(`[jobs] could not keep audio for recording ${job.recordingId}:`, err);
       }
 
+      let filteredAudioPath: string | null = null;
+      if (filteredTempPath) {
+        try {
+          const basename = `${job.recordingId}-filtered.wav`;
+          await moveToAudioStorage(filteredTempPath, join(this.config.audioStorageDir, basename));
+          filteredAudioPath = basename;
+          filteredTempPath = null; // moved — nothing left for `finally` to clean up
+        } catch (err) {
+          console.error(
+            `[jobs] could not keep filtered audio for recording ${job.recordingId}:`,
+            err,
+          );
+        }
+      }
+
       await completeRecording(this.db, job.recordingId, {
         text: result.text,
         segments,
         processingMs: result.processingTimeMs,
         diarizationError,
         audioPath,
+        filteredAudioPath,
+        denoiseLevel: job.denoiseLevel,
       });
     } catch (err) {
       if (err instanceof CancelledError) return;
@@ -166,6 +203,7 @@ export class TranscriptionJobs {
     } finally {
       this.active.delete(job.recordingId);
       await rm(job.audioPath, { force: true });
+      if (filteredTempPath) await rm(filteredTempPath, { force: true });
       this.pump();
     }
   }

@@ -9,6 +9,7 @@ import type { Db } from '../db/pool.js';
 import { UPLOAD_DIR, type TranscriptionJobs } from '../services/jobs.js';
 import { insertPendingRecording, toDetailDto } from '../services/recordings.js';
 import { TranscriptionError } from '../types/transcription.js';
+import { DENOISE_LEVELS, type DenoiseLevel } from '../utils/audioChunker.js';
 import { fixFilenameEncoding } from '../utils/filename.js';
 import { isUuid } from '../utils/validation.js';
 
@@ -108,6 +109,13 @@ export function createTranscribeRouter(config: AppConfig, db: Db, jobs: Transcri
             ? parsedSpeakers
             : undefined;
 
+        const denoiseRaw = typeof req.body.denoise === 'string' ? req.body.denoise : '';
+        const denoiseLevel: DenoiseLevel = (DENOISE_LEVELS as readonly string[]).includes(
+          denoiseRaw,
+        )
+          ? (denoiseRaw as DenoiseLevel)
+          : 'medium';
+
         const titleRaw = typeof req.body.title === 'string' ? req.body.title.trim() : '';
         const title = (titleRaw || file.originalname.replace(/\.[^.]+$/, '') || 'Bản ghi').slice(
           0,
@@ -130,6 +138,7 @@ export function createTranscribeRouter(config: AppConfig, db: Db, jobs: Transcri
           audioPath,
           fileName: file.originalname,
           numSpeakers,
+          denoiseLevel,
         });
 
         res.status(202).json(toDetailDto(pending));

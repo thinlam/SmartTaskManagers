@@ -43,14 +43,22 @@ export function createAudioRouter(config: AppConfig, db: Db): Router {
       res.status(404).json({ error: 'Không tìm thấy bản ghi.' });
       return;
     }
+    const wantsFiltered = req.query.variant === 'filtered';
 
-    const { rows } = await db.query<{ audio_path: string | null }>(
-      'SELECT audio_path FROM recordings WHERE id = $1 AND user_id = $2',
-      [req.params.id, userId],
-    );
-    const audioPath = rows[0]?.audio_path;
+    const { rows } = await db.query<{
+      audio_path: string | null;
+      audio_filtered_path: string | null;
+    }>('SELECT audio_path, audio_filtered_path FROM recordings WHERE id = $1 AND user_id = $2', [
+      req.params.id,
+      userId,
+    ]);
+    const audioPath = wantsFiltered ? rows[0]?.audio_filtered_path : rows[0]?.audio_path;
     if (!audioPath) {
-      res.status(404).json({ error: 'Không còn file âm thanh gốc cho bản ghi này.' });
+      res.status(404).json({
+        error: wantsFiltered
+          ? 'Không có bản đã lọc tạp âm cho bản ghi này.'
+          : 'Không còn file âm thanh gốc cho bản ghi này.',
+      });
       return;
     }
 

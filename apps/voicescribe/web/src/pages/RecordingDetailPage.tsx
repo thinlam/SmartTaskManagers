@@ -84,7 +84,11 @@ function ModeSwitch({ mode, onChange }: { mode: ViewMode; onChange: (mode: ViewM
     { value: 'speakers', label: 'Phân người nói' },
   ];
   return (
-    <div role="tablist" aria-label="Chế độ hiển thị" className="inline-flex rounded-xl bg-slate-100 p-1">
+    <div
+      role="tablist"
+      aria-label="Chế độ hiển thị"
+      className="inline-flex rounded-xl bg-slate-100 p-1"
+    >
       {options.map((o) => (
         <button
           key={o.value}
@@ -124,14 +128,28 @@ function ExportMenu({ doc }: { doc: ExportDoc }) {
   }, [open]);
 
   const items = [
-    { label: 'Word (.docx)', hint: 'Văn bản định dạng sẵn', Icon: FileText, run: () => exportDocx(doc) },
+    {
+      label: 'Word (.docx)',
+      hint: 'Văn bản định dạng sẵn',
+      Icon: FileText,
+      run: () => exportDocx(doc),
+    },
     { label: 'Văn bản (.txt)', hint: 'Văn bản thuần', Icon: FileText, run: () => exportTxt(doc) },
-    { label: 'Phụ đề (.srt)', hint: 'Có mốc thời gian', Icon: Subtitles, run: () => exportSrt(doc) },
+    {
+      label: 'Phụ đề (.srt)',
+      hint: 'Có mốc thời gian',
+      Icon: Subtitles,
+      run: () => exportSrt(doc),
+    },
   ];
 
   return (
     <div ref={rootRef} className="relative">
-      <button onClick={() => setOpen((v) => !v)} className={primaryButtonClass} aria-expanded={open}>
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className={primaryButtonClass}
+        aria-expanded={open}
+      >
         <Download className="h-3.5 w-3.5" /> Xuất file <ChevronDown className="h-3.5 w-3.5" />
       </button>
       {open && (
@@ -182,13 +200,29 @@ function AudioPlayerBar({
   player,
   loopBlock,
   onToggleLoopBlock,
+  hasFilteredAudio,
+  playFiltered,
+  onTogglePlayFiltered,
 }: {
   player: ReturnType<typeof useAudioPlayer>;
   loopBlock: boolean;
   onToggleLoopBlock: () => void;
+  hasFilteredAudio: boolean;
+  playFiltered: boolean;
+  onTogglePlayFiltered: (filtered: boolean) => void;
 }) {
-  const { isPlaying, currentTime, duration, rate, error, activeRange, toggle, seekBy, seekTo, setRate } =
-    player;
+  const {
+    isPlaying,
+    currentTime,
+    duration,
+    rate,
+    error,
+    activeRange,
+    toggle,
+    seekBy,
+    seekTo,
+    setRate,
+  } = player;
 
   return (
     <div className="flex flex-col gap-2 border-b border-slate-100 bg-slate-50/60 px-5 py-3">
@@ -261,6 +295,34 @@ function AudioPlayerBar({
           ))}
         </select>
       </div>
+      {hasFilteredAudio && (
+        <div
+          role="tablist"
+          aria-label="Nghe bản gốc hay bản đã lọc tạp âm"
+          className="inline-flex w-fit rounded-lg bg-slate-100 p-0.5 text-xs"
+        >
+          {(
+            [
+              [false, 'Bản gốc'],
+              [true, 'Đã lọc tạp âm'],
+            ] as const
+          ).map(([filtered, label]) => (
+            <button
+              key={label}
+              role="tab"
+              aria-selected={playFiltered === filtered}
+              onClick={() => onTogglePlayFiltered(filtered)}
+              className={`rounded-md px-2.5 py-1 font-medium transition-colors ${
+                playFiltered === filtered
+                  ? 'bg-white text-slate-900 shadow-sm'
+                  : 'text-slate-500 hover:text-slate-800'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      )}
       {error && <p className="text-xs text-rose-500">{error}</p>}
     </div>
   );
@@ -291,7 +353,8 @@ export function RecordingDetailPage({
 
   const rec = recording.data;
   const processing = rec?.status === 'processing';
-  const src = rec ? audioUrl(rec.id, rec.hasAudio) : null;
+  const [playFiltered, setPlayFiltered] = useState(false);
+  const src = rec ? audioUrl(rec.id, rec.hasAudio, playFiltered ? 'filtered' : undefined) : null;
   const player = useAudioPlayer(src);
 
   // The "nghe đoạn này" button toggles: clicking the block already playing stops it.
@@ -608,6 +671,9 @@ export function RecordingDetailPage({
                   player={player}
                   loopBlock={loopBlock}
                   onToggleLoopBlock={() => setLoopBlock((v) => !v)}
+                  hasFilteredAudio={rec.hasFilteredAudio}
+                  playFiltered={playFiltered}
+                  onTogglePlayFiltered={setPlayFiltered}
                 />
               </>
             )}
@@ -653,8 +719,8 @@ export function RecordingDetailPage({
             <div className="p-5">
               {rec.diarizationError && mode === 'speakers' && (
                 <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-                  Không nhận dạng được người nói ({rec.diarizationError}). Toàn bộ nội dung được
-                  gán cho một người nói; bạn có thể tự gán lại ở chế độ Chỉnh sửa.
+                  Không nhận dạng được người nói ({rec.diarizationError}). Toàn bộ nội dung được gán
+                  cho một người nói; bạn có thể tự gán lại ở chế độ Chỉnh sửa.
                 </div>
               )}
 

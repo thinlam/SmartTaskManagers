@@ -16,6 +16,59 @@ export const CHUNK_LENGTH_SEC = 30;
 export const CHUNK_OVERLAP_SEC = 2;
 const CHUNK_STEP_SEC = CHUNK_LENGTH_SEC - CHUNK_OVERLAP_SEC;
 
+export type DenoiseLevel = 'off' | 'light' | 'medium' | 'strong';
+export const DENOISE_LEVELS: DenoiseLevel[] = ['off', 'light', 'medium', 'strong'];
+
+/**
+ * ffmpeg's own audio filters (afftdn = FFT denoiser, highpass to cut low-frequency
+ * hum) — not a separate DSP library/binding, consistent with the rest of this file
+ * (ffmpeg is already a required dependency for every chunking/normalization step
+ * here; RNNoise/WebRTC APM would add a native build step for a use case ffmpeg's
+ * own filters already cover reasonably well for speech).
+ * `nr` is afftdn's noise-reduction amount in dB (its own default is 12); a higher
+ * highpass cutoff + nr trades more noise removal for more risk of clipping quiet
+ * speech, which is exactly why this has levels instead of one fixed setting.
+ */
+const DENOISE_FILTER: Record<Exclude<DenoiseLevel, 'off'>, string> = {
+  light: 'highpass=f=80,afftdn=nr=6',
+  medium: 'highpass=f=80,afftdn=nr=12',
+  strong: 'highpass=f=90,afftdn=nr=24',
+};
+
+/**
+ * Writes a denoised + loudness-normalized copy of `inputPath` to `outputPath`
+ * (mono/16kHz WAV, same normalization splitAudioIntoChunks already applies, so
+ * the filtered file both sounds cleaner for playback and transcribes the same
+ * way a normal upload would). Throws TranscriptionError-free — caller decides
+ * how to report an ffmpeg failure (the original audio is never affected).
+ */
+export async function denoiseAudio(
+  inputPath: string,
+  outputPath: string,
+  level: DenoiseLevel,
+): Promise<void> {
+  if (level === 'off') throw new Error('denoiseAudio called with level "off"');
+  await execFileAsync(
+    'ffmpeg',
+    [
+      ...FFMPEG_QUIET,
+      '-y',
+      '-i',
+      inputPath,
+      '-af',
+      `${DENOISE_FILTER[level]},loudnorm`,
+      '-ac',
+      '1',
+      '-ar',
+      '16000',
+      '-c:a',
+      'pcm_s16le',
+      outputPath,
+    ],
+    EXEC_OPTIONS,
+  );
+}
+
 export interface AudioChunk {
   /** Offset of this chunk's start within the original audio, in seconds. */
   startSec: number;
