@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { Check, ChevronDown, Pencil, Plus } from 'lucide-react';
+import { Check, ChevronDown, Pause, Pencil, Play, Plus } from 'lucide-react';
 import type { LabeledSegment } from '../types';
 import {
   assignBlockSpeaker,
@@ -235,6 +235,11 @@ export function SpeakerTranscript({
   query,
   onChange,
   onRenameSpeaker,
+  canPlayAudio = false,
+  currentTime = 0,
+  isPlayingAudio = false,
+  onPlayBlock,
+  autoScroll = false,
 }: {
   segments: LabeledSegment[];
   speakerOrder: string[];
@@ -243,11 +248,31 @@ export function SpeakerTranscript({
   query: string;
   onChange: (change: SegmentsChange) => void;
   onRenameSpeaker: (raw: string, name: string) => void;
+  /** Whether the recording has audio to play back (hides the per-block play button otherwise). */
+  canPlayAudio?: boolean;
+  /** Audio's current position, used (with isPlayingAudio) to work out which block is playing right now — whether playback started from this block's own button or the main play bar. */
+  currentTime?: number;
+  isPlayingAudio?: boolean;
+  onPlayBlock?: (block: Block) => void;
+  autoScroll?: boolean;
 }) {
   const multiSpeaker = speakerOrder.length > 1;
   const blocks = useMemo(() => buildBlocks(segments, multiSpeaker), [segments, multiSpeaker]);
   const [editingFrom, setEditingFrom] = useState<number | null>(null);
   const [draft, setDraft] = useState('');
+  const activeRef = useRef<HTMLElement | null>(null);
+
+  const playingBlockFrom = useMemo(() => {
+    if (!isPlayingAudio) return null;
+    const block = blocks.find((b) => currentTime >= b.start && currentTime < b.end);
+    return block?.from ?? null;
+  }, [isPlayingAudio, currentTime, blocks]);
+
+  useEffect(() => {
+    if (autoScroll && playingBlockFrom !== null) {
+      activeRef.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    }
+  }, [playingBlockFrom, autoScroll]);
 
   const q = query.trim().toLowerCase();
   const visible = q ? blocks.filter((b) => b.text.toLowerCase().includes(q)) : blocks;
@@ -269,12 +294,32 @@ export function SpeakerTranscript({
       {visible.map((block) => {
         const color = colorOf(speakerOrder.indexOf(block.speaker));
         const isEditing = editing && editingFrom === block.from;
+        const isPlaying = playingBlockFrom === block.from;
         return (
           <section
             key={block.from}
-            className="grid grid-cols-[56px_1fr] gap-x-3 rounded-xl px-3 py-3 hover:bg-slate-50/70"
+            ref={isPlaying ? activeRef : undefined}
+            className={`grid grid-cols-[56px_1fr] gap-x-3 rounded-xl px-3 py-3 hover:bg-slate-50/70 ${
+              isPlaying ? 'bg-indigo-50/70 ring-1 ring-inset ring-indigo-200' : ''
+            }`}
           >
-            <span className="pt-1 font-mono text-xs text-slate-400">{clock(block.start)}</span>
+            <span className="flex flex-col items-start gap-1 pt-1">
+              <span className="font-mono text-xs text-slate-400">{clock(block.start)}</span>
+              {canPlayAudio && onPlayBlock && (
+                <button
+                  onClick={() => onPlayBlock(block)}
+                  aria-label={isPlaying ? 'Dừng nghe đoạn này' : 'Nghe đoạn này'}
+                  title={isPlaying ? 'Dừng' : 'Nghe đoạn này'}
+                  className={`rounded-full p-1 ${
+                    isPlaying
+                      ? 'bg-indigo-600 text-white'
+                      : 'text-slate-400 hover:bg-slate-100 hover:text-indigo-600'
+                  }`}
+                >
+                  {isPlaying ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3" />}
+                </button>
+              )}
+            </span>
             <div className="min-w-0">
               {editing ? (
                 <SpeakerMenu

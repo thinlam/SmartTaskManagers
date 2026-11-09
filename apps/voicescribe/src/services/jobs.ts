@@ -1,6 +1,6 @@
-import { mkdir, readFile, rm } from 'node:fs/promises';
+import { copyFile, mkdir, readFile, rename, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { extname, join } from 'node:path';
 import type { AppConfig } from '../config/env.js';
 import type { Db } from '../db/pool.js';
 import { CancelledError, TranscriptionError } from '../types/transcription.js';
@@ -10,6 +10,22 @@ import { completeRecording, failRecording, setProgress } from './recordings.js';
 import { mergeTranscriptWithSpeakers } from '../utils/mergeSpeakers.js';
 
 export const UPLOAD_DIR = join(tmpdir(), 'voicescribe-uploads');
+
+/**
+ * Moves the uploaded file out of UPLOAD_DIR into persistent storage so it
+ * survives after the job finishes (kept for in-app playback). Falls back to
+ * copy+delete when the two directories are on different filesystems
+ * (rename() fails with EXDEV in that case, e.g. tmp on tmpfs vs. a mounted volume).
+ */
+async function moveToAudioStorage(src: string, dest: string): Promise<void> {
+  try {
+    await rename(src, dest);
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code !== 'EXDEV') throw err;
+    await copyFile(src, dest);
+    await rm(src, { force: true });
+  }
+}
 
 export interface TranscriptionJob {
   recordingId: string;
@@ -113,11 +129,25 @@ export class TranscriptionJobs {
       }
 
       if (controller.signal.aborted) return;
+
+      // Best-effort: keep the original audio for playback, but a failure here
+      // must not lose the transcript — just leave this recording without audio.
+      let audioPath: string | null = null;
+      try {
+        const basename = `${job.recordingId}${extname(job.audioPath).toLowerCase()}`;
+        await mkdir(this.config.audioStorageDir, { recursive: true });
+        await moveToAudioStorage(job.audioPath, join(this.config.audioStorageDir, basename));
+        audioPath = basename;
+      } catch (err) {
+        console.error(`[jobs] could not keep audio for recording ${job.recordingId}:`, err);
+      }
+
       await completeRecording(this.db, job.recordingId, {
         text: result.text,
         segments,
         processingMs: result.processingTimeMs,
         diarizationError,
+        audioPath,
       });
     } catch (err) {
       if (err instanceof CancelledError) return;

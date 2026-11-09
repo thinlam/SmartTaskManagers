@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   AlertCircle,
   ArrowLeft,
@@ -8,13 +8,18 @@ import {
   Download,
   FileText,
   Loader2,
+  Pause,
   Pencil,
+  Play,
+  Repeat,
+  RotateCcw,
+  RotateCw,
   Search,
   Subtitles,
   Trash2,
   X,
 } from 'lucide-react';
-import { api } from '../lib/api';
+import { api, audioUrl } from '../lib/api';
 import {
   countWords,
   errorText,
@@ -33,10 +38,13 @@ import {
 } from '../lib/export';
 import {
   buildBlocks,
+  clock,
   displayName,
   paragraphOf,
   speakerOrderOf,
+  type Block,
 } from '../lib/transcript';
+import { PLAYBACK_RATES, useAudioPlayer } from '../lib/audioPlayer';
 import {
   ParagraphTranscript,
   SpeakerTranscript,
@@ -165,6 +173,99 @@ function ExportMenu({ doc }: { doc: ExportDoc }) {
   );
 }
 
+/**
+ * Playback bar for the whole recording — play/pause, scrub, speed, ±5s. Lives
+ * above the transcript; per-block "nghe đoạn này" buttons (TranscriptView)
+ * drive the same underlying <audio> via the `player` passed down from the page.
+ */
+function AudioPlayerBar({
+  player,
+  loopBlock,
+  onToggleLoopBlock,
+}: {
+  player: ReturnType<typeof useAudioPlayer>;
+  loopBlock: boolean;
+  onToggleLoopBlock: () => void;
+}) {
+  const { isPlaying, currentTime, duration, rate, error, activeRange, toggle, seekBy, seekTo, setRate } =
+    player;
+
+  return (
+    <div className="flex flex-col gap-2 border-b border-slate-100 bg-slate-50/60 px-5 py-3">
+      <div className="flex flex-wrap items-center gap-3">
+        <button
+          onClick={toggle}
+          aria-label={isPlaying ? 'Dừng' : 'Phát'}
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-white hover:bg-indigo-500"
+        >
+          {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
+        </button>
+        <button
+          onClick={() => seekBy(-5)}
+          aria-label="Lùi 5 giây"
+          title="Lùi 5 giây"
+          className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100"
+        >
+          <RotateCcw className="h-4 w-4" />
+        </button>
+        <button
+          onClick={() => seekBy(5)}
+          aria-label="Tiến 5 giây"
+          title="Tiến 5 giây"
+          className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100"
+        >
+          <RotateCw className="h-4 w-4" />
+        </button>
+
+        <span className="w-[72px] shrink-0 text-right font-mono text-xs text-slate-500">
+          {clock(currentTime)} / {clock(duration)}
+        </span>
+        <input
+          type="range"
+          min={0}
+          max={Math.max(duration, 0.1)}
+          step={0.1}
+          value={Math.min(currentTime, duration)}
+          onChange={(e) => seekTo(Number(e.target.value))}
+          aria-label="Tua"
+          className="min-w-[120px] flex-1 accent-indigo-600"
+        />
+
+        {activeRange && (
+          <span className="flex shrink-0 items-center gap-1 rounded-full bg-indigo-100 px-2 py-0.5 text-xs font-medium text-indigo-700">
+            <Repeat className="h-3 w-3" /> Đang nghe đoạn
+          </span>
+        )}
+
+        <button
+          onClick={onToggleLoopBlock}
+          aria-pressed={loopBlock}
+          title="Lặp lại đoạn đang nghe"
+          className={`flex shrink-0 items-center gap-1 rounded-lg px-2 py-1 text-xs font-medium ${
+            loopBlock ? 'bg-indigo-600 text-white' : 'text-slate-500 hover:bg-slate-100'
+          }`}
+        >
+          <Repeat className="h-3.5 w-3.5" /> Lặp đoạn
+        </button>
+
+        <select
+          value={rate}
+          onChange={(e) => setRate(Number(e.target.value))}
+          aria-label="Tốc độ phát"
+          className="shrink-0 rounded-lg border border-slate-200 bg-white px-2 py-1 text-xs font-medium text-slate-600"
+        >
+          {PLAYBACK_RATES.map((r) => (
+            <option key={r} value={r}>
+              {r}x
+            </option>
+          ))}
+        </select>
+      </div>
+      {error && <p className="text-xs text-rose-500">{error}</p>}
+    </div>
+  );
+}
+
 export function RecordingDetailPage({
   id,
   onBack,
@@ -186,9 +287,52 @@ export function RecordingDetailPage({
   const [noteDraft, setNoteDraft] = useState('');
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [loopBlock, setLoopBlock] = useState(false);
 
   const rec = recording.data;
   const processing = rec?.status === 'processing';
+  const src = rec ? audioUrl(rec.id, rec.hasAudio) : null;
+  const player = useAudioPlayer(src);
+
+  // The "nghe đoạn này" button toggles: clicking the block already playing stops it.
+  // Which block is "playing" is derived from currentTime in SpeakerTranscript
+  // (via its own `blocks`), not tracked here — that way it stays correct
+  // whichever way playback started (this button, or the main play bar).
+  const playBlock = useCallback(
+    (block: Block) => {
+      const range = player.activeRange;
+      if (range && range.start === block.start && range.end === block.end) {
+        player.stopRange();
+        return;
+      }
+      player.playRange(block.start, block.end, loopBlock);
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [player.activeRange, loopBlock],
+  );
+
+  // Space play/pause, ←/→ seek 5s — only when not typing in a field (editing a
+  // segment, the title, a note, or the search box all use real inputs/textareas).
+  useEffect(() => {
+    if (!src) return;
+    function onKeyDown(e: KeyboardEvent) {
+      const target = e.target as HTMLElement | null;
+      if (target && /^(input|textarea)$/i.test(target.tagName)) return;
+      if (e.code === 'Space') {
+        e.preventDefault();
+        player.toggle();
+      } else if (e.code === 'ArrowLeft') {
+        e.preventDefault();
+        player.seekBy(-5);
+      } else if (e.code === 'ArrowRight') {
+        e.preventDefault();
+        player.seekBy(5);
+      }
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [src]);
 
   // While the server transcribes in the background, poll for progress until it settles.
   useEffect(() => {
@@ -456,6 +600,22 @@ export function RecordingDetailPage({
       {done && (
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_300px]">
           <Card className="min-w-0 p-0">
+            {src && (
+              <>
+                {/* eslint-disable-next-line jsx-a11y/media-has-caption -- this is a voice recording, not a video; no captions track exists. */}
+                <audio ref={player.audioRef} src={src} preload="metadata" />
+                <AudioPlayerBar
+                  player={player}
+                  loopBlock={loopBlock}
+                  onToggleLoopBlock={() => setLoopBlock((v) => !v)}
+                />
+              </>
+            )}
+            {rec.status === 'done' && !rec.hasAudio && (
+              <p className="border-b border-slate-100 bg-slate-50/60 px-5 py-2 text-xs text-slate-400">
+                Không có file âm thanh gốc để nghe lại (bản ghi cũ, hoặc file đã bị mất).
+              </p>
+            )}
             <div className="sticky top-0 z-10 flex flex-wrap items-center gap-3 rounded-t-2xl border-b border-slate-100 bg-white/95 px-5 py-3 backdrop-blur">
               <ModeSwitch mode={mode} onChange={chooseMode} />
               <div className="relative ml-auto min-w-[180px] max-w-xs flex-1">
@@ -523,6 +683,11 @@ export function RecordingDetailPage({
                   onRenameSpeaker={(raw, name) =>
                     void save({ speakerNames: { ...rec.speakerNames, [raw]: name } })
                   }
+                  canPlayAudio={Boolean(src)}
+                  currentTime={player.currentTime}
+                  isPlayingAudio={player.isPlaying}
+                  onPlayBlock={playBlock}
+                  autoScroll
                 />
               )}
             </div>

@@ -43,6 +43,17 @@ writeStorage(SERVER_KEY, null);
 export const getToken = (): string | null => readStorage(TOKEN_KEY);
 export const setToken = (token: string | null): void => writeStorage(TOKEN_KEY, token);
 
+/**
+ * <audio src> cannot send an Authorization header, so this one endpoint
+ * accepts the same JWT as ?token= instead (see server's audioRoutes.ts).
+ * Returns null when there is no token or the recording has no kept audio.
+ */
+export function audioUrl(recordingId: string, hasAudio: boolean): string | null {
+  const token = getToken();
+  if (!token || !hasAudio) return null;
+  return `${getServerUrl()}/api/recordings/${recordingId}/audio?token=${encodeURIComponent(token)}`;
+}
+
 export class ApiError extends Error {
   constructor(
     message: string,

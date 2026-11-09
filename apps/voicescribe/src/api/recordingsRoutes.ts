@@ -1,5 +1,8 @@
 import { randomUUID } from 'node:crypto';
+import { rm } from 'node:fs/promises';
+import { join } from 'node:path';
 import { Router } from 'express';
+import type { AppConfig } from '../config/env.js';
 import type { Db } from '../db/pool.js';
 import { userIdOf } from '../auth/middleware.js';
 import {
@@ -83,7 +86,7 @@ const joinSegments = (segments: LabeledSegment[]): string =>
   segments.map((s) => s.text.trim()).join(' ');
 const squash = (text: string): string => text.replace(/\s+/g, ' ').trim();
 
-export function createRecordingsRouter(db: Db, jobs: TranscriptionJobs): Router {
+export function createRecordingsRouter(config: AppConfig, db: Db, jobs: TranscriptionJobs): Router {
   const router = Router();
 
   router.get('/stats', async (_req, res) => {
@@ -309,16 +312,19 @@ export function createRecordingsRouter(db: Db, jobs: TranscriptionJobs): Router 
       res.status(404).json(NOT_FOUND);
       return;
     }
-    const { rowCount } = await db.query('DELETE FROM recordings WHERE id = $1 AND user_id = $2', [
-      req.params.id,
-      userIdOf(res),
-    ]);
-    if (!rowCount) {
+    const { rows } = await db.query<{ audio_path: string | null }>(
+      'DELETE FROM recordings WHERE id = $1 AND user_id = $2 RETURNING audio_path',
+      [req.params.id, userIdOf(res)],
+    );
+    if (!rows[0]) {
       res.status(404).json(NOT_FOUND);
       return;
     }
     // Deleting a recording that is still being transcribed also stops its job.
     jobs.cancel(req.params.id);
+    if (rows[0].audio_path) {
+      await rm(join(config.audioStorageDir, rows[0].audio_path), { force: true });
+    }
     res.status(204).end();
   });
 

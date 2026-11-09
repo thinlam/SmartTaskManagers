@@ -10,6 +10,7 @@ import { createAuthRouter } from './api/authRoutes.js';
 import { createFoldersRouter } from './api/foldersRoutes.js';
 import { createRecordingsRouter } from './api/recordingsRoutes.js';
 import { createTranscribeRouter } from './api/transcribeRoute.js';
+import { createAudioRouter } from './api/audioRoutes.js';
 import { TranscriptionJobs } from './services/jobs.js';
 
 const config = loadConfig();
@@ -38,7 +39,10 @@ api.use(createAuthRouter(config, db));
 
 const auth = requireAuth(config.jwtSecret);
 api.use('/transcribe', auth, createTranscribeRouter(config, db, jobs));
-api.use('/recordings', auth, createRecordingsRouter(db, jobs));
+// Mounted before the auth-protected recordings router: <audio src> cannot send an
+// Authorization header, so this one route authenticates via ?token= instead.
+api.use('/recordings', createAudioRouter(config, db));
+api.use('/recordings', auth, createRecordingsRouter(config, db, jobs));
 api.use('/folders', auth, createFoldersRouter(db));
 api.use((_req, res) => {
   res.status(404).json({ error: 'Không tìm thấy.' });

@@ -58,6 +58,13 @@ const MIGRATIONS: Migration[] = [
       CREATE INDEX recordings_status_idx ON recordings (user_id, status);
     `,
   },
+  {
+    id: '003_recording_audio_path',
+    sql: `
+      ALTER TABLE recordings
+        ADD COLUMN audio_path text;
+    `,
+  },
 ];
 
 /** Applies pending migrations in order, each in its own transaction. Safe to run on every start. */

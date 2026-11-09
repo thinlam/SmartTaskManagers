@@ -23,6 +23,8 @@ export interface RecordingRow {
   notes: RecordingNote[];
   processing_ms: number;
   diarization_error: string | null;
+  /** Basename of the original audio file kept under AppConfig.audioStorageDir; null if not kept (old recording, or saving it failed). */
+  audio_path: string | null;
   status: RecordingStatus;
   progress_done: number;
   progress_total: number;
@@ -51,6 +53,7 @@ export function toDetailDto(r: RecordingRow) {
     notes: r.notes,
     processingTimeMs: r.processing_ms,
     diarizationError: r.diarization_error,
+    hasAudio: r.audio_path !== null,
     status: r.status,
     progressDone: r.progress_done,
     progressTotal: r.progress_total,
@@ -89,6 +92,8 @@ export interface CompletedRecording {
   segments: LabeledSegment[];
   processingMs: number;
   diarizationError: string | null;
+  /** Basename under AppConfig.audioStorageDir, or null if the original audio could not be kept. */
+  audioPath: string | null;
 }
 
 export async function completeRecording(
@@ -100,7 +105,8 @@ export async function completeRecording(
   await db.query(
     `UPDATE recordings
         SET status = 'done', text = $2, segments = $3, duration_sec = $4, processing_ms = $5,
-            diarization_error = $6, error = NULL, progress_done = progress_total, updated_at = now()
+            diarization_error = $6, audio_path = $7, error = NULL, progress_done = progress_total,
+            updated_at = now()
       WHERE id = $1`,
     [
       id,
@@ -109,6 +115,7 @@ export async function completeRecording(
       durationSec,
       Math.round(done.processingMs),
       done.diarizationError,
+      done.audioPath,
     ],
   );
 }

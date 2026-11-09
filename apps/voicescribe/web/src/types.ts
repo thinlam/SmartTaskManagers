@@ -62,6 +62,8 @@ export interface Recording {
   notes: RecordingNote[];
   processingTimeMs: number;
   diarizationError: string | null;
+  /** Whether the original audio was kept on the server for in-app playback (older recordings may not have it). */
+  hasAudio: boolean;
   status: RecordingStatus;
   progressDone: number;
   progressTotal: number;

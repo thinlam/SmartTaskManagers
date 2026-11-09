@@ -21,6 +21,8 @@ export interface AppConfig {
   maxConcurrentJobs: number;
   /** Audio chunks sent to Hugging Face in parallel for a single recording. */
   chunkConcurrency: number;
+  /** Where completed recordings' original audio is kept so it can be streamed back for playback. */
+  audioStorageDir: string;
 }
 
 const DEV_JWT_SECRET = 'voicescribe-dev-only-secret-change-before-deploying';
@@ -61,6 +63,7 @@ export function loadConfig(): AppConfig {
   const diarizationEnabled = !production || Boolean(process.env.DIARIZATION_SERVICE_URL);
   const maxConcurrentJobs = positiveInt(process.env.MAX_CONCURRENT_JOBS, 2);
   const chunkConcurrency = positiveInt(process.env.CHUNK_CONCURRENCY, 3);
+  const audioStorageDir = process.env.AUDIO_STORAGE_DIR?.trim() || 'voicescribe-audio';
   return {
     hfToken,
     port,
@@ -71,5 +74,6 @@ export function loadConfig(): AppConfig {
     diarizationEnabled,
     maxConcurrentJobs,
     chunkConcurrency,
+    audioStorageDir,
   };
 }
