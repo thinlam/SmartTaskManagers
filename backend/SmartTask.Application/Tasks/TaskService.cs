@@ -14,6 +14,7 @@ namespace SmartTask.Application.Tasks;
 public sealed class TaskService(
     ITaskRepository taskRepository,
     ITagRepository tagRepository,
+    ITaskAreaRepository areaRepository,
     IDateTimeProvider dateTimeProvider,
     ISmartEngineService smartEngineService
 ) : ITaskService
@@ -51,17 +52,20 @@ public sealed class TaskService(
         ValidateEstimate(request.EstimateMinutes, errors);
         ValidateTags(request.Tags, errors);
         await ValidateParentAsync(request.ParentTaskId, excludeId: null, errors, cancellationToken);
+        await ValidateAreaAsync(request.AreaId, errors, cancellationToken);
         ThrowIfInvalid(errors);
 
         var tags = await tagRepository.GetOrCreateManyAsync(request.Tags ?? [], cancellationToken);
 
         var now = dateTimeProvider.UtcNow;
         var position = await taskRepository.CountAsync(cancellationToken);
+#pragma warning disable CS0618 // Area (legacy enum) still written for back-compat read paths; AreaId is the live value.
         var task = new TaskItem
         {
             Name = name,
             Description = request.Description,
             Area = request.Area,
+            AreaId = request.AreaId,
             ProjectId = request.ProjectId,
             Category = request.Category,
             Tags = tags,
@@ -86,6 +90,7 @@ public sealed class TaskService(
             UpdatedAt = now,
             LastStatusChangedAt = now,
         };
+#pragma warning restore CS0618
 
         await ApplySmartFieldsAsync(task, cancellationToken);
 
@@ -133,6 +138,7 @@ public sealed class TaskService(
                 await ValidateParentAsync(request.ParentTaskId, id, errors, cancellationToken);
             }
         }
+        await ValidateAreaAsync(request.AreaId, errors, cancellationToken);
         ThrowIfInvalid(errors);
 
         var previousStatus = task.Status;
@@ -140,7 +146,10 @@ public sealed class TaskService(
 
         task.Name = name ?? task.Name;
         task.Description = request.Description ?? task.Description;
+#pragma warning disable CS0618 // Area (legacy enum) still written for back-compat read paths; AreaId is the live value.
         task.Area = request.Area ?? task.Area;
+#pragma warning restore CS0618
+        task.AreaId = request.AreaId ?? task.AreaId;
         task.ProjectId = request.ProjectId ?? task.ProjectId;
         task.Category = request.Category ?? task.Category;
         if (request.Tags is not null)
@@ -412,11 +421,13 @@ public sealed class TaskService(
         var deltaDays = nextAnchor.DayNumber - anchor.DayNumber;
 
         var position = await taskRepository.CountAsync(cancellationToken);
+#pragma warning disable CS0618 // Area (legacy enum) still copied for back-compat read paths; AreaId is the live value.
         var next = new TaskItem
         {
             Name = completed.Name,
             Description = completed.Description,
             Area = completed.Area,
+            AreaId = completed.AreaId,
             ProjectId = completed.ProjectId,
             Category = completed.Category,
             Tags = completed.Tags.ToList(),
@@ -440,6 +451,7 @@ public sealed class TaskService(
             UpdatedAt = now,
             LastStatusChangedAt = now,
         };
+#pragma warning restore CS0618
 
         await ApplySmartFieldsAsync(next, cancellationToken);
         await taskRepository.AddAsync(next, cancellationToken);
@@ -549,6 +561,23 @@ public sealed class TaskService(
         }
     }
 
+    private async Task ValidateAreaAsync(
+        Guid? areaId,
+        Dictionary<string, List<string>> errors,
+        CancellationToken cancellationToken
+    )
+    {
+        if (areaId is null)
+        {
+            return;
+        }
+        var area = await areaRepository.GetByIdAsync(areaId.Value, cancellationToken);
+        if (area is null)
+        {
+            errors.AddError("AreaId", "Không tìm thấy lĩnh vực.");
+        }
+    }
+
     /// <summary>Max subtask depth is 2: a top-level task may have subtasks, but a subtask may not have its own subtasks — enforced by requiring the chosen parent to itself be top-level. That structurally rules out cycles too (a subtask can never become an ancestor).</summary>
     private async Task ValidateParentAsync(
         Guid? parentTaskId,
@@ -608,11 +637,15 @@ public sealed class TaskService(
             task.Id,
             cancellationToken
         );
+#pragma warning disable CS0618 // Area (legacy enum) still exposed for back-compat read paths; AreaId/AreaName* are the live values.
         return new TaskResponse(
             task.Id,
             task.Name,
             task.Description,
             task.Area,
+            task.AreaId,
+            task.TaskArea?.NameVi,
+            task.TaskArea?.NameEn,
             task.ProjectId,
             task.Category,
             task.Tags.Select(t => t.Name).OrderBy(n => n).ToList(),
@@ -643,6 +676,7 @@ public sealed class TaskService(
             hasOpenDuplicateName,
             task.Version
         );
+#pragma warning restore CS0618
     }
 }
 

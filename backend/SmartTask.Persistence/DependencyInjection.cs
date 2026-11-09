@@ -59,6 +59,7 @@ public static class DependencyInjection
         services.AddScoped<INotificationRepository, NotificationRepository>();
         services.AddScoped<ISessionRepository, SessionRepository>();
         services.AddScoped<ITagRepository, TagRepository>();
+        services.AddScoped<ITaskAreaRepository, TaskAreaRepository>();
 
         return services;
     }

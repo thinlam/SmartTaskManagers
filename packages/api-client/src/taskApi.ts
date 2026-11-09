@@ -41,6 +41,9 @@ interface TaskDto {
   reminderAt: string | null;
   attachmentUrl: string | null;
   hasOpenDuplicateName: boolean;
+  areaId: string | null;
+  areaNameVi: string | null;
+  areaNameEn: string | null;
 }
 
 function fromDto(dto: TaskDto): Task {
@@ -70,6 +73,9 @@ function fromDto(dto: TaskDto): Task {
     reminderAt: dto.reminderAt,
     attachmentUrl: dto.attachmentUrl,
     hasOpenDuplicateName: dto.hasOpenDuplicateName,
+    areaId: dto.areaId,
+    areaNameVi: dto.areaNameVi,
+    areaNameEn: dto.areaNameEn,
   };
 }
 
@@ -89,6 +95,8 @@ export interface TaskWriteFields {
   parentTaskId?: string | null;
   reminderAt?: string | null;
   attachmentUrl?: string | null;
+  /** The task's "Lĩnh vực" (see @stm/types's Task.areaId) — null clears it. */
+  areaId?: string | null;
 }
 
 function toWriteBody(fields: TaskWriteFields): Record<string, unknown> {
@@ -107,13 +115,14 @@ function toWriteBody(fields: TaskWriteFields): Record<string, unknown> {
   if (fields.parentTaskId !== undefined) body.parentTaskId = fields.parentTaskId;
   if (fields.reminderAt !== undefined) body.reminderAt = fields.reminderAt;
   if (fields.attachmentUrl !== undefined) body.attachmentUrl = fields.attachmentUrl;
+  if (fields.areaId !== undefined) body.areaId = fields.areaId;
   return body;
 }
 
 /** Matches SmartTask.Api's TasksController (Phase 23) — GET/POST/PATCH/POST .../complete/DELETE on /api/tasks. */
 export const taskApi = {
   getAll: async (): Promise<Task[]> => (await httpClient.get<TaskDto[]>('/api/tasks')).map(fromDto),
-  create: async (fields: TaskWriteFields & { title: string; area: Task['area'] }): Promise<Task> =>
+  create: async (fields: TaskWriteFields & { title: string }): Promise<Task> =>
     fromDto(await httpClient.post<TaskDto>('/api/tasks', toWriteBody(fields))),
   update: async (id: string, fields: TaskWriteFields): Promise<Task> =>
     fromDto(await httpClient.patch<TaskDto>(`/api/tasks/${id}`, toWriteBody(fields))),

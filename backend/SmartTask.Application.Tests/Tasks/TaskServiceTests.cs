@@ -19,6 +19,7 @@ public sealed class TaskServiceTests
         new(
             repository ?? new FakeTaskRepository(),
             new FakeTagRepository(),
+            new FakeTaskAreaRepository(),
             new FakeDateTimeProvider(Now),
             new FakeSmartEngineService()
         );
@@ -165,6 +166,7 @@ public sealed class TaskServiceTests
         var sut = new TaskService(
             repository,
             tagRepository,
+            new FakeTaskAreaRepository(),
             new FakeDateTimeProvider(Now),
             new FakeSmartEngineService()
         );

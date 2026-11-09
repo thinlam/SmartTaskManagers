@@ -18,6 +18,7 @@ import { SmartAssistantPage } from '../pages/Assistant/SmartAssistantPage';
 import { SettingsPage } from '../pages/Settings/SettingsPage';
 import { AccountSettingsPage } from '../pages/AccountSettings/AccountSettingsPage';
 import { TagsManagementPage } from '../pages/Tags/TagsManagementPage';
+import { AreasManagementPage } from '../pages/Areas/AreasManagementPage';
 import { APP_ROUTES } from './routes';
 
 /**
@@ -68,6 +69,9 @@ export const router = createHashRouter([
       // Not in APP_ROUTES either — reached from TasksPage's "Thẻ" filter
       // header, never a Sidebar nav item (Việc 1).
       { path: '/tags', element: <TagsManagementPage /> },
+      // Not in APP_ROUTES either — reached from TaskDetailDrawer's "Lĩnh vực" combobox
+      // and TasksPage, never a Sidebar nav item (Mục 4, 2026-11-09).
+      { path: '/areas', element: <AreasManagementPage /> },
     ],
   },
 ]);

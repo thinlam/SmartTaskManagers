@@ -9,10 +9,17 @@ public sealed class TaskRepository(AppDbContext dbContext, ICurrentUserContext c
     : ITaskRepository
 {
     public Task<List<TaskItem>> GetAllAsync(CancellationToken cancellationToken = default) =>
-        dbContext.Tasks.AsNoTracking().Include(t => t.Tags).ToListAsync(cancellationToken);
+        dbContext
+            .Tasks.AsNoTracking()
+            .Include(t => t.Tags)
+            .Include(t => t.TaskArea)
+            .ToListAsync(cancellationToken);
 
     public Task<TaskItem?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
-        dbContext.Tasks.Include(t => t.Tags).FirstOrDefaultAsync(t => t.Id == id, cancellationToken);
+        dbContext
+            .Tasks.Include(t => t.Tags)
+            .Include(t => t.TaskArea)
+            .FirstOrDefaultAsync(t => t.Id == id, cancellationToken);
 
     public Task<TaskItem?> GetByIdIncludingDeletedAsync(
         Guid id,
@@ -21,6 +28,7 @@ public sealed class TaskRepository(AppDbContext dbContext, ICurrentUserContext c
         dbContext
             .Tasks.IgnoreQueryFilters()
             .Include(t => t.Tags)
+            .Include(t => t.TaskArea)
             .Where(t => t.UserId == currentUserContext.UserId)
             .FirstOrDefaultAsync(t => t.Id == id, cancellationToken);
 

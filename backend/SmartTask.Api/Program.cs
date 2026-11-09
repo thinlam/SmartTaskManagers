@@ -107,6 +107,7 @@ builder.Services.AddScoped<ISyncService, SyncService>();
 builder.Services.AddScoped<ISmartEngineService, SmartEngineService>();
 builder.Services.AddScoped<INotificationService, NotificationService>();
 builder.Services.AddScoped<ITagService, TagService>();
+builder.Services.AddScoped<ITaskAreaService, TaskAreaService>();
 
 // ============================================================
 // BACKGROUND SERVICES

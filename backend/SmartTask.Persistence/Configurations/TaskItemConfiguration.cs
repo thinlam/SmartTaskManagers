@@ -25,7 +25,9 @@ public sealed class TaskItemConfiguration : IEntityTypeConfiguration<TaskItem>
         // on a stale write, instead of adding a new RowVersion column (GĐ redesign, 2026-11-09).
         builder.Property(t => t.Version).IsConcurrencyToken();
 
+#pragma warning disable CS0618 // Area is obsolete by design — still mapped for the historical column.
         builder.Property(t => t.Area).HasConversion<string>().HasMaxLength(20);
+#pragma warning restore CS0618
         builder.Property(t => t.Priority).HasConversion<string>().HasMaxLength(20);
         builder.Property(t => t.Status).HasConversion<string>().HasMaxLength(20);
         builder.Property(t => t.Energy).HasConversion<string>().HasMaxLength(20);

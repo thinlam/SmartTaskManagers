@@ -122,7 +122,40 @@ Progress/Status ở server). Plan này làm phần **còn thiếu**, không làm
   (Vitest) 26/26 qua, `npx eslint` sạch các file đã sửa. **Chưa chạy thật qua trình duyệt** (chưa có backend
   local chạy, chưa cấu hình connection string cho máy này).
 
-### Mục 2–5
+### Mục 4 — Lĩnh vực song ngữ (xong 2026-11-09)
 
-_(Mục 2, 3 đã xong ở 2 plan 08/11 trước đó — không làm lại. Còn Mục 4 (Lĩnh vực song ngữ) và Mục 5 (định
-dạng ngày dd/MM/yyyy, rà soát bố cục) — chưa làm, tiếp theo.)_
+- **Khác dự kiến (cố ý, không phải bỏ sót):** không thay hẳn cột `Area` (enum) bằng `AreaId` — giữ `Area`
+  làm cột lịch sử, đánh dấu `[Obsolete("Use AreaId instead.")]` (bọc `#pragma warning disable/restore
+CS0618` ở mọi nơi còn đọc/ghi, như `SyncService` — Phase 28 sync chưa cập nhật resolve qua
+  `ITaskAreaRepository`), còn `AreaId`/`TaskArea` là nguồn thật mới. Lý do: thay hẳn một lượt sẽ ảnh hưởng
+  dashboard/CSV export/filter/SmartEngine đang đọc `Area` — đi theo đúng tiền lệ migration Tags CSV→quan hệ
+  đã làm trước đây (`LegacyTagsCsv`), an toàn hơn cho dữ liệu Railway thật.
+- Backend: entity `TaskArea` (NameVi/NameEn/IsSystem/SortOrder, `UserId == null` là lĩnh vực hệ thống dùng
+  chung, khác `UserId` của người dùng là lĩnh vực tùy chỉnh); `ITaskAreaRepository`/`TaskAreaRepository`,
+  `ITaskAreaService`/`TaskAreaService`, `TaskAreasController` (GET/POST/PATCH/DELETE `/api/task-areas`); xóa
+  lĩnh vực còn task dùng → `TaskAreaInUseException` → controller trả 409 `{ action: "reassign", taskCount
+}`, gọi lại kèm `replacementAreaId` để chuyển task trước khi xóa. Migration
+  `AddTaskAreasRelational`: thêm `Tasks.AreaId` (FK `SetNull`), bảng `TaskAreas`, seed đúng 14 dòng hệ thống
+  (GUID cố định) theo tên đã chốt trong brief, cộng SQL thuần (không recursive CTE) backfill `AreaId` từ
+  `Area` cũ theo map Career/Learning/Health/Personal → key tương ứng, còn lại → "other" (không mất dữ liệu).
+- Frontend: `areaApi`/`useAreas`/`AreasProvider` (mẫu giống `useTags`/`TagsProvider`), trang quản lý riêng
+  `AreasManagementPage` tại route `/areas` (đã chốt với người dùng) — đổi tên/xóa/thêm lĩnh vực tùy chỉnh,
+  lĩnh vực hệ thống hiển thị chỉ-đọc, xóa khi còn task thì hiện hộp chọn lĩnh vực chuyển sang. `
+TaskDetailDrawer`'s mảng `AREAS` hardcode (dòng ~13 cũ) đổi hẳn sang đọc `useAreasContext()` — combobox
+  hiện tên song ngữ theo `i18n.language`, có lựa chọn cuối "+ Thêm lĩnh vực mới" mở form nhập 2 tên (Việt/Anh)
+  ngay trong drawer, không rời form, lưu xong tự chọn lĩnh vực mới tạo. `FormState.area` (enum) đổi thành
+  `FormState.areaId` (Guid dạng string, `''` = chưa chọn); `NewTaskInput.area`/`taskApi.create`'s tham số
+  `area` bắt buộc đổi thành tùy chọn (backend tự mặc định `Personal` nếu bỏ trống, không cần frontend gửi
+  nữa khi đã dùng `areaId`).
+- Kiểm chứng thật: backend `dotnet build` (toàn solution, gồm Api) 0 lỗi/0 cảnh báo; `dotnet test` 56/56 qua
+  (thêm 5 test mới cho `TaskAreaService`). Frontend: `npm run typecheck` (toàn repo, mọi app) sạch,
+  `npm run build:web` qua, `npx eslint` sạch các file đã sửa (`TaskDetailDrawer.tsx`,
+  `AreasManagementPage.tsx`, `AreasContext.tsx`, `useAreas.ts`, `useTasks.ts`, `areaApi.ts`, `taskApi.ts`,
+  `index.ts`, `App.tsx`, `router.tsx`, `types/index.ts`). **Chưa chạy thật qua trình duyệt** (chưa có backend
+  local chạy với migration mới áp dụng trên máy này) — cần kiểm tra bằng tay trước khi coi UX là hoàn tất:
+  combobox hiện đúng tên theo ngôn ngữ, thêm lĩnh vực mới không rời form, hộp thoại xóa-cần-chuyển hoạt động.
+  Chưa chạy migration trên dữ liệu Railway thật — theo đúng quy tắc dự án, Railway tự chạy khi deploy.
+
+### Mục 5
+
+_(Mục 5 — định dạng ngày dd/MM/yyyy, rà soát bố cục còn thiếu — chưa làm, tiếp theo.)_

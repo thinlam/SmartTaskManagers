@@ -110,7 +110,9 @@ public sealed class SyncService(
                     ExternalId = item.ExternalId,
                     Name = item.Name,
                     Description = item.Description,
+#pragma warning disable CS0618 // Area is now AreaId/TaskArea — Phase 28 sync isn't live yet and hasn't been updated to resolve areas through ITaskAreaRepository, so it round-trips through the legacy enum column for now.
                     Area = item.Area,
+#pragma warning restore CS0618
                     ProjectId = item.ProjectId,
                     Category = item.Category,
 #pragma warning disable CS0618 // Tags is now the Tag/TaskTag relation — Phase 28 sync isn't live yet and hasn't been updated to resolve tag names through ITagRepository, so it round-trips through the legacy CSV column for now.
@@ -150,7 +152,9 @@ public sealed class SyncService(
             existing.ExternalId = item.ExternalId;
             existing.Name = item.Name;
             existing.Description = item.Description;
+#pragma warning disable CS0618 // Same Phase 28 scope note as the create branch above.
             existing.Area = item.Area;
+#pragma warning restore CS0618
             existing.ProjectId = item.ProjectId;
             existing.Category = item.Category;
 #pragma warning disable CS0618 // Same Phase 28 scope note as the create branch above.
@@ -243,6 +247,7 @@ public sealed class SyncService(
         Habit habit
     ) => new(externalId, id, outcome, habit.UpdatedAt, habit.Version, null);
 
+#pragma warning disable CS0618 // Same Phase 28 scope note as SyncService's push/pull branches above.
     private static SyncTaskResponse ToSyncResponse(TaskItem task) =>
         new(
             task.Id,
@@ -270,6 +275,7 @@ public sealed class SyncService(
             task.UpdatedAt,
             task.Version
         );
+#pragma warning restore CS0618
 
     /* ======================================================================
      * PROJECTS

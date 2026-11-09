@@ -6,3 +6,4 @@ export { goalApi, type GoalWriteFields } from './goalApi';
 export { habitApi, type HabitWriteFields } from './habitApi';
 export { notificationApi } from './notificationApi';
 export { tagApi, type TagDto } from './tagApi';
+export { areaApi, type TaskAreaDto } from './areaApi';

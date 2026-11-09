@@ -24,7 +24,19 @@ public sealed class TaskItem : SyncableEntity
 
     public required string Name { get; set; }
     public string? Description { get; set; }
+
+    /// <summary>
+    /// Obsolete — the old hardcoded 5-value enum (GĐ21), kept read-only so existing rows/dashboards
+    /// that haven't moved to <see cref="AreaId"/> yet still have a value, and so the data backfill
+    /// in AddTaskAreasRelational's migration has a readable source. TaskService stops writing this;
+    /// <see cref="AreaId"/>/<see cref="TaskArea"/> below is the live, bilingual, user-extensible source.
+    /// </summary>
+    [Obsolete("Read-only historical data. Use AreaId/TaskArea instead.")]
     public AreaType Area { get; set; }
+
+    /// <summary>The task's "Lĩnh vực" — null means uncategorized (a task is never forced to pick one).</summary>
+    public Guid? AreaId { get; set; }
+    public TaskArea? TaskArea { get; set; }
 
     public Guid? ProjectId { get; set; }
     public Projects.Project? Project { get; set; }

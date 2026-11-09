@@ -1,16 +1,16 @@
 import { useEffect, useState, type FormEvent, type KeyboardEvent } from 'react';
-import type { Area, Priority, Task, TaskStatus } from '@stm/types';
+import type { Priority, Task, TaskStatus } from '@stm/types';
 import { ApiError } from '@stm/api-client';
 import { useTranslation } from 'react-i18next';
 import { Button, cn, Drawer } from '@stm/ui';
 import { useTasksContext } from '../state/TasksContext';
 import { useProjectsContext } from '../state/ProjectsContext';
 import { useGoalsContext } from '../state/GoalsContext';
+import { useAreasContext } from '../state/AreasContext';
 import { translatePriority, translateTaskStatus } from '../lib/enumLabels';
 import { reportError, reportSuccess } from '../lib/reportError';
 import { TagChipInput } from './TagChipInput';
 
-const AREAS: Area[] = ['Career', 'Learning', 'Health', 'Personal', 'Personal Admin'];
 const PRIORITIES: Priority[] = ['Critical', 'Urgent', 'High', 'Medium', 'Low'];
 const STATUSES: TaskStatus[] = ['Inbox', 'To Do', 'In Progress', 'Waiting', 'Completed'];
 
@@ -53,7 +53,8 @@ const labelClasses = 'text-xs font-semibold uppercase tracking-wide text-ink-mut
 interface FormState {
   title: string;
   description: string;
-  area: Area;
+  /** '' = no area assigned yet. */
+  areaId: string;
   /** '' = no project — matches the "No project" option's value. */
   projectId: string;
   /** '' = no goal — matches the "No goal" option's value. */
@@ -88,7 +89,7 @@ function emptyForm(): FormState {
   return {
     title: '',
     description: '',
-    area: 'Personal',
+    areaId: '',
     projectId: '',
     goalId: '',
     priority: 'Medium',
@@ -107,7 +108,7 @@ function formFromTask(task: Task): FormState {
   return {
     title: task.title,
     description: task.description,
-    area: task.area,
+    areaId: task.areaId ?? '',
     projectId: task.projectId ?? '',
     goalId: task.goalId ?? '',
     priority: task.priority,
@@ -154,7 +155,7 @@ function isoDateInDays(offsetDays: number): string {
  * without the contexts needing to know about each other.
  */
 export function TaskDetailDrawer() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const {
     isDrawerOpen,
     editingTask,
@@ -168,11 +169,33 @@ export function TaskDetailDrawer() {
   } = useTasksContext();
   const { projects } = useProjectsContext();
   const { goals } = useGoalsContext();
+  const { areas, createArea } = useAreasContext();
   const [form, setForm] = useState<FormState>(emptyForm());
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [isAddingArea, setIsAddingArea] = useState(false);
+  const [newAreaNameVi, setNewAreaNameVi] = useState('');
+  const [newAreaNameEn, setNewAreaNameEn] = useState('');
+
+  const isVi = i18n.language.startsWith('vi');
+  const areaLabel = (area: { nameVi: string; nameEn: string }) =>
+    isVi ? area.nameVi : area.nameEn;
+
+  async function handleCreateArea() {
+    const nameVi = newAreaNameVi.trim();
+    if (!nameVi) return;
+    try {
+      const created = await createArea(nameVi, newAreaNameEn.trim() || undefined);
+      setForm((f) => ({ ...f, areaId: created.id }));
+      setIsAddingArea(false);
+      setNewAreaNameVi('');
+      setNewAreaNameEn('');
+    } catch (err) {
+      reportError(err);
+    }
+  }
 
   /** Only top-level tasks can be chosen as a parent — subtasks are at most 2 levels deep. */
   const parentOptions = tasks.filter((task) => !task.parentTaskId && task.id !== editingTask?.id);
@@ -196,7 +219,7 @@ export function TaskDetailDrawer() {
         nextForm.attachmentUrl ||
         nextForm.goalId ||
         nextForm.parentTaskId ||
-        nextForm.area !== 'Personal',
+        nextForm.areaId,
       ),
     );
   }, [isDrawerOpen, editingTask, createDefaults]);
@@ -221,7 +244,7 @@ export function TaskDetailDrawer() {
     return {
       title,
       description: form.description,
-      area: form.area,
+      areaId: form.areaId || null,
       projectId: form.projectId || null,
       goalId: form.goalId || null,
       priority: form.priority,
@@ -608,18 +631,70 @@ export function TaskDetailDrawer() {
                 <label htmlFor="task-area" className={labelClasses}>
                   {t('tasks.fieldArea')}
                 </label>
-                <select
-                  id="task-area"
-                  value={form.area}
-                  onChange={(event) => setForm((f) => ({ ...f, area: event.target.value as Area }))}
-                  className={fieldClasses}
-                >
-                  {AREAS.map((area) => (
-                    <option key={area} value={area}>
-                      {area}
-                    </option>
-                  ))}
-                </select>
+                {isAddingArea ? (
+                  <div className="flex flex-col gap-1.5">
+                    <input
+                      autoFocus
+                      type="text"
+                      value={newAreaNameVi}
+                      onChange={(event) => setNewAreaNameVi(event.target.value)}
+                      placeholder={t('areas.addNameViPlaceholder')}
+                      maxLength={100}
+                      className={fieldClasses}
+                    />
+                    <input
+                      type="text"
+                      value={newAreaNameEn}
+                      onChange={(event) => setNewAreaNameEn(event.target.value)}
+                      placeholder={t('areas.addNameEnPlaceholder')}
+                      maxLength={100}
+                      className={fieldClasses}
+                    />
+                    <div className="flex gap-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        disabled={!newAreaNameVi.trim()}
+                        onClick={handleCreateArea}
+                      >
+                        {t('areas.addButton')}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => {
+                          setIsAddingArea(false);
+                          setNewAreaNameVi('');
+                          setNewAreaNameEn('');
+                        }}
+                      >
+                        {t('common.cancel')}
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <select
+                    id="task-area"
+                    value={form.areaId}
+                    onChange={(event) => {
+                      if (event.target.value === '__add_new__') {
+                        setIsAddingArea(true);
+                        return;
+                      }
+                      setForm((f) => ({ ...f, areaId: event.target.value }));
+                    }}
+                    className={fieldClasses}
+                  >
+                    <option value="">{t('tasks.fieldAreaNone')}</option>
+                    {areas.map((area) => (
+                      <option key={area.id} value={area.id}>
+                        {areaLabel(area)}
+                      </option>
+                    ))}
+                    <option value="__add_new__">{t('areas.addNewInline')}</option>
+                  </select>
+                )}
               </div>
               <div className="flex flex-col gap-1">
                 <label htmlFor="task-goal" className={labelClasses}>

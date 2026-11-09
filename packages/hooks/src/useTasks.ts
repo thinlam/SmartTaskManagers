@@ -4,7 +4,8 @@ import { taskApi, type TaskWriteFields } from '@stm/api-client';
 
 export interface NewTaskInput {
   title: string;
-  area: Task['area'];
+  /** @deprecated Use areaId instead. */
+  area?: Task['area'];
   description?: string;
   /** References a Project's id (Phase 13) — omit or pass null for no project. */
   projectId?: string | null;
@@ -21,6 +22,7 @@ export interface NewTaskInput {
   parentTaskId?: string | null;
   reminderAt?: string | null;
   attachmentUrl?: string | null;
+  areaId?: string | null;
 }
 
 export interface UseTasksResult {
@@ -114,6 +116,7 @@ export function useTasks(): UseTasksResult {
       parentTaskId: patch.parentTaskId,
       reminderAt: patch.reminderAt,
       attachmentUrl: patch.attachmentUrl,
+      areaId: patch.areaId,
     };
     const updated = await taskApi.update(id, fields);
     setTasks((previous) => previous.map((task) => (task.id === id ? updated : task)));

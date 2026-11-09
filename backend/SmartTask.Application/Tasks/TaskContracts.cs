@@ -13,7 +13,12 @@ public sealed record TaskResponse(
     Guid Id,
     string Name,
     string? Description,
+    /// <summary>Obsolete — the old hardcoded enum. Use AreaId/AreaNameVi/AreaNameEn instead.</summary>
+    [property: Obsolete("Read-only historical data. Use AreaId/AreaNameVi/AreaNameEn instead.")]
     AreaType Area,
+    Guid? AreaId,
+    string? AreaNameVi,
+    string? AreaNameEn,
     Guid? ProjectId,
     string? Category,
     IReadOnlyList<string> Tags,
@@ -54,7 +59,10 @@ public sealed class CreateTaskRequest
     public required string Name { get; init; }
 
     public string? Description { get; init; }
+
+    [Obsolete("Use AreaId instead.")]
     public AreaType Area { get; init; } = AreaType.Personal;
+    public Guid? AreaId { get; init; }
     public Guid? ProjectId { get; init; }
 
     [MaxLength(100)]
@@ -104,7 +112,10 @@ public sealed class UpdateTaskRequest
     [MaxLength(200)]
     public string? Name { get; init; }
     public string? Description { get; init; }
+
+    [Obsolete("Use AreaId instead.")]
     public AreaType? Area { get; init; }
+    public Guid? AreaId { get; init; }
     public Guid? ProjectId { get; init; }
 
     [MaxLength(100)]

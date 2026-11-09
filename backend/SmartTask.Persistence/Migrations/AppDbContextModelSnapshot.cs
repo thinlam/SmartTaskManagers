@@ -377,6 +377,44 @@ namespace SmartTask.Persistence.Migrations
                     b.ToTable("TaskActivityLogs", (string)null);
                 });
 
+            modelBuilder.Entity("SmartTask.Domain.Tasks.TaskArea", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<bool>("IsSystem")
+                        .HasColumnType("tinyint(1)");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)");
+
+                    b.Property<string>("NameEn")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<string>("NameVi")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("int");
+
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("char(36)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "Key")
+                        .IsUnique();
+
+                    b.ToTable("TaskAreas", (string)null);
+                });
+
             modelBuilder.Entity("SmartTask.Domain.Tasks.TaskItem", b =>
                 {
                     b.Property<Guid>("Id")
@@ -387,6 +425,9 @@ namespace SmartTask.Persistence.Migrations
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("varchar(20)");
+
+                    b.Property<Guid?>("AreaId")
+                        .HasColumnType("char(36)");
 
                     b.Property<string>("AttachmentUrl")
                         .HasMaxLength(2000)
@@ -519,6 +560,8 @@ namespace SmartTask.Persistence.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("AreaId");
 
                     b.HasIndex("Category");
 
@@ -678,6 +721,11 @@ namespace SmartTask.Persistence.Migrations
 
             modelBuilder.Entity("SmartTask.Domain.Tasks.TaskItem", b =>
                 {
+                    b.HasOne("SmartTask.Domain.Tasks.TaskArea", "TaskArea")
+                        .WithMany("Tasks")
+                        .HasForeignKey("AreaId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("SmartTask.Domain.Tasks.TaskItem", "DependencyTask")
                         .WithMany()
                         .HasForeignKey("DependencyTaskId")
@@ -711,6 +759,8 @@ namespace SmartTask.Persistence.Migrations
                     b.Navigation("ParentTask");
 
                     b.Navigation("Project");
+
+                    b.Navigation("TaskArea");
                 });
 
             modelBuilder.Entity("TagTaskItem", b =>
@@ -726,6 +776,11 @@ namespace SmartTask.Persistence.Migrations
                         .HasForeignKey("TasksId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("SmartTask.Domain.Tasks.TaskArea", b =>
+                {
+                    b.Navigation("Tasks");
                 });
 #pragma warning restore 612, 618
         }

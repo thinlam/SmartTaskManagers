@@ -77,6 +77,10 @@ export interface Task {
   attachmentUrl: string | null;
   /** Response-only, non-blocking: true when another open (non-Completed) task already has this exact title. */
   hasOpenDuplicateName: boolean;
+  /** The task's "Lĩnh vực" (bilingual, user-extensible — replaces the legacy `area` field above for new code). Null = uncategorized. */
+  areaId: string | null;
+  areaNameVi: string | null;
+  areaNameEn: string | null;
 }
 
 /**

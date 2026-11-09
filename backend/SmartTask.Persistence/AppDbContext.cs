@@ -42,6 +42,7 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options, ICurren
     public DbSet<Session> Sessions => Set<Session>();
     public DbSet<Tag> Tags => Set<Tag>();
     public DbSet<TaskActivityLog> TaskActivityLogs => Set<TaskActivityLog>();
+    public DbSet<TaskArea> TaskAreas => Set<TaskArea>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -63,6 +64,11 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options, ICurren
         modelBuilder
             .Entity<TaskActivityLog>()
             .HasQueryFilter(l => l.UserId == currentUserContext.UserId);
+        // System rows (UserId == null) are shared by every account; a custom row is scoped to
+        // its owner like everything else.
+        modelBuilder
+            .Entity<TaskArea>()
+            .HasQueryFilter(a => a.UserId == null || a.UserId == currentUserContext.UserId);
     }
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
@@ -94,6 +100,9 @@ public sealed class AppDbContext(DbContextOptions<AppDbContext> options, ICurren
                         break;
                     case TaskActivityLog log:
                         log.UserId = currentUserId.Value;
+                        break;
+                    case TaskArea area:
+                        area.UserId = currentUserId.Value;
                         break;
                     case Session session when session.UserId == Guid.Empty:
                         session.UserId = currentUserId.Value;
