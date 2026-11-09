@@ -259,7 +259,14 @@ export function SpeakerTranscript({
   autoScroll?: boolean;
 }) {
   const multiSpeaker = speakerOrder.length > 1;
-  const blocks = useMemo(() => buildBlocks(segments, multiSpeaker), [segments, multiSpeaker]);
+  // While editing, never merge: each original segment must stay its own block, so
+  // reassigning speaker on one sentence can't silently drag along the neighboring
+  // sentences a merged paragraph would have bundled it with. Read-only view still
+  // merges consecutive same-speaker segments into one paragraph for readability.
+  const blocks = useMemo(
+    () => buildBlocks(segments, multiSpeaker && !editing),
+    [segments, multiSpeaker, editing],
+  );
   const [editingFrom, setEditingFrom] = useState<number | null>(null);
   const [draft, setDraft] = useState('');
   const activeRef = useRef<HTMLElement | null>(null);

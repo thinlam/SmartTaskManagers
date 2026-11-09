@@ -221,3 +221,23 @@ lỗi nghiêm trọng — danh sách người nói trong popup "Đoạn này do 
   `package.json` để thêm vào mà không phải tự dựng cả bộ khung test mới — nêu rõ, không giả kết quả test.
   **Chưa chạy thật qua trình duyệt** (chưa có backend+Postgres local ở máy này để thử add/assign/rename/
   delete/đóng-mở-lại-app bằng tay như brief yêu cầu). Chưa chạy migration `005` trên dữ liệu Railway thật.
+
+### Việc 3b — Không gộp đoạn khi đang gán người nói (phát sinh sau khi dùng thật, 2026-11-09)
+
+- **Vấn đề người dùng phát hiện khi dùng thật:** ở chế độ "Phân người nói" bật "Chỉnh sửa", các câu liên
+  tiếp cùng 1 người nói bị gộp thành 1 đoạn to để hiển thị (`buildBlocks(segments, merge=true)`). Khi bản
+  ghi có nhiều người nói và người dùng muốn gán lại đúng từng câu, gán người khác cho 1 câu bên trong đoạn
+  gộp đó sẽ gán nhầm **toàn bộ đoạn gộp** (nhiều câu gốc cùng lúc), vì `assignBlockSpeaker` áp dụng theo
+  `block.from..to` của cả đoạn đã gộp — không phải theo từng câu gốc. Người dùng mô tả đúng rủi ro này và
+  yêu cầu hiển thị từng câu riêng (theo đúng mốc giờ gốc) khi đang chỉnh sửa, thay vì gộp đoạn.
+- **Cách sửa:** `TranscriptView.tsx`'s `SpeakerTranscript` — chỉ gộp đoạn (`buildBlocks(segments, true)`)
+  khi **không** ở chế độ chỉnh sửa (đọc để dễ nhìn); khi đang chỉnh sửa (`editing === true`), luôn dùng
+  `buildBlocks(segments, false)` — mỗi câu gốc là 1 block riêng, có mốc giờ/nút gán người nói/nút sửa chữ
+  riêng — khớp đúng ảnh ví dụ người dùng đưa. Không đổi hành vi xuất file (`exportDoc` ở
+  `RecordingDetailPage.tsx` vẫn gộp đoạn để đọc cho mượt, không liên quan tới gán người nói).
+- Đây là sửa lỗi nhỏ, không đổi model/migration, không cần file kế hoạch riêng theo quy tắc CLAUDE.md —
+  ghi bổ sung vào đây vì cùng chủ đề gán người nói của Việc 3.
+- Kiểm chứng thật: frontend `npm run typecheck` và `npm run build` sạch; `npx eslint` sạch (trừ lỗi cấu
+  hình ESLint có từ trước, đã xác minh không đổi); `npx prettier --write` đã chạy. **Chưa chạy thật qua
+  trình duyệt để xác nhận hành vi hiển thị đúng như ảnh người dùng đưa** (chưa có backend+Postgres local ở
+  máy này).
