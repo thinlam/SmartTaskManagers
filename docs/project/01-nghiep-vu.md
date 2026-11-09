@@ -1,6 +1,7 @@
 # 1. Nghiệp vụ từng ứng dụng
 
-> Cập nhật: 2026-11-09 (thêm xóa/gộp/chuyển đoạn + mốc thời gian theo từ cho VoiceScribe). Nội dung dựa trên mã nguồn trong repo (backend, `packages/*`, `apps/*`) tại
+> Cập nhật: 2026-11-09 (thêm xóa/gộp/chuyển đoạn + mốc thời gian theo từ, lọc câu hallucination của Whisper
+> cho VoiceScribe). Nội dung dựa trên mã nguồn trong repo (backend, `packages/*`, `apps/*`) tại
 > thời điểm này. Chỗ nào chưa kiểm chứng trên máy thật được ghi rõ.
 
 Repo `SmartTaskManagers` chứa **4 ứng dụng** dùng chung một kho mã:
@@ -133,6 +134,9 @@ media, Báo cáo (xuất CSV, hộp thoại chọn nơi lưu), Thành viên, Cà
    webm; dung lượng tối đa theo cấu hình, mặc định 100 MB). Có thể đặt tiêu đề và thư mục.
 3. Server cắt file dài thành đoạn bằng ffmpeg, gửi lần lượt lên Hugging Face để chép lời, rồi ghép lại.
    Nếu bật dịch vụ tách người nói (sidecar Python) thì gán nhãn người nói. Xử lý chạy nền, có thanh tiến độ.
+   Các câu Whisper "bịa" quen thuộc khi gặp đoạn im lặng/nhiễu (ví dụ "Cảm ơn các bạn đã theo dõi", "hãy
+   đăng ký kênh"...) bị lọc bỏ khỏi kết quả theo danh sách biết trước — xem
+   `docs/project/plans/2026-11-09-voicescribe-loc-hallucination-whisper.md`.
 4. **Thư viện:** tìm kiếm theo tiêu đề/nội dung, lọc theo thư mục, xem chi tiết, xóa.
 5. **Chi tiết:** xem chép lời theo đoạn hoặc theo người nói, đổi tên người nói, ghi chú, **xuất Word,
    TXT, SRT**. Trên Android, xuất file mở bảng chia sẻ của hệ thống.

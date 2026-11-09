@@ -71,6 +71,42 @@ function interpolateWords(text: string, start: number, end: number): TranscriptW
   });
 }
 
+/**
+ * Known Whisper hallucination phrases — stock sentences the model "makes up"
+ * from its training data (YouTube subtitles) when a chunk is mostly silence
+ * or noise instead of returning empty text. Pre-normalized (lowercase, no
+ * trailing punctuation). Add more here as new cases are found.
+ */
+const KNOWN_HALLUCINATIONS = [
+  'cảm ơn các bạn đã theo dõi',
+  'cảm ơn các bạn đã xem video',
+  'cảm ơn đã xem video',
+  'cảm ơn mọi người đã theo dõi',
+  'hãy đăng ký kênh',
+  'nhớ like và subscribe',
+  'đừng quên đăng ký kênh',
+  'phụ đề được thực hiện bởi',
+  'thanks for watching',
+  'thank you for watching',
+  'please subscribe',
+  "don't forget to subscribe",
+  'subscribe to my channel',
+];
+
+function normalizeForHallucinationCheck(text: string): string {
+  return text
+    .toLowerCase()
+    .trim()
+    .replace(/[.!?…]+$/, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function isHallucinatedPhrase(text: string): boolean {
+  const normalized = normalizeForHallucinationCheck(text);
+  return KNOWN_HALLUCINATIONS.includes(normalized);
+}
+
 const MODEL = 'openai/whisper-large-v3';
 const MAX_RETRIES = 4;
 const RETRY_BASE_DELAY_MS = 2000;
@@ -215,7 +251,17 @@ export async function transcribeAudio(options: TranscribeOptions): Promise<Trans
         });
       }
 
-      return { text: output.text, segments, processingTimeMs };
+      const filteredSegments = segments.filter((s) => !isHallucinatedPhrase(s.text));
+      const filteredText = filteredSegments.map((s) => s.text).join(' ').trim();
+      if (filteredSegments.length === 0 && segments.length > 0) {
+        // The whole chunk was hallucinated text (e.g. a silent/noisy tail) — treat it
+        // the same as a chunk with no speech at all.
+        if (options.allowEmpty) return { text: '', segments: [], processingTimeMs };
+        throw new TranscriptionError(
+          'Kết quả nhận dạng trống — không phát hiện lời nói trong file âm thanh.',
+        );
+      }
+      return { text: filteredText, segments: filteredSegments, processingTimeMs };
     } catch (err) {
       lastError = err;
       if (err instanceof TranscriptionError || err instanceof CancelledError) throw err;
