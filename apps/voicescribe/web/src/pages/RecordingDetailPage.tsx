@@ -470,6 +470,24 @@ export function RecordingDetailPage({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [processing, id]);
 
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && lastDeleted) {
+        e.preventDefault();
+        undoDelete();
+      }
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lastDeleted]);
+
+  useEffect(() => {
+    return () => {
+      if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+    };
+  }, []);
+
   // `speakerRoster` is the source of truth (persisted, independent of segments — see
   // migration 005). The fallback only matters for a recording that somehow has an
   // empty roster (shouldn't happen post-migration, but segments are the last resort
@@ -703,24 +721,6 @@ export function RecordingDetailPage({
     void save({ segments: lastDeleted.segments });
     setLastDeleted(null);
   }
-
-  useEffect(() => {
-    function onKeyDown(e: KeyboardEvent) {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && lastDeleted) {
-        e.preventDefault();
-        undoDelete();
-      }
-    }
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [lastDeleted]);
-
-  useEffect(() => {
-    return () => {
-      if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
-    };
-  }, []);
 
   const paragraph = paragraphOf(rec);
   const done = rec.status === 'done';

@@ -1,6 +1,6 @@
 # 4. Nhật ký những gì đã làm
 
-> Cập nhật: 2026-11-09 (sửa màn hình trắng VoiceScribe desktop 0.2.10, Hub trỏ sang 0.2.10). Ngày lấy từ lịch sử Git
+> Cập nhật: 2026-11-09 (sửa lỗi hook thật gây trắng màn hình VoiceScribe desktop 0.2.11). Ngày lấy từ lịch sử Git
 > (`git log`), **247 commit** từ 2026-09-15 đến 2026-11-01.
 > Nhịp làm việc: tháng 9/2026 có 147 commit, tháng 10 có 89, 11 ngày đầu tháng 11 có 11.
 > Đây là bản tóm tắt theo mốc, không liệt kê từng commit. Muốn xem chi tiết dùng
@@ -118,6 +118,8 @@ chứng thêm: `npm run typecheck --workspace=apps/hub` và `npm run build --wor
 
 | 2026-11-09 | **Hub trỏ VoiceScribe sang release 0.2.10:** sau khi tạo tag `voicescribe-v0.2.10` + GitHub Release (asset đã đối chiếu size qua `gh release view --json assets` khớp 100%, test tải `curl -sI -L` trả về 302→200 OK), cập nhật `apps-manifest.json` và `apps/hub/src/data/apps.ts` sang version `0.2.10`, URL và SHA-256 mới cho cả `.exe` và `.msi`. Đã kiểm chứng: `npm run typecheck --workspace=apps/hub` và `npm run build --workspace=apps/hub` sạch. |
 
+| 2026-11-09 | **VoiceScribe desktop 0.2.10 → 0.2.11 — sửa lỗi hook thật gây trắng màn hình:** bản 0.2.10 (field `words`) vẫn bị trắng khi mở bản ghi — người dùng gửi ảnh Console thật (nhờ DevTools đã bật ở 0.2.10) cho thấy lỗi React thật: `Uncaught Error: Minified React error #310` (số hook gọi ra khác nhau giữa 2 lần render), xảy ra trong `useEffect`. Nguyên nhân thật: trong `RecordingDetailPage.tsx`, 2 `useEffect` của tính năng hoàn tác xóa đoạn (Việc A — Ctrl+Z và dọn timer) bị đặt **sau** `if (!rec) return ...` (early return khi đang tải/lỗi) — vi phạm Rules of Hooks: khi `rec` chưa có, 2 hook đó không được gọi; khi `rec` có rồi, chúng được gọi thêm → React phát hiện lệch số hook và crash toàn bộ cây, màn hình trắng không báo lỗi gì trên UI (vì bản release 0.2.9 tắt DevTools). Bản sửa `words.ts`/`rec?.words` ở 0.2.10 là đúng nhưng không phải nguyên nhân chính của ca này. Sửa: dời 2 `useEffect` đó lên **trước** mọi early-return (ngay sau effect polling `processing`), xóa bản cũ phía dưới. Build thật: `voicescribe_0.2.11_x64-setup.exe` (2382378 byte, SHA-256 `b2351bce8d768cc7c0e3a5f3c84db8b4359dfe4c9924392e6f3932585d80754f`) và `voicescribe_0.2.11_x64_en-US.msi` (3502080 byte, SHA-256 `97187a034f6bcbf9e3c289fa5c58c84fbe798fe60a3d8bb5c26ec784a0b2f321`). Đã kiểm chứng: `tsc`/`vite build --mode desktop` sạch, `cargo` release build sạch, 2 bundle tạo ra thật. **Chưa kiểm chứng:** người dùng cài lại bản 0.2.11 và xác nhận hết trắng màn hình. |
+
 ## Phiên bản đã phát hành lên Hub
 
 | App                | Phiên bản             | Ngày                                                                     |
@@ -136,7 +138,8 @@ chứng thêm: `npm run typecheck --workspace=apps/hub` và `npm run build --wor
 | VoiceScribe        | 0.2.7                 | 2026-11-09                                                               |
 | VoiceScribe        | 0.2.8                 | 2026-11-09                                                               |
 | VoiceScribe        | 0.2.9                 | 2026-11-09                                                               |
-| VoiceScribe        | **0.2.10**            | 2026-11-09                                                               |
+| VoiceScribe        | 0.2.10                | 2026-11-09                                                               |
+| VoiceScribe        | **0.2.11**            | 2026-11-09                                                               |
 | Content Manager    | 0.1.1, 0.1.2, 0.1.3   | 2026-10-27                                                               |
 | Hub                | 0.1.1 (bump trong mã) | 2026-10-24 (chưa có Release)                                             |
 

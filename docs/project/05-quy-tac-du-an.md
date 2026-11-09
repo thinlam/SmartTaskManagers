@@ -1,7 +1,7 @@
 # 5. Quy tắc của dự án
 
 > Cập nhật: 2026-11-09 (thêm B5bis: frontend phải chịu được field API mới chưa có trên backend chưa deploy
-> kịp). Gom từ cấu hình trong repo (ESLint, Prettier, `.gitignore`, lịch sử commit) và
+> kịp; thêm B5ter: hook React phải gọi trước mọi early-return). Gom từ cấu hình trong repo (ESLint, Prettier, `.gitignore`, lịch sử commit) và
 > từ các thỏa thuận làm việc giữa chủ dự án và trợ lý AI. Mục nào là thỏa thuận (không có công cụ ép) được ghi rõ.
 
 ## A. Quy tắc bắt buộc, có công cụ kiểm tra
@@ -70,6 +70,17 @@
   kiểm tra `undefined` khắp nơi. (Bài học 2026-11-09, VoiceScribe Việc B — field `words` chưa có trên
   backend Railway khiến app trắng màn hình, xem tài liệu 04 và
   `plans/2026-11-09-voicescribe-xoa-doan-moc-tung-tu.md`.)
+
+### B5ter. Mọi hook React phải gọi trước early-return
+
+- Trong component có `if (!x) return ...` (ví dụ chờ dữ liệu tải xong, hoặc báo lỗi), **tất cả**
+  `useEffect`/`useMemo`/`useCallback`/`useState` phải được khai báo **phía trên** mọi `return` sớm đó —
+  không được thêm hook mới ở phần code nằm sau early-return, dù code đó "chỉ chạy khi có dữ liệu". Vi phạm
+  Rules of Hooks kiểu này không báo lỗi lúc code/typecheck, chỉ crash lúc chạy thật (React error #310, "Rendered
+  more hooks than during the previous render") — và nếu app release đã tắt DevTools thì **trắng màn hình hoàn
+  toàn không có thông báo gì**. Khi thêm hook mới vào một component đã có early-return, luôn kiểm tra lại vị
+  trí đặt hook trước khi coi là xong. (Bài học 2026-11-09, VoiceScribe desktop 0.2.10 → 0.2.11 — 2 `useEffect`
+  của tính năng hoàn tác xóa đoạn bị đặt sau `if (!rec) return`, xem tài liệu 04.)
 
 ### B5. Test (bắt đầu từ 2026-11-07)
 

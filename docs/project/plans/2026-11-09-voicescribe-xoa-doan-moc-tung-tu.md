@@ -239,6 +239,18 @@ frontend tách rời nhau (frontend đóng gói sẵn trong installer, backend c
 mới ở response phải coi là **có thể không tồn tại**, không được giả định luôn có — xem thêm
 `05-quy-tac-du-an.md`.
 
+**Cập nhật quan trọng:** sau khi phát hành 0.2.10 (có kèm fix `recWords` ở trên), người dùng báo **vẫn
+trắng màn hình** khi bấm vào một bản ghi trong thư viện. Ảnh Console thật (nhờ DevTools đã bật) cho thấy
+lỗi khác hẳn: `Uncaught Error: Minified React error #310` — "Rendered more hooks than during the previous
+render". Nguyên nhân thật: trong `RecordingDetailPage.tsx`, 2 `useEffect` của tính năng hoàn tác xóa đoạn
+(Việc A — bắt phím Ctrl+Z và dọn timer khi unmount) bị đặt **sau** dòng `if (!rec) return ...` (early
+return lúc đang tải/lỗi) — vi phạm Rules of Hooks: số hook gọi ra khác nhau giữa lần render "chưa có rec"
+và "đã có rec" khiến React crash toàn bộ cây ngay khi `rec` vừa tải xong. Đây mới là nguyên nhân chính của
+ca trắng màn hình người dùng gặp phải (fix field `words` ở trên là đúng nhưng không đủ). Sửa: dời 2
+`useEffect` đó lên **trước** mọi early-return. Bump 0.2.10 → **0.2.11**, build thật, phát hành. Bài học
+mới thêm vào `05-quy-tac-du-an.md` (mục B5ter): hook React phải luôn gọi trước mọi early-return trong
+component, kể cả khi hook đó "chỉ liên quan tới tính năng mới thêm".
+
 ### Việc B — (tiếp) chi tiết đã làm — Mốc thời gian đến từng từ (xong, theo đúng Hướng đi đã chốt)
 
 - **Backend:** migration `006_recording_words` thêm cột `recordings.words`. `types/diarization.ts`
