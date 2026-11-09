@@ -130,7 +130,19 @@ với danh sách câu bịa thường gặp (VN + EN); nếu cả chunk chỉ c�
 lỗi như hành vi cũ. Xem plan `docs/project/plans/2026-11-09-voicescribe-loc-hallucination-whisper.md`. Đã
 kiểm chứng: `npm run typecheck --workspace=voicescribe` và `npm run build --workspace=@voicescribe/web`
 sạch. **Chưa kiểm chứng:** chưa chạy thử với file âm thanh thật qua API, chưa deploy lên Railway (việc của
-chủ dự án). Chưa commit. |
+chủ dự án). |
+
+| 2026-11-09 | **VoiceScribe desktop 0.2.11 → 0.2.12 — build thật (theo rule "build"):** bump version, build
+web (`npm run build:voicescribe-web`) rồi `npm run build:vs-tauri`. Kết quả:
+`voicescribe_0.2.12_x64-setup.exe` (2383568 byte, SHA-256
+`358a020bebc3a14ff03ec19d7730e4c77b70bbd74edd63d4f4025a9fb9e71940`) và
+`voicescribe_0.2.12_x64_en-US.msi` (3502080 byte, SHA-256
+`7a6ef5267360fdb37e92e3db94771a869b364279d104607ea98ff18cacdfc3ff`). Đã kiểm chứng: `tsc`/`vite build
+--mode desktop` sạch, `cargo` release build sạch, 2 bundle tạo ra thật. Lưu ý: bản desktop này chỉ đóng
+gói lại UI mới nhất, **không thay đổi hành vi lọc hallucination** của backend (backend chạy trên Railway
+riêng, chưa deploy ở thời điểm build này). Đã tạo tag `voicescribe-v0.2.12` + GitHub Release, đối chiếu size asset
+khớp 100%, cập nhật Hub (`apps-manifest.json` + `apps/hub/src/data/apps.ts`) sang 0.2.12 — kiểm chứng
+`typecheck`/`build` hub sạch. |
 
 ## Phiên bản đã phát hành lên Hub
 
@@ -151,7 +163,8 @@ chủ dự án). Chưa commit. |
 | VoiceScribe        | 0.2.8                 | 2026-11-09                                                               |
 | VoiceScribe        | 0.2.9                 | 2026-11-09                                                               |
 | VoiceScribe        | 0.2.10                | 2026-11-09                                                               |
-| VoiceScribe        | **0.2.11**            | 2026-11-09                                                               |
+| VoiceScribe        | 0.2.11                | 2026-11-09                                                               |
+| VoiceScribe        | **0.2.12**            | 2026-11-09                                                               |
 | Content Manager    | 0.1.1, 0.1.2, 0.1.3   | 2026-10-27                                                               |
 | Hub                | 0.1.1 (bump trong mã) | 2026-10-24 (chưa có Release)                                             |
 
