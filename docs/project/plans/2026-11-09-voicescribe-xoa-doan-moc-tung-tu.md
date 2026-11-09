@@ -226,7 +226,20 @@ interface Word {
   trường thật trước khi coi Việc A là ổn định hoàn toàn.
 - Chưa commit (theo quy tắc "chỉ commit khi người dùng yêu cầu").
 
-### Việc B — Mốc thời gian đến từng từ (xong, theo đúng Hướng đi đã chốt)
+### Việc B — sự cố phát sinh sau khi dùng thật: màn hình trắng
+
+Sau khi phát hành 0.2.9, người dùng báo app mở lên trắng màn hình. Nguyên nhân xác nhận qua Console
+(bật DevTools ở bản chẩn đoán 0.2.10): backend thật trên Railway **chưa deploy** code + migration `006`
+của Việc B (deploy Railway là việc của chủ dự án, không tự deploy) — API trả về bản ghi không có field
+`words`, trong khi code Việc B giả định `rec.words` luôn là mảng và gọi `.map()` thẳng trên đó → crash
+ngay khi mở trang chi tiết, React không render được gì, không có thông báo lỗi trên UI (vì DevTools bản
+release bị tắt theo mặc định của Tauri). Đã sửa bằng `recWords = rec?.words ?? []` ở
+`RecordingDetailPage.tsx` + chốt chặn trong `lib/words.ts`'s `wordsOf`. Bài học: khi deploy backend và
+frontend tách rời nhau (frontend đóng gói sẵn trong installer, backend có khi chưa kịp deploy), mọi field
+mới ở response phải coi là **có thể không tồn tại**, không được giả định luôn có — xem thêm
+`05-quy-tac-du-an.md`.
+
+### Việc B — (tiếp) chi tiết đã làm — Mốc thời gian đến từng từ (xong, theo đúng Hướng đi đã chốt)
 
 - **Backend:** migration `006_recording_words` thêm cột `recordings.words`. `types/diarization.ts`
   thêm `Word` + `LabeledSegment.wordIds?`. `services/transcription.ts`: đổi sang gửi

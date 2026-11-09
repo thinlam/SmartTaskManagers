@@ -1,7 +1,7 @@
 # 5. Quy tắc của dự án
 
-> Cập nhật: 2026-11-08 (sửa rule commit→push luôn, phân biệt "build" vs "build lại", rule chọn bản khi
-> xung đột push/pull giữa 2 máy). Gom từ cấu hình trong repo (ESLint, Prettier, `.gitignore`, lịch sử commit) và
+> Cập nhật: 2026-11-09 (thêm B5bis: frontend phải chịu được field API mới chưa có trên backend chưa deploy
+> kịp). Gom từ cấu hình trong repo (ESLint, Prettier, `.gitignore`, lịch sử commit) và
 > từ các thỏa thuận làm việc giữa chủ dự án và trợ lý AI. Mục nào là thỏa thuận (không có công cụ ép) được ghi rõ.
 
 ## A. Quy tắc bắt buộc, có công cụ kiểm tra
@@ -58,6 +58,18 @@
 - Địa chỉ API công khai (`https://...up.railway.app`) **không** phải bí mật và được phép nằm trong
   `codemagic.yaml` và các `.env.production` được commit.
 - Mật khẩu người dùng: tối thiểu 8 ký tự, có chữ hoa, chữ thường và số; luôn có ô nhập lại khi đăng ký.
+
+### B5bis. Frontend chịu được backend chưa deploy kịp
+
+- Frontend (đặc biệt app desktop, đóng gói sẵn trong installer) có thể chạy trước khi backend trên Railway
+  được deploy field/migration mới tương ứng — deploy Railway là việc của chủ dự án, không tự động theo mỗi
+  lần build frontend. Vì vậy **field mới thêm vào response API phải luôn coi là có thể không tồn tại**
+  (`undefined`) ở phía frontend, không được giả định luôn có rồi gọi thẳng `.map()`/`.length` lên nó — nếu
+  không, cả trang sẽ trắng màn hình (React crash khi render, không có thông báo lỗi) ngay khi gặp backend
+  cũ. Luôn có giá trị mặc định (`rec.field ?? []`) ngay tại nơi dữ liệu đi vào từ API, không rải rác việc
+  kiểm tra `undefined` khắp nơi. (Bài học 2026-11-09, VoiceScribe Việc B — field `words` chưa có trên
+  backend Railway khiến app trắng màn hình, xem tài liệu 04 và
+  `plans/2026-11-09-voicescribe-xoa-doan-moc-tung-tu.md`.)
 
 ### B5. Test (bắt đầu từ 2026-11-07)
 
