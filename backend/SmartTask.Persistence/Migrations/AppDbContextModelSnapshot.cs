@@ -340,6 +340,43 @@ namespace SmartTask.Persistence.Migrations
                     b.ToTable("Tags", (string)null);
                 });
 
+            modelBuilder.Entity("SmartTask.Domain.Tasks.TaskActivityLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("char(36)");
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("varchar(50)");
+
+                    b.Property<DateTimeOffset>("At")
+                        .HasColumnType("datetime(6)");
+
+                    b.Property<string>("NewValue")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<string>("OldValue")
+                        .HasMaxLength(100)
+                        .HasColumnType("varchar(100)");
+
+                    b.Property<Guid>("TaskId")
+                        .HasColumnType("char(36)");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("char(36)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TaskId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("TaskActivityLogs", (string)null);
+                });
+
             modelBuilder.Entity("SmartTask.Domain.Tasks.TaskItem", b =>
                 {
                     b.Property<Guid>("Id")
@@ -435,6 +472,9 @@ namespace SmartTask.Persistence.Migrations
                     b.Property<int>("Progress")
                         .HasColumnType("int");
 
+                    b.Property<int?>("ProgressBeforeComplete")
+                        .HasColumnType("int");
+
                     b.Property<Guid?>("ProjectId")
                         .HasColumnType("char(36)");
 
@@ -475,6 +515,7 @@ namespace SmartTask.Persistence.Migrations
                         .HasColumnType("char(36)");
 
                     b.Property<int>("Version")
+                        .IsConcurrencyToken()
                         .HasColumnType("int");
 
                     b.HasKey("Id");
@@ -622,6 +663,17 @@ namespace SmartTask.Persistence.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("SmartTask.Domain.Tasks.TaskActivityLog", b =>
+                {
+                    b.HasOne("SmartTask.Domain.Tasks.TaskItem", "Task")
+                        .WithMany()
+                        .HasForeignKey("TaskId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Task");
                 });
 
             modelBuilder.Entity("SmartTask.Domain.Tasks.TaskItem", b =>

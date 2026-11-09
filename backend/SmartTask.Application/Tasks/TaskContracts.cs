@@ -42,7 +42,9 @@ public sealed record TaskResponse(
     DateTimeOffset? ReminderAt,
     string? AttachmentUrl,
     /// <summary>Non-blocking — true when another open (non-Completed) task already has this exact title. Client renders a warning banner, never blocks save.</summary>
-    bool HasOpenDuplicateName
+    bool HasOpenDuplicateName,
+    /// <summary>Optimistic-concurrency token — opaque to the client, not currently round-tripped back on write (EF detects staleness from the tracked entity itself). Exposed for a future "edited elsewhere" indicator.</summary>
+    int Version
 );
 
 public sealed class CreateTaskRequest
@@ -133,4 +135,7 @@ public sealed class UpdateTaskRequest
 
     [MaxLength(2000)]
     public string? AttachmentUrl { get; init; }
+
+    /// <summary>Set true to retry a Status=Completed update that came back 409 because this task has incomplete subtasks — also completes those subtasks.</summary>
+    public bool ConfirmCompleteSubtasks { get; init; }
 }

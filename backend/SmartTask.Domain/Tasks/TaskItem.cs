@@ -55,6 +55,9 @@ public sealed class TaskItem : SyncableEntity
 
     /// <summary>0–100.</summary>
     public int Progress { get; set; }
+
+    /// <summary>Progress value saved right before CompletedDate was set — restored when the task is reopened from Completed. Null if never completed.</summary>
+    public int? ProgressBeforeComplete { get; set; }
     public int? EstimateMinutes { get; set; }
     public EnergyLevel? Energy { get; set; }
     public TaskContextType? Context { get; set; }

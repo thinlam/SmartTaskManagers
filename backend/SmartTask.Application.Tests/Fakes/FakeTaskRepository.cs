@@ -42,6 +42,15 @@ public sealed class FakeTaskRepository : ITaskRepository
     public Task<int> CountAsync(CancellationToken cancellationToken = default) =>
         Task.FromResult(items.Count(t => !t.IsDeleted));
 
+    public Task<List<TaskItem>> GetSubtasksAsync(
+        Guid parentId,
+        CancellationToken cancellationToken = default
+    ) => Task.FromResult(items.Where(t => t.ParentTaskId == parentId && !t.IsDeleted).ToList());
+
+    public List<TaskActivityLog> ActivityLogs { get; } = [];
+
+    public void AddActivityLog(TaskActivityLog log) => ActivityLogs.Add(log);
+
     public Task<TaskItem?> GetByExternalIdAsync(
         string externalId,
         CancellationToken cancellationToken = default

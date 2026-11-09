@@ -135,7 +135,8 @@ public sealed class TaskService(
         }
         ThrowIfInvalid(errors);
 
-        var statusChanged = request.Status is not null && request.Status.Value != task.Status;
+        var previousStatus = task.Status;
+        var previousProgress = task.Progress;
 
         task.Name = name ?? task.Name;
         task.Description = request.Description ?? task.Description;
@@ -147,11 +148,7 @@ public sealed class TaskService(
             task.Tags = await tagRepository.GetOrCreateManyAsync(request.Tags, cancellationToken);
         }
         task.Priority = request.Priority ?? task.Priority;
-        task.Status = request.Status ?? task.Status;
-        task.StartDate = request.StartDate ?? task.StartDate;
-        task.DueDate = request.DueDate ?? task.DueDate;
         task.DueTime = request.DueTime ?? task.DueTime;
-        task.Progress = request.Progress ?? task.Progress;
         task.EstimateMinutes = request.EstimateMinutes ?? task.EstimateMinutes;
         task.Energy = request.Energy ?? task.Energy;
         task.Context = request.Context ?? task.Context;
@@ -162,13 +159,75 @@ public sealed class TaskService(
         task.ParentTaskId = request.ParentTaskId ?? task.ParentTaskId;
         task.ReminderAt = request.ReminderAt ?? task.ReminderAt;
         task.AttachmentUrl = request.AttachmentUrl ?? task.AttachmentUrl;
+        task.StartDate = request.StartDate ?? task.StartDate;
+        task.DueDate = request.DueDate ?? task.DueDate;
 
         var now = dateTimeProvider.UtcNow;
+
+        // Progress/Status đồng bộ 2 chiều (quy tắc nghiệp vụ, 2026-11-09):
+        // Progress=100 -> Hoàn thành; Progress>0 từ Hộp thư đến/Cần làm -> Đang thực hiện;
+        // Progress rớt dưới 100 khi đang Hoàn thành -> tự mở lại.
+        var targetStatus = request.Status ?? previousStatus;
+        if (request.Status is null && request.Progress is not null)
+        {
+            if (request.Progress.Value == 100)
+            {
+                targetStatus = TaskStatusType.Completed;
+            }
+            else if (previousStatus == TaskStatusType.Completed)
+            {
+                targetStatus = TaskStatusType.InProgress;
+            }
+            else if (
+                request.Progress.Value > 0
+                && (previousStatus == TaskStatusType.Inbox || previousStatus == TaskStatusType.ToDo)
+            )
+            {
+                targetStatus = TaskStatusType.InProgress;
+            }
+        }
+
+        var completingNow = targetStatus == TaskStatusType.Completed && previousStatus != TaskStatusType.Completed;
+        var reopeningNow = targetStatus != TaskStatusType.Completed && previousStatus == TaskStatusType.Completed;
+
+        if (completingNow)
+        {
+            await CompleteCoreAsync(task, request.ConfirmCompleteSubtasks, previousProgress, now, cancellationToken);
+        }
+        else if (reopeningNow)
+        {
+            task.Status = targetStatus;
+            task.Progress = request.Progress ?? task.ProgressBeforeComplete ?? 0;
+            task.ProgressBeforeComplete = null;
+            task.CompletedDate = null;
+        }
+        else
+        {
+            task.Status = targetStatus;
+            task.Progress = request.Progress ?? task.Progress;
+        }
+
+        if (targetStatus == TaskStatusType.InProgress && task.StartDate is null)
+        {
+            task.StartDate = DateOnly.FromDateTime(now.Date);
+        }
+
         task.UpdatedAt = now;
-        if (statusChanged)
+        if (targetStatus != previousStatus)
         {
             task.LastStatusChangedAt = now;
+            taskRepository.AddActivityLog(
+                new TaskActivityLog
+                {
+                    TaskId = task.Id,
+                    Action = "status_changed",
+                    OldValue = previousStatus.ToString(),
+                    NewValue = targetStatus.ToString(),
+                    At = now,
+                }
+            );
         }
+        task.Version++;
 
         await ApplySmartFieldsAsync(task, cancellationToken);
 
@@ -177,7 +236,64 @@ public sealed class TaskService(
         return await ToResponseAsync(task, cancellationToken);
     }
 
-    public async Task<bool> DeleteAsync(Guid id, CancellationToken cancellationToken = default)
+    /// <summary>
+    /// Shared completion side effects for both UpdateAsync (Status/Progress driving a transition
+    /// into Completed) and CompleteAsync (the dedicated "quick complete" endpoint): records
+    /// ProgressBeforeComplete for later reopen, cancels an unfired reminder, completes incomplete
+    /// subtasks when confirmed (or throws TaskActionRequiresConfirmationException otherwise), and
+    /// creates the next occurrence for a recurring task. Does not save — callers call
+    /// SaveChangesAsync once after this returns.
+    /// </summary>
+    private async Task CompleteCoreAsync(
+        TaskItem task,
+        bool confirmCompleteSubtasks,
+        int progressBeforeComplete,
+        DateTimeOffset now,
+        CancellationToken cancellationToken
+    )
+    {
+        var subtasks = await taskRepository.GetSubtasksAsync(task.Id, cancellationToken);
+        var incomplete = subtasks.Where(s => s.Status != TaskStatusType.Completed).ToList();
+        if (incomplete.Count > 0 && !confirmCompleteSubtasks)
+        {
+            throw new TaskActionRequiresConfirmationException(
+                "complete",
+                $"Công việc này còn {incomplete.Count} việc con chưa hoàn thành. Hoàn thành luôn các việc con?",
+                incomplete.Select(s => s.Id).ToList()
+            );
+        }
+
+        task.Status = TaskStatusType.Completed;
+        task.ProgressBeforeComplete = progressBeforeComplete;
+        task.Progress = 100;
+        task.CompletedDate = now;
+        if (task.ReminderAt is not null && task.ReminderAt > now)
+        {
+            task.ReminderAt = null;
+        }
+
+        foreach (var subtask in incomplete)
+        {
+            subtask.ProgressBeforeComplete = subtask.Progress;
+            subtask.Status = TaskStatusType.Completed;
+            subtask.Progress = 100;
+            subtask.CompletedDate = now;
+            subtask.UpdatedAt = now;
+            subtask.LastStatusChangedAt = now;
+            subtask.Version++;
+        }
+
+        if (task.RecurringType != RecurringTypeOption.None)
+        {
+            await CreateNextOccurrenceAsync(task, now, cancellationToken);
+        }
+    }
+
+    public async Task<bool> DeleteAsync(
+        Guid id,
+        bool? cascadeSubtasks = null,
+        CancellationToken cancellationToken = default
+    )
     {
         var task = await taskRepository.GetByIdAsync(id, cancellationToken);
         if (task is null)
@@ -185,8 +301,35 @@ public sealed class TaskService(
             return false;
         }
 
+        var subtasks = await taskRepository.GetSubtasksAsync(id, cancellationToken);
+        if (subtasks.Count > 0 && cascadeSubtasks is null)
+        {
+            throw new TaskActionRequiresConfirmationException(
+                "delete",
+                $"Công việc này có {subtasks.Count} việc con. Xóa luôn việc con hay chuyển lên cấp trên?",
+                subtasks.Select(s => s.Id).ToList()
+            );
+        }
+
+        var now = dateTimeProvider.UtcNow;
+        foreach (var subtask in subtasks)
+        {
+            if (cascadeSubtasks == true)
+            {
+                subtask.IsDeleted = true;
+                subtask.DeletedAt = now;
+            }
+            else
+            {
+                subtask.ParentTaskId = null;
+            }
+            subtask.UpdatedAt = now;
+            subtask.Version++;
+        }
+
         task.IsDeleted = true;
-        task.DeletedAt = dateTimeProvider.UtcNow;
+        task.DeletedAt = now;
+        task.Version++;
         await taskRepository.SaveChangesAsync(cancellationToken);
         return true;
     }
@@ -202,6 +345,7 @@ public sealed class TaskService(
         task.IsDeleted = false;
         task.DeletedAt = null;
         task.UpdatedAt = dateTimeProvider.UtcNow;
+        task.Version++;
         await taskRepository.SaveChangesAsync(cancellationToken);
 
         return await ToResponseAsync(task, cancellationToken);
@@ -209,6 +353,7 @@ public sealed class TaskService(
 
     public async Task<TaskResponse?> CompleteAsync(
         Guid id,
+        bool confirmCompleteSubtasks = false,
         CancellationToken cancellationToken = default
     )
     {
@@ -218,19 +363,31 @@ public sealed class TaskService(
             return null;
         }
 
+        if (task.Status == TaskStatusType.Completed)
+        {
+            return await ToResponseAsync(task, cancellationToken);
+        }
+
         var now = dateTimeProvider.UtcNow;
-        task.Status = TaskStatusType.Completed;
-        task.Progress = 100;
-        task.CompletedDate = now;
+        var previousStatus = task.Status;
+        var previousProgress = task.Progress;
+        await CompleteCoreAsync(task, confirmCompleteSubtasks, previousProgress, now, cancellationToken);
+
         task.UpdatedAt = now;
         task.LastStatusChangedAt = now;
+        task.Version++;
+        taskRepository.AddActivityLog(
+            new TaskActivityLog
+            {
+                TaskId = task.Id,
+                Action = "status_changed",
+                OldValue = previousStatus.ToString(),
+                NewValue = TaskStatusType.Completed.ToString(),
+                At = now,
+            }
+        );
 
         await ApplySmartFieldsAsync(task, cancellationToken);
-
-        if (task.RecurringType != RecurringTypeOption.None)
-        {
-            await CreateNextOccurrenceAsync(task, now, cancellationToken);
-        }
 
         await taskRepository.SaveChangesAsync(cancellationToken);
 
@@ -483,7 +640,8 @@ public sealed class TaskService(
             task.ParentTaskId,
             task.ReminderAt,
             task.AttachmentUrl,
-            hasOpenDuplicateName
+            hasOpenDuplicateName,
+            task.Version
         );
     }
 }

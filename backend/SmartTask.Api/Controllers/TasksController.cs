@@ -73,6 +73,14 @@ public sealed class TasksController(ITaskService taskService) : ControllerBase
         {
             return ValidationProblem(ToModelState(ex));
         }
+        catch (TaskActionRequiresConfirmationException ex)
+        {
+            return Conflict(ToConfirmationPayload(ex));
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return Conflict(new { message = "Công việc này đã bị thay đổi ở nơi khác. Tải lại và thử lại." });
+        }
         catch (DbUpdateException)
         {
             return BadRequest(
@@ -82,18 +90,56 @@ public sealed class TasksController(ITaskService taskService) : ControllerBase
     }
 
     [HttpPost("{id:guid}/complete")]
-    public async Task<ActionResult<TaskResponse>> Complete(Guid id, CancellationToken cancellationToken)
+    public async Task<ActionResult<TaskResponse>> Complete(
+        Guid id,
+        [FromQuery] bool confirmCompleteSubtasks,
+        CancellationToken cancellationToken
+    )
     {
-        var completed = await taskService.CompleteAsync(id, cancellationToken);
-        return completed is null ? NotFound() : Ok(completed);
+        try
+        {
+            var completed = await taskService.CompleteAsync(id, confirmCompleteSubtasks, cancellationToken);
+            return completed is null ? NotFound() : Ok(completed);
+        }
+        catch (TaskActionRequiresConfirmationException ex)
+        {
+            return Conflict(ToConfirmationPayload(ex));
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return Conflict(new { message = "Công việc này đã bị thay đổi ở nơi khác. Tải lại và thử lại." });
+        }
     }
 
     [HttpDelete("{id:guid}")]
-    public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
+    public async Task<IActionResult> Delete(
+        Guid id,
+        [FromQuery] bool? cascadeSubtasks,
+        CancellationToken cancellationToken
+    )
     {
-        var deleted = await taskService.DeleteAsync(id, cancellationToken);
-        return deleted ? NoContent() : NotFound();
+        try
+        {
+            var deleted = await taskService.DeleteAsync(id, cascadeSubtasks, cancellationToken);
+            return deleted ? NoContent() : NotFound();
+        }
+        catch (TaskActionRequiresConfirmationException ex)
+        {
+            return Conflict(ToConfirmationPayload(ex));
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return Conflict(new { message = "Công việc này đã bị thay đổi ở nơi khác. Tải lại và thử lại." });
+        }
     }
+
+    private static object ToConfirmationPayload(TaskActionRequiresConfirmationException ex) =>
+        new
+        {
+            action = ex.Action,
+            message = ex.Message,
+            subtaskIds = ex.SubtaskIds,
+        };
 
     [HttpPost("{id:guid}/restore")]
     public async Task<ActionResult<TaskResponse>> Restore(Guid id, CancellationToken cancellationToken)

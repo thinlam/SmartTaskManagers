@@ -39,6 +39,13 @@ public sealed class TaskRepository(AppDbContext dbContext, ICurrentUserContext c
     public Task<int> CountAsync(CancellationToken cancellationToken = default) =>
         dbContext.Tasks.AsNoTracking().CountAsync(cancellationToken);
 
+    public Task<List<TaskItem>> GetSubtasksAsync(
+        Guid parentId,
+        CancellationToken cancellationToken = default
+    ) => dbContext.Tasks.Where(t => t.ParentTaskId == parentId).ToListAsync(cancellationToken);
+
+    public void AddActivityLog(TaskActivityLog log) => dbContext.TaskActivityLogs.Add(log);
+
     public Task<TaskItem?> GetByExternalIdAsync(
         string externalId,
         CancellationToken cancellationToken = default

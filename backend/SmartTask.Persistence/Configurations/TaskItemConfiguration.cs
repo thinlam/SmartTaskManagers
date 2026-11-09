@@ -20,6 +20,11 @@ public sealed class TaskItemConfiguration : IEntityTypeConfiguration<TaskItem>
         builder.Property(t => t.ExternalId).HasMaxLength(50);
         builder.Property(t => t.AttachmentUrl).HasMaxLength(2000);
 
+        // Reuses the existing sync-era Version column as an optimistic-concurrency token —
+        // EF includes it in every UPDATE's WHERE clause and throws DbUpdateConcurrencyException
+        // on a stale write, instead of adding a new RowVersion column (GĐ redesign, 2026-11-09).
+        builder.Property(t => t.Version).IsConcurrencyToken();
+
         builder.Property(t => t.Area).HasConversion<string>().HasMaxLength(20);
         builder.Property(t => t.Priority).HasConversion<string>().HasMaxLength(20);
         builder.Property(t => t.Status).HasConversion<string>().HasMaxLength(20);

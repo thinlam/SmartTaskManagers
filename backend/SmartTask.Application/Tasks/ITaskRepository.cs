@@ -21,6 +21,12 @@ public interface ITaskRepository
     /// <summary>How many (non-deleted) tasks the current user already has — used to assign a new task's Position at the end of the list.</summary>
     Task<int> CountAsync(CancellationToken cancellationToken = default);
 
+    /// <summary>Direct children of a task (max depth 2, so these are never parents themselves) — used by the complete/delete subtask-confirmation flow.</summary>
+    Task<List<TaskItem>> GetSubtasksAsync(Guid parentId, CancellationToken cancellationToken = default);
+
+    /// <summary>Tracks a new activity-log row for the next SaveChangesAsync — doesn't save by itself.</summary>
+    void AddActivityLog(TaskActivityLog log);
+
     /// <summary>Phase 28 sync's join lookup — finds the row a given Sheets TaskId already maps to, if any.</summary>
     Task<TaskItem?> GetByExternalIdAsync(string externalId, CancellationToken cancellationToken = default);
 

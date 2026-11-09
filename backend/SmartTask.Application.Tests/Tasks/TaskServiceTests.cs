@@ -408,4 +408,210 @@ public sealed class TaskServiceTests
 
         Assert.Null(result);
     }
+
+    [Fact]
+    public async Task UpdateAsync_ProgressTo100_AutoCompletes()
+    {
+        var repository = new FakeTaskRepository();
+        var sut = CreateSut(repository);
+        var created = await sut.CreateAsync(MinimalRequest());
+
+        var updated = await sut.UpdateAsync(created.Id, new UpdateTaskRequest { Progress = 100 });
+
+        Assert.Equal(TaskStatusType.Completed, updated!.Status);
+        Assert.Equal(Now, updated.CompletedDate);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_ProgressAboveZeroFromInbox_AutoMovesToInProgress()
+    {
+        var repository = new FakeTaskRepository();
+        var sut = CreateSut(repository);
+        var created = await sut.CreateAsync(MinimalRequest());
+
+        var updated = await sut.UpdateAsync(created.Id, new UpdateTaskRequest { Progress = 40 });
+
+        Assert.Equal(TaskStatusType.InProgress, updated!.Status);
+        Assert.Equal(40, updated.Progress);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_StatusToInProgressWithoutStartDate_SetsStartDateToToday()
+    {
+        var repository = new FakeTaskRepository();
+        var sut = CreateSut(repository);
+        var created = await sut.CreateAsync(MinimalRequest());
+
+        var updated = await sut.UpdateAsync(
+            created.Id,
+            new UpdateTaskRequest { Status = TaskStatusType.InProgress }
+        );
+
+        Assert.Equal(DateOnly.FromDateTime(Now.Date), updated!.StartDate);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_ReopenFromCompleted_RestoresPriorProgressAndClearsCompletedDate()
+    {
+        var repository = new FakeTaskRepository();
+        var sut = CreateSut(repository);
+        var created = await sut.CreateAsync(new CreateTaskRequest { Name = "Buy milk", Progress = 60 });
+        await sut.CompleteAsync(created.Id);
+
+        var reopened = await sut.UpdateAsync(
+            created.Id,
+            new UpdateTaskRequest { Status = TaskStatusType.ToDo }
+        );
+
+        Assert.Equal(60, reopened!.Progress);
+        Assert.Null(reopened.CompletedDate);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_ReopenWithNoPriorProgress_FallsBackToZero()
+    {
+        var repository = new FakeTaskRepository();
+        var sut = CreateSut(repository);
+        var created = await sut.CreateAsync(MinimalRequest());
+        await sut.CompleteAsync(created.Id);
+
+        var reopened = await sut.UpdateAsync(
+            created.Id,
+            new UpdateTaskRequest { Status = TaskStatusType.ToDo }
+        );
+
+        Assert.Equal(0, reopened!.Progress);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_ProgressBelow100WhileCompleted_AutoReopensToInProgress()
+    {
+        var repository = new FakeTaskRepository();
+        var sut = CreateSut(repository);
+        var created = await sut.CreateAsync(MinimalRequest());
+        await sut.CompleteAsync(created.Id);
+
+        var updated = await sut.UpdateAsync(created.Id, new UpdateTaskRequest { Progress = 50 });
+
+        Assert.Equal(TaskStatusType.InProgress, updated!.Status);
+        Assert.Equal(50, updated.Progress);
+        Assert.Null(updated.CompletedDate);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_CancelsUnfiredReminder_WhenCompleting()
+    {
+        var repository = new FakeTaskRepository();
+        var sut = CreateSut(repository);
+        var created = await sut.CreateAsync(
+            new CreateTaskRequest { Name = "Buy milk", ReminderAt = Now.AddHours(1) }
+        );
+
+        var updated = await sut.UpdateAsync(
+            created.Id,
+            new UpdateTaskRequest { Status = TaskStatusType.Completed }
+        );
+
+        Assert.Null(updated!.ReminderAt);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_CompletingParentWithIncompleteSubtask_ThrowsConfirmationNeeded()
+    {
+        var repository = new FakeTaskRepository();
+        var sut = CreateSut(repository);
+        var parent = await sut.CreateAsync(MinimalRequest("Parent"));
+        await sut.CreateAsync(new CreateTaskRequest { Name = "Child", ParentTaskId = parent.Id });
+
+        var ex = await Assert.ThrowsAsync<TaskActionRequiresConfirmationException>(
+            () =>
+                sut.UpdateAsync(
+                    parent.Id,
+                    new UpdateTaskRequest { Status = TaskStatusType.Completed }
+                )
+        );
+
+        Assert.Equal("complete", ex.Action);
+        Assert.Single(ex.SubtaskIds);
+    }
+
+    [Fact]
+    public async Task UpdateAsync_CompletingParentWithConfirmedSubtasks_CompletesBoth()
+    {
+        var repository = new FakeTaskRepository();
+        var sut = CreateSut(repository);
+        var parent = await sut.CreateAsync(MinimalRequest("Parent"));
+        var child = await sut.CreateAsync(
+            new CreateTaskRequest { Name = "Child", ParentTaskId = parent.Id }
+        );
+
+        var updated = await sut.UpdateAsync(
+            parent.Id,
+            new UpdateTaskRequest { Status = TaskStatusType.Completed, ConfirmCompleteSubtasks = true }
+        );
+        var childAfter = await sut.GetByIdAsync(child.Id);
+
+        Assert.Equal(TaskStatusType.Completed, updated!.Status);
+        Assert.Equal(TaskStatusType.Completed, childAfter!.Status);
+    }
+
+    [Fact]
+    public async Task CompleteAsync_AlreadyCompleted_IsIdempotentNoOp()
+    {
+        var repository = new FakeTaskRepository();
+        var sut = CreateSut(repository);
+        var created = await sut.CreateAsync(MinimalRequest());
+        await sut.CompleteAsync(created.Id);
+
+        var secondCall = await sut.CompleteAsync(created.Id);
+
+        Assert.Equal(TaskStatusType.Completed, secondCall!.Status);
+    }
+
+    [Fact]
+    public async Task DeleteAsync_TaskWithSubtask_ThrowsConfirmationNeeded()
+    {
+        var repository = new FakeTaskRepository();
+        var sut = CreateSut(repository);
+        var parent = await sut.CreateAsync(MinimalRequest("Parent"));
+        await sut.CreateAsync(new CreateTaskRequest { Name = "Child", ParentTaskId = parent.Id });
+
+        var ex = await Assert.ThrowsAsync<TaskActionRequiresConfirmationException>(
+            () => sut.DeleteAsync(parent.Id)
+        );
+
+        Assert.Equal("delete", ex.Action);
+    }
+
+    [Fact]
+    public async Task DeleteAsync_CascadeTrue_SoftDeletesSubtaskToo()
+    {
+        var repository = new FakeTaskRepository();
+        var sut = CreateSut(repository);
+        var parent = await sut.CreateAsync(MinimalRequest("Parent"));
+        var child = await sut.CreateAsync(
+            new CreateTaskRequest { Name = "Child", ParentTaskId = parent.Id }
+        );
+
+        await sut.DeleteAsync(parent.Id, cascadeSubtasks: true);
+        var childAfter = await sut.GetByIdAsync(child.Id);
+
+        Assert.Null(childAfter);
+    }
+
+    [Fact]
+    public async Task DeleteAsync_CascadeFalse_PromotesSubtaskToTopLevel()
+    {
+        var repository = new FakeTaskRepository();
+        var sut = CreateSut(repository);
+        var parent = await sut.CreateAsync(MinimalRequest("Parent"));
+        var child = await sut.CreateAsync(
+            new CreateTaskRequest { Name = "Child", ParentTaskId = parent.Id }
+        );
+
+        await sut.DeleteAsync(parent.Id, cascadeSubtasks: false);
+        var childAfter = await sut.GetByIdAsync(child.Id);
+
+        Assert.Null(childAfter!.ParentTaskId);
+    }
 }
