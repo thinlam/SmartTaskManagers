@@ -117,9 +117,17 @@ export const taskApi = {
     fromDto(await httpClient.post<TaskDto>('/api/tasks', toWriteBody(fields))),
   update: async (id: string, fields: TaskWriteFields): Promise<Task> =>
     fromDto(await httpClient.patch<TaskDto>(`/api/tasks/${id}`, toWriteBody(fields))),
-  complete: async (id: string): Promise<Task> =>
-    fromDto(await httpClient.post<TaskDto>(`/api/tasks/${id}/complete`)),
-  remove: (id: string): Promise<void> => httpClient.delete(`/api/tasks/${id}`),
+  complete: async (id: string, confirmCompleteSubtasks?: boolean): Promise<Task> =>
+    fromDto(
+      await httpClient.post<TaskDto>(
+        `/api/tasks/${id}/complete${confirmCompleteSubtasks ? '?confirmCompleteSubtasks=true' : ''}`,
+      ),
+    ),
+  /** cascadeSubtasks: true deletes subtasks too, false promotes them to top-level, undefined asks the server (409 if the task has subtasks). */
+  remove: (id: string, cascadeSubtasks?: boolean): Promise<void> =>
+    httpClient.delete(
+      `/api/tasks/${id}${cascadeSubtasks === undefined ? '' : `?cascadeSubtasks=${cascadeSubtasks}`}`,
+    ),
   restore: async (id: string): Promise<Task> =>
     fromDto(await httpClient.post<TaskDto>(`/api/tasks/${id}/restore`)),
 };

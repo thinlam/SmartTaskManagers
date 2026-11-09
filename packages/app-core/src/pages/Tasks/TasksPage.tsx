@@ -13,10 +13,12 @@ import {
   RiskBadge,
   StatusBadge,
 } from '@stm/ui';
+import { ApiError } from '@stm/api-client';
 import { useTasksContext } from '../../state/TasksContext';
 import { useProjectsContext } from '../../state/ProjectsContext';
 import { useTagsContext } from '../../state/TagsContext';
 import { reportError } from '../../lib/reportError';
+import { ConfirmDialog } from '../../components/ConfirmDialog';
 import { translatePriority, translateTaskStatus, translateRisk } from '../../lib/enumLabels';
 import {
   STATUSES,
@@ -113,6 +115,11 @@ export function TasksPage() {
   const [viewTab, setViewTab] = useState<ViewTab>('all');
   const [page, setPage] = useState(1);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [completeSubtaskPrompt, setCompleteSubtaskPrompt] = useState<string | null>(null);
+  const [deleteSubtaskPrompt, setDeleteSubtaskPrompt] = useState<{
+    id: string;
+    count: number;
+  } | null>(null);
 
   const today = useMemo(() => startOfDay(new Date()), []);
 
@@ -464,7 +471,13 @@ export function TasksPage() {
                             nextStatus === 'Completed'
                               ? completeTask(task.id)
                               : updateTask(task.id, { status: nextStatus });
-                          request.catch(reportError);
+                          request.catch((err: unknown) => {
+                            if (err instanceof ApiError && err.confirmAction === 'complete') {
+                              setCompleteSubtaskPrompt(task.id);
+                              return;
+                            }
+                            reportError(err);
+                          });
                         }}
                         aria-label={t('tasks.changeStatusAriaLabel', { title: task.title })}
                         className="rounded-md border border-border bg-surface px-2 py-1 text-xs text-ink-primary outline-none focus-visible:ring-2 focus-visible:ring-primary"
@@ -479,7 +492,15 @@ export function TasksPage() {
                     <td className="px-4 py-3">
                       <TaskActions
                         task={task}
-                        onDelete={(id) => deleteTask(id).catch(reportError)}
+                        onDelete={(id) =>
+                          deleteTask(id).catch((err: unknown) => {
+                            if (err instanceof ApiError && err.confirmAction === 'delete') {
+                              setDeleteSubtaskPrompt({ id, count: err.subtaskIds?.length ?? 0 });
+                              return;
+                            }
+                            reportError(err);
+                          })
+                        }
                         onEdit={openEditDrawer}
                       />
                     </td>
@@ -515,6 +536,62 @@ export function TasksPage() {
                 ))}
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      <ConfirmDialog
+        open={completeSubtaskPrompt !== null}
+        message={t('tasks.completeSubtasksConfirm')}
+        confirmLabel={t('tasks.completeSubtasksConfirmButton')}
+        onConfirm={() => {
+          const id = completeSubtaskPrompt!;
+          setCompleteSubtaskPrompt(null);
+          completeTask(id, true).catch(reportError);
+        }}
+        onCancel={() => setCompleteSubtaskPrompt(null)}
+      />
+
+      {deleteSubtaskPrompt && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-ink-primary/40"
+            onClick={() => setDeleteSubtaskPrompt(null)}
+            aria-hidden="true"
+          />
+          <div
+            role="alertdialog"
+            aria-modal="true"
+            className="relative flex w-full max-w-sm flex-col gap-5 rounded-xl bg-surface p-5 shadow-lg"
+          >
+            <p className="text-sm text-ink-primary">
+              {t('tasks.deleteSubtasksConfirm', { count: deleteSubtaskPrompt.count })}
+            </p>
+            <div className="flex flex-wrap justify-end gap-2">
+              <Button variant="secondary" onClick={() => setDeleteSubtaskPrompt(null)}>
+                {t('common.cancel')}
+              </Button>
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  const { id } = deleteSubtaskPrompt;
+                  setDeleteSubtaskPrompt(null);
+                  deleteTask(id, false).catch(reportError);
+                }}
+              >
+                {t('tasks.deleteSubtasksPromote')}
+              </Button>
+              <Button
+                className="bg-danger hover:bg-danger/90"
+                onClick={() => {
+                  const { id } = deleteSubtaskPrompt;
+                  setDeleteSubtaskPrompt(null);
+                  deleteTask(id, true).catch(reportError);
+                }}
+              >
+                {t('tasks.deleteSubtasksCascade')}
+              </Button>
+            </div>
           </div>
         </div>
       )}

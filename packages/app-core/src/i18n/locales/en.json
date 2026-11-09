@@ -447,7 +447,12 @@
     "deleteSuccess": "Task deleted.",
     "undoButton": "Undo",
     "sectionMoreDetails": "More details",
-    "moreDetailsHint": "Description, tags, start date, reminder, attachment, area, goal, parent task"
+    "moreDetailsHint": "Description, tags, start date, reminder, attachment, area, goal, parent task",
+    "completeSubtasksConfirm": "This task still has incomplete subtasks. Complete them too?",
+    "completeSubtasksConfirmButton": "Complete all",
+    "deleteSubtasksConfirm": "This task has {{count}} subtask(s). Delete them too, or promote them to top-level?",
+    "deleteSubtasksPromote": "Promote subtasks",
+    "deleteSubtasksCascade": "Delete subtasks too"
   },
   "projects": {
     "summaryLine": "{{active}} active projects ({{healthy}} healthy, {{attention}} attention, {{atRisk}} at risk) · {{overdue}} overdue tasks · {{avg}}% average progress",

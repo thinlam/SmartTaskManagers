@@ -106,6 +106,23 @@ Progress/Status ở server). Plan này làm phần **còn thiếu**, không làm
   đồng bộ Progress/Status, mở lại, hủy reminder, xác nhận subtask khi hoàn thành/xóa, cascade/promote khi
   xóa, idempotent complete). **Chưa chạy thật qua API/trình duyệt**, chưa chạy migration trên dữ liệu thật.
 
-### Mục 1 — Frontend, Mục 2–5
+### Mục 1 — Frontend (xong 2026-11-09)
 
-_(Chưa làm — tiếp theo.)_
+- `ApiError` (`@stm/api-client`) thêm `confirmAction`/`subtaskIds` đọc từ payload 409 mới.
+  `taskApi.complete(id, confirmCompleteSubtasks?)` và `taskApi.remove(id, cascadeSubtasks?)` nối tham số
+  qua query string; `useTasks().completeTask`/`deleteTask` nhận thêm tham số tương ứng, `refetch()` sau khi
+  xác nhận (vì subtask bị đổi ở server không nằm trong response gốc).
+  `TasksPage.tsx`: bắt `ApiError.confirmAction === 'complete'` → hỏi qua `ConfirmDialog` có sẵn (nhị phân);
+  `=== 'delete'` → hộp thoại 3 nút tự viết (Hủy / Chuyển việc con lên cấp trên / Xóa cả việc con), gọi lại
+  `deleteTask(id, false|true)`. Thêm 5 key i18n (`completeSubtasksConfirm*`, `deleteSubtasks*`) cả vi/en.
+- **Chưa làm:** `TaskDetailDrawer`'s nút Xóa (trong form sửa) chưa có hộp thoại 3 nút riêng — khi gặp 409
+  subtask, nó chỉ hiện nguyên câu lỗi từ backend qua `applyError` (đã đủ thông tin, không gãy, nhưng UX kém
+  hơn trang danh sách) — ghi nhận để làm sau nếu cần.
+- Kiểm chứng thật: `npm run typecheck --workspace=apps/web` sạch, `npm run build:web` qua, `npm test`
+  (Vitest) 26/26 qua, `npx eslint` sạch các file đã sửa. **Chưa chạy thật qua trình duyệt** (chưa có backend
+  local chạy, chưa cấu hình connection string cho máy này).
+
+### Mục 2–5
+
+_(Mục 2, 3 đã xong ở 2 plan 08/11 trước đó — không làm lại. Còn Mục 4 (Lĩnh vực song ngữ) và Mục 5 (định
+dạng ngày dd/MM/yyyy, rà soát bố cục) — chưa làm, tiếp theo.)_

@@ -447,7 +447,12 @@
     "deleteSuccess": "Đã xóa công việc.",
     "undoButton": "Hoàn tác",
     "sectionMoreDetails": "Thêm chi tiết",
-    "moreDetailsHint": "Mô tả, thẻ, ngày bắt đầu, nhắc hẹn, đính kèm, lĩnh vực, mục tiêu, công việc cha"
+    "moreDetailsHint": "Mô tả, thẻ, ngày bắt đầu, nhắc hẹn, đính kèm, lĩnh vực, mục tiêu, công việc cha",
+    "completeSubtasksConfirm": "Công việc này còn việc con chưa hoàn thành. Hoàn thành luôn các việc con?",
+    "completeSubtasksConfirmButton": "Hoàn thành tất cả",
+    "deleteSubtasksConfirm": "Công việc này có {{count}} việc con. Bạn muốn xóa luôn việc con, hay chuyển chúng lên cấp trên?",
+    "deleteSubtasksPromote": "Chuyển việc con lên cấp trên",
+    "deleteSubtasksCascade": "Xóa cả việc con"
   },
   "projects": {
     "summaryLine": "{{active}} dự án đang chạy ({{healthy}} tốt, {{attention}} cần chú ý, {{atRisk}} rủi ro) · {{overdue}} việc quá hạn · tiến độ trung bình {{avg}}%",

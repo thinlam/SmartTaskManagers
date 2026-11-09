@@ -33,8 +33,10 @@ export interface UseTasksResult {
   refetch: () => Promise<void>;
   addTask: (input: NewTaskInput) => Promise<Task>;
   updateTask: (id: string, patch: Partial<Task>) => Promise<Task>;
-  deleteTask: (id: string) => Promise<void>;
-  completeTask: (id: string) => Promise<Task>;
+  /** cascadeSubtasks: omit to let the server ask (ApiError.confirmAction === 'delete' if it has subtasks), true to delete them too, false to promote them to top-level. */
+  deleteTask: (id: string, cascadeSubtasks?: boolean) => Promise<void>;
+  /** confirmCompleteSubtasks: pass true to retry after ApiError.confirmAction === 'complete' (the task has incomplete subtasks). */
+  completeTask: (id: string, confirmCompleteSubtasks?: boolean) => Promise<Task>;
   /** Undo for deleteTask (soft delete on the backend) — puts the task back into local state. */
   restoreTask: (id: string) => Promise<Task>;
 }
@@ -118,19 +120,25 @@ export function useTasks(): UseTasksResult {
     return updated;
   }, []);
 
-  const deleteTask = useCallback(async (id: string): Promise<void> => {
-    await taskApi.remove(id);
+  const deleteTask = useCallback(async (id: string, cascadeSubtasks?: boolean): Promise<void> => {
+    await taskApi.remove(id, cascadeSubtasks);
     setTasks((previous) => previous.filter((task) => task.id !== id));
-  }, []);
-
-  const completeTask = useCallback(async (id: string): Promise<Task> => {
-    const completed = await taskApi.complete(id);
-    setTasks((previous) => previous.map((task) => (task.id === id ? completed : task)));
-    // A recurring task's completion creates its next occurrence server-side
-    // (not reflected in `completed` itself) — refetch to pick up that new row.
-    void refetch();
-    return completed;
+    // A promote-to-top-level delete (cascadeSubtasks === false) changes the
+    // surviving subtasks' parentTaskId server-side — refetch to pick that up.
+    if (cascadeSubtasks === false) void refetch();
   }, [refetch]);
+
+  const completeTask = useCallback(
+    async (id: string, confirmCompleteSubtasks?: boolean): Promise<Task> => {
+      const completed = await taskApi.complete(id, confirmCompleteSubtasks);
+      setTasks((previous) => previous.map((task) => (task.id === id ? completed : task)));
+      // A recurring task's completion (and a confirmed subtask completion) creates/changes
+      // rows server-side that aren't reflected in `completed` itself — refetch to pick them up.
+      void refetch();
+      return completed;
+    },
+    [refetch],
+  );
 
   const restoreTask = useCallback(async (id: string): Promise<Task> => {
     const restored = await taskApi.restore(id);

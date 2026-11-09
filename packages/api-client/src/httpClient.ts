@@ -16,6 +16,9 @@ export class ApiError extends Error {
     message: string,
     /** Per-field messages from an ASP.NET ValidationProblem (422) body — undefined for any other error shape. */
     public readonly errors?: Record<string, string[]>,
+    /** 409 "needs confirmation" payload from TasksController (complete/delete with incomplete subtasks) — "complete" or "delete". Undefined for any other error shape. */
+    public readonly confirmAction?: string,
+    public readonly subtaskIds?: string[],
   ) {
     super(message);
     this.name = 'ApiError';
@@ -81,13 +84,21 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
       typeof data === 'object' && data !== null && 'errors' in data
         ? (data as { errors: Record<string, string[]> }).errors
         : undefined;
+    const confirmAction =
+      response.status === 409 && typeof data === 'object' && data !== null && 'action' in data
+        ? String((data as { action: unknown }).action)
+        : undefined;
+    const subtaskIds =
+      confirmAction && typeof data === 'object' && data !== null && 'subtaskIds' in data
+        ? (data as { subtaskIds: string[] }).subtaskIds
+        : undefined;
     const message =
       (typeof data === 'object' && data !== null && 'message' in data
         ? String((data as { message: unknown }).message)
         : undefined) ??
       (errors ? Object.values(errors).flat().join(' ') : undefined) ??
       response.statusText;
-    throw new ApiError(response.status, message, errors);
+    throw new ApiError(response.status, message, errors, confirmAction, subtaskIds);
   }
 
   return data as T;
