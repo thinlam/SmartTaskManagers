@@ -9,6 +9,7 @@ import type {
   RecordingStats,
   RecordingSummary,
   User,
+  Word,
 } from '../types';
 
 const TOKEN_KEY = 'voicescribe.token';
@@ -176,6 +177,7 @@ export const api = {
         speakerRoster?: string[];
         text?: string;
         segments?: LabeledSegment[];
+        words?: Word[];
         notes?: Pick<RecordingNote, 'text'>[] | RecordingNote[];
       },
     ) => request<Recording>('PATCH', `/api/recordings/${id}`, { body: patch }),

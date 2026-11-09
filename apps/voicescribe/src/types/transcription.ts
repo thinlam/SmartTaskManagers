@@ -1,9 +1,23 @@
+/** One word with its own timestamp — see types/diarization.ts's `Word` for how this is used downstream. */
+export interface TranscriptWord {
+  text: string;
+  start: number;
+  end: number;
+}
+
 export interface TranscriptSegment {
   text: string;
   /** Seconds from the start of the audio. */
   start: number;
   /** Seconds from the start of the audio. */
   end: number;
+  /**
+   * Present only when the ASR call actually returned (or was confidently
+   * reconstructed from) word-level timestamps for this segment — see
+   * services/transcription.ts's `wordLevel` detection. Absent means `start`/`end`
+   * is this segment's only timing info (old behavior, unchanged).
+   */
+  words?: TranscriptWord[];
 }
 
 export interface TranscriptionResult {

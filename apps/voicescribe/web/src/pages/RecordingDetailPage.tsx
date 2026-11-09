@@ -21,6 +21,7 @@ import {
   X,
 } from 'lucide-react';
 import { api, audioUrl } from '../lib/api';
+import type { LabeledSegment } from '../types';
 import {
   countWords,
   errorText,
@@ -41,6 +42,7 @@ import {
   assignBlockSpeaker,
   buildBlocks,
   clock,
+  deleteBlock,
   displayName,
   findSpeakerByName,
   mergeSpeakers,
@@ -51,6 +53,7 @@ import {
   type Block,
 } from '../lib/transcript';
 import { PLAYBACK_RATES, useAudioPlayer } from '../lib/audioPlayer';
+import { playbackRanges } from '../lib/words';
 import {
   ParagraphTranscript,
   SpeakerTranscript,
@@ -365,12 +368,43 @@ export function RecordingDetailPage({
   } | null>(null);
   const [deleteSpeaker, setDeleteSpeaker] = useState<{ raw: string; name: string } | null>(null);
   const [reassignTo, setReassignTo] = useState('');
+  const [lastDeleted, setLastDeleted] = useState<{ segments: LabeledSegment[] } | null>(null);
+  const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const rec = recording.data;
   const processing = rec?.status === 'processing';
   const [playFiltered, setPlayFiltered] = useState(false);
   const src = rec ? audioUrl(rec.id, rec.hasAudio, playFiltered ? 'filtered' : undefined) : null;
   const player = useAudioPlayer(src);
+
+  /** Playback ranges covering a block's actual words right now — not its old start/end —
+   * so a block always plays exactly the text currently in it (see Việc B in the plan). Pads
+   * only the very first start and very last end; internal gaps (if any) stay real gaps,
+   * played across by playSequence below. */
+  const rangesForBlock = useCallback(
+    (block: Block) => {
+      if (!rec) return [{ start: block.start, end: block.end }];
+      const raw: { start: number; end: number }[] = [];
+      for (let i = block.from; i <= block.to; i++) {
+        const seg = rec.segments[i];
+        if (seg) raw.push(...playbackRanges(rec.words, seg, 0));
+      }
+      const merged: { start: number; end: number }[] = [];
+      for (const r of raw) {
+        const last = merged[merged.length - 1];
+        if (last && r.start - last.end <= 2) {
+          last.end = r.end;
+        } else {
+          merged.push({ ...r });
+        }
+      }
+      if (merged.length === 0) return [{ start: block.start, end: block.end }];
+      merged[0]!.start = Math.max(0, merged[0]!.start - 0.1);
+      merged[merged.length - 1]!.end += 0.1;
+      return merged;
+    },
+    [rec],
+  );
 
   // The "nghe đoạn này" button toggles: clicking the block already playing stops it.
   // Which block is "playing" is derived from currentTime in SpeakerTranscript
@@ -383,10 +417,14 @@ export function RecordingDetailPage({
         player.stopRange();
         return;
       }
-      player.playRange(block.start, block.end, loopBlock);
+      const ranges = rangesForBlock(block);
+      if (ranges.length > 1) {
+        toast.info('Đoạn có phần âm thanh không liên tục.');
+      }
+      player.playSequence(ranges, loopBlock);
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [player.activeRange, loopBlock],
+    [player.activeRange, loopBlock, rangesForBlock],
   );
 
   // Space play/pause, ←/→ seek 5s — only when not typing in a field (editing a
@@ -643,8 +681,42 @@ export function RecordingDetailPage({
     void save({
       segments: change.segments,
       ...(change.speakerNames ? { speakerNames: change.speakerNames } : {}),
+      ...(change.words ? { words: change.words } : {}),
     });
   }
+
+  /** Deletes a block without asking first — keeps the prior segments 8s so the user can undo (toast or Ctrl+Z). */
+  function deleteBlockWithUndo(block: Block) {
+    if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+    setLastDeleted({ segments: rec!.segments });
+    undoTimerRef.current = setTimeout(() => setLastDeleted(null), 8000);
+    void save({ segments: deleteBlock(rec!.segments, block) });
+  }
+
+  function undoDelete() {
+    if (!lastDeleted) return;
+    if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+    void save({ segments: lastDeleted.segments });
+    setLastDeleted(null);
+  }
+
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z' && lastDeleted) {
+        e.preventDefault();
+        undoDelete();
+      }
+    }
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lastDeleted]);
+
+  useEffect(() => {
+    return () => {
+      if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
+    };
+  }, []);
 
   const paragraph = paragraphOf(rec);
   const done = rec.status === 'done';
@@ -845,6 +917,7 @@ export function RecordingDetailPage({
               ) : (
                 <SpeakerTranscript
                   segments={rec.segments}
+                  words={rec.words}
                   speakerOrder={speakerOrder}
                   speakerNames={rec.speakerNames}
                   editing={editing}
@@ -852,6 +925,7 @@ export function RecordingDetailPage({
                   onChange={changeSegments}
                   onCreateSpeaker={createSpeakerForBlock}
                   onRenameSpeaker={renameSpeakerEverywhere}
+                  onDeleteBlock={deleteBlockWithUndo}
                   canPlayAudio={Boolean(src)}
                   currentTime={player.currentTime}
                   isPlayingAudio={player.isPlaying}
@@ -1027,6 +1101,19 @@ export function RecordingDetailPage({
           onConfirm={remove}
           onCancel={() => setConfirmDelete(false)}
         />
+      )}
+
+      {lastDeleted && (
+        <div className="fixed bottom-[calc(var(--sab)+4.5rem)] right-4 z-50 flex items-center gap-3 rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-800 shadow-lg md:bottom-4">
+          <Trash2 className="h-4 w-4 shrink-0 text-slate-400" />
+          Đã xóa đoạn
+          <button
+            onClick={undoDelete}
+            className="font-semibold text-indigo-600 hover:underline"
+          >
+            Hoàn tác
+          </button>
+        </div>
       )}
 
       {mergeConfirm && (

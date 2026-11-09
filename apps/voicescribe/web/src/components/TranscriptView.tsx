@@ -1,14 +1,29 @@
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { Check, ChevronDown, Pause, Pencil, Play, Plus } from 'lucide-react';
-import type { LabeledSegment } from '../types';
+import {
+  ArrowDownToLine,
+  ArrowUpToLine,
+  Check,
+  ChevronDown,
+  MoveDown,
+  MoveUp,
+  Pause,
+  Pencil,
+  Play,
+  Plus,
+  Scissors,
+  Trash2,
+} from 'lucide-react';
+import type { LabeledSegment, Word } from '../types';
 import {
   assignBlockSpeaker,
   buildBlocks,
   clock,
   displayName,
+  mergeWithNeighbor,
   replaceBlockText,
   type Block,
 } from '../lib/transcript';
+import { moveSelectionToNeighbor, splitSegmentAtCursor, syncWordsOnEdit } from '../lib/words';
 
 export const SPEAKER_COLORS = [
   { dot: 'bg-indigo-500', soft: 'bg-indigo-50 text-indigo-700' },
@@ -43,11 +58,54 @@ export function Highlighted({ text, query }: { text: string; query: string }): R
   );
 }
 
+/** Renders a block's text with the word currently playing highlighted — falls back to
+ * plain text for any segment inside the block that has no word-level data. */
+function WordHighlighted({
+  segments,
+  words,
+  block,
+  time,
+}: {
+  segments: LabeledSegment[];
+  words: Word[];
+  block: Block;
+  time: number;
+}): ReactNode {
+  const byId = new Map(words.map((w) => [w.id, w] as const));
+  const parts: ReactNode[] = [];
+  for (let i = block.from; i <= block.to; i++) {
+    const seg = segments[i];
+    if (!seg) continue;
+    if (i > block.from) parts.push(' ');
+    if (!seg.wordIds || seg.wordIds.length === 0) {
+      parts.push(seg.text.trim());
+      continue;
+    }
+    seg.wordIds.forEach((id, j) => {
+      const w = byId.get(id);
+      if (!w) return;
+      if (j > 0) parts.push(' ');
+      const isActive = time >= w.start && time < w.end;
+      parts.push(
+        isActive ? (
+          <mark key={`${i}-${id}`} className="rounded bg-indigo-200 px-0.5 text-indigo-900">
+            {w.text}
+          </mark>
+        ) : (
+          <span key={`${i}-${id}`}>{w.text}</span>
+        ),
+      );
+    });
+  }
+  return parts;
+}
+
 export function AutoTextarea({
   value,
   onChange,
   onKeyDown,
   onBlur,
+  onSelect,
   className = '',
   autoFocus,
 }: {
@@ -55,6 +113,8 @@ export function AutoTextarea({
   onChange: (value: string) => void;
   onKeyDown?: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
   onBlur?: () => void;
+  /** Fires on every caret/selection move — used to track which words are selected for "Chuyển lên/xuống"/"Tách đoạn". */
+  onSelect?: (start: number, end: number) => void;
   className?: string;
   autoFocus?: boolean;
 }) {
@@ -86,6 +146,10 @@ export function AutoTextarea({
       onChange={(e) => onChange(e.target.value)}
       onKeyDown={onKeyDown}
       onBlur={onBlur}
+      onSelect={(e) => {
+        const el = e.currentTarget;
+        onSelect?.(el.selectionStart, el.selectionEnd);
+      }}
       className={`block w-full resize-none overflow-y-auto ${className}`}
     />
   );
@@ -223,11 +287,14 @@ function SpeakerMenu({
 export interface SegmentsChange {
   segments: LabeledSegment[];
   speakerNames?: Record<string, string>;
+  /** Present whenever the edit added/resynced words — see lib/words.ts's syncWordsOnEdit. */
+  words?: Word[];
 }
 
 /** Mode "Phân người nói": one block per speaker turn, editable in place. */
 export function SpeakerTranscript({
   segments,
+  words,
   speakerOrder,
   speakerNames,
   editing,
@@ -235,6 +302,7 @@ export function SpeakerTranscript({
   onChange,
   onCreateSpeaker,
   onRenameSpeaker,
+  onDeleteBlock,
   canPlayAudio = false,
   currentTime = 0,
   isPlayingAudio = false,
@@ -242,6 +310,8 @@ export function SpeakerTranscript({
   autoScroll = false,
 }: {
   segments: LabeledSegment[];
+  /** Recording-level word list — see types.ts's Recording.words. */
+  words: Word[];
   speakerOrder: string[];
   speakerNames: Record<string, string>;
   editing: boolean;
@@ -250,6 +320,8 @@ export function SpeakerTranscript({
   /** Adds a brand-new speaker (to the recording's roster) and assigns this block to it in one go. */
   onCreateSpeaker: (name: string, block: Block) => void;
   onRenameSpeaker: (raw: string, name: string) => void;
+  /** Deletes this block (keeps the current segments so the page can offer an undo). */
+  onDeleteBlock?: (block: Block) => void;
   /** Whether the recording has audio to play back (hides the per-block play button otherwise). */
   canPlayAudio?: boolean;
   /** Audio's current position, used (with isPlayingAudio) to work out which block is playing right now — whether playback started from this block's own button or the main play bar. */
@@ -269,6 +341,7 @@ export function SpeakerTranscript({
   );
   const [editingFrom, setEditingFrom] = useState<number | null>(null);
   const [draft, setDraft] = useState('');
+  const [selection, setSelection] = useState<{ start: number; end: number }>({ start: 0, end: 0 });
   const activeRef = useRef<HTMLElement | null>(null);
 
   const playingBlockFrom = useMemo(() => {
@@ -289,8 +362,56 @@ export function SpeakerTranscript({
   function commit(block: Block) {
     const text = draft.trim();
     setEditingFrom(null);
-    if (text && text !== block.text) {
+    if (!text || text === block.text) return;
+    const seg = segments[block.from];
+    if (seg?.wordIds) {
+      const { segment, words: nextWords } = syncWordsOnEdit(words, seg, text);
+      const nextSegments = [...segments];
+      nextSegments[block.from] = segment;
+      onChange({ segments: nextSegments, words: nextWords });
+    } else {
       onChange({ segments: replaceBlockText(segments, block, text) });
+    }
+  }
+
+  /** Syncs any uncommitted draft text into `segments`/`words` first — move/split read
+   * character offsets against the textarea's live value, so they'd be off if the draft
+   * still differs from the last-saved segment text. */
+  function syncedForEditing(block: Block): { segments: LabeledSegment[]; words: Word[] } {
+    const seg = segments[block.from];
+    const text = draft.trim();
+    if (!seg || !text || text === block.text) return { segments, words };
+    if (seg.wordIds) {
+      const { segment, words: nextWords } = syncWordsOnEdit(words, seg, text);
+      const nextSegments = [...segments];
+      nextSegments[block.from] = segment;
+      return { segments: nextSegments, words: nextWords };
+    }
+    return { segments: replaceBlockText(segments, block, text), words };
+  }
+
+  function moveSelection(block: Block, direction: 'prev' | 'next') {
+    const synced = syncedForEditing(block);
+    const result = moveSelectionToNeighbor(
+      synced.segments,
+      synced.words,
+      block,
+      selection.start,
+      selection.end,
+      direction,
+    );
+    if (result) {
+      setEditingFrom(null);
+      onChange({ segments: result, words: synced.words });
+    }
+  }
+
+  function splitAtCursor(block: Block) {
+    const synced = syncedForEditing(block);
+    const result = splitSegmentAtCursor(synced.segments, synced.words, block, selection.start);
+    if (result) {
+      setEditingFrom(null);
+      onChange({ segments: result, words: synced.words });
     }
   }
 
@@ -308,7 +429,7 @@ export function SpeakerTranscript({
           <section
             key={block.from}
             ref={isPlaying ? activeRef : undefined}
-            className={`grid grid-cols-[56px_1fr] gap-x-3 rounded-xl px-3 py-3 hover:bg-slate-50/70 ${
+            className={`group grid grid-cols-[56px_1fr] gap-x-3 rounded-xl px-3 py-3 hover:bg-slate-50/70 ${
               isPlaying ? 'bg-indigo-50/70 ring-1 ring-inset ring-indigo-200' : ''
             }`}
           >
@@ -331,16 +452,55 @@ export function SpeakerTranscript({
             </span>
             <div className="min-w-0">
               {editing ? (
-                <SpeakerMenu
-                  block={block}
-                  speakerOrder={speakerOrder}
-                  names={speakerNames}
-                  onAssign={(raw) =>
-                    onChange({ segments: assignBlockSpeaker(segments, block, raw) })
-                  }
-                  onCreate={(name) => onCreateSpeaker(name, block)}
-                  onRename={onRenameSpeaker}
-                />
+                <div className="flex items-center justify-between gap-2">
+                  <SpeakerMenu
+                    block={block}
+                    speakerOrder={speakerOrder}
+                    names={speakerNames}
+                    onAssign={(raw) =>
+                      onChange({ segments: assignBlockSpeaker(segments, block, raw) })
+                    }
+                    onCreate={(name) => onCreateSpeaker(name, block)}
+                    onRename={onRenameSpeaker}
+                  />
+                  {/* Always visible while editing (not just on hover) so touch screens can reach them too. */}
+                  <div className="flex items-center gap-1">
+                    {block.from > 0 && (
+                      <button
+                        onClick={() =>
+                          onChange({ segments: mergeWithNeighbor(segments, block, 'prev') })
+                        }
+                        aria-label="Gộp với đoạn trước"
+                        title="Gộp với đoạn trước"
+                        className="rounded-lg p-1.5 text-slate-300 hover:bg-slate-100 hover:text-indigo-600"
+                      >
+                        <ArrowUpToLine className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                    {block.to < segments.length - 1 && (
+                      <button
+                        onClick={() =>
+                          onChange({ segments: mergeWithNeighbor(segments, block, 'next') })
+                        }
+                        aria-label="Gộp với đoạn sau"
+                        title="Gộp với đoạn sau"
+                        className="rounded-lg p-1.5 text-slate-300 hover:bg-slate-100 hover:text-indigo-600"
+                      >
+                        <ArrowDownToLine className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                    {onDeleteBlock && (
+                      <button
+                        onClick={() => onDeleteBlock(block)}
+                        aria-label="Xóa đoạn"
+                        title="Xóa đoạn"
+                        className="rounded-lg p-1.5 text-slate-300 hover:bg-rose-50 hover:text-rose-600"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </div>
+                </div>
               ) : (
                 <span
                   className={`inline-flex items-center gap-1.5 text-sm font-semibold text-slate-800`}
@@ -357,13 +517,46 @@ export function SpeakerTranscript({
                     value={draft}
                     onChange={setDraft}
                     onBlur={() => commit(block)}
+                    onSelect={(start, end) => setSelection({ start, end })}
                     onKeyDown={(e) => {
                       if (e.key === 'Escape') setEditingFrom(null);
                       if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) commit(block);
                     }}
                     className="rounded-lg border border-indigo-300 bg-white px-3 py-2 leading-7 text-slate-800 outline-none ring-2 ring-indigo-100"
                   />
-                  <p className="mt-1 text-xs text-slate-400">Ctrl + Enter để lưu · Esc để hủy</p>
+                  <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+                    <p className="text-xs text-slate-400">Ctrl + Enter để lưu · Esc để hủy</p>
+                    {block.from > 0 && selection.start !== selection.end && (
+                      <button
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => moveSelection(block, 'prev')}
+                        title="Chuyển chữ đã bôi chọn lên đoạn trước"
+                        className="flex items-center gap-1 text-xs font-medium text-indigo-600 hover:underline"
+                      >
+                        <MoveUp className="h-3 w-3" /> Chuyển lên đoạn trước
+                      </button>
+                    )}
+                    {block.to < segments.length - 1 && selection.start !== selection.end && (
+                      <button
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => moveSelection(block, 'next')}
+                        title="Chuyển chữ đã bôi chọn xuống đoạn sau"
+                        className="flex items-center gap-1 text-xs font-medium text-indigo-600 hover:underline"
+                      >
+                        <MoveDown className="h-3 w-3" /> Chuyển xuống đoạn sau
+                      </button>
+                    )}
+                    {selection.start === selection.end && selection.start > 0 && (
+                      <button
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => splitAtCursor(block)}
+                        title="Tách đoạn tại vị trí con trỏ"
+                        className="flex items-center gap-1 text-xs font-medium text-indigo-600 hover:underline"
+                      >
+                        <Scissors className="h-3 w-3" /> Tách đoạn tại đây
+                      </button>
+                    )}
+                  </div>
                 </div>
               ) : editing ? (
                 <button
@@ -377,6 +570,10 @@ export function SpeakerTranscript({
                   <Highlighted text={block.text} query={query} />
                   <Pencil className="ml-2 inline h-3.5 w-3.5 text-slate-300 group-hover/edit:text-indigo-500" />
                 </button>
+              ) : isPlaying && !editing ? (
+                <p className="mt-1 leading-7 text-slate-700">
+                  <WordHighlighted segments={segments} words={words} block={block} time={currentTime} />
+                </p>
               ) : (
                 <p className="mt-1 leading-7 text-slate-700">
                   <Highlighted text={block.text} query={query} />

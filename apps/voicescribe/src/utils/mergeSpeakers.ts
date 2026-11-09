@@ -1,5 +1,6 @@
+import { randomUUID } from 'node:crypto';
 import type { TranscriptSegment } from '../types/transcription.js';
-import type { LabeledSegment, RawSpeakerSegment } from '../types/diarization.js';
+import type { LabeledSegment, RawSpeakerSegment, Word } from '../types/diarization.js';
 
 function overlapSeconds(aStart: number, aEnd: number, bStart: number, bEnd: number): number {
   return Math.max(0, Math.min(aEnd, bEnd) - Math.max(aStart, bStart));
@@ -18,7 +19,7 @@ function overlapSeconds(aStart: number, aEnd: number, bStart: number, bEnd: numb
 export function mergeTranscriptWithSpeakers(
   transcriptSegments: TranscriptSegment[],
   speakerSegments: RawSpeakerSegment[],
-): LabeledSegment[] {
+): { segments: LabeledSegment[]; words: Word[] } {
   const labelByRawSpeaker = new Map<string, string>();
   let nextSpeakerNumber = 1;
 
@@ -60,10 +61,20 @@ export function mergeTranscriptWithSpeakers(
     return labelFor(nearest.speaker);
   }
 
-  return transcriptSegments.map((seg) => ({
-    text: seg.text,
-    start: seg.start,
-    end: seg.end,
-    speaker: bestSpeakerFor(seg),
-  }));
+  const words: Word[] = [];
+  const segments = transcriptSegments.map((seg) => {
+    const wordIds = seg.words?.map((w) => {
+      const id = randomUUID();
+      words.push({ id, text: w.text, start: w.start, end: w.end });
+      return id;
+    });
+    return {
+      text: seg.text,
+      start: seg.start,
+      end: seg.end,
+      speaker: bestSpeakerFor(seg),
+      ...(wordIds && wordIds.length ? { wordIds } : {}),
+    };
+  });
+  return { segments, words };
 }

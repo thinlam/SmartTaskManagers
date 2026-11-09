@@ -1,6 +1,6 @@
 import type { Db } from '../db/pool.js';
 import type { DenoiseLevel } from '../utils/audioChunker.js';
-import type { LabeledSegment } from '../types/diarization.js';
+import type { LabeledSegment, Word } from '../types/diarization.js';
 
 export type RecordingStatus = 'processing' | 'done' | 'failed';
 
@@ -20,6 +20,8 @@ export interface RecordingRow {
   duration_sec: number;
   text: string;
   segments: LabeledSegment[];
+  /** Recording-level word list that segments' `wordIds` reference — see migration 006. */
+  words: Word[];
   speaker_names: Record<string, string>;
   /** Persisted, independent of `segments` — see migration 005's comment. */
   speaker_roster: string[];
@@ -56,6 +58,7 @@ export function toDetailDto(r: RecordingRow) {
     durationSec: r.duration_sec,
     text: r.text,
     segments: r.segments,
+    words: r.words,
     speakerNames: r.speaker_names,
     speakerRoster: r.speaker_roster,
     notes: r.notes,
@@ -100,6 +103,7 @@ export async function insertPendingRecording(
 export interface CompletedRecording {
   text: string;
   segments: LabeledSegment[];
+  words: Word[];
   processingMs: number;
   diarizationError: string | null;
   /** Basename under AppConfig.audioStorageDir, or null if the original audio could not be kept. */
@@ -126,7 +130,7 @@ export async function completeRecording(
     `UPDATE recordings
         SET status = 'done', text = $2, segments = $3, duration_sec = $4, processing_ms = $5,
             diarization_error = $6, audio_path = $7, audio_filtered_path = $8, denoise_level = $9,
-            speaker_roster = $10,
+            speaker_roster = $10, words = $11,
             error = NULL, progress_done = progress_total, updated_at = now()
       WHERE id = $1`,
     [
@@ -140,6 +144,7 @@ export async function completeRecording(
       done.filteredAudioPath,
       done.denoiseLevel,
       JSON.stringify(speakerOrderOf(done.segments)),
+      JSON.stringify(done.words),
     ],
   );
 }

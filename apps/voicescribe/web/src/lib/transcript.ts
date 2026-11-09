@@ -105,6 +105,41 @@ export function replaceBlockText(
   return [...segments.slice(0, block.from), merged, ...segments.slice(block.to + 1)];
 }
 
+/** Removes segments[from..to] entirely. Audio is untouched — this only drops text. */
+export function deleteBlock(segments: LabeledSegment[], block: Block): LabeledSegment[] {
+  return [...segments.slice(0, block.from), ...segments.slice(block.to + 1)];
+}
+
+/**
+ * Merges a block with its immediate previous/next neighbor in the segments array
+ * (not the displayed block list, so this works correctly even while editing, where
+ * `buildBlocks` never merges). Keeps the earlier segment's speaker.
+ */
+export function mergeWithNeighbor(
+  segments: LabeledSegment[],
+  block: Block,
+  direction: 'prev' | 'next',
+): LabeledSegment[] {
+  const otherIndex = direction === 'prev' ? block.from - 1 : block.to + 1;
+  const other = segments[otherIndex];
+  if (!other) return segments;
+  const [firstIdx, lastIdx] =
+    direction === 'prev' ? [otherIndex, block.to] : [block.from, otherIndex];
+  const first = segments[firstIdx]!;
+  const last = segments[lastIdx]!;
+  const mergedText = segments
+    .slice(firstIdx, lastIdx + 1)
+    .map((s) => s.text.trim())
+    .join(' ');
+  const merged: LabeledSegment = {
+    speaker: first.speaker,
+    start: first.start,
+    end: last.end,
+    text: mergedText,
+  };
+  return [...segments.slice(0, firstIdx), merged, ...segments.slice(lastIdx + 1)];
+}
+
 export function assignBlockSpeaker(
   segments: LabeledSegment[],
   block: Block,

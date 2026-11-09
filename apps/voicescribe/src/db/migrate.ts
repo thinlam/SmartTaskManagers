@@ -91,6 +91,17 @@ const MIGRATIONS: Migration[] = [
       );
     `,
   },
+  {
+    // Word-level timestamps for the whole recording (see docs/project/plans/
+    // 2026-11-09-voicescribe-xoa-doan-moc-tung-tu.md — "Việc B"). Segments
+    // reference words by id (segments.wordIds, stored inside the existing
+    // `segments` jsonb column — no schema change needed there); a segment
+    // without `wordIds` (old recording, or the word-source fell back to
+    // approximation and wasn't trusted) keeps using its own start/end as
+    // before. No backfill: old recordings simply have an empty word list.
+    id: '006_recording_words',
+    sql: `ALTER TABLE recordings ADD COLUMN words jsonb NOT NULL DEFAULT '[]';`,
+  },
 ];
 
 /** Applies pending migrations in order, each in its own transaction. Safe to run on every start. */

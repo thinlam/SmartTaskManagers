@@ -3,6 +3,16 @@ export interface LabeledSegment {
   start: number;
   end: number;
   speaker: string;
+  /** Ordered ids into Recording.words — see that field's comment. Absent = old/approximate data, use start/end as-is. */
+  wordIds?: string[];
+}
+
+/** One word with its own timestamp (seconds) — see Recording.words. */
+export interface Word {
+  id: string;
+  text: string;
+  start: number;
+  end: number;
 }
 
 export interface User {
@@ -59,6 +69,8 @@ export interface Recording {
   durationSec: number;
   text: string;
   segments: LabeledSegment[];
+  /** Recording-level word list that segments' `wordIds` reference. */
+  words: Word[];
   speakerNames: Record<string, string>;
   /** Persisted list of speaker keys for this recording, independent of which segments are currently assigned to whom — never re-derived from `segments`. */
   speakerRoster: string[];

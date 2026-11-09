@@ -2,8 +2,74 @@ import { InferenceClient, InferenceClientProviderApiError } from '@huggingface/i
 import {
   CancelledError,
   TranscriptionError,
+  type TranscriptSegment,
+  type TranscriptWord,
   type TranscriptionResult,
 } from '../types/transcription.js';
+
+/** A word ends a sentence/clause worth splitting a segment at. */
+const SENTENCE_END = /[.?!…]$/;
+/** Gap between two words' timestamps past which they're treated as separate segments (seconds). */
+const SEGMENT_GAP_SEC = 0.7;
+
+/**
+ * Splits a flat run of words into segments by sentence-ending punctuation or a
+ * pause between words — this REPLACES Whisper's own chunk-level segmentation,
+ * which isn't returned when requesting word-level timestamps (see the
+ * `return_timestamps: 'word'` attempt below). Approximate by design: a real
+ * ASR segmenter this is not, just "good enough to split into readable blocks".
+ */
+function segmentWords(words: TranscriptWord[]): TranscriptSegment[] {
+  const segments: TranscriptSegment[] = [];
+  let current: TranscriptWord[] = [];
+  for (const word of words) {
+    const prev = current[current.length - 1];
+    if (prev && word.start - prev.end > SEGMENT_GAP_SEC) {
+      segments.push(toSegment(current));
+      current = [];
+    }
+    current.push(word);
+    if (SENTENCE_END.test(word.text.trim())) {
+      segments.push(toSegment(current));
+      current = [];
+    }
+  }
+  if (current.length) segments.push(toSegment(current));
+  return segments;
+}
+
+function toSegment(words: TranscriptWord[]): TranscriptSegment {
+  return {
+    text: words.map((w) => w.text).join(' ').trim(),
+    start: words[0]!.start,
+    end: words[words.length - 1]!.end,
+    words,
+  };
+}
+
+/**
+ * Fallback when the provider didn't actually return word-level timestamps (see
+ * `wordLevel` detection below): splits the segment's own text into words and
+ * distributes its [start, end] duration across them proportionally by
+ * character length. This is an APPROXIMATION, not real alignment — documented
+ * as such in the plan (docs/project/plans/2026-11-09-voicescribe-xoa-doan-moc-tung-tu.md,
+ * "Hướng đi / cách làm" → Việc B) because true forced alignment would need new
+ * infrastructure disproportionate to this task.
+ */
+function interpolateWords(text: string, start: number, end: number): TranscriptWord[] {
+  const tokens = text.trim().split(/\s+/).filter(Boolean);
+  if (tokens.length === 0) return [];
+  const totalChars = tokens.reduce((sum, t) => sum + t.length, 0) || 1;
+  const duration = Math.max(0, end - start);
+  let cursor = start;
+  return tokens.map((t) => {
+    const share = (t.length / totalChars) * duration;
+    const wordStart = cursor;
+    const wordEnd = tokens.length === 1 ? end : Math.min(end, cursor + share);
+    cursor = wordEnd;
+    return { text: t, start: wordStart, end: wordEnd };
+  });
+}
 
 const MODEL = 'openai/whisper-large-v3';
 const MAX_RETRIES = 4;
@@ -98,10 +164,15 @@ export async function transcribeAudio(options: TranscribeOptions): Promise<Trans
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     if (options.signal?.aborted) throw new CancelledError();
     try {
+      // `return_timestamps: 'word'` is not in the official parameter type (only `boolean`
+      // is) — it's the HF Transformers ASR pipeline's own word-granularity option, which
+      // may or may not be honored depending on which Inference Provider actually serves
+      // this request. Detected below rather than trusted; see interpolateWords() for the
+      // fallback when it isn't honored.
       const output = await client.automaticSpeechRecognition({
         model: MODEL,
         inputs: blob,
-        parameters: { return_timestamps: true },
+        parameters: { return_timestamps: 'word' as unknown as true },
       });
 
       const processingTimeMs = Date.now() - startedAt;
@@ -113,14 +184,36 @@ export async function transcribeAudio(options: TranscribeOptions): Promise<Trans
         );
       }
 
-      const segments = (output.chunks ?? []).map((chunk) => {
-        const [start, end] = chunk.timestamp;
-        return {
-          text: chunk.text,
-          start: start ?? 0,
-          end: end ?? start ?? 0,
-        };
-      });
+      const chunks = output.chunks ?? [];
+      // Heuristic: if every non-empty chunk's trimmed text has no internal
+      // whitespace, the provider gave us one chunk per word — genuine word-level
+      // timestamps. A provider that ignored the 'word' parameter instead returns
+      // the usual multi-word sentence chunks, caught by this same check.
+      const wordLevel =
+        chunks.length > 0 && chunks.every((c) => !c.text.trim().includes(' ') || !c.text.trim());
+
+      let segments: TranscriptSegment[];
+      if (wordLevel) {
+        const words: TranscriptWord[] = chunks
+          .filter((c) => c.text.trim())
+          .map((c) => {
+            const [start, end] = c.timestamp;
+            return { text: c.text.trim(), start: start ?? 0, end: end ?? start ?? 0 };
+          });
+        segments = segmentWords(words);
+      } else {
+        segments = chunks.map((chunk) => {
+          const [start, end] = chunk.timestamp;
+          const segStart = start ?? 0;
+          const segEnd = end ?? segStart;
+          return {
+            text: chunk.text,
+            start: segStart,
+            end: segEnd,
+            words: interpolateWords(chunk.text, segStart, segEnd),
+          };
+        });
+      }
 
       return { text: output.text, segments, processingTimeMs };
     } catch (err) {

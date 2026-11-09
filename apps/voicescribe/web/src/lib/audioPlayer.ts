@@ -22,6 +22,10 @@ export interface AudioPlayerState {
   setRate: (rate: number) => void;
   /** Plays exactly [start, end); stops (or loops back to start) once it reaches end. */
   playRange: (start: number, end: number, loop: boolean) => void;
+  /** Plays a list of ranges back to back, jumping over the gaps between them —
+   * for a block whose words aren't all contiguous in the original audio (text
+   * pasted in from elsewhere). A single range behaves exactly like playRange. */
+  playSequence: (ranges: { start: number; end: number }[], loop: boolean) => void;
   stopRange: () => void;
 }
 
@@ -37,10 +41,14 @@ export function useAudioPlayer(src: string | null): AudioPlayerState {
   const [error, setError] = useState<string | null>(null);
   const [activeRange, setActiveRange] = useState<ActiveRange | null>(null);
   const rangeRef = useRef<ActiveRange | null>(null);
+  const sequenceRef = useRef<{ ranges: { start: number; end: number }[]; index: number; loop: boolean } | null>(
+    null,
+  );
   const rateRef = useRef(1);
 
   useEffect(() => {
     rangeRef.current = null;
+    sequenceRef.current = null;
     setActiveRange(null);
     setError(null);
     setCurrentTime(0);
@@ -52,6 +60,26 @@ export function useAudioPlayer(src: string | null): AudioPlayerState {
     if (!el) return;
     const onTime = () => {
       setCurrentTime(el.currentTime);
+      const seq = sequenceRef.current;
+      if (seq) {
+        const current = seq.ranges[seq.index];
+        if (current && el.currentTime >= current.end) {
+          const nextIndex = seq.index + 1;
+          if (nextIndex < seq.ranges.length) {
+            seq.index = nextIndex;
+            el.currentTime = seq.ranges[nextIndex]!.start;
+          } else if (seq.loop) {
+            seq.index = 0;
+            el.currentTime = seq.ranges[0]!.start;
+          } else {
+            el.pause();
+            sequenceRef.current = null;
+            rangeRef.current = null;
+            setActiveRange(null);
+          }
+        }
+        return;
+      }
       const range = rangeRef.current;
       if (range && el.currentTime >= range.end) {
         if (range.loop) {
@@ -114,14 +142,32 @@ export function useAudioPlayer(src: string | null): AudioPlayerState {
   const playRange = useCallback((start: number, end: number, loop: boolean) => {
     const el = audioRef.current;
     if (!el) return;
+    sequenceRef.current = null;
     rangeRef.current = { start, end, loop };
     setActiveRange({ start, end, loop });
     el.currentTime = start;
     void el.play().catch(() => setError('Không phát được âm thanh.'));
   }, []);
 
+  const playSequence = useCallback((ranges: { start: number; end: number }[], loop: boolean) => {
+    const el = audioRef.current;
+    const first = ranges[0];
+    if (!el || !first) return;
+    if (ranges.length === 1) {
+      playRange(first.start, first.end, loop);
+      return;
+    }
+    sequenceRef.current = { ranges, index: 0, loop };
+    const span = { start: first.start, end: ranges[ranges.length - 1]!.end, loop };
+    rangeRef.current = span;
+    setActiveRange(span);
+    el.currentTime = first.start;
+    void el.play().catch(() => setError('Không phát được âm thanh.'));
+  }, [playRange]);
+
   const stopRange = useCallback(() => {
     rangeRef.current = null;
+    sequenceRef.current = null;
     setActiveRange(null);
     audioRef.current?.pause();
   }, []);
@@ -139,6 +185,7 @@ export function useAudioPlayer(src: string | null): AudioPlayerState {
     seekTo,
     setRate,
     playRange,
+    playSequence,
     stopRange,
   };
 }

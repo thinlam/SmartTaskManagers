@@ -12,7 +12,7 @@ import {
   type RecordingRow,
 } from '../services/recordings.js';
 import type { TranscriptionJobs } from '../services/jobs.js';
-import type { LabeledSegment } from '../types/diarization.js';
+import type { LabeledSegment, Word } from '../types/diarization.js';
 import { isUuid } from '../utils/validation.js';
 
 const NOT_FOUND = { error: 'Không tìm thấy bản ghi.' };
@@ -70,6 +70,8 @@ function parseSpeakerRoster(value: unknown): string[] | null {
 const MAX_SEGMENTS = 5000;
 const MAX_SEGMENT_CHARS = 20000;
 const MAX_TEXT_CHARS = 2_000_000;
+const MAX_WORDS = 200_000;
+const MAX_WORD_CHARS = 200;
 
 function parseSegments(value: unknown): LabeledSegment[] | null {
   if (!Array.isArray(value) || value.length > MAX_SEGMENTS) return null;
@@ -89,9 +91,43 @@ function parseSegments(value: unknown): LabeledSegment[] | null {
     const text = item.text.trim();
     const speaker = item.speaker.trim();
     if (!text || text.length > MAX_SEGMENT_CHARS || !speaker || speaker.length > 60) return null;
-    segments.push({ text, speaker, start: item.start, end: Math.max(item.start, item.end) });
+    let wordIds: string[] | undefined;
+    if ('wordIds' in item && item.wordIds !== undefined) {
+      if (!Array.isArray(item.wordIds) || item.wordIds.length > MAX_WORDS) return null;
+      if (!item.wordIds.every((w) => typeof w === 'string')) return null;
+      wordIds = item.wordIds as string[];
+    }
+    segments.push({
+      text,
+      speaker,
+      start: item.start,
+      end: Math.max(item.start, item.end),
+      ...(wordIds ? { wordIds } : {}),
+    });
   }
   return segments;
+}
+
+function parseWords(value: unknown): Word[] | null {
+  if (!Array.isArray(value) || value.length > MAX_WORDS) return null;
+  const words: Word[] = [];
+  for (const raw of value) {
+    const item = raw as Partial<Word> | null;
+    if (
+      typeof item?.id !== 'string' ||
+      typeof item.text !== 'string' ||
+      typeof item.start !== 'number' ||
+      typeof item.end !== 'number' ||
+      !Number.isFinite(item.start) ||
+      !Number.isFinite(item.end)
+    ) {
+      return null;
+    }
+    const text = item.text.slice(0, MAX_WORD_CHARS);
+    if (!item.id) return null;
+    words.push({ id: item.id, text, start: item.start, end: Math.max(item.start, item.end) });
+  }
+  return words;
 }
 
 const joinSegments = (segments: LabeledSegment[]): string =>
@@ -271,7 +307,7 @@ export function createRecordingsRouter(config: AppConfig, db: Db, jobs: Transcri
       sets.push(`notes = $${params.length}`);
     }
 
-    if ('segments' in body || 'text' in body) {
+    if ('segments' in body || 'text' in body || 'words' in body) {
       const current = await db.query<Pick<RecordingRow, 'status' | 'text' | 'segments'>>(
         'SELECT status, text, segments FROM recordings WHERE id = $1 AND user_id = $2',
         [id, userId],
@@ -309,6 +345,16 @@ export function createRecordingsRouter(config: AppConfig, db: Db, jobs: Transcri
           params.push(joinSegments(segments));
           sets.push(`text = $${params.length}`);
         }
+      }
+
+      if ('words' in body) {
+        const words = parseWords(body.words);
+        if (!words) {
+          res.status(400).json({ error: 'Danh sách từ không hợp lệ.' });
+          return;
+        }
+        params.push(JSON.stringify(words));
+        sets.push(`words = $${params.length}`);
       }
     }
 

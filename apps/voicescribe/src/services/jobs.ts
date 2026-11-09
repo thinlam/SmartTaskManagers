@@ -128,25 +128,26 @@ export class TranscriptionJobs {
       // this file) must not lose the transcript. Fall back to one speaker label
       // and record why.
       let diarizationError: string | null = null;
-      let segments;
-      if (!this.config.diarizationEnabled) {
-        segments = result.segments.map((seg) => ({ ...seg, speaker: 'Người nói 1' }));
-      } else {
+      // mergeTranscriptWithSpeakers() with an empty speaker list already assigns
+      // everything to "Người nói 1" (see its bestSpeakerFor), so this also covers
+      // "diarization disabled" and "diarization failed" — one path builds the
+      // word-id-assigned segments + recording-level word list either way.
+      let speakerSegments: Awaited<ReturnType<typeof diarizeAudio>> = [];
+      if (this.config.diarizationEnabled) {
         try {
-          const speakerSegments = await diarizeAudio({
+          speakerSegments = await diarizeAudio({
             audio,
             fileName: job.fileName,
             numSpeakers: job.numSpeakers,
           });
-          segments = mergeTranscriptWithSpeakers(result.segments, speakerSegments);
         } catch (err) {
           diarizationError =
             err instanceof TranscriptionError
               ? err.message
               : 'Lỗi không xác định khi nhận dạng người nói.';
-          segments = result.segments.map((seg) => ({ ...seg, speaker: 'Người nói 1' }));
         }
       }
+      const { segments, words } = mergeTranscriptWithSpeakers(result.segments, speakerSegments);
 
       if (controller.signal.aborted) return;
 
@@ -180,6 +181,7 @@ export class TranscriptionJobs {
       await completeRecording(this.db, job.recordingId, {
         text: result.text,
         segments,
+        words,
         processingMs: result.processingTimeMs,
         diarizationError,
         audioPath,

@@ -7,7 +7,7 @@ import {
   useState,
   type ReactNode,
 } from 'react';
-import { CheckCircle2, AlertCircle } from 'lucide-react';
+import { CheckCircle2, AlertCircle, Info } from 'lucide-react';
 import { api, getToken, setToken, setUnauthorizedHandler } from '../lib/api';
 import { errorText } from '../lib/format';
 import type { AppConfig, User } from '../types';
@@ -92,11 +92,13 @@ export function useAuth(): AuthState {
 interface ToastApi {
   success: (message: string) => void;
   error: (message: string) => void;
+  /** Neutral, non-urgent notice (e.g. "đoạn có phần âm thanh không liên tục") — not a success or a problem. */
+  info: (message: string) => void;
 }
 
 interface ToastItem {
   id: number;
-  kind: 'success' | 'error';
+  kind: 'success' | 'error' | 'info';
   message: string;
 }
 
@@ -112,7 +114,11 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const api_ = useMemo<ToastApi>(
-    () => ({ success: (m) => push('success', m), error: (m) => push('error', m) }),
+    () => ({
+      success: (m) => push('success', m),
+      error: (m) => push('error', m),
+      info: (m) => push('info', m),
+    }),
     [push],
   );
 
@@ -131,6 +137,8 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           >
             {t.kind === 'success' ? (
               <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600" />
+            ) : t.kind === 'info' ? (
+              <Info className="h-4 w-4 shrink-0 text-slate-400" />
             ) : (
               <AlertCircle className="h-4 w-4 shrink-0 text-rose-600" />
             )}

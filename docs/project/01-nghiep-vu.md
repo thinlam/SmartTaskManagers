@@ -1,6 +1,6 @@
 # 1. Nghiệp vụ từng ứng dụng
 
-> Cập nhật: 2026-11-07. Nội dung dựa trên mã nguồn trong repo (backend, `packages/*`, `apps/*`) tại
+> Cập nhật: 2026-11-09 (thêm xóa/gộp/chuyển đoạn + mốc thời gian theo từ cho VoiceScribe). Nội dung dựa trên mã nguồn trong repo (backend, `packages/*`, `apps/*`) tại
 > thời điểm này. Chỗ nào chưa kiểm chứng trên máy thật được ghi rõ.
 
 Repo `SmartTaskManagers` chứa **4 ứng dụng** dùng chung một kho mã:
@@ -136,6 +136,12 @@ media, Báo cáo (xuất CSV, hộp thoại chọn nơi lưu), Thành viên, Cà
 4. **Thư viện:** tìm kiếm theo tiêu đề/nội dung, lọc theo thư mục, xem chi tiết, xóa.
 5. **Chi tiết:** xem chép lời theo đoạn hoặc theo người nói, đổi tên người nói, ghi chú, **xuất Word,
    TXT, SRT**. Trên Android, xuất file mở bảng chia sẻ của hệ thống.
+6. **Chỉnh sửa đoạn (chế độ Chỉnh sửa):** xóa đoạn (không hỏi xác nhận, toast "Đã xóa đoạn · Hoàn tác"
+   8s + Ctrl+Z), gộp với đoạn trước/sau. Nếu bản ghi có mốc thời gian theo từng từ: bôi chọn chữ rồi
+   "Chuyển lên đoạn trước"/"Chuyển xuống đoạn sau" (giữ đúng mốc của chữ di chuyển), "Tách đoạn tại con
+   trỏ"; nghe lại 1 đoạn luôn phát đúng chữ hiện có trong đoạn đó (không theo mốc đoạn cũ), tô từng từ
+   đang đọc khi phát. Mốc theo từ lấy từ Whisper khi engine hỗ trợ, hoặc nội suy gần đúng khi không —
+   xem `docs/project/plans/2026-11-09-voicescribe-xoa-doan-moc-tung-tu.md`.
 
 ### 3.2 Đối tượng
 

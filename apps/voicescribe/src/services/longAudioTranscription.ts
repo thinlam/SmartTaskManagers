@@ -44,6 +44,11 @@ function mergeChunkSegments(
         text: seg.text,
         start: startSec + seg.start,
         end: startSec + seg.end,
+        words: seg.words?.map((w) => ({
+          text: w.text,
+          start: startSec + w.start,
+          end: startSec + w.end,
+        })),
       });
     }
   });
