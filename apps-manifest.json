@@ -154,10 +154,10 @@
           "label": "Windows Desktop (khuyên dùng)",
           "note": "Setup.exe · kết nối sẵn tới máy chủ VoiceScribe (Railway)",
           "actionLabel": "Tải Setup.exe",
-          "downloadUrl": "https://github.com/thinlam/SmartTaskManagers/releases/download/voicescribe-v0.2.9/voicescribe_0.2.9_x64-setup.exe",
+          "downloadUrl": "https://github.com/thinlam/SmartTaskManagers/releases/download/voicescribe-v0.2.10/voicescribe_0.2.10_x64-setup.exe",
           "installer": {
-            "version": "0.2.9",
-            "sha256": "2c5440babba77c2b40db8e7370b9928eda0df45002a35f95ffd45dba26d0826e",
+            "version": "0.2.10",
+            "sha256": "7e74ed6b1bbf327275ee0d746e55797ec213269a950f0d330fcfaf60c997f337",
             "installerType": "nsis",
             "silentArgs": ["/S"],
             "startMenuShortcut": "VoiceScribe\\voicescribe.lnk"
@@ -167,10 +167,10 @@
           "label": "Windows Desktop (.msi)",
           "note": "Dùng nếu công ty/tổ chức bạn yêu cầu cài qua MSI",
           "actionLabel": "Tải .msi",
-          "downloadUrl": "https://github.com/thinlam/SmartTaskManagers/releases/download/voicescribe-v0.2.9/voicescribe_0.2.9_x64_en-US.msi",
+          "downloadUrl": "https://github.com/thinlam/SmartTaskManagers/releases/download/voicescribe-v0.2.10/voicescribe_0.2.10_x64_en-US.msi",
           "installer": {
-            "version": "0.2.9",
-            "sha256": "4da86ead6bf03d3c7d31bea54d430f04c8e5ad3e5985b672b5e84741c780c2e0",
+            "version": "0.2.10",
+            "sha256": "5f2ac82a83923acd96be2ba8c7637bdb9f33354111fb41be64e297a7aacf6724",
             "installerType": "msi",
             "silentArgs": ["/qn"],
             "startMenuShortcut": "VoiceScribe\\voicescribe.lnk"

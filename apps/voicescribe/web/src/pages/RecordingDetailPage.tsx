@@ -372,6 +372,10 @@ export function RecordingDetailPage({
   const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const rec = recording.data;
+  // Fallback for a backend that hasn't been deployed/migrated yet (no `words` column/field
+  // returned at all) — without this, every word-level helper below crashes on `.map()` of
+  // undefined the moment a recording loads, which is exactly what blanked the screen.
+  const recWords = rec?.words ?? [];
   const processing = rec?.status === 'processing';
   const [playFiltered, setPlayFiltered] = useState(false);
   const src = rec ? audioUrl(rec.id, rec.hasAudio, playFiltered ? 'filtered' : undefined) : null;
@@ -387,7 +391,7 @@ export function RecordingDetailPage({
       const raw: { start: number; end: number }[] = [];
       for (let i = block.from; i <= block.to; i++) {
         const seg = rec.segments[i];
-        if (seg) raw.push(...playbackRanges(rec.words, seg, 0));
+        if (seg) raw.push(...playbackRanges(recWords, seg, 0));
       }
       const merged: { start: number; end: number }[] = [];
       for (const r of raw) {
@@ -917,7 +921,7 @@ export function RecordingDetailPage({
               ) : (
                 <SpeakerTranscript
                   segments={rec.segments}
-                  words={rec.words}
+                  words={recWords}
                   speakerOrder={speakerOrder}
                   speakerNames={rec.speakerNames}
                   editing={editing}

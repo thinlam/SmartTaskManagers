@@ -12,7 +12,7 @@ export const PLAYBACK_PAD_SEC = 0.1;
 const tokensOf = (text: string): string[] => text.trim().split(/\s+/).filter(Boolean);
 
 export function wordsOf(words: Word[], seg: LabeledSegment): Word[] {
-  if (!seg.wordIds) return [];
+  if (!seg.wordIds || !words) return [];
   const byId = new Map(words.map((w) => [w.id, w] as const));
   const found = seg.wordIds.map((id) => byId.get(id));
   return found.every((w): w is Word => !!w) ? (found as Word[]) : [];

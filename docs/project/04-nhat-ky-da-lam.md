@@ -1,6 +1,6 @@
 # 4. Nhật ký những gì đã làm
 
-> Cập nhật: 2026-11-09 (sửa màn hình trắng VoiceScribe desktop 0.2.10). Ngày lấy từ lịch sử Git
+> Cập nhật: 2026-11-09 (sửa màn hình trắng VoiceScribe desktop 0.2.10, Hub trỏ sang 0.2.10). Ngày lấy từ lịch sử Git
 > (`git log`), **247 commit** từ 2026-09-15 đến 2026-11-01.
 > Nhịp làm việc: tháng 9/2026 có 147 commit, tháng 10 có 89, 11 ngày đầu tháng 11 có 11.
 > Đây là bản tóm tắt theo mốc, không liệt kê từng commit. Muốn xem chi tiết dùng
@@ -116,6 +116,8 @@ chứng thêm: `npm run typecheck --workspace=apps/hub` và `npm run build --wor
 
 | 2026-11-09 | **VoiceScribe desktop 0.2.10 — sửa màn hình trắng:** nhờ bật DevTools ở bản chẩn đoán trước, người dùng mở được Console và cho thấy app đang nối tới backend thật trên Railway (`voicescribe-production-57f0.up.railway.app`) — **backend đó chưa deploy code/migration 006 của Việc B** (không nằm trong việc của trợ lý, do chủ dự án tự deploy Railway), nên API trả về bản ghi **không có field `words`** (`undefined`). Code Việc B lại giả định `rec.words` luôn là mảng (`words.map(...)` ngay trong `wordsOf`/`WordHighlighted`), nên bị crash ngay khi mở trang chi tiết bản ghi (không bắt được exception) → React render ra trắng trơn không báo lỗi gì trên UI. Sửa: `RecordingDetailPage.tsx` thêm `recWords = rec?.words ?? []`, dùng ở mọi chỗ thay cho `rec.words` trực tiếp; `lib/words.ts`'s `wordsOf` thêm chốt chặn `!words` phòng hờ. Giữ nguyên `features = ["devtools"]` đã bật ở Cargo.toml (không hại gì, hữu ích cho debug sau này). Build thật: `voicescribe_0.2.10_x64-setup.exe` (2387613 byte, SHA-256 `7e74ed6b1bbf327275ee0d746e55797ec213269a950f0d330fcfaf60c997f337`) và `voicescribe_0.2.10_x64_en-US.msi` (3502080 byte, SHA-256 `5f2ac82a83923acd96be2ba8c7637bdb9f33354111fb41be64e297a7aacf6724`). Đã kiểm chứng: `tsc`/`vite build --mode desktop` sạch, `cargo` release build sạch, 2 bundle tạo ra thật. **Lưu ý quan trọng còn lại:** vì backend Railway chưa deploy Việc B, các tính năng "Chuyển lên/xuống đoạn", "Tách đoạn", mốc theo từ, tô từ đang đọc... sẽ **không hoạt động thật** cho tới khi backend được deploy + chạy migration `006` — bản 0.2.10 này chỉ đảm bảo app **không crash** khi gặp backend cũ, các tính năng cũ (Việc A: xóa/gộp đoạn, nghe theo đoạn kiểu cũ...) vẫn chạy bình thường. |
 
+| 2026-11-09 | **Hub trỏ VoiceScribe sang release 0.2.10:** sau khi tạo tag `voicescribe-v0.2.10` + GitHub Release (asset đã đối chiếu size qua `gh release view --json assets` khớp 100%, test tải `curl -sI -L` trả về 302→200 OK), cập nhật `apps-manifest.json` và `apps/hub/src/data/apps.ts` sang version `0.2.10`, URL và SHA-256 mới cho cả `.exe` và `.msi`. Đã kiểm chứng: `npm run typecheck --workspace=apps/hub` và `npm run build --workspace=apps/hub` sạch. |
+
 ## Phiên bản đã phát hành lên Hub
 
 | App                | Phiên bản             | Ngày                                                                     |
@@ -133,7 +135,8 @@ chứng thêm: `npm run typecheck --workspace=apps/hub` và `npm run build --wor
 | VoiceScribe        | 0.2.6                 | 2026-11-05                                                               |
 | VoiceScribe        | 0.2.7                 | 2026-11-09                                                               |
 | VoiceScribe        | 0.2.8                 | 2026-11-09                                                               |
-| VoiceScribe        | **0.2.9**             | 2026-11-09                                                               |
+| VoiceScribe        | 0.2.9                 | 2026-11-09                                                               |
+| VoiceScribe        | **0.2.10**            | 2026-11-09                                                               |
 | Content Manager    | 0.1.1, 0.1.2, 0.1.3   | 2026-10-27                                                               |
 | Hub                | 0.1.1 (bump trong mã) | 2026-10-24 (chưa có Release)                                             |
 
