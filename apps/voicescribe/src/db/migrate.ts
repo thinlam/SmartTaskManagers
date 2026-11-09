@@ -74,6 +74,23 @@ const MIGRATIONS: Migration[] = [
           CHECK (denoise_level IN ('off', 'light', 'medium', 'strong'));
     `,
   },
+  {
+    // Speaker list used to be derived live from `segments`, so a speaker with
+    // no segments left (e.g. reassigned away) silently vanished from the
+    // picker. This column is the persisted, independent roster of speaker
+    // keys for a recording — it only ever grows/shrinks by explicit user
+    // action (add/rename/delete), never by re-deriving from segments.
+    // Backfill is best-effort: it can only see speakers present in segments
+    // *today*, so anyone already lost to the old bug stays lost.
+    id: '005_recording_speaker_roster',
+    sql: `
+      ALTER TABLE recordings ADD COLUMN speaker_roster jsonb NOT NULL DEFAULT '[]';
+      UPDATE recordings SET speaker_roster = (
+        SELECT coalesce(jsonb_agg(DISTINCT seg->>'speaker'), '[]'::jsonb)
+        FROM jsonb_array_elements(segments) seg
+      );
+    `,
+  },
 ];
 
 /** Applies pending migrations in order, each in its own transaction. Safe to run on every start. */

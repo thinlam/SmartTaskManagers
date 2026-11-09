@@ -6,7 +6,6 @@ import {
   buildBlocks,
   clock,
   displayName,
-  nextSpeakerKey,
   replaceBlockText,
   type Block,
 } from '../lib/transcript';
@@ -234,6 +233,7 @@ export function SpeakerTranscript({
   editing,
   query,
   onChange,
+  onCreateSpeaker,
   onRenameSpeaker,
   canPlayAudio = false,
   currentTime = 0,
@@ -247,6 +247,8 @@ export function SpeakerTranscript({
   editing: boolean;
   query: string;
   onChange: (change: SegmentsChange) => void;
+  /** Adds a brand-new speaker (to the recording's roster) and assigns this block to it in one go. */
+  onCreateSpeaker: (name: string, block: Block) => void;
   onRenameSpeaker: (raw: string, name: string) => void;
   /** Whether the recording has audio to play back (hides the per-block play button otherwise). */
   canPlayAudio?: boolean;
@@ -329,17 +331,13 @@ export function SpeakerTranscript({
                   onAssign={(raw) =>
                     onChange({ segments: assignBlockSpeaker(segments, block, raw) })
                   }
-                  onCreate={(name) => {
-                    const raw = nextSpeakerKey(speakerOrder);
-                    onChange({
-                      segments: assignBlockSpeaker(segments, block, raw),
-                      speakerNames: { ...speakerNames, [raw]: name },
-                    });
-                  }}
+                  onCreate={(name) => onCreateSpeaker(name, block)}
                   onRename={onRenameSpeaker}
                 />
               ) : (
-                <span className={`inline-flex items-center gap-1.5 text-sm font-semibold text-slate-800`}>
+                <span
+                  className={`inline-flex items-center gap-1.5 text-sm font-semibold text-slate-800`}
+                >
                   <span className={`h-2 w-2 rounded-full ${color.dot}`} />
                   {displayName(speakerNames, block.speaker)}
                 </span>

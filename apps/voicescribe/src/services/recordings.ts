@@ -21,6 +21,8 @@ export interface RecordingRow {
   text: string;
   segments: LabeledSegment[];
   speaker_names: Record<string, string>;
+  /** Persisted, independent of `segments` — see migration 005's comment. */
+  speaker_roster: string[];
   notes: RecordingNote[];
   processing_ms: number;
   diarization_error: string | null;
@@ -55,6 +57,7 @@ export function toDetailDto(r: RecordingRow) {
     text: r.text,
     segments: r.segments,
     speakerNames: r.speaker_names,
+    speakerRoster: r.speaker_roster,
     notes: r.notes,
     processingTimeMs: r.processing_ms,
     diarizationError: r.diarization_error,
@@ -106,6 +109,13 @@ export interface CompletedRecording {
   denoiseLevel: DenoiseLevel;
 }
 
+/** First-seen order of speaker keys — only used to seed a brand-new recording's roster. */
+function speakerOrderOf(segments: LabeledSegment[]): string[] {
+  const seen: string[] = [];
+  for (const seg of segments) if (!seen.includes(seg.speaker)) seen.push(seg.speaker);
+  return seen;
+}
+
 export async function completeRecording(
   db: Db,
   id: string,
@@ -116,6 +126,7 @@ export async function completeRecording(
     `UPDATE recordings
         SET status = 'done', text = $2, segments = $3, duration_sec = $4, processing_ms = $5,
             diarization_error = $6, audio_path = $7, audio_filtered_path = $8, denoise_level = $9,
+            speaker_roster = $10,
             error = NULL, progress_done = progress_total, updated_at = now()
       WHERE id = $1`,
     [
@@ -128,6 +139,7 @@ export async function completeRecording(
       done.audioPath,
       done.filteredAudioPath,
       done.denoiseLevel,
+      JSON.stringify(speakerOrderOf(done.segments)),
     ],
   );
 }

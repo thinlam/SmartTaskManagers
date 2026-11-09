@@ -55,6 +55,18 @@ function parseSpeakerNames(value: unknown): Record<string, string> | null {
   return names;
 }
 
+function parseSpeakerRoster(value: unknown): string[] | null {
+  if (!Array.isArray(value) || value.length > 50) return null;
+  const roster: string[] = [];
+  for (const raw of value) {
+    if (typeof raw !== 'string') return null;
+    const key = raw.trim();
+    if (!key || key.length > 60 || roster.includes(key)) return null;
+    roster.push(key);
+  }
+  return roster;
+}
+
 const MAX_SEGMENTS = 5000;
 const MAX_SEGMENT_CHARS = 20000;
 const MAX_TEXT_CHARS = 2_000_000;
@@ -235,6 +247,16 @@ export function createRecordingsRouter(config: AppConfig, db: Db, jobs: Transcri
       }
       params.push(JSON.stringify(names));
       sets.push(`speaker_names = $${params.length}`);
+    }
+
+    if ('speakerRoster' in body) {
+      const roster = parseSpeakerRoster(body.speakerRoster);
+      if (!roster) {
+        res.status(400).json({ error: 'Danh sách người nói không hợp lệ.' });
+        return;
+      }
+      params.push(JSON.stringify(roster));
+      sets.push(`speaker_roster = $${params.length}`);
     }
 
     if ('notes' in body) {

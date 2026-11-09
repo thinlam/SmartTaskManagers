@@ -19,7 +19,12 @@ export function buildBlocks(segments: LabeledSegment[], merge: boolean): Block[]
   segments.forEach((seg, i) => {
     const text = seg.text.trim();
     const last = blocks[blocks.length - 1];
-    if (merge && last && last.speaker === seg.speaker && last.text.length + text.length < MAX_BLOCK_CHARS) {
+    if (
+      merge &&
+      last &&
+      last.speaker === seg.speaker &&
+      last.text.length + text.length < MAX_BLOCK_CHARS
+    ) {
       last.text = `${last.text} ${text}`;
       last.end = seg.end;
       last.to = i;
@@ -30,6 +35,13 @@ export function buildBlocks(segments: LabeledSegment[], merge: boolean): Block[]
   return blocks;
 }
 
+/**
+ * First-seen order of speaker keys in the segments. Only a fallback for
+ * recordings predating the `speakerRoster` column (migrated best-effort) —
+ * the roster itself is the source of truth everywhere else, since deriving
+ * "who's in this recording" from segments is exactly the bug that caused a
+ * speaker to vanish once none of their segments were left.
+ */
 export function speakerOrderOf(segments: LabeledSegment[]): string[] {
   const seen: string[] = [];
   for (const seg of segments) if (!seen.includes(seg.speaker)) seen.push(seg.speaker);
@@ -38,6 +50,38 @@ export function speakerOrderOf(segments: LabeledSegment[]): string[] {
 
 export function displayName(names: Record<string, string>, raw: string): string {
   return names[raw] ?? raw;
+}
+
+const normalizedName = (name: string): string => name.trim().toLowerCase();
+
+/** The raw key of an existing roster entry whose display name matches (case/space-insensitive), if any. */
+export function findSpeakerByName(
+  roster: string[],
+  names: Record<string, string>,
+  name: string,
+  exceptRaw?: string,
+): string | null {
+  const target = normalizedName(name);
+  for (const raw of roster) {
+    if (raw === exceptRaw) continue;
+    if (normalizedName(displayName(names, raw)) === target) return raw;
+  }
+  return null;
+}
+
+export function omitKey(names: Record<string, string>, raw: string): Record<string, string> {
+  const copy = { ...names };
+  delete copy[raw];
+  return copy;
+}
+
+/** Reassigns every segment from one speaker key to another (used when merging two speakers). */
+export function mergeSpeakers(
+  segments: LabeledSegment[],
+  fromRaw: string,
+  toRaw: string,
+): LabeledSegment[] {
+  return segments.map((seg) => (seg.speaker === fromRaw ? { ...seg, speaker: toRaw } : seg));
 }
 
 /** The single-paragraph version: the stored text, or the segments joined if it is empty. */

@@ -173,6 +173,7 @@ export const api = {
         title?: string;
         folderId?: string | null;
         speakerNames?: Record<string, string>;
+        speakerRoster?: string[];
         text?: string;
         segments?: LabeledSegment[];
         notes?: Pick<RecordingNote, 'text'>[] | RecordingNote[];

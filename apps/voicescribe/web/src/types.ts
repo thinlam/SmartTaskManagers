@@ -60,6 +60,8 @@ export interface Recording {
   text: string;
   segments: LabeledSegment[];
   speakerNames: Record<string, string>;
+  /** Persisted list of speaker keys for this recording, independent of which segments are currently assigned to whom — never re-derived from `segments`. */
+  speakerRoster: string[];
   notes: RecordingNote[];
   processingTimeMs: number;
   diarizationError: string | null;

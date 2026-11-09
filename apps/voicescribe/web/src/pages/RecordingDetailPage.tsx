@@ -11,6 +11,7 @@ import {
   Pause,
   Pencil,
   Play,
+  Plus,
   Repeat,
   RotateCcw,
   RotateCw,
@@ -37,9 +38,14 @@ import {
   type ViewMode,
 } from '../lib/export';
 import {
+  assignBlockSpeaker,
   buildBlocks,
   clock,
   displayName,
+  findSpeakerByName,
+  mergeSpeakers,
+  nextSpeakerKey,
+  omitKey,
   paragraphOf,
   speakerOrderOf,
   type Block,
@@ -54,6 +60,7 @@ import {
 import {
   Card,
   ConfirmDialog,
+  dangerButtonClass,
   ErrorNotice,
   ProgressBar,
   Spinner,
@@ -350,6 +357,14 @@ export function RecordingDetailPage({
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [loopBlock, setLoopBlock] = useState(false);
+  const [newSpeakerDraft, setNewSpeakerDraft] = useState('');
+  const [mergeConfirm, setMergeConfirm] = useState<{
+    fromRaw: string;
+    toRaw: string;
+    name: string;
+  } | null>(null);
+  const [deleteSpeaker, setDeleteSpeaker] = useState<{ raw: string; name: string } | null>(null);
+  const [reassignTo, setReassignTo] = useState('');
 
   const rec = recording.data;
   const processing = rec?.status === 'processing';
@@ -413,7 +428,14 @@ export function RecordingDetailPage({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [processing, id]);
 
-  const speakerOrder = useMemo(() => speakerOrderOf(rec?.segments ?? []), [rec?.segments]);
+  // `speakerRoster` is the source of truth (persisted, independent of segments — see
+  // migration 005). The fallback only matters for a recording that somehow has an
+  // empty roster (shouldn't happen post-migration, but segments are the last resort
+  // rather than showing nothing).
+  const speakerOrder = useMemo(
+    () => (rec?.speakerRoster.length ? rec.speakerRoster : speakerOrderOf(rec?.segments ?? [])),
+    [rec?.speakerRoster, rec?.segments],
+  );
   const multiSpeaker = speakerOrder.length > 1;
   const mode: ViewMode = chosenMode ?? (multiSpeaker ? 'speakers' : 'paragraph');
 
@@ -429,9 +451,91 @@ export function RecordingDetailPage({
       name: displayName(rec.speakerNames, raw),
       seconds: totals.get(raw) ?? 0,
       percent: Math.round(((totals.get(raw) ?? 0) / sum) * 100),
+      inUse: rec.segments.some((seg) => seg.speaker === raw),
       color: colorOf(i).dot,
     }));
   }, [rec, speakerOrder]);
+
+  /** Adds a brand-new speaker to the roster, not tied to any block. Rejects a duplicate name outright. */
+  function addSpeakerToRoster(name: string) {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    if (findSpeakerByName(speakerOrder, rec!.speakerNames, trimmed)) {
+      toast.error('Tên người nói đã tồn tại.');
+      return;
+    }
+    const raw = nextSpeakerKey(speakerOrder);
+    void save({
+      speakerRoster: [...speakerOrder, raw],
+      speakerNames: { ...rec!.speakerNames, [raw]: trimmed },
+    });
+  }
+
+  /** Adds a brand-new speaker AND assigns this block to it, in one save. Rejects a duplicate name. */
+  function createSpeakerForBlock(name: string, block: Block) {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    if (findSpeakerByName(speakerOrder, rec!.speakerNames, trimmed)) {
+      toast.error('Tên người nói đã tồn tại.');
+      return;
+    }
+    const raw = nextSpeakerKey(speakerOrder);
+    void save({
+      segments: assignBlockSpeaker(rec!.segments, block, raw),
+      speakerRoster: [...speakerOrder, raw],
+      speakerNames: { ...rec!.speakerNames, [raw]: trimmed },
+    });
+  }
+
+  /** Renames a speaker everywhere (just the one Speaker entry — all its segments follow via speakerNames/raw key). */
+  function renameSpeakerEverywhere(raw: string, name: string) {
+    const trimmed = name.trim();
+    if (!trimmed || trimmed === displayName(rec!.speakerNames, raw)) return;
+    const collision = findSpeakerByName(speakerOrder, rec!.speakerNames, trimmed, raw);
+    if (collision) {
+      setMergeConfirm({ fromRaw: raw, toRaw: collision, name: trimmed });
+      return;
+    }
+    void save({ speakerNames: { ...rec!.speakerNames, [raw]: trimmed } });
+  }
+
+  function confirmMerge() {
+    if (!mergeConfirm || !rec) return;
+    const { fromRaw, toRaw } = mergeConfirm;
+    void save(
+      {
+        segments: mergeSpeakers(rec.segments, fromRaw, toRaw),
+        speakerRoster: speakerOrder.filter((raw) => raw !== fromRaw),
+        speakerNames: omitKey(rec.speakerNames, fromRaw),
+      },
+      'Đã gộp người nói.',
+    );
+    setMergeConfirm(null);
+  }
+
+  function askDeleteSpeaker(raw: string) {
+    if (speakerOrder.length <= 1) {
+      toast.error('Phải còn ít nhất một người nói.');
+      return;
+    }
+    setReassignTo(speakerOrder.find((r) => r !== raw) ?? '');
+    setDeleteSpeaker({ raw, name: displayName(rec!.speakerNames, raw) });
+  }
+
+  function confirmDeleteSpeaker() {
+    if (!deleteSpeaker || !rec) return;
+    const { raw } = deleteSpeaker;
+    const inUse = rec.segments.some((seg) => seg.speaker === raw);
+    void save(
+      {
+        segments: inUse ? mergeSpeakers(rec.segments, raw, reassignTo) : rec.segments,
+        speakerRoster: speakerOrder.filter((r) => r !== raw),
+        speakerNames: omitKey(rec.speakerNames, raw),
+      },
+      'Đã xóa người nói.',
+    );
+    setDeleteSpeaker(null);
+  }
 
   if (recording.loading && !rec)
     return (
@@ -746,9 +850,8 @@ export function RecordingDetailPage({
                   editing={editing}
                   query={search}
                   onChange={changeSegments}
-                  onRenameSpeaker={(raw, name) =>
-                    void save({ speakerNames: { ...rec.speakerNames, [raw]: name } })
-                  }
+                  onCreateSpeaker={createSpeakerForBlock}
+                  onRenameSpeaker={renameSpeakerEverywhere}
                   canPlayAudio={Boolean(src)}
                   currentTime={player.currentTime}
                   isPlayingAudio={player.isPlaying}
@@ -796,23 +899,71 @@ export function RecordingDetailPage({
               </dl>
             </Card>
 
-            {multiSpeaker && (
+            {done && speakerOrder.length > 0 && (
               <Card className="p-5">
-                <h3 className="mb-3 font-semibold text-slate-900">Thời gian nói</h3>
+                <h3 className="mb-3 font-semibold text-slate-900">Người nói</h3>
                 <div className="space-y-3">
                   {speakerStats.map((s) => (
-                    <div key={s.raw}>
-                      <div className="mb-1 flex justify-between text-sm">
-                        <span className="truncate font-medium text-slate-700">{s.name}</span>
+                    <div key={s.raw} className="group">
+                      <div className="mb-1 flex items-center justify-between gap-2 text-sm">
+                        <input
+                          defaultValue={s.name}
+                          key={s.name}
+                          maxLength={60}
+                          onBlur={(e) => renameSpeakerEverywhere(s.raw, e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') e.currentTarget.blur();
+                            if (e.key === 'Escape') {
+                              e.currentTarget.value = s.name;
+                              e.currentTarget.blur();
+                            }
+                          }}
+                          title="Đổi tên ở mọi đoạn"
+                          className="min-w-0 flex-1 truncate rounded-lg border border-transparent bg-transparent px-1.5 py-0.5 font-medium text-slate-700 outline-none hover:border-slate-200 focus:border-indigo-300 focus:bg-white"
+                        />
                         <span className="shrink-0 text-slate-400">
-                          {formatDuration(s.seconds)} · {s.percent}%
+                          {s.inUse ? `${formatDuration(s.seconds)} · ${s.percent}%` : 'Chưa gán'}
                         </span>
+                        <button
+                          onClick={() => askDeleteSpeaker(s.raw)}
+                          aria-label={`Xóa người nói ${s.name}`}
+                          title="Xóa người nói"
+                          className="shrink-0 rounded-lg p-1 text-slate-300 opacity-0 hover:bg-rose-50 hover:text-rose-600 group-hover:opacity-100"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
                       </div>
                       <div className="h-1.5 overflow-hidden rounded-full bg-slate-100">
                         <div className={`h-full ${s.color}`} style={{ width: `${s.percent}%` }} />
                       </div>
                     </div>
                   ))}
+                </div>
+                <div className="mt-3 flex items-center gap-1.5 border-t border-slate-100 pt-3">
+                  <input
+                    value={newSpeakerDraft}
+                    maxLength={60}
+                    placeholder="Người nói mới..."
+                    onChange={(e) => setNewSpeakerDraft(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        addSpeakerToRoster(newSpeakerDraft);
+                        setNewSpeakerDraft('');
+                      }
+                    }}
+                    className="min-w-0 flex-1 rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-indigo-400"
+                  />
+                  <button
+                    onClick={() => {
+                      addSpeakerToRoster(newSpeakerDraft);
+                      setNewSpeakerDraft('');
+                    }}
+                    disabled={!newSpeakerDraft.trim()}
+                    aria-label="Thêm người nói"
+                    className="rounded-lg bg-indigo-600 p-1.5 text-white hover:bg-indigo-500 disabled:opacity-40"
+                  >
+                    <Plus className="h-4 w-4" />
+                  </button>
                 </div>
               </Card>
             )}
@@ -876,6 +1027,68 @@ export function RecordingDetailPage({
           onConfirm={remove}
           onCancel={() => setConfirmDelete(false)}
         />
+      )}
+
+      {mergeConfirm && (
+        <ConfirmDialog
+          title="Gộp người nói?"
+          message={`Tên "${mergeConfirm.name}" đã dùng cho một người nói khác trong bản ghi này. Gộp hai người nói này lại (mọi đoạn của cả hai sẽ thuộc về một người)?`}
+          confirmLabel="Gộp"
+          busy={saving}
+          onConfirm={confirmMerge}
+          onCancel={() => setMergeConfirm(null)}
+        />
+      )}
+
+      {deleteSpeaker && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Xóa người nói"
+          className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/40 px-4 pb-[max(1rem,var(--sab))] pt-[max(1rem,var(--sat))]"
+          onClick={() => setDeleteSpeaker(null)}
+        >
+          <div
+            className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-lg font-semibold text-slate-900">
+              Xóa người nói &ldquo;{deleteSpeaker.name}&rdquo;?
+            </h2>
+            {speakerStats.find((s) => s.raw === deleteSpeaker.raw)?.inUse ? (
+              <>
+                <p className="mt-2 text-sm text-slate-600">
+                  Người này vẫn còn đoạn được gán. Chuyển các đoạn đó sang người nói nào?
+                </p>
+                <select
+                  value={reassignTo}
+                  onChange={(e) => setReassignTo(e.target.value)}
+                  className="mt-3 w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm"
+                >
+                  {speakerOrder
+                    .filter((raw) => raw !== deleteSpeaker.raw)
+                    .map((raw) => (
+                      <option key={raw} value={raw}>
+                        {displayName(rec.speakerNames, raw)}
+                      </option>
+                    ))}
+                </select>
+              </>
+            ) : (
+              <p className="mt-2 text-sm text-slate-600">
+                Người này chưa được gán cho đoạn nào, sẽ bị xóa khỏi danh sách.
+              </p>
+            )}
+            <div className="mt-5 flex justify-end gap-2">
+              <button onClick={() => setDeleteSpeaker(null)} className={secondaryButtonClass}>
+                Hủy
+              </button>
+              <button onClick={confirmDeleteSpeaker} className={dangerButtonClass}>
+                Xóa
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

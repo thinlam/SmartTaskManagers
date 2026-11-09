@@ -169,3 +169,55 @@ lỗi nghiêm trọng — danh sách người nói trong popup "Đoạn này do 
   đã sửa và re-verify lại typecheck/build sau đó không gãy. **Chưa chạy thật** backend+Postgres local để thử
   denoise/transcribe bằng file thật, chưa chạy migration `004` trên dữ liệu thật, và chưa có kết quả WER như
   nêu trên.
+
+### Việc 3 — Sửa bug danh sách người nói (xong 2026-11-09)
+
+- **Đúng bug đã xác nhận trong code:** `speakerOrder` ở `RecordingDetailPage.tsx` trước đây tính bằng
+  `speakerOrderOf(rec.segments)` — suy ra "on the fly" từ `segments` mỗi lần render. Khi một người nói
+  không còn đoạn nào (đổi hết sang người khác), họ biến mất khỏi mảng này ngay, nên biến mất khỏi popup
+  "Đoạn này do ai nói" — đúng như brief mô tả.
+- **Cách sửa (theo đúng Hướng đi đã chốt — KHÔNG đổi sang `Speaker{id,name,color}` quan hệ riêng):** thêm
+  cột `speaker_roster` (jsonb, migration `005_recording_speaker_roster`) trên `recordings`, giữ danh sách
+  **key chuỗi** (`string[]`, cùng kiểu key hiện có trong `segments[].speaker`/`speakerNames`) — độc lập
+  hoàn toàn với `segments`, chỉ đổi khi người dùng chủ động thêm/đổi tên/xóa/gộp qua API (`PATCH
+/recordings/:id` nhận thêm field `speakerRoster`, validate mảng string trim, không trùng, ≤50 phần tử,
+  ≤60 ký tự/tên). Backfill cho bản ghi cũ: `speaker_roster` = danh sách speaker duy nhất đang có trong
+  `segments` tại thời điểm migrate (không phục hồi được người đã mất trước đó — đúng rủi ro đã nêu ở Hướng
+  đi). Bản ghi mới: `completeRecording()` khởi tạo `speaker_roster` = `speakerOrderOf(segments)` lúc hoàn
+  tất transcribe (named riêng trong `recordings.ts`, không dùng lại hàm phía frontend).
+- **Frontend (`lib/transcript.ts`, `TranscriptView.tsx`, `RecordingDetailPage.tsx`):**
+  - `speakerOrder` ở trang chi tiết giờ đọc từ `rec.speakerRoster` (chỉ fallback về
+    `speakerOrderOf(segments)` nếu roster trống — phòng hờ, không nên xảy ra sau migration).
+  - Thêm card "Người nói" (thay "Thời gian nói" cũ) — luôn hiện khi bản ghi xong và có ít nhất 1 người
+    nói, không còn phụ thuộc `multiSpeaker` (>1): đổi tên inline (click vào tên, Enter/blur để lưu, Esc để
+    hủy — gọi đúng 1 hàm `renameSpeakerEverywhere`, cả segments vẫn trỏ theo `speaker` key cũ nên tự động
+    theo tên mới), nút xóa (icon thùng rác) từng người, ô "+ Thêm người nói" để thêm vào roster mà không
+    cần gán cho đoạn nào trước (đúng yêu cầu "roster toàn bản ghi, tách khỏi gán đoạn").
+  - **Ngăn trùng tên:** `findSpeakerByName()` so khớp tên đã trim + lowercase. Tạo người nói mới (từ nút
+    "+" trong card hoặc nút "+" trong popup chọn người nói của từng đoạn) mà trùng tên người đã có →
+    chặn, báo toast "Tên người nói đã tồn tại.", không tạo trùng.
+  - **Đổi tên → hỏi gộp nếu trùng:** đổi tên một người nói thành tên đã có ở người khác → hiện
+    `ConfirmDialog` hỏi gộp; đồng ý thì `mergeSpeakers()` chuyển toàn bộ đoạn từ key cũ sang key trùng,
+    xóa key cũ khỏi roster + `speakerNames`.
+  - **Xóa người nói → cảnh báo, không xóa âm thầm:** luôn còn ≥1 người nói trong roster (chặn xóa người
+    cuối cùng, báo toast). Nếu người đó còn đoạn gán ("Chưa gán" hiển thị khi không còn) → mở dialog riêng
+    bắt buộc chọn người khác để chuyển các đoạn đó sang (dùng `<select>` liệt kê người nói còn lại), KHÔNG
+    có lựa chọn "bỏ gán" như brief gốc đề xuất — **khác dự kiến, nêu rõ lý do:** backend `parseSegments()`
+    (`recordingsRoutes.ts`) đã validate bắt buộc mỗi segment phải có `speaker` không rỗng (`!speaker` →
+    400), đổi sang cho phép speaker rỗng là đổi schema nghiệp vụ lớn hơn phạm vi bug cần sửa và có thể ảnh
+    hưởng export/hiển thị ở nơi khác đang giả định speaker luôn có giá trị — không làm trong lần này. Nếu
+    người đó chưa có đoạn nào thì xóa thẳng khỏi roster, không cần chọn người thay thế.
+  - "Đổi tên 'chú' ở mọi nơi" hoạt động đúng 1 chỗ: vì mọi đoạn tham chiếu theo `speaker` key (không đổi
+    key khi đổi tên), đổi `speakerNames[raw]` một lần là toàn bộ UI (block, popup, thống kê, export) hiển
+    thị tên mới ngay — không cần sửa từng đoạn.
+- **Khác dự kiến khác:** gán/gỡ người nói qua lại nhiều lần không còn làm mất ai khỏi popup vì roster
+  không suy ra từ segments nữa — đây chính là mục tiêu của bug fix, đã đúng theo thiết kế (chưa chạy thử
+  tay qua trình duyệt để xác nhận hành vi thật, xem phần kiểm chứng dưới).
+- Kiểm chứng thật đã chạy: backend `npm run typecheck` sạch; frontend `npm run typecheck`/`npm run build`
+  sạch; `npx eslint` sạch trên các file đã sửa (trừ 2 lỗi cấu hình ESLint có từ trước, đã xác minh lại
+  không đổi); `npx prettier --write` đã chạy, re-verify typecheck/build sau đó không gãy. **Chưa viết test
+  tự động** cho add/assign/rename/delete/reopen-app như brief yêu cầu — app này không có test suite nào
+  (`npm test` → "Missing script: test"), không có sẵn test runner (Vitest/Jest) đã cấu hình trong
+  `package.json` để thêm vào mà không phải tự dựng cả bộ khung test mới — nêu rõ, không giả kết quả test.
+  **Chưa chạy thật qua trình duyệt** (chưa có backend+Postgres local ở máy này để thử add/assign/rename/
+  delete/đóng-mở-lại-app bằng tay như brief yêu cầu). Chưa chạy migration `005` trên dữ liệu Railway thật.
