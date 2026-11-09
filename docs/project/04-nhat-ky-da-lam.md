@@ -1,6 +1,6 @@
 # 4. Nhật ký những gì đã làm
 
-> Cập nhật: 2026-11-09 (lọc câu hallucination của Whisper cho VoiceScribe). Ngày lấy từ lịch sử Git
+> Cập nhật: 2026-11-09 (sửa lỗi "Danh sách đoạn hội thoại không hợp lệ" khi chuyển đoạn). Ngày lấy từ lịch sử Git
 > (`git log`), **247 commit** từ 2026-09-15 đến 2026-11-01.
 > Nhịp làm việc: tháng 9/2026 có 147 commit, tháng 10 có 89, 11 ngày đầu tháng 11 có 11.
 > Đây là bản tóm tắt theo mốc, không liệt kê từng commit. Muốn xem chi tiết dùng
@@ -143,6 +143,8 @@ gói lại UI mới nhất, **không thay đổi hành vi lọc hallucination** 
 riêng, chưa deploy ở thời điểm build này). Đã tạo tag `voicescribe-v0.2.12` + GitHub Release, đối chiếu size asset
 khớp 100%, cập nhật Hub (`apps-manifest.json` + `apps/hub/src/data/apps.ts`) sang 0.2.12 — kiểm chứng
 `typecheck`/`build` hub sạch. |
+
+| 2026-11-09 | **VoiceScribe web — sửa lỗi "Danh sách đoạn hội thoại không hợp lệ":** khi bôi chọn toàn bộ chữ của 1 đoạn rồi bấm "Chuyển lên/xuống đoạn", `moveSelectionToNeighbor` (`apps/voicescribe/web/src/lib/words.ts`) tạo ra đoạn rỗng chữ, bị backend từ chối khi lưu. Thêm chốt chặn `remainingTokens.length === 0` → trả `null`, không gửi lên server. Xem `docs/project/plans/2026-11-09-voicescribe-xoa-doan-moc-tung-tu.md` (mục "sự cố phát sinh #2"). Đã kiểm chứng: `npm run build --workspace=@voicescribe/web` sạch. Chưa commit. |
 
 ## Phiên bản đã phát hành lên Hub
 

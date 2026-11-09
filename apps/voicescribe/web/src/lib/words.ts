@@ -182,6 +182,10 @@ export function moveSelectionToNeighbor(
 
   const movedTokens = tokens.slice(i0, i1 + 1);
   const remainingTokens = [...tokens.slice(0, i0), ...tokens.slice(i1 + 1)];
+  // Moving the whole segment's text away would leave it with empty text, which the
+  // server rejects ("Danh sách đoạn hội thoại không hợp lệ") — refuse instead of
+  // producing an invalid segment. Use "Xóa đoạn" for that case.
+  if (remainingTokens.length === 0) return null;
   const segWordIds = seg.wordIds;
   const movedWordIds = segWordIds?.slice(i0, i1 + 1);
   const remainingWordIds = segWordIds

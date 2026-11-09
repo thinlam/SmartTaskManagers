@@ -251,6 +251,18 @@ ca trắng màn hình người dùng gặp phải (fix field `words` ở trên l
 mới thêm vào `05-quy-tac-du-an.md` (mục B5ter): hook React phải luôn gọi trước mọi early-return trong
 component, kể cả khi hook đó "chỉ liên quan tới tính năng mới thêm".
 
+### Việc B — sự cố phát sinh #2: "Danh sách đoạn hội thoại không hợp lệ"
+
+Người dùng báo lỗi này khi dùng chức năng "Chuyển lên đoạn trước"/"Chuyển xuống đoạn sau". Nguyên nhân:
+khi bôi chọn **toàn bộ** chữ của 1 đoạn rồi chuyển, `moveSelectionToNeighbor` (`lib/words.ts`) không có
+chốt chặn — đoạn còn lại (`remainingTokens`) bị rỗng, tạo ra 1 segment có `text: ''`, gửi lên server thì
+bị `parseSegments()` ở `recordingsRoutes.ts` từ chối (text rỗng không hợp lệ), hiện toast lỗi. Sửa: thêm
+chốt `if (remainingTokens.length === 0) return null;` ngay sau khi tính `remainingTokens` — hàm trả về
+`null`, UI không làm gì cả (im lặng, không crash, không lỗi); muốn xóa hẳn đoạn thì dùng nút "Xóa đoạn"
+sẵn có (Việc A). Đã kiểm chứng: `npm run build --workspace=@voicescribe/web` sạch. **Chưa kiểm chứng:**
+chưa thử lại trên app thật (cần deploy backend lên Railway để test full, nhưng lỗi và fix này chỉ nằm ở
+frontend nên không phụ thuộc deploy backend).
+
 ### Việc B — (tiếp) chi tiết đã làm — Mốc thời gian đến từng từ (xong, theo đúng Hướng đi đã chốt)
 
 - **Backend:** migration `006_recording_words` thêm cột `recordings.words`. `types/diarization.ts`
