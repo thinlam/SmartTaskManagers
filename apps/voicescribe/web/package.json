@@ -5,8 +5,8 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "tsc --noEmit --pretty && vite build",
-    "build:desktop": "tsc --noEmit --pretty && vite build --mode desktop",
+    "build": "tsc --noEmit --pretty -p tsconfig.build.json && vite build",
+    "build:desktop": "tsc --noEmit --pretty -p tsconfig.build.json && vite build --mode desktop",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit --pretty",
     "cap:sync": "npm run build && cap sync",
