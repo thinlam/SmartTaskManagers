@@ -8,6 +8,7 @@ import type {
   RecordingNote,
   RecordingStats,
   RecordingSummary,
+  TrashedSegment,
   User,
   Word,
 } from '../types';
@@ -178,6 +179,7 @@ export const api = {
         text?: string;
         segments?: LabeledSegment[];
         words?: Word[];
+        trash?: TrashedSegment[];
         notes?: Pick<RecordingNote, 'text'>[] | RecordingNote[];
       },
     ) => request<Recording>('PATCH', `/api/recordings/${id}`, { body: patch }),

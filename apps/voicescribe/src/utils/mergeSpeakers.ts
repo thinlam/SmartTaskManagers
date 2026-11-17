@@ -62,19 +62,31 @@ export function mergeTranscriptWithSpeakers(
   }
 
   const words: Word[] = [];
-  const segments = transcriptSegments.map((seg) => {
+  const segments: LabeledSegment[] = [];
+  for (const seg of transcriptSegments) {
+    const text = seg.text.trim();
+    // Whisper can emit a segment with blank/whitespace-only text for pure
+    // silence or noise (no words at all) — storing it unfiltered leaves an
+    // invalid segment sitting in the recording from the very start, which
+    // trips the server's own validator (parseSegments in recordingsRoutes.ts)
+    // the first time ANY segments-touching edit re-sends the whole array
+    // (most commonly: naming a speaker). Drop it here instead, at the
+    // source, so the stored data is never invalid in the first place —
+    // this is the actual bug behind the "Danh sách đoạn hội thoại không
+    // hợp lệ" error users saw when adding a speaker.
+    if (!text) continue;
     const wordIds = seg.words?.map((w) => {
       const id = randomUUID();
       words.push({ id, text: w.text, start: w.start, end: w.end });
       return id;
     });
-    return {
-      text: seg.text,
+    segments.push({
+      text,
       start: seg.start,
       end: seg.end,
       speaker: bestSpeakerFor(seg),
       ...(wordIds && wordIds.length ? { wordIds } : {}),
-    };
-  });
+    });
+  }
   return { segments, words };
 }

@@ -7,6 +7,13 @@ export interface LabeledSegment {
   wordIds?: string[];
 }
 
+/** A soft-deleted segment sitting in the recording's trash — see Recording.trash. */
+export interface TrashedSegment {
+  id: string;
+  segment: LabeledSegment;
+  deletedAt: string;
+}
+
 /** One word with its own timestamp (seconds) — see Recording.words. */
 export interface Word {
   id: string;
@@ -74,6 +81,8 @@ export interface Recording {
   speakerNames: Record<string, string>;
   /** Persisted list of speaker keys for this recording, independent of which segments are currently assigned to whom — never re-derived from `segments`. */
   speakerRoster: string[];
+  /** Soft-deleted segments — restorable until permanently deleted from the trash panel. */
+  trash: TrashedSegment[];
   notes: RecordingNote[];
   processingTimeMs: number;
   diarizationError: string | null;

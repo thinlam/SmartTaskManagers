@@ -1,7 +1,7 @@
 # 1. Nghiệp vụ từng ứng dụng
 
-> Cập nhật: 2026-11-09 (thêm xóa/gộp/chuyển đoạn + mốc thời gian theo từ, lọc câu hallucination của Whisper
-> cho VoiceScribe). Nội dung dựa trên mã nguồn trong repo (backend, `packages/*`, `apps/*`) tại
+> Cập nhật: 2026-11-17 (VoiceScribe: thêm Thùng rác, validate tên người nói cụ thể, hướng dẫn lần đầu).
+> Nội dung dựa trên mã nguồn trong repo (backend, `packages/*`, `apps/*`) tại
 > thời điểm này. Chỗ nào chưa kiểm chứng trên máy thật được ghi rõ.
 
 Repo `SmartTaskManagers` chứa **4 ứng dụng** dùng chung một kho mã:
@@ -141,11 +141,30 @@ media, Báo cáo (xuất CSV, hộp thoại chọn nơi lưu), Thành viên, Cà
 5. **Chi tiết:** xem chép lời theo đoạn hoặc theo người nói, đổi tên người nói, ghi chú, **xuất Word,
    TXT, SRT**. Trên Android, xuất file mở bảng chia sẻ của hệ thống.
 6. **Chỉnh sửa đoạn (chế độ Chỉnh sửa):** xóa đoạn (không hỏi xác nhận, toast "Đã xóa đoạn · Hoàn tác"
-   8s + Ctrl+Z), gộp với đoạn trước/sau. Nếu bản ghi có mốc thời gian theo từng từ: bôi chọn chữ rồi
-   "Chuyển lên đoạn trước"/"Chuyển xuống đoạn sau" (giữ đúng mốc của chữ di chuyển), "Tách đoạn tại con
-   trỏ"; nghe lại 1 đoạn luôn phát đúng chữ hiện có trong đoạn đó (không theo mốc đoạn cũ), tô từng từ
-   đang đọc khi phát. Mốc theo từ lấy từ Whisper khi engine hỗ trợ, hoặc nội suy gần đúng khi không —
-   xem `docs/project/plans/2026-11-09-voicescribe-xoa-doan-moc-tung-tu.md`.
+   8s + Ctrl+Z, và luôn chuyển vào **Thùng rác** — xem mục 3.4), gộp với đoạn trước/sau. Nếu bản ghi có
+   mốc thời gian theo từng từ: bôi chọn chữ rồi "Chuyển lên đoạn trước"/"Chuyển xuống đoạn sau" (giữ đúng
+   mốc của chữ di chuyển), "Tách đoạn tại con trỏ"; nghe lại 1 đoạn luôn phát đúng chữ hiện có trong đoạn
+   đó (không theo mốc đoạn cũ), tô từng từ đang đọc khi phát. Mốc theo từ lấy từ Whisper khi engine hỗ
+   trợ, hoặc nội suy gần đúng khi không — xem
+   `docs/project/plans/2026-11-09-voicescribe-xoa-doan-moc-tung-tu.md`.
+7. **Thêm/đổi tên người nói:** thêm người nói mới vào danh sách của bản ghi **không** tự gán cho đoạn
+   đang xem — chỉ thêm vào danh sách để chọn gán sau. Tên trống, quá dài (> 60 ký tự), hoặc trùng tên
+   (không phân biệt hoa/thường/khoảng trắng) với người nói khác bị chặn ngay ở ô nhập, báo lỗi cụ thể —
+   không còn thông báo chung.
+8. **Hướng dẫn lần đầu:** người dùng mới mở app lần đầu thấy một tour ngắn tối màn hình, tô sáng từng
+   phần tử thật (ghi âm/tải file, lọc tạp âm, bảng văn bản, nghe lại, sửa chữ, người nói, thùng rác, xuất
+   file) kèm mô tả ngắn. Có thể Bỏ qua bất cứ lúc nào (nhớ luôn, không hiện lại), mở lại qua nút "?" ở
+   thanh bên. Nếu người dùng chưa có bản ghi nào, các bước cần trang chi tiết tự bỏ qua.
+
+### 3.4 Thùng rác
+
+Xóa một đoạn hội thoại là **xóa mềm**: đoạn chuyển vào thùng rác của bản ghi (giữ nguyên nội dung, người
+nói, mốc thời gian), không đụng tới file âm thanh. Vào thùng rác qua nút "Thùng rác" (có số đếm) ở trang
+chi tiết — xem từng đoạn (giờ, người nói, nội dung, thời điểm xóa), chọn từng dòng hoặc "Chọn tất cả",
+rồi **Khôi phục** (chèn lại đúng vị trí theo mốc thời gian; nếu người nói gốc đã bị xóa khỏi danh sách,
+tự gán "Chưa xác định") hoặc **Xóa vĩnh viễn** (luôn phải xác nhận, nêu rõ số lượng và "không thể khôi
+phục"; phím Delete làm tương tự khi đã chọn). Đoạn nằm trong thùng rác quá 30 ngày chỉ được **nhắc** (có
+thể tắt nhắc), không tự xóa.
 
 ### 3.2 Đối tượng
 

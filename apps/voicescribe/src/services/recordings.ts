@@ -1,6 +1,6 @@
 import type { Db } from '../db/pool.js';
 import type { DenoiseLevel } from '../utils/audioChunker.js';
-import type { LabeledSegment, Word } from '../types/diarization.js';
+import type { LabeledSegment, TrashedSegment, Word } from '../types/diarization.js';
 
 export type RecordingStatus = 'processing' | 'done' | 'failed';
 
@@ -25,6 +25,8 @@ export interface RecordingRow {
   speaker_names: Record<string, string>;
   /** Persisted, independent of `segments` — see migration 005's comment. */
   speaker_roster: string[];
+  /** Soft-deleted segments, independent of `segments` — see migration 008's comment. */
+  trash: TrashedSegment[];
   notes: RecordingNote[];
   processing_ms: number;
   diarization_error: string | null;
@@ -61,6 +63,7 @@ export function toDetailDto(r: RecordingRow) {
     words: r.words,
     speakerNames: r.speaker_names,
     speakerRoster: r.speaker_roster,
+    trash: r.trash,
     notes: r.notes,
     processingTimeMs: r.processing_ms,
     diarizationError: r.diarization_error,

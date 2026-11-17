@@ -12,7 +12,7 @@ import {
   type RecordingRow,
 } from '../services/recordings.js';
 import type { TranscriptionJobs } from '../services/jobs.js';
-import type { LabeledSegment, Word } from '../types/diarization.js';
+import type { LabeledSegment, TrashedSegment, Word } from '../types/diarization.js';
 import { isUuid } from '../utils/validation.js';
 
 const NOT_FOUND = { error: 'Không tìm thấy bản ghi.' };
@@ -22,7 +22,7 @@ function escapeLike(value: string): string {
   return value.replace(/[\\%_]/g, (c) => `\\${c}`);
 }
 
-function parseNotes(value: unknown): RecordingNote[] | null {
+export function parseNotes(value: unknown): RecordingNote[] | null {
   if (!Array.isArray(value) || value.length > 200) return null;
   const notes: RecordingNote[] = [];
   for (const raw of value) {
@@ -41,7 +41,7 @@ function parseNotes(value: unknown): RecordingNote[] | null {
   return notes;
 }
 
-function parseSpeakerNames(value: unknown): Record<string, string> | null {
+export function parseSpeakerNames(value: unknown): Record<string, string> | null {
   if (typeof value !== 'object' || value === null || Array.isArray(value)) return null;
   const entries = Object.entries(value);
   if (entries.length > 50) return null;
@@ -55,7 +55,7 @@ function parseSpeakerNames(value: unknown): Record<string, string> | null {
   return names;
 }
 
-function parseSpeakerRoster(value: unknown): string[] | null {
+export function parseSpeakerRoster(value: unknown): string[] | null {
   if (!Array.isArray(value) || value.length > 50) return null;
   const roster: string[] = [];
   for (const raw of value) {
@@ -73,39 +73,64 @@ const MAX_TEXT_CHARS = 2_000_000;
 const MAX_WORDS = 200_000;
 const MAX_WORD_CHARS = 200;
 
-function parseSegments(value: unknown): LabeledSegment[] | null {
+/** One segment's own shape — shared by parseSegments (whole live array) and parseTrash (each trashed item's `segment`). */
+function parseOneSegment(raw: unknown): LabeledSegment | null {
+  const item = raw as Partial<LabeledSegment> | null;
+  if (
+    typeof item?.text !== 'string' ||
+    typeof item.speaker !== 'string' ||
+    typeof item.start !== 'number' ||
+    typeof item.end !== 'number' ||
+    !Number.isFinite(item.start) ||
+    !Number.isFinite(item.end)
+  ) {
+    return null;
+  }
+  const text = item.text.trim();
+  const speaker = item.speaker.trim();
+  if (!text || text.length > MAX_SEGMENT_CHARS || !speaker || speaker.length > 60) return null;
+  let wordIds: string[] | undefined;
+  if ('wordIds' in item && item.wordIds !== undefined) {
+    if (!Array.isArray(item.wordIds) || item.wordIds.length > MAX_WORDS) return null;
+    if (!item.wordIds.every((w) => typeof w === 'string')) return null;
+    wordIds = item.wordIds as string[];
+  }
+  return {
+    text,
+    speaker,
+    start: item.start,
+    end: Math.max(item.start, item.end),
+    ...(wordIds ? { wordIds } : {}),
+  };
+}
+
+export function parseSegments(value: unknown): LabeledSegment[] | null {
   if (!Array.isArray(value) || value.length > MAX_SEGMENTS) return null;
   const segments: LabeledSegment[] = [];
   for (const raw of value) {
-    const item = raw as Partial<LabeledSegment> | null;
-    if (
-      typeof item?.text !== 'string' ||
-      typeof item.speaker !== 'string' ||
-      typeof item.start !== 'number' ||
-      typeof item.end !== 'number' ||
-      !Number.isFinite(item.start) ||
-      !Number.isFinite(item.end)
-    ) {
-      return null;
-    }
-    const text = item.text.trim();
-    const speaker = item.speaker.trim();
-    if (!text || text.length > MAX_SEGMENT_CHARS || !speaker || speaker.length > 60) return null;
-    let wordIds: string[] | undefined;
-    if ('wordIds' in item && item.wordIds !== undefined) {
-      if (!Array.isArray(item.wordIds) || item.wordIds.length > MAX_WORDS) return null;
-      if (!item.wordIds.every((w) => typeof w === 'string')) return null;
-      wordIds = item.wordIds as string[];
-    }
-    segments.push({
-      text,
-      speaker,
-      start: item.start,
-      end: Math.max(item.start, item.end),
-      ...(wordIds ? { wordIds } : {}),
-    });
+    const segment = parseOneSegment(raw);
+    if (!segment) return null;
+    segments.push(segment);
   }
   return segments;
+}
+
+const MAX_TRASH = 2000;
+
+export function parseTrash(value: unknown): TrashedSegment[] | null {
+  if (!Array.isArray(value) || value.length > MAX_TRASH) return null;
+  const items: TrashedSegment[] = [];
+  for (const raw of value) {
+    const item = raw as Partial<TrashedSegment> | null;
+    if (typeof item?.id !== 'string' || !item.id || item.id.length > 64) return null;
+    if (typeof item.deletedAt !== 'string' || Number.isNaN(Date.parse(item.deletedAt))) {
+      return null;
+    }
+    const segment = parseOneSegment(item.segment);
+    if (!segment) return null;
+    items.push({ id: item.id, segment, deletedAt: item.deletedAt });
+  }
+  return items;
 }
 
 function parseWords(value: unknown): Word[] | null {
@@ -307,7 +332,7 @@ export function createRecordingsRouter(config: AppConfig, db: Db, jobs: Transcri
       sets.push(`notes = $${params.length}`);
     }
 
-    if ('segments' in body || 'text' in body || 'words' in body) {
+    if ('segments' in body || 'text' in body || 'words' in body || 'trash' in body) {
       const current = await db.query<Pick<RecordingRow, 'status' | 'text' | 'segments'>>(
         'SELECT status, text, segments FROM recordings WHERE id = $1 AND user_id = $2',
         [id, userId],
@@ -334,7 +359,10 @@ export function createRecordingsRouter(config: AppConfig, db: Db, jobs: Transcri
       if ('segments' in body) {
         const segments = parseSegments(body.segments);
         if (!segments) {
-          res.status(400).json({ error: 'Danh sách đoạn hội thoại không hợp lệ.' });
+          res.status(400).json({
+            error:
+              'Không lưu được: dữ liệu đoạn hội thoại gửi lên không hợp lệ (ví dụ một đoạn bị trống hoặc thiếu mốc thời gian). Thử tải lại trang và thao tác lại; nếu vẫn lỗi, báo cho người quản trị.',
+          });
           return;
         }
         params.push(JSON.stringify(segments));
@@ -355,6 +383,16 @@ export function createRecordingsRouter(config: AppConfig, db: Db, jobs: Transcri
         }
         params.push(JSON.stringify(words));
         sets.push(`words = $${params.length}`);
+      }
+
+      if ('trash' in body) {
+        const trash = parseTrash(body.trash);
+        if (!trash) {
+          res.status(400).json({ error: 'Dữ liệu thùng rác không hợp lệ.' });
+          return;
+        }
+        params.push(JSON.stringify(trash));
+        sets.push(`trash = $${params.length}`);
       }
     }
 

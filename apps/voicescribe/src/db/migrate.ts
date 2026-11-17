@@ -102,6 +102,38 @@ const MIGRATIONS: Migration[] = [
     id: '006_recording_words',
     sql: `ALTER TABLE recordings ADD COLUMN words jsonb NOT NULL DEFAULT '[]';`,
   },
+  {
+    // Root-cause data fix for "Danh sách đoạn hội thoại không hợp lệ" when
+    // naming a speaker (see utils/mergeSpeakers.ts's matching comment):
+    // Whisper can hand back a segment with blank/whitespace-only text (pure
+    // silence/noise), and until this fix it was stored as-is. The very next
+    // segments-touching edit on that recording re-validates the WHOLE array
+    // and rejects it outright because of that one pre-existing blank
+    // segment — even though the user's actual edit was fine. Strips any
+    // already-stored blank-text segment from every recording so existing,
+    // already-affected recordings become editable again. New recordings
+    // never get one in the first place after the mergeSpeakers.ts fix.
+    id: '007_strip_blank_segments',
+    sql: `
+      UPDATE recordings SET segments = (
+        SELECT coalesce(jsonb_agg(seg), '[]'::jsonb)
+        FROM jsonb_array_elements(segments) seg
+        WHERE btrim(seg->>'text') <> ''
+      )
+      WHERE EXISTS (
+        SELECT 1 FROM jsonb_array_elements(segments) seg WHERE btrim(seg->>'text') = ''
+      );
+    `,
+  },
+  {
+    // Thùng rác: deleting a segment used to drop it outright (only an 8s
+    // in-memory "Hoàn tác" toast could bring it back). This column holds
+    // soft-deleted segments independently of `segments` — full content,
+    // speaker, words and timing kept — until the user restores or
+    // permanently deletes them from the trash panel.
+    id: '008_recording_trash',
+    sql: `ALTER TABLE recordings ADD COLUMN trash jsonb NOT NULL DEFAULT '[]';`,
+  },
 ];
 
 /** Applies pending migrations in order, each in its own transaction. Safe to run on every start. */

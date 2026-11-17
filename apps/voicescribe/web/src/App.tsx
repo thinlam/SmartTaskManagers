@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { Sidebar } from './layout/Sidebar';
 import { LoginPage } from './pages/LoginPage';
@@ -7,6 +7,8 @@ import { LibraryPage } from './pages/LibraryPage';
 import { RecordingDetailPage } from './pages/RecordingDetailPage';
 import { FoldersPage } from './pages/FoldersPage';
 import { SettingsPage } from './pages/SettingsPage';
+import { OnboardingTour } from './components/OnboardingTour';
+import { hasSeenOnboarding } from './lib/onboarding';
 import { AuthProvider, ToastProvider, useAuth } from './state/AppState';
 import type { Route } from './types';
 
@@ -15,6 +17,12 @@ function Shell() {
   // Incremented whenever recordings change so the sidebar usage card refetches.
   const [dataVersion, setDataVersion] = useState(0);
   const bump = useCallback(() => setDataVersion((n) => n + 1), []);
+  const [onboardingOpen, setOnboardingOpen] = useState(false);
+
+  // First-ever visit: show the guided tour once nothing has been dismissed/finished yet.
+  useEffect(() => {
+    if (!hasSeenOnboarding()) setOnboardingOpen(true);
+  }, []);
 
   return (
     <div className="flex h-dvh flex-col bg-slate-50 pl-[var(--sal)] pr-[var(--sar)] pt-[var(--sat)] text-slate-900 md:flex-row">
@@ -24,7 +32,16 @@ function Shell() {
         onNavigate={(page) =>
           setRoute(page === 'detail' ? { page: 'library' } : ({ page } as Route))
         }
+        onOpenHelp={() => setOnboardingOpen(true)}
       />
+
+      {onboardingOpen && (
+        <OnboardingTour
+          route={route}
+          onNavigate={setRoute}
+          onClose={() => setOnboardingOpen(false)}
+        />
+      )}
 
       {route.page === 'new' && (
         <NewRecordingPage

@@ -50,10 +50,13 @@ import {
   omitKey,
   paragraphOf,
   speakerOrderOf,
+  validateSpeakerName,
   type Block,
 } from '../lib/transcript';
 import { PLAYBACK_RATES, useAudioPlayer } from '../lib/audioPlayer';
 import { playbackRanges } from '../lib/words';
+import { restoreTrashItem, toTrashItem } from '../lib/trash';
+import { TrashPanel } from '../components/TrashPanel';
 import {
   ParagraphTranscript,
   SpeakerTranscript,
@@ -235,7 +238,10 @@ function AudioPlayerBar({
   } = player;
 
   return (
-    <div className="flex flex-col gap-2 border-b border-slate-100 bg-slate-50/60 px-5 py-3">
+    <div
+      data-tour="audio-player"
+      className="flex flex-col gap-2 border-b border-slate-100 bg-slate-50/60 px-5 py-3"
+    >
       <div className="flex flex-wrap items-center gap-3">
         <button
           onClick={toggle}
@@ -361,6 +367,7 @@ export function RecordingDetailPage({
   const [deleting, setDeleting] = useState(false);
   const [loopBlock, setLoopBlock] = useState(false);
   const [newSpeakerDraft, setNewSpeakerDraft] = useState('');
+  const [newSpeakerError, setNewSpeakerError] = useState<string | null>(null);
   const [mergeConfirm, setMergeConfirm] = useState<{
     fromRaw: string;
     toRaw: string;
@@ -368,8 +375,12 @@ export function RecordingDetailPage({
   } | null>(null);
   const [deleteSpeaker, setDeleteSpeaker] = useState<{ raw: string; name: string } | null>(null);
   const [reassignTo, setReassignTo] = useState('');
-  const [lastDeleted, setLastDeleted] = useState<{ segments: LabeledSegment[] } | null>(null);
+  const [lastDeleted, setLastDeleted] = useState<{
+    segments: LabeledSegment[];
+    trashId: string;
+  } | null>(null);
   const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [trashOpen, setTrashOpen] = useState(false);
 
   const rec = recording.data;
   // Fallback for a backend that hasn't been deployed/migrated yet (no `words` column/field
@@ -516,19 +527,20 @@ export function RecordingDetailPage({
     }));
   }, [rec, speakerOrder]);
 
-  /** Adds a brand-new speaker to the roster, not tied to any block. Rejects a duplicate name outright. */
+  /** Adds a brand-new speaker to the roster, not tied to any block. Rejects an invalid/duplicate name inline, not a toast. */
   function addSpeakerToRoster(name: string) {
-    const trimmed = name.trim();
-    if (!trimmed) return;
-    if (findSpeakerByName(speakerOrder, rec!.speakerNames, trimmed)) {
-      toast.error('Tên người nói đã tồn tại.');
+    const error = validateSpeakerName(name, speakerOrder, rec!.speakerNames);
+    if (error) {
+      setNewSpeakerError(error);
       return;
     }
     const raw = nextSpeakerKey(speakerOrder);
     void save({
       speakerRoster: [...speakerOrder, raw],
-      speakerNames: { ...rec!.speakerNames, [raw]: trimmed },
+      speakerNames: { ...rec!.speakerNames, [raw]: name.trim() },
     });
+    setNewSpeakerDraft('');
+    setNewSpeakerError(null);
   }
 
   /** Adds a brand-new speaker AND assigns this block to it, in one save. Rejects a duplicate name. */
@@ -708,18 +720,59 @@ export function RecordingDetailPage({
   }
 
   /** Deletes a block without asking first — keeps the prior segments 8s so the user can undo (toast or Ctrl+Z). */
+  /** Deletes a block — soft delete (see plan's Việc 2): it lands in the trash panel
+   * (restorable any time), while this 8s toast/Ctrl+Z still offers the instant undo
+   * people expect from a delete action. Audio is never touched either way. */
   function deleteBlockWithUndo(block: Block) {
     if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
-    setLastDeleted({ segments: rec!.segments });
+    const segment = rec!.segments[block.from];
+    if (!segment) return;
+    const trashItem = toTrashItem(segment);
+    setLastDeleted({ segments: rec!.segments, trashId: trashItem.id });
     undoTimerRef.current = setTimeout(() => setLastDeleted(null), 8000);
-    void save({ segments: deleteBlock(rec!.segments, block) });
+    void save({ segments: deleteBlock(rec!.segments, block), trash: [...rec!.trash, trashItem] });
   }
 
   function undoDelete() {
     if (!lastDeleted) return;
     if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
-    void save({ segments: lastDeleted.segments });
+    void save({
+      segments: lastDeleted.segments,
+      trash: rec!.trash.filter((t) => t.id !== lastDeleted.trashId),
+    });
     setLastDeleted(null);
+  }
+
+  function restoreFromTrash(ids: string[]) {
+    if (!rec || ids.length === 0) return;
+    let segments = rec.segments;
+    let speakerRoster = rec.speakerRoster;
+    let speakerNames = rec.speakerNames;
+    for (const id of ids) {
+      const item = rec.trash.find((t) => t.id === id);
+      if (!item) continue;
+      const result = restoreTrashItem(segments, speakerRoster, speakerNames, item);
+      segments = result.segments;
+      speakerRoster = result.speakerRoster;
+      speakerNames = result.speakerNames;
+    }
+    void save(
+      {
+        segments,
+        speakerRoster,
+        speakerNames,
+        trash: rec.trash.filter((t) => !ids.includes(t.id)),
+      },
+      ids.length > 1 ? `Đã khôi phục ${ids.length} đoạn.` : 'Đã khôi phục đoạn.',
+    );
+  }
+
+  function permanentlyDeleteFromTrash(ids: string[]) {
+    if (!rec || ids.length === 0) return;
+    void save(
+      { trash: rec.trash.filter((t) => !ids.includes(t.id)) },
+      ids.length > 1 ? `Đã xóa vĩnh viễn ${ids.length} đoạn.` : 'Đã xóa vĩnh viễn đoạn.',
+    );
   }
 
   const paragraph = paragraphOf(rec);
@@ -793,8 +846,25 @@ export function RecordingDetailPage({
               <button onClick={() => void copyText(rec)} className={secondaryButtonClass}>
                 <Copy className="h-3.5 w-3.5" /> Sao chép
               </button>
-              <ExportMenu doc={exportDoc(rec)} />
+              <span data-tour="export-menu">
+                <ExportMenu doc={exportDoc(rec)} />
+              </span>
             </>
+          )}
+          {done && (
+            <button
+              data-tour="trash-button"
+              onClick={() => setTrashOpen(true)}
+              className={secondaryButtonClass}
+              title="Thùng rác"
+            >
+              <Trash2 className="h-3.5 w-3.5" /> Thùng rác
+              {rec.trash.length > 0 && (
+                <span className="ml-0.5 rounded-full bg-slate-200 px-1.5 text-xs font-semibold text-slate-600">
+                  {rec.trash.length}
+                </span>
+              )}
+            </button>
           )}
           <button
             onClick={() => setConfirmDelete(true)}
@@ -842,7 +912,7 @@ export function RecordingDetailPage({
 
       {done && (
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_300px]">
-          <Card className="min-w-0 p-0">
+          <Card className="min-w-0 p-0" data-tour="transcript-view">
             {src && (
               <>
                 {/* eslint-disable-next-line jsx-a11y/media-has-caption -- this is a voice recording, not a video; no captions track exists. */}
@@ -875,6 +945,7 @@ export function RecordingDetailPage({
               </div>
               {(mode === 'speakers' || !editing) && (
                 <button
+                  data-tour="edit-toggle"
                   onClick={() => setEditing((v) => !v)}
                   className={editing ? primaryButtonClass : secondaryButtonClass}
                 >
@@ -978,7 +1049,7 @@ export function RecordingDetailPage({
             </Card>
 
             {done && speakerOrder.length > 0 && (
-              <Card className="p-5">
+              <Card className="p-5" data-tour="speaker-card">
                 <h3 className="mb-3 font-semibold text-slate-900">Người nói</h3>
                 <div className="space-y-3">
                   {speakerStats.map((s) => (
@@ -1017,31 +1088,34 @@ export function RecordingDetailPage({
                     </div>
                   ))}
                 </div>
-                <div className="mt-3 flex items-center gap-1.5 border-t border-slate-100 pt-3">
-                  <input
-                    value={newSpeakerDraft}
-                    maxLength={60}
-                    placeholder="Người nói mới..."
-                    onChange={(e) => setNewSpeakerDraft(e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        addSpeakerToRoster(newSpeakerDraft);
-                        setNewSpeakerDraft('');
-                      }
-                    }}
-                    className="min-w-0 flex-1 rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-indigo-400"
-                  />
-                  <button
-                    onClick={() => {
-                      addSpeakerToRoster(newSpeakerDraft);
-                      setNewSpeakerDraft('');
-                    }}
-                    disabled={!newSpeakerDraft.trim()}
-                    aria-label="Thêm người nói"
-                    className="rounded-lg bg-indigo-600 p-1.5 text-white hover:bg-indigo-500 disabled:opacity-40"
-                  >
-                    <Plus className="h-4 w-4" />
-                  </button>
+                <div className="border-t border-slate-100 pt-3">
+                  <div className="flex items-center gap-1.5">
+                    <input
+                      value={newSpeakerDraft}
+                      maxLength={60}
+                      placeholder="Người nói mới..."
+                      onChange={(e) => {
+                        setNewSpeakerDraft(e.target.value);
+                        setNewSpeakerError(null);
+                      }}
+                      onKeyDown={(e) => e.key === 'Enter' && addSpeakerToRoster(newSpeakerDraft)}
+                      aria-invalid={newSpeakerError ? true : undefined}
+                      className={`min-w-0 flex-1 rounded-lg border px-2 py-1.5 text-sm outline-none focus:border-indigo-400 ${
+                        newSpeakerError ? 'border-rose-400' : 'border-slate-200'
+                      }`}
+                    />
+                    <button
+                      onClick={() => addSpeakerToRoster(newSpeakerDraft)}
+                      disabled={!newSpeakerDraft.trim()}
+                      aria-label="Thêm người nói"
+                      className="rounded-lg bg-indigo-600 p-1.5 text-white hover:bg-indigo-500 disabled:opacity-40"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </button>
+                  </div>
+                  {newSpeakerError && (
+                    <p className="mt-1 text-xs text-rose-600">{newSpeakerError}</p>
+                  )}
                 </div>
               </Card>
             )}
@@ -1180,6 +1254,16 @@ export function RecordingDetailPage({
             </div>
           </div>
         </div>
+      )}
+
+      {trashOpen && (
+        <TrashPanel
+          trash={rec.trash}
+          speakerNames={rec.speakerNames}
+          onClose={() => setTrashOpen(false)}
+          onRestore={restoreFromTrash}
+          onPermanentlyDelete={permanentlyDeleteFromTrash}
+        />
       )}
     </div>
   );

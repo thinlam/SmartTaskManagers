@@ -21,6 +21,7 @@ import {
   displayName,
   mergeWithNeighbor,
   replaceBlockText,
+  validateSpeakerName,
   type Block,
 } from '../lib/transcript';
 import { moveSelectionToNeighbor, splitSegmentAtCursor, syncWordsOnEdit } from '../lib/words';
@@ -173,7 +174,9 @@ function SpeakerMenu({
 }) {
   const [open, setOpen] = useState(false);
   const [newName, setNewName] = useState('');
+  const [newNameError, setNewNameError] = useState<string | null>(null);
   const [renameDraft, setRenameDraft] = useState('');
+  const [renameError, setRenameError] = useState<string | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const color = colorOf(speakerOrder.indexOf(block.speaker));
   const current = displayName(names, block.speaker);
@@ -193,16 +196,30 @@ function SpeakerMenu({
   }, [open]);
 
   function submitNew() {
-    const name = newName.trim();
-    if (!name) return;
-    onCreate(name);
+    const error = validateSpeakerName(newName, speakerOrder, names);
+    if (error) {
+      setNewNameError(error);
+      return;
+    }
+    onCreate(newName.trim());
     setNewName('');
+    setNewNameError(null);
     setOpen(false);
   }
 
   function submitRename() {
-    const name = renameDraft.trim();
-    if (name && name !== current) onRename(block.speaker, name);
+    const trimmed = renameDraft.trim();
+    if (!trimmed || trimmed === current) {
+      setRenameError(null);
+      return;
+    }
+    const error = validateSpeakerName(renameDraft, speakerOrder, names, block.speaker);
+    if (error) {
+      setRenameError(error);
+      return;
+    }
+    onRename(block.speaker, trimmed);
+    setRenameError(null);
     setOpen(false);
   }
 
@@ -211,6 +228,9 @@ function SpeakerMenu({
       <button
         onClick={() => {
           setRenameDraft(current);
+          setRenameError(null);
+          setNewName('');
+          setNewNameError(null);
           setOpen((v) => !v);
         }}
         aria-haspopup="menu"
@@ -247,23 +267,32 @@ function SpeakerMenu({
               {raw === block.speaker && <Check className="h-4 w-4 text-indigo-600" />}
             </button>
           ))}
-          <div className="mt-1 flex items-center gap-1.5 border-t border-slate-100 px-1 pt-2">
-            <input
-              value={newName}
-              maxLength={60}
-              onChange={(e) => setNewName(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && submitNew()}
-              placeholder="Người nói mới..."
-              className="min-w-0 flex-1 rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-indigo-400"
-            />
-            <button
-              onClick={submitNew}
-              disabled={!newName.trim()}
-              aria-label="Thêm người nói"
-              className="rounded-lg bg-indigo-600 p-1.5 text-white hover:bg-indigo-500 disabled:opacity-40"
-            >
-              <Plus className="h-4 w-4" />
-            </button>
+          <div className="mt-1 border-t border-slate-100 px-1 pt-2">
+            <div className="flex items-center gap-1.5">
+              <input
+                value={newName}
+                maxLength={60}
+                onChange={(e) => {
+                  setNewName(e.target.value);
+                  setNewNameError(null);
+                }}
+                onKeyDown={(e) => e.key === 'Enter' && submitNew()}
+                placeholder="Người nói mới..."
+                aria-invalid={newNameError ? true : undefined}
+                className={`min-w-0 flex-1 rounded-lg border px-2 py-1.5 text-sm outline-none focus:border-indigo-400 ${
+                  newNameError ? 'border-rose-400' : 'border-slate-200'
+                }`}
+              />
+              <button
+                onClick={submitNew}
+                disabled={!newName.trim()}
+                aria-label="Thêm người nói"
+                className="rounded-lg bg-indigo-600 p-1.5 text-white hover:bg-indigo-500 disabled:opacity-40"
+              >
+                <Plus className="h-4 w-4" />
+              </button>
+            </div>
+            {newNameError && <p className="mt-1 px-1 text-xs text-rose-600">{newNameError}</p>}
           </div>
           <div className="mt-2 border-t border-slate-100 px-1 pt-2">
             <label className="mb-1 block px-1 text-xs font-medium text-slate-400">
@@ -272,11 +301,18 @@ function SpeakerMenu({
             <input
               value={renameDraft}
               maxLength={60}
-              onChange={(e) => setRenameDraft(e.target.value)}
+              onChange={(e) => {
+                setRenameDraft(e.target.value);
+                setRenameError(null);
+              }}
               onKeyDown={(e) => e.key === 'Enter' && submitRename()}
               onBlur={submitRename}
-              className="w-full rounded-lg border border-slate-200 px-2 py-1.5 text-sm outline-none focus:border-indigo-400"
+              aria-invalid={renameError ? true : undefined}
+              className={`w-full rounded-lg border px-2 py-1.5 text-sm outline-none focus:border-indigo-400 ${
+                renameError ? 'border-rose-400' : 'border-slate-200'
+              }`}
             />
+            {renameError && <p className="mt-1 px-1 text-xs text-rose-600">{renameError}</p>}
           </div>
         </div>
       )}

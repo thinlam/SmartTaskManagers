@@ -69,6 +69,32 @@ export function findSpeakerByName(
   return null;
 }
 
+export const MAX_SPEAKER_NAME_CHARS = 60;
+
+/**
+ * Validates a candidate speaker name before it's sent to the server — empty/
+ * whitespace-only, too long, or a duplicate of an existing speaker (case- and
+ * extra-space-insensitive) all get a specific, actionable Vietnamese message
+ * shown right under the input, instead of a silent no-op or a generic toast.
+ * `exceptRaw` excludes the speaker being renamed from its own duplicate check.
+ */
+export function validateSpeakerName(
+  name: string,
+  roster: string[],
+  names: Record<string, string>,
+  exceptRaw?: string,
+): string | null {
+  const trimmed = name.trim();
+  if (!trimmed) return 'Tên không được để trống.';
+  if (trimmed.length > MAX_SPEAKER_NAME_CHARS) {
+    return `Tên quá dài (tối đa ${MAX_SPEAKER_NAME_CHARS} ký tự).`;
+  }
+  if (findSpeakerByName(roster, names, trimmed, exceptRaw)) {
+    return 'Tên này đã được dùng cho một người nói khác.';
+  }
+  return null;
+}
+
 export function omitKey(names: Record<string, string>, raw: string): Record<string, string> {
   const copy = { ...names };
   delete copy[raw];

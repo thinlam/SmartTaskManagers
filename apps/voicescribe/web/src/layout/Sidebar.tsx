@@ -1,4 +1,4 @@
-import { AlignLeft, Folder, LogOut, Mic, Settings } from 'lucide-react';
+import { AlignLeft, Folder, HelpCircle, LogOut, Mic, Settings } from 'lucide-react';
 import { api } from '../lib/api';
 import { formatTotalDuration } from '../lib/format';
 import { useAsync, useAuth } from '../state/AppState';
@@ -15,11 +15,14 @@ export function Sidebar({
   page,
   onNavigate,
   refreshKey,
+  onOpenHelp,
 }: {
   page: PageName;
   onNavigate: (page: PageName) => void;
   /** Bumped by the app after recordings change so the usage card stays current. */
   refreshKey: number;
+  /** Reopens the first-run guided tour (OnboardingTour) on demand. */
+  onOpenHelp: () => void;
 }) {
   const { user, signOut } = useAuth();
   const stats = useAsync(() => api.recordings.stats(), [refreshKey]);
@@ -77,6 +80,14 @@ export function Sidebar({
             <p className="truncate text-sm font-medium">{user?.fullName}</p>
             <p className="truncate text-xs text-white/50">{user?.email}</p>
           </div>
+          <button
+            onClick={onOpenHelp}
+            title="Hướng dẫn sử dụng"
+            aria-label="Hướng dẫn sử dụng"
+            className="rounded-lg p-2 text-white/60 hover:bg-white/10 hover:text-white"
+          >
+            <HelpCircle className="h-4 w-4" />
+          </button>
           <button
             onClick={signOut}
             title="Đăng xuất"

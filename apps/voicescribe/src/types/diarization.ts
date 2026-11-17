@@ -35,3 +35,15 @@ export interface LabeledSegment {
    */
   wordIds?: string[];
 }
+
+/**
+ * A soft-deleted segment sitting in the recording's trash — see migration
+ * 008. Keeps the full original segment (text, speaker, wordIds, timing) so
+ * restoring loses nothing; `id` is a stable key the trash UI addresses by
+ * (segments themselves have no id of their own).
+ */
+export interface TrashedSegment {
+  id: string;
+  segment: LabeledSegment;
+  deletedAt: string;
+}

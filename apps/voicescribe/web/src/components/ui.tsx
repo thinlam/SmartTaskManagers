@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react';
+import type { HTMLAttributes, ReactNode } from 'react';
 import { Loader2 } from 'lucide-react';
 
 export const inputClass =
@@ -57,9 +57,18 @@ export function PageHeader({
   );
 }
 
-export function Card({ children, className = '' }: { children: ReactNode; className?: string }) {
+export function Card({
+  children,
+  className = '',
+  ...rest
+}: {
+  children: ReactNode;
+  className?: string;
+  /** Anchor for OnboardingTour's spotlight — see lib/onboarding.ts. */
+  'data-tour'?: string;
+} & Omit<HTMLAttributes<HTMLDivElement>, 'className' | 'children'>) {
   return (
-    <div className={`rounded-2xl border border-slate-200 bg-white p-6 ${className}`}>
+    <div className={`rounded-2xl border border-slate-200 bg-white p-6 ${className}`} {...rest}>
       {children}
     </div>
   );

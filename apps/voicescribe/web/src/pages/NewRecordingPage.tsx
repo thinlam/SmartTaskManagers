@@ -117,7 +117,7 @@ export function NewRecordingPage({ onSaved }: { onSaved: (id: string) => void })
           </div>
         )}
 
-        <Card className="mt-6 flex min-h-[320px] flex-col">
+        <Card className="mt-6 flex min-h-[320px] flex-col" data-tour="record-or-upload">
           {state.kind === 'idle' && mode === 'record' && (
             <RecorderPanel maxBytes={maxUploadMb * 1024 * 1024} onRecorded={handleFileSelected} />
           )}
@@ -188,10 +188,13 @@ export function NewRecordingPage({ onSaved }: { onSaved: (id: string) => void })
           className="group mt-6 rounded-2xl border border-slate-200 bg-white"
           open={optionsSet}
         >
-          <summary className="flex cursor-pointer list-none items-center justify-between px-5 py-3.5 text-sm font-medium text-slate-700">
+          <summary
+            data-tour="denoise-option"
+            className="flex cursor-pointer list-none items-center justify-between px-5 py-3.5 text-sm font-medium text-slate-700"
+          >
             <span>
               Tùy chọn
-              <span className="ml-2 font-normal text-slate-400">tiêu đề, thư mục</span>
+              <span className="ml-2 font-normal text-slate-400">tiêu đề, thư mục, lọc tạp âm</span>
             </span>
             <ChevronDown className="h-4 w-4 text-slate-400 transition-transform group-open:rotate-180" />
           </summary>
