@@ -40,7 +40,10 @@ function segmentWords(words: TranscriptWord[]): TranscriptSegment[] {
 
 function toSegment(words: TranscriptWord[]): TranscriptSegment {
   return {
-    text: words.map((w) => w.text).join(' ').trim(),
+    text: words
+      .map((w) => w.text)
+      .join(' ')
+      .trim(),
     start: words[0]!.start,
     end: words[words.length - 1]!.end,
     words,
@@ -112,6 +115,25 @@ const MAX_RETRIES = 4;
 const RETRY_BASE_DELAY_MS = 2000;
 // Rate limits, provider hiccups and cold-starting models are all worth another try.
 const RETRYABLE_STATUSES = new Set([429, 500, 502, 503, 504]);
+
+/**
+ * A Hugging Face Inference Provider can return HTTP 200 with an empty transcription for
+ * audio that genuinely has speech — observed in production 2026-11-19 (deepinfra, model
+ * openai/whisper-large-v3): re-sending the exact same chunk either to the same provider or
+ * a different one (hf-inference, fal-ai) produced a full, correct transcript. This is a
+ * transient provider flake, not "no speech" — but it never raises an exception, so the
+ * network-failure retry below (which only triggers in the `catch` block) never sees it.
+ * Kept deliberately small (2 extra calls, short fixed delay) rather than reusing
+ * MAX_RETRIES/RETRY_BASE_DELAY_MS: long audio is chunked into many genuinely-silent 30s
+ * segments (pauses between sentences), and retrying each of those with the same backoff as
+ * a network failure would make long-file transcription far slower for no benefit.
+ */
+const EMPTY_RESULT_MAX_RETRIES = 2;
+const EMPTY_RESULT_RETRY_DELAY_MS = 1500;
+
+/** Internal sentinel: output was empty/all-hallucinated. Retried a few times (see above)
+ *  before being treated as "really no speech" by the caller of the retry loop. */
+class EmptyResultError extends Error {}
 
 function sleep(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -195,9 +217,12 @@ export async function transcribeAudio(options: TranscribeOptions): Promise<Trans
   const blob = new Blob([Uint8Array.from(options.audio)], { type: mimeType });
 
   const startedAt = Date.now();
-  let lastError: unknown;
+  // Separate counters: an empty-result retry (provider flake) must not eat into the
+  // network-failure retry budget, and vice versa — each gets its own independent limit.
+  let networkAttempt = 0;
+  let emptyAttempt = 0;
 
-  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+  for (;;) {
     if (options.signal?.aborted) throw new CancelledError();
     try {
       // `return_timestamps: 'word'` is not in the official parameter type (only `boolean`
@@ -214,10 +239,7 @@ export async function transcribeAudio(options: TranscribeOptions): Promise<Trans
       const processingTimeMs = Date.now() - startedAt;
 
       if (!output.text || output.text.trim().length === 0) {
-        if (options.allowEmpty) return { text: '', segments: [], processingTimeMs };
-        throw new TranscriptionError(
-          'Kết quả nhận dạng trống — không phát hiện lời nói trong file âm thanh.',
-        );
+        throw new EmptyResultError();
       }
 
       const chunks = output.chunks ?? [];
@@ -229,7 +251,16 @@ export async function transcribeAudio(options: TranscribeOptions): Promise<Trans
         chunks.length > 0 && chunks.every((c) => !c.text.trim().includes(' ') || !c.text.trim());
 
       let segments: TranscriptSegment[];
-      if (wordLevel) {
+      if (chunks.length === 0) {
+        // Observed in production 2026-11-19 (provider deepinfra, model
+        // openai/whisper-large-v3): `output.text` is the full, correct transcript but
+        // `output.chunks` is entirely absent — the provider ignored `return_timestamps`
+        // rather than returning an empty-but-present array. Building segments only from
+        // `chunks` (as below) silently turned this into an empty result, discarding a
+        // real transcript. Fall back to one untimed segment from `output.text` itself —
+        // no word-level timing is possible without chunks, but the text is not lost.
+        segments = [{ text: output.text.trim(), start: 0, end: 0 }];
+      } else if (wordLevel) {
         const words: TranscriptWord[] = chunks
           .filter((c) => c.text.trim())
           .map((c) => {
@@ -252,32 +283,43 @@ export async function transcribeAudio(options: TranscribeOptions): Promise<Trans
       }
 
       const filteredSegments = segments.filter((s) => !isHallucinatedPhrase(s.text));
-      const filteredText = filteredSegments.map((s) => s.text).join(' ').trim();
+      const filteredText = filteredSegments
+        .map((s) => s.text)
+        .join(' ')
+        .trim();
       if (filteredSegments.length === 0 && segments.length > 0) {
         // The whole chunk was hallucinated text (e.g. a silent/noisy tail) — treat it
         // the same as a chunk with no speech at all.
-        if (options.allowEmpty) return { text: '', segments: [], processingTimeMs };
+        throw new EmptyResultError();
+      }
+      return { text: filteredText, segments: filteredSegments, processingTimeMs };
+    } catch (err) {
+      if (err instanceof EmptyResultError) {
+        if (emptyAttempt < EMPTY_RESULT_MAX_RETRIES) {
+          emptyAttempt += 1;
+          await sleep(EMPTY_RESULT_RETRY_DELAY_MS);
+          continue;
+        }
+        // Exhausted the empty-result retries — now decide for real: a chunk of
+        // chunked long audio is allowed to genuinely be silence, a whole file is not.
+        if (options.allowEmpty)
+          return { text: '', segments: [], processingTimeMs: Date.now() - startedAt };
         throw new TranscriptionError(
           'Kết quả nhận dạng trống — không phát hiện lời nói trong file âm thanh.',
         );
       }
-      return { text: filteredText, segments: filteredSegments, processingTimeMs };
-    } catch (err) {
-      lastError = err;
       if (err instanceof TranscriptionError || err instanceof CancelledError) throw err;
       const retryable =
         err instanceof InferenceClientProviderApiError
           ? RETRYABLE_STATUSES.has(err.httpResponse.status)
           : // Network-level failures (reset connection, DNS) surface as plain errors, not API errors.
             err instanceof TypeError || (err instanceof Error && err.name === 'AbortError');
-      if (retryable && attempt < MAX_RETRIES) {
-        await sleep(RETRY_BASE_DELAY_MS * 2 ** attempt);
+      if (retryable && networkAttempt < MAX_RETRIES) {
+        await sleep(RETRY_BASE_DELAY_MS * 2 ** networkAttempt);
+        networkAttempt += 1;
         continue;
       }
       throw new TranscriptionError(toUserMessage(err), err);
     }
   }
-
-  // Unreachable in practice (loop always returns or throws), satisfies TS control-flow analysis.
-  throw new TranscriptionError(toUserMessage(lastError), lastError);
 }

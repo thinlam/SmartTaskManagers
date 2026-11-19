@@ -1,7 +1,8 @@
 # 5. Quy tắc của dự án
 
 > Cập nhật: 2026-11-19 (thêm quy tắc C4, C5 về nhánh làm việc/nhánh test; thêm B1bis về tách folder
-> backend theo loại database). Gom từ cấu hình trong repo (ESLint, Prettier, `.gitignore`, lịch sử commit) và
+> backend theo loại database; thêm B5quater — bài học VoiceScribe mất transcript khi `chunks` rỗng).
+> Gom từ cấu hình trong repo (ESLint, Prettier, `.gitignore`, lịch sử commit) và
 > từ các thỏa thuận làm việc giữa chủ dự án và trợ lý AI. Mục nào là thỏa thuận (không có công cụ ép) được ghi rõ.
 
 ## A. Quy tắc bắt buộc, có công cụ kiểm tra
@@ -106,6 +107,26 @@
   toàn không có thông báo gì**. Khi thêm hook mới vào một component đã có early-return, luôn kiểm tra lại vị
   trí đặt hook trước khi coi là xong. (Bài học 2026-11-09, VoiceScribe desktop 0.2.10 → 0.2.11 — 2 `useEffect`
   của tính năng hoàn tác xóa đoạn bị đặt sau `if (!rec) return`, xem tài liệu 04.)
+
+### B5quater. VoiceScribe: không dựng `text` cuối cùng chỉ từ `chunks`, luôn có đường lùi về `output.text` (từ 2026-11-19)
+
+- Hugging Face Inference Provider cho ASR (`automaticSpeechRecognition`) có thể trả về `output.text`
+  đầy đủ, đúng nhưng `output.chunks` **hoàn toàn vắng mặt** (không phải mảng rỗng, mà là tham số
+  `return_timestamps` bị provider bỏ qua) — quan sát thật với provider `deepinfra`, model
+  `openai/whisper-large-v3`, lặp lại ổn định trên nhiều đoạn khác nhau của cùng file. Nếu code dựng
+  `text` cuối cùng chỉ từ `segments` (suy ra từ `chunks`) mà không có đường lùi, gặp trường hợp này sẽ
+  **mất trắng bản ghi đúng** dù `output.text` có sẵn — hiện tượng ngoài giao diện là "Kết quả nhận dạng
+  trống" dù file nghe rõ tiếng nói. Đã sửa trong `transcription.ts`: khi `chunks.length === 0`, dựng 1
+  segment duy nhất thẳng từ `output.text` (không có timestamp theo từ, chấp nhận mất độ chi tiết đó còn
+  hơn mất cả nội dung).
+- Tách riêng 2 cơ chế retry không dùng chung ngân sách: lỗi mạng/HTTP (429/5xx) dùng `MAX_RETRIES` với
+  backoff luỹ thừa; kết quả "gọi thành công nhưng rỗng" (không phải lỗi mạng, provider trả 200 với text
+  rỗng) dùng `EMPTY_RESULT_MAX_RETRIES` riêng, số lần nhỏ hơn và delay cố định ngắn hơn — vì file dài bị
+  chia nhỏ 30s có nhiều đoạn **im lặng thật** (khoảng nghỉ giữa câu), áp cùng backoff của lỗi mạng cho mọi
+  đoạn rỗng sẽ làm toàn bộ việc xử lý file dài chậm đi vô ích.
+- Khi gặp log kiểu "Kết quả nhận dạng trống" trên file đã xác nhận có giọng nói rõ: trước khi nghi ngờ
+  file hỏng, kiểm tra `output.chunks` có rỗng/vắng mặt trong khi `output.text` có nội dung không — đây là
+  dấu hiệu của đúng bug này, không phải lỗi âm thanh.
 
 ### B5. Test (bắt đầu từ 2026-11-07)
 
