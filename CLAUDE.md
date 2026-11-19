@@ -126,6 +126,20 @@ version + release ở trên.
   thao tác, dù máy đang thao tác là máy "mới" hay "cũ". Nếu không xác định được bản nào đã push trước, phải
   hỏi chủ dự án trước khi merge/reset, không tự chọn.
 
+## Quy tắc bắt buộc: nhánh riêng cho mỗi chức năng, test xong mới merge main, backend tách theo DB
+
+Từ 2026-11-19, áp dụng 3 quy tắc (chi tiết ở `docs/project/05-quy-tac-du-an.md` mục C4, C5, B1bis):
+
+1. **Mỗi chức năng/app một nhánh riêng:** tạo nhánh từ `main`, đặt tên `feat/<app>-<chức-năng>` hoặc
+   `fix/<app>-<mô-tả>`. Không code trực tiếp trên `main`.
+2. **Test trên nhánh riêng, chỉ merge `main` khi chủ dự án bảo:** `main` tự deploy Railway, nên mọi thứ vào
+   `main` phải đã được test/duyệt. Cần test với DB/fake data thì tạo nhánh `test/<app>-<chức-năng>` riêng,
+   chỉ trỏ DB test (không bao giờ trỏ DB thật); dữ liệu fake/seed/cấu hình test không được vào `main`. Chỉ
+   merge khi chủ dự án nói rõ "merge sang main", và chỉ merge code sạch (bỏ phần test-only).
+3. **Backend tách folder theo loại database:** project Postgres và project MySQL không lẫn cấu hình; project
+   .NET mới cùng loại DB gom vào `backend/postgres/` hoặc `backend/mysql/`. Project cũ (SmartTask, ContentManager.Api)
+   giữ nguyên vị trí hiện tại — không tự di chuyển vì sẽ hỏng Root Directory Railway/Dockerfile/CI.
+
 ## Các thỏa thuận quan trọng khác (chi tiết ở tài liệu 05)
 
 - Chỉ commit khi người dùng yêu cầu; khi commit thì push luôn theo rule ở trên.

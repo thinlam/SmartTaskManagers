@@ -1,7 +1,7 @@
 # 5. Quy tắc của dự án
 
-> Cập nhật: 2026-11-09 (thêm B5bis: frontend phải chịu được field API mới chưa có trên backend chưa deploy
-> kịp; thêm B5ter: hook React phải gọi trước mọi early-return). Gom từ cấu hình trong repo (ESLint, Prettier, `.gitignore`, lịch sử commit) và
+> Cập nhật: 2026-11-19 (thêm quy tắc C4, C5 về nhánh làm việc/nhánh test; thêm B1bis về tách folder
+> backend theo loại database). Gom từ cấu hình trong repo (ESLint, Prettier, `.gitignore`, lịch sử commit) và
 > từ các thỏa thuận làm việc giữa chủ dự án và trợ lý AI. Mục nào là thỏa thuận (không có công cụ ép) được ghi rõ.
 
 ## A. Quy tắc bắt buộc, có công cụ kiểm tra
@@ -30,6 +30,31 @@
   và ngày `vi-VN`, giờ 24h. Khóa dữ liệu của backend (như tên hành động Smart Engine) **không** được dịch ở đây, chỉ
   dịch ở lớp hiển thị.
 - Backend Smart Task Manager theo Clean Architecture: `Api` → `Application` → `Domain`, `Infrastructure`, `Persistence`.
+
+### B1bis. Cấu trúc backend theo loại database (từ 2026-11-19)
+
+- Project dùng PostgreSQL: `appsettings*.json` chỉ chứa cấu hình Postgres (provider Npgsql, connection string
+  dạng Postgres). Project dùng MySQL: chỉ chứa cấu hình MySQL (provider Pomelo/Microting.EntityFrameworkCore.MySql,
+  `Database:ServerVersion`...). Không để cấu hình của DB này lẫn trong project của DB kia.
+- Các project .NET cùng loại DB gom chung vào một folder theo DB, mỗi project một folder con riêng, ví dụ:
+  ```
+  backend/
+    postgres/
+      ContentManager.Api/
+      <dự-án-postgres-khác>/
+    mysql/
+      SmartTask.*/
+  ```
+  Áp dụng cho **project mới** tạo từ giờ. Các project đã có (SmartTask ở `/backend`, ContentManager.Api ở
+  `/backend/ContentManager.Api`) **không tự di chuyển** — di chuyển folder sẽ làm hỏng Root Directory trên
+  Railway và đường dẫn Dockerfile/CI; phải lập danh sách ảnh hưởng (Railway, Dockerfile, `codemagic.yaml`,
+  script npm, docs) và hỏi chủ dự án trước khi di chuyển.
+- VoiceScribe là Node.js (không có `appsettings`): quy tắc tương đương là `.env.example` chỉ có biến
+  PostgreSQL (`DATABASE_URL`).
+- Vẫn giữ quy tắc bí mật mục B4: không commit connection string hay secret trong appsettings.
+- **Lưu ý lệch tài liệu (chưa tự sửa):** `ARCHITECTURE.md` ghi Smart Task Manager dùng SQL Server, trong khi
+  `backend/README.md` và README gốc ghi MySQL — thực tế code (`UseMySql`, `Database:ServerVersion` mặc định
+  `8.0.0-mysql`) xác nhận SmartTask dùng **MySQL**. Cần chủ dự án xác nhận và sửa `ARCHITECTURE.md`.
 
 ### B2. Giao diện
 
@@ -103,6 +128,25 @@
 - Không commit tệp tạm của công cụ (log, `*.log`, thư mục `scratchpad`, ảnh chụp kiểm thử).
 - **Không** dùng `git stash` rồi `git stash pop` để "thử nhanh" trên kho có stash sẵn của người khác: `pop` sẽ lấy stash
   cũ nhất. (Bài học 2026-11-01, xem tài liệu 04.)
+
+### C4. Mỗi chức năng/app một nhánh riêng (từ 2026-11-19)
+
+- Mỗi lần làm chức năng mới hoặc app mới, tạo một nhánh riêng cho chức năng/app đó, tách từ `main`.
+- Đặt tên: `feat/<app>-<chức-năng>`, ví dụ `feat/content-manager-calendar-view`. Sửa lỗi dùng `fix/<app>-<mô-tả>`.
+- Không làm trực tiếp trên `main`. Không gộp nhiều chức năng không liên quan vào một nhánh.
+
+### C5. Test trên nhánh riêng, chỉ merge `main` khi chủ dự án bảo (từ 2026-11-19)
+
+- `main` tự động deploy (Railway theo dõi `main`). Vì vậy mọi thứ vào `main` phải là code đã được chủ dự án
+  test và duyệt.
+- Khi cần test với database hoặc fake dữ liệu đầy đủ, tạo một nhánh test riêng từ nhánh chức năng, ví dụ
+  `test/<app>-<chức-năng>`.
+  - Dữ liệu fake, seed, cấu hình test chỉ nằm ở nhánh test, không được vào `main`.
+  - Nhánh test chỉ trỏ vào database test, không bao giờ trỏ vào database thật (khớp mục E: không sửa/xóa
+    dữ liệu DB thật).
+- Chủ dự án tự test trên nhánh đó. Chỉ khi chủ dự án nói rõ "merge sang main" thì mới merge, và chỉ merge
+  phần code chức năng đã sạch (không kèm dữ liệu fake/seed/cấu hình test).
+- Không tự merge, không tự push `main`. Nếu không chắc nhánh nào sẽ tự deploy, phải hỏi trước.
 
 ## D. Quy tắc phát hành
 
