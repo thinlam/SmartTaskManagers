@@ -1,0 +1,27 @@
+# Smart Task Manager — local MySQL for development (khớp MySQL thật trên Railway).
+#   docker compose -f docker-compose.smarttask.yml up -d
+# MySQL: localhost:3307   (db SmartTask, user root)
+# Kết nối DBeaver: Host localhost, Port 3307, Database SmartTask, User root,
+# Password lấy từ biến ST_DB_PASSWORD (hoặc giá trị mặc định dưới đây nếu không đặt).
+# Dùng 3307 (không phải 3306 mặc định) vì máy dev đã có MySQL khác chiếm cổng 3306.
+name: smarttask
+
+services:
+  db:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: SmartTask
+      MYSQL_ROOT_PASSWORD: ${ST_DB_PASSWORD:-st_dev_password}
+    ports:
+      - "3307:3306"
+    volumes:
+      - st-mysqldata:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-proot"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  st-mysqldata:

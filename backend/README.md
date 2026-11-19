@@ -633,6 +633,41 @@ dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Server=localhost;
 `dotnet ef` dùng `AppDbContextFactory` (design-time only) — khi chạy `migrations add/remove/script`
 không cần connection string thật, EF chỉ dựng model, không mở kết nối.
 
+**Cập nhật 2026-11-19: `appsettings.json` giờ có sẵn connection string dev local mặc định** (giống cách
+`ContentManager.Api/appsettings.json` làm): `ConnectionStrings:DefaultConnection` trỏ MySQL local
+`127.0.0.1:3307` (khớp `docker-compose.smarttask.yml`, password `st_dev_password` — không phải bí mật
+thật, chỉ là mặc định dev). An toàn cho production vì biến môi trường `ConnectionStrings__DefaultConnection`
+trên Railway luôn override giá trị trong `appsettings.json` (thứ tự layer chuẩn ASP.NET Core, xem bên
+dưới) — **không cần sửa gì trên Railway**, server thật vẫn dùng đúng MySQL thật như trước. Máy dev khác
+chỉ cần đổi `Password`/`Port` trong `ConnectionStrings:DefaultConnection` nếu MySQL local của họ khác
+mặc định, không cần `user-secrets` nữa cho trường hợp thông thường (user-secrets vẫn dùng được nếu muốn
+không commit giá trị cá nhân khác mặc định).
+
+**Quan trọng (xác nhận thật 2026-11-19): `AppDbContextFactory` KHÔNG đọc user-secrets.** Nó chỉ đọc
+biến môi trường `ConnectionStrings__DefaultConnection`, nếu không có thì rơi về chuỗi mặc định cứng
+`Server=localhost;Port=3306;...;Password=placeholder`. Vì vậy `dotnet ef database update` (áp migration
+thật, có mở kết nối — khác `migrations add/remove`) phải set biến môi trường này **trong cùng lệnh**,
+`user-secrets set` ở trên không có tác dụng với `dotnet ef`:
+
+```bash
+cd backend
+ConnectionStrings__DefaultConnection="Server=127.0.0.1;Port=3307;Database=SmartTask;User=root;Password=<password-local>;AllowPublicKeyRetrieval=True;SslMode=None" `
+  dotnet ef database update --project SmartTask.Persistence --startup-project SmartTask.Api
+```
+
+`AllowPublicKeyRetrieval=True;SslMode=None` cần cho MySQL local không có TLS (`caching_sha2_password`
+cần RSA public key exchange khi không có SSL). Không cần 2 tham số này khi nối tới Railway (có TLS).
+
+### Chạy MySQL local bằng Docker + kết nối DBeaver
+
+```bash
+docker compose -f docker-compose.smarttask.yml up -d   # MySQL 8 tại localhost:3307 (3306 có thể bị máy khác chiếm)
+```
+
+DBeaver: Host `localhost`, Port `3307`, Database `SmartTask`, User `root`, Password biến
+`ST_DB_PASSWORD` (mặc định `st_dev_password` nếu không đặt). Đây là MySQL **local**, hoàn toàn tách
+biệt với MySQL thật trên Railway — không ảnh hưởng dữ liệu production.
+
 **JWT secret** cũng đã đúng chuẩn từ Phase 22, không cần sửa — `jwtSection["Secret"] ?? throw
 InvalidOperationException(...)` fail rõ ràng nếu thiếu, đọc qua biến môi trường `Jwt__Secret` trên
 Railway giống hệt cách `ConnectionStrings__DefaultConnection` hoạt động.
