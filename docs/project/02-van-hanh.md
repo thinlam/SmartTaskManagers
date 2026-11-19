@@ -1,6 +1,7 @@
 # 2. Cách vận hành
 
-> Cập nhật: 2026-11-01. Không ghi giá trị bí mật nào trong tài liệu này. Chỉ ghi **tên** biến môi trường.
+> Cập nhật: 2026-11-19 (thêm mục 3bis: chạy local để test dữ liệu trên nhánh mới, cho cả 3 app). Không
+> ghi giá trị bí mật nào trong tài liệu này. Chỉ ghi **tên** biến môi trường.
 
 ## 1. Sơ đồ chạy thật
 
@@ -56,6 +57,38 @@ npm run format                   # Prettier --check
 
 Các lệnh build nằm trong `package.json` gốc, ví dụ `build:web`, `build:tauri` (Smart Task Manager desktop),
 `build:cm-tauri`, `build:vs-tauri`, `build:hub-tauri`. Backend .NET: `dotnet run` trong thư mục API tương ứng.
+
+## 3bis. Chạy local để test dữ liệu trên nhánh mới (từ 2026-11-19)
+
+Áp dụng quy tắc C5 (`05-quy-tac-du-an.md`): nhánh `test/<app>-<chức-năng>` chỉ trỏ database **local**,
+không bao giờ trỏ Railway. Mỗi app đã có sẵn 1 database local qua Docker Compose, độc lập hoàn toàn với
+dữ liệu thật — khởi/tắt tùy ý, không ảnh hưởng production.
+
+| App                | Lệnh khởi database local                                     | Host:Port                   | Database         | User   | Password mặc định                         |
+| ------------------ | ------------------------------------------------------------ | --------------------------- | ---------------- | ------ | ----------------------------------------- |
+| Smart Task Manager | `docker compose -f docker-compose.smarttask.yml up -d`       | `localhost:3307` (MySQL)    | `SmartTask`      | `root` | `st_dev_password` (biến `ST_DB_PASSWORD`) |
+| Content Manager    | `docker compose -f docker-compose.content-manager.yml up -d` | `localhost:5433` (Postgres) | `contentmanager` | `cm`   | `cm_dev_password` (biến `CM_DB_PASSWORD`) |
+| VoiceScribe        | `docker compose -f docker-compose.voicescribe.yml up -d`     | `localhost:5434` (Postgres) | `voicescribe`    | `vs`   | `vs_dev_password` (biến `VS_DB_PASSWORD`) |
+
+Kết nối DBeaver (hoặc bất kỳ GUI khác) bằng đúng thông tin cột trên — chọn driver MySQL cho Smart Task
+Manager, PostgreSQL cho 2 app còn lại.
+
+**Chạy backend trỏ vào database local:**
+
+- **Smart Task Manager:** `appsettings.json` đã có sẵn `ConnectionStrings:DefaultConnection` trỏ
+  `127.0.0.1:3307` (mặc định dev, không phải bí mật — xem `backend/README.md`). Chạy thẳng
+  `dotnet run --project backend/SmartTask.Api`, không cần set gì thêm. Riêng `dotnet ef database update`
+  (áp migration) phải set biến môi trường `ConnectionStrings__DefaultConnection` ngay trong lệnh vì
+  `AppDbContextFactory` (design-time) không đọc `appsettings.json`/user-secrets — xem ví dụ đầy đủ trong
+  `backend/README.md` mục "Cấu hình Dev vs Production".
+- **Content Manager:** `appsettings.json` đã có sẵn connection string local trỏ `localhost:5433`. Chạy
+  `dotnet run --project backend/ContentManager.Api`.
+- **VoiceScribe:** `.env` (đã tạo từ trước, bị `.gitignore`) có `DATABASE_URL` trỏ `localhost:5434`. Chạy
+  `npm run dev --workspace=voicescribe` (hoặc lệnh dev tương ứng trong `apps/voicescribe/package.json`).
+
+**Dữ liệu fake/seed:** chỉ tạo và dùng trên nhánh `test/*`, không merge sang `main` kèm migration/seed
+chỉ nên chạy trên data test (xem quy tắc C5). Muốn làm sạch để test lại từ đầu: xoá volume Docker tương
+ứng (`docker compose -f docker-compose.<app>.yml down -v`) rồi chạy lại migration.
 
 ## 4. Quy trình phát hành bản desktop (Windows)
 
