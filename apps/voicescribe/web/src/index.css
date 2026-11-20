@@ -1,5 +1,16 @@
 @import 'tailwindcss';
 
+/*
+ * Breakpoint cấu trúc theo docs/project/07-kich-co-man-hinh-mobile.md: điện thoại (mọi nhóm
+ * xs→xl, 320–440px) dùng mặc định không media query; `medium`/`expanded` là 2 mốc chuyển bố cục
+ * thật (nav rail, nhiều cột) cho tablet/foldable mở, khác `sm/md/lg` mặc định của Tailwind (vốn
+ * nhắm web desktop) đang dùng ở các chỗ tinh chỉnh nhỏ khác trong app.
+ */
+@theme {
+  --breakpoint-medium: 600px;
+  --breakpoint-expanded: 840px;
+}
+
 body {
   background-color: #f8fafc;
   color: #0f172a;

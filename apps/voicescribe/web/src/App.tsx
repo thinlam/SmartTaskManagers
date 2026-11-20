@@ -25,7 +25,7 @@ function Shell() {
   }, []);
 
   return (
-    <div className="flex h-dvh flex-col bg-slate-50 pl-[var(--sal)] pr-[var(--sar)] pt-[var(--sat)] text-slate-900 md:flex-row">
+    <div className="flex h-dvh flex-col bg-slate-50 pl-[var(--sal)] pr-[var(--sar)] pt-[var(--sat)] text-slate-900 medium:flex-row">
       <Sidebar
         page={route.page}
         refreshKey={dataVersion}

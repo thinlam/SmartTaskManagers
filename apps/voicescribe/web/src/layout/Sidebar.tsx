@@ -31,7 +31,7 @@ export function Sidebar({
 
   return (
     <>
-      <aside className="hidden w-60 shrink-0 flex-col bg-[#0f1115] p-4 text-white md:flex">
+      <aside className="hidden w-60 shrink-0 flex-col bg-[#0f1115] p-4 text-white medium:flex">
         <div className="mb-6 flex items-center gap-3 px-2 py-2">
           <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-500">
             <Mic className="h-5 w-5" />
@@ -84,7 +84,7 @@ export function Sidebar({
             onClick={onOpenHelp}
             title="Hướng dẫn sử dụng"
             aria-label="Hướng dẫn sử dụng"
-            className="rounded-lg p-2 text-white/60 hover:bg-white/10 hover:text-white"
+            className="flex min-h-11 min-w-11 items-center justify-center rounded-lg text-white/60 hover:bg-white/10 hover:text-white"
           >
             <HelpCircle className="h-4 w-4" />
           </button>
@@ -92,7 +92,7 @@ export function Sidebar({
             onClick={signOut}
             title="Đăng xuất"
             aria-label="Đăng xuất"
-            className="rounded-lg p-2 text-white/60 hover:bg-white/10 hover:text-white"
+            className="flex min-h-11 min-w-11 items-center justify-center rounded-lg text-white/60 hover:bg-white/10 hover:text-white"
           >
             <LogOut className="h-4 w-4" />
           </button>
@@ -102,7 +102,7 @@ export function Sidebar({
       {/* Phones: the sidebar becomes a bottom tab bar that clears the gesture/home indicator. */}
       <nav
         aria-label="Điều hướng"
-        className="order-last flex shrink-0 border-t border-slate-200 bg-white pb-[var(--sab)] md:hidden"
+        className="order-last flex shrink-0 border-t border-slate-200 bg-white pb-[var(--sab)] medium:hidden"
       >
         {NAV_ITEMS.map(({ page: itemPage, label, icon: Icon }) => {
           const active = activePage === itemPage;

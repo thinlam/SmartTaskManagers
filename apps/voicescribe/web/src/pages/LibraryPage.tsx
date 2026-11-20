@@ -227,7 +227,7 @@ export function LibraryPage({
                 }}
                 aria-label={`Xóa ${r.title}`}
                 title="Xóa"
-                className="rounded-lg p-2 text-slate-300 opacity-0 hover:bg-rose-50 hover:text-rose-600 focus:opacity-100 group-hover:opacity-100 [@media(pointer:coarse)]:opacity-100"
+                className="flex min-h-11 min-w-11 items-center justify-center rounded-lg text-slate-300 opacity-0 hover:bg-rose-50 hover:text-rose-600 focus:opacity-100 group-hover:opacity-100 [@media(pointer:coarse)]:opacity-100"
               >
                 <Trash2 className="h-4 w-4" />
               </button>
@@ -259,7 +259,7 @@ export function LibraryPage({
             <button
               disabled={page <= 1}
               onClick={() => setPage((p) => p - 1)}
-              className="rounded-lg border border-slate-200 bg-white p-2 hover:bg-slate-50 disabled:opacity-40"
+              className="flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-40"
               aria-label="Trang trước"
             >
               <ChevronLeft className="h-4 w-4" />
@@ -267,7 +267,7 @@ export function LibraryPage({
             <button
               disabled={page >= totalPages}
               onClick={() => setPage((p) => p + 1)}
-              className="rounded-lg border border-slate-200 bg-white p-2 hover:bg-slate-50 disabled:opacity-40"
+              className="flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-40"
               aria-label="Trang sau"
             >
               <ChevronRight className="h-4 w-4" />

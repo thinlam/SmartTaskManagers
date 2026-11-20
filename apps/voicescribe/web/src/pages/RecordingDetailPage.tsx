@@ -246,7 +246,7 @@ function AudioPlayerBar({
         <button
           onClick={toggle}
           aria-label={isPlaying ? 'Dừng' : 'Phát'}
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-white hover:bg-indigo-500"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-indigo-600 text-white hover:bg-indigo-500"
         >
           {isPlaying ? <Pause className="h-4 w-4" /> : <Play className="h-4 w-4" />}
         </button>
@@ -254,7 +254,7 @@ function AudioPlayerBar({
           onClick={() => seekBy(-5)}
           aria-label="Lùi 5 giây"
           title="Lùi 5 giây"
-          className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100"
+          className="flex min-h-11 min-w-11 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100"
         >
           <RotateCcw className="h-4 w-4" />
         </button>
@@ -262,7 +262,7 @@ function AudioPlayerBar({
           onClick={() => seekBy(5)}
           aria-label="Tiến 5 giây"
           title="Tiến 5 giây"
-          className="rounded-lg p-1.5 text-slate-500 hover:bg-slate-100"
+          className="flex min-h-11 min-w-11 items-center justify-center rounded-lg text-slate-500 hover:bg-slate-100"
         >
           <RotateCw className="h-4 w-4" />
         </button>
@@ -805,14 +805,14 @@ export function RecordingDetailPage({
               <button
                 onClick={commitTitle}
                 aria-label="Lưu tiêu đề"
-                className="rounded p-2 text-emerald-600 hover:bg-emerald-50"
+                className="flex min-h-11 min-w-11 items-center justify-center rounded text-emerald-600 hover:bg-emerald-50"
               >
                 <Check className="h-5 w-5" />
               </button>
               <button
                 onClick={() => setEditingTitle(false)}
                 aria-label="Hủy"
-                className="rounded p-2 text-slate-400 hover:bg-slate-100"
+                className="flex min-h-11 min-w-11 items-center justify-center rounded text-slate-400 hover:bg-slate-100"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -827,7 +827,7 @@ export function RecordingDetailPage({
                 }}
                 aria-label="Đổi tiêu đề"
                 title="Đổi tiêu đề"
-                className="rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                className="flex min-h-11 min-w-11 items-center justify-center rounded-lg text-slate-400 hover:bg-slate-100 hover:text-slate-700"
               >
                 <Pencil className="h-4 w-4" />
               </button>
@@ -870,7 +870,7 @@ export function RecordingDetailPage({
             onClick={() => setConfirmDelete(true)}
             aria-label="Xóa bản ghi"
             title="Xóa bản ghi"
-            className="rounded-lg border border-slate-200 bg-white p-2.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600"
+            className="flex min-h-11 min-w-11 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-400 hover:bg-rose-50 hover:text-rose-600"
           >
             <Trash2 className="h-4 w-4" />
           </button>
@@ -911,7 +911,7 @@ export function RecordingDetailPage({
       )}
 
       {done && (
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[1fr_300px]">
+        <div className="grid grid-cols-1 gap-6 expanded:grid-cols-[1fr_300px]">
           <Card className="min-w-0 p-0" data-tour="transcript-view">
             {src && (
               <>
@@ -1077,7 +1077,7 @@ export function RecordingDetailPage({
                           onClick={() => askDeleteSpeaker(s.raw)}
                           aria-label={`Xóa người nói ${s.name}`}
                           title="Xóa người nói"
-                          className="shrink-0 rounded-lg p-1 text-slate-300 opacity-0 hover:bg-rose-50 hover:text-rose-600 group-hover:opacity-100"
+                          className="flex min-h-11 min-w-11 shrink-0 items-center justify-center rounded-lg text-slate-300 opacity-0 hover:bg-rose-50 hover:text-rose-600 focus:opacity-100 group-hover:opacity-100 [@media(pointer:coarse)]:opacity-100"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
                         </button>
@@ -1108,7 +1108,7 @@ export function RecordingDetailPage({
                       onClick={() => addSpeakerToRoster(newSpeakerDraft)}
                       disabled={!newSpeakerDraft.trim()}
                       aria-label="Thêm người nói"
-                      className="rounded-lg bg-indigo-600 p-1.5 text-white hover:bg-indigo-500 disabled:opacity-40"
+                      className="flex min-h-11 min-w-11 items-center justify-center rounded-lg bg-indigo-600 text-white hover:bg-indigo-500 disabled:opacity-40"
                     >
                       <Plus className="h-4 w-4" />
                     </button>
@@ -1140,7 +1140,7 @@ export function RecordingDetailPage({
                       <button
                         onClick={() => void save({ notes: rec.notes.filter((x) => x.id !== n.id) })}
                         aria-label="Xóa ghi chú"
-                        className="rounded p-1 text-amber-500 opacity-60 hover:bg-amber-100 hover:opacity-100"
+                        className="flex min-h-11 min-w-11 items-center justify-center rounded text-amber-500 opacity-60 hover:bg-amber-100 hover:opacity-100"
                       >
                         <X className="h-3.5 w-3.5" />
                       </button>
