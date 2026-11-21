@@ -10,6 +10,7 @@ import { SettingsProvider } from './state/SettingsContext';
 import { TagsProvider } from './state/TagsContext';
 import { AreasProvider } from './state/AreasContext';
 import { LoginPage } from './pages/Auth/LoginPage';
+import { SpeedInsights } from '@vercel/speed-insights/react';
 
 /**
  * Phase 27 — gates everything else behind a real session. Not-yet-
@@ -48,6 +49,7 @@ export default function App() {
   return (
     <AuthProvider>
       <AuthGate />
+      <SpeedInsights />
     </AuthProvider>
   );
 }
