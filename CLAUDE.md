@@ -156,7 +156,11 @@ toàn bộ nếu việc chỉ liên quan 1 phần (ví dụ chỉ sửa docs th�
    nếu cần build/chạy backend.
 4. **Rust + Cargo + Tauri CLI** (chỉ khi sẽ build app desktop): `cargo --version` / `rustc --version` trước
    khi build.
-5. **Docker** (chỉ khi cần chạy database local): xác nhận Docker đang chạy trước khi `docker compose up`.
+5. **Docker + database local** (chỉ khi cần chạy database local trên máy mới): xác nhận Docker đang chạy, rồi
+   **tự chạy `docker compose -f docker-compose.<app>.yml up -d`** cho (các) app liên quan đến việc sắp làm
+   luôn — không chỉ kiểm tra Docker chạy hay chưa rồi dừng lại, phải có DB thật đang chạy mới coi là xong
+   bước này (bài học 2026-11-22: máy mới chưa có container nào, phải tự khởi cả 3 — `docker-compose.content-manager.yml`,
+   `docker-compose.voicescribe.yml`, `docker-compose.smarttask.yml`).
 6. **Git identity** (`user.name`/`user.email`): nếu `git commit` báo "Author identity unknown", set lại
    **chỉ trong repo này** (không `--global`) khớp đúng tác giả trong lịch sử commit hiện có (`git log -1
 --format="%an <%ae>"`), không tự bịa tên khác (bài học 2026-11-21).

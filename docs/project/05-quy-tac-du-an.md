@@ -1,6 +1,6 @@
 # 5. Quy tắc của dự án
 
-> Cập nhật: 2026-11-22 (thêm E1 — quy tắc kiểm tra & cài đủ công cụ/gói khi làm việc trên máy mới).
+> Cập nhật: 2026-11-22 (E1: máy mới cần DB local phải tự chạy `docker compose up`, không chỉ kiểm tra Docker).
 > Gom từ cấu hình trong repo (ESLint, Prettier, `.gitignore`, lịch sử commit) và
 > từ các thỏa thuận làm việc giữa chủ dự án và trợ lý AI. Mục nào là thỏa thuận (không có công cụ ép) được ghi rõ.
 
@@ -197,7 +197,9 @@ tra toàn bộ nếu việc chỉ liên quan 1 phần):
 2. `npm install` ở root monorepo nếu thiếu `node_modules`.
 3. .NET SDK (`dotnet --version`, `dotnet restore`) cho backend.
 4. Rust/Cargo/Tauri CLI — chỉ khi sẽ build app desktop.
-5. Docker đang chạy — chỉ khi cần database local.
+5. Docker + database local — chỉ khi cần database local trên máy mới: xác nhận Docker đang chạy, rồi **tự
+   chạy `docker compose -f docker-compose.<app>.yml up -d`** cho app liên quan, không chỉ kiểm tra Docker
+   rồi dừng (bài học 2026-11-22: máy mới chưa có container nào, phải tự khởi cả 3 file compose).
 6. Git identity (`user.name`/`user.email`) — nếu `git commit` báo "Author identity unknown", set **chỉ
    trong repo này** (không `--global`) khớp đúng tác giả đã có trong lịch sử commit (bài học 2026-11-21).
 7. `gh` CLI — chỉ khi cần tạo GitHub Release.
