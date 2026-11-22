@@ -140,6 +140,31 @@ Từ 2026-11-19, áp dụng 3 quy tắc (chi tiết ở `docs/project/05-quy-tac
    .NET mới cùng loại DB gom vào `backend/postgres/` hoặc `backend/mysql/`. Project cũ (SmartTask, ContentManager.Api)
    giữ nguyên vị trí hiện tại — không tự di chuyển vì sẽ hỏng Root Directory Railway/Dockerfile/CI.
 
+## Quy tắc bắt buộc: máy mới phải kiểm tra & cài đủ công cụ/gói trước khi làm việc
+
+Trước khi làm bất kỳ việc gì trên một máy/phiên chưa từng xác nhận môi trường (đổi máy, phiên mới, máy lạ),
+bước đầu tiên là kiểm tra nhanh các công cụ/gói cần cho **đúng phần việc sắp làm** — không cần kiểm tra
+toàn bộ nếu việc chỉ liên quan 1 phần (ví dụ chỉ sửa docs thì không cần check Rust/Tauri/Docker):
+
+1. **Node.js/npm** (mọi workspace JS/TS): `node --version` / `npm --version`. Nếu lệnh không chạy dù
+   `node_modules` đã có sẵn trong repo, nghĩa là Node **có cài nhưng không có trong PATH** của shell hiện
+   tại — tìm `node.exe` (ví dụ dưới `Program Files\nodejs`) trước khi kết luận máy "chưa cài Node" (bài học
+   2026-11-20).
+2. **Gói npm của repo**: nếu thiếu `node_modules` ở thư mục cần chạy, chạy `npm install` (root monorepo)
+   trước khi chạy lệnh khác.
+3. **.NET SDK** (cho backend `SmartTask.Api`, `ContentManager.Api`): `dotnet --version`; `dotnet restore`
+   nếu cần build/chạy backend.
+4. **Rust + Cargo + Tauri CLI** (chỉ khi sẽ build app desktop): `cargo --version` / `rustc --version` trước
+   khi build.
+5. **Docker** (chỉ khi cần chạy database local): xác nhận Docker đang chạy trước khi `docker compose up`.
+6. **Git identity** (`user.name`/`user.email`): nếu `git commit` báo "Author identity unknown", set lại
+   **chỉ trong repo này** (không `--global`) khớp đúng tác giả trong lịch sử commit hiện có (`git log -1
+--format="%an <%ae>"`), không tự bịa tên khác (bài học 2026-11-21).
+7. **`gh` CLI** (chỉ khi cần tạo GitHub Release).
+
+Chỉ cài/thiết lập đúng phần còn thiếu theo việc sắp làm, không cài dư thừa. Mục tiêu: tránh phát hiện lỗi
+môi trường giữa chừng (lệnh không chạy, thiếu gói) rồi mới đi tìm nguyên nhân, thay vì kiểm tra trước.
+
 ## Các thỏa thuận quan trọng khác (chi tiết ở tài liệu 05)
 
 - Chỉ commit khi người dùng yêu cầu; khi commit thì push luôn theo rule ở trên.

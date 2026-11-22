@@ -1,7 +1,6 @@
 # 5. Quy tắc của dự án
 
-> Cập nhật: 2026-11-19 (thêm quy tắc C4, C5 về nhánh làm việc/nhánh test; thêm B1bis về tách folder
-> backend theo loại database; thêm B5quater — bài học VoiceScribe mất transcript khi `chunks` rỗng).
+> Cập nhật: 2026-11-22 (thêm E1 — quy tắc kiểm tra & cài đủ công cụ/gói khi làm việc trên máy mới).
 > Gom từ cấu hình trong repo (ESLint, Prettier, `.gitignore`, lịch sử commit) và
 > từ các thỏa thuận làm việc giữa chủ dự án và trợ lý AI. Mục nào là thỏa thuận (không có công cụ ép) được ghi rõ.
 
@@ -186,6 +185,24 @@
 ## E. Thỏa thuận làm việc với trợ lý AI
 
 Đây là thỏa thuận giữa chủ dự án và trợ lý, **không có công cụ nào ép**:
+
+### E1. Máy mới: kiểm tra & cài đủ công cụ/gói trước khi làm (từ 2026-11-22)
+
+Trước khi làm bất kỳ việc gì trên một máy/phiên chưa từng xác nhận môi trường (đổi máy, phiên mới, máy
+lạ), bước đầu tiên là kiểm tra nhanh các công cụ/gói cần cho **đúng phần việc sắp làm** (không cần kiểm
+tra toàn bộ nếu việc chỉ liên quan 1 phần):
+
+1. Node.js/npm (`node --version`/`npm --version`) — nếu không chạy dù `node_modules` đã có, tìm `node.exe`
+   trong máy (PATH shell có thể thiếu dù Node đã cài — bài học 2026-11-20) trước khi kết luận chưa cài.
+2. `npm install` ở root monorepo nếu thiếu `node_modules`.
+3. .NET SDK (`dotnet --version`, `dotnet restore`) cho backend.
+4. Rust/Cargo/Tauri CLI — chỉ khi sẽ build app desktop.
+5. Docker đang chạy — chỉ khi cần database local.
+6. Git identity (`user.name`/`user.email`) — nếu `git commit` báo "Author identity unknown", set **chỉ
+   trong repo này** (không `--global`) khớp đúng tác giả đã có trong lịch sử commit (bài học 2026-11-21).
+7. `gh` CLI — chỉ khi cần tạo GitHub Release.
+
+Chỉ cài/thiết lập đúng phần còn thiếu theo việc sắp làm, không cài dư thừa.
 
 - Trợ lý trả lời bằng **tiếng Việt, ngắn gọn, trung thực** về cái đã và chưa kiểm chứng.
 - **Chỉ commit khi được yêu cầu. Khi được yêu cầu commit thì push luôn** — không cần đợi nói "push" riêng
